@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>legendarr · Perfis de idioma</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <h1>Perfis de idioma</h1>
+    <ul>
+      {% for profile in profiles %}
+      <li>{{ profile.name }}: {{ profile.source_languages }} → {{ profile.target_languages }}</li>
+      {% else %}
+      <li>Nenhum perfil configurado ainda.</li>
+      {% endfor %}
+    </ul>
+    <a href="/">Voltar</a>
+  </body>
+</html>

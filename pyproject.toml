@@ -1,0 +1,27 @@
+[project]
+name = "legendarr"
+version = "0.1.0"
+description = "Self-hosted subtitle translation companion for Radarr and Sonarr"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["modules/*"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["modules"]
