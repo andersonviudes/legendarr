@@ -4,7 +4,8 @@ Self-hosted companion for **Radarr** and **Sonarr** that automatically translate
 subtitles, with flexible language profiles and the ability to translate any subtitle,
 including tracks embedded inside the video.
 
-Full documentation: **https://andersonviudes.github.io/legendarr**
+Full documentation: **https://andersonviudes.github.io/legendarr** — see [ROADMAP.md](ROADMAP.md)
+for what's planned.
 
 ## Architecture
 

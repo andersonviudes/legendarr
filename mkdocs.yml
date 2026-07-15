@@ -14,18 +14,18 @@ theme:
     logo: material/subtitles-outline
   favicon: material/subtitles-outline
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: teal
+      accent: teal
       toggle:
         icon: material/brightness-7
         name: Switch to light mode
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
   features:
     - navigation.tabs
     - navigation.tabs.sticky
@@ -93,7 +93,6 @@ nav:
     - Overview: architecture/overview.md
   - Contributing: contributing.md
   - Changelog: changelog.md
-  - Roadmap: roadmap.md
 
 extra:
   social:
