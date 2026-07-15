@@ -1,0 +1,1 @@
+- [legendarr project architecture](legendarr-architecture.md) — monorepo layout, Screaming+VSA slices, uv/Docker/CI setup and gotchas

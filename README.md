@@ -1,40 +1,39 @@
 # legendarr
 
-Companheiro self-hosted para **Radarr** e **Sonarr** que traduz legendas automaticamente —
-na linha do [Bazarr](https://www.bazarr.media/), mas com perfis de idioma mais flexíveis e
-capaz de traduzir qualquer legenda, inclusive as embutidas (embedded) dentro do vídeo.
+Self-hosted companion for **Radarr** and **Sonarr** that automatically translates
+subtitles, with flexible language profiles and the ability to translate any subtitle,
+including tracks embedded inside the video.
 
-## Arquitetura
+## Architecture
 
-O projeto é um monorepo Python com dois módulos, empacotados em um único build (uma imagem
-Docker, um `uv.lock`):
+The project is a Python monorepo with two modules, packaged into a single build (one
+Docker image, one `uv.lock`):
 
-- **`modules/backend`** (`legendarr_backend`) — domínio: integração com Radarr/Sonarr,
-  descoberta e extração de legendas, tradução, perfis de idioma e o agendador que roda tudo
-  isso periodicamente.
-- **`modules/web`** (`legendarr_web`) — interface web (FastAPI + Jinja2/HTMX), consome os
-  serviços do backend diretamente e inicia o agendador do backend no próprio processo.
+- **`modules/backend`** (`legendarr_backend`) — domain: Radarr/Sonarr integration,
+  subtitle discovery and extraction, translation, language profiles, and the scheduler
+  that runs all of it periodically.
+- **`modules/web`** (`legendarr_web`) — web UI (FastAPI + Jinja2/HTMX), consumes the
+  backend services directly and starts the backend's scheduler in its own process.
 
-Dentro de cada módulo, o código é organizado por **Screaming Architecture + Vertical Slice
-Architecture**: as pastas de topo levam o nome das capacidades de negócio
+Inside each module, the code is organized using **Screaming Architecture + Vertical
+Slice Architecture**: top-level folders are named after business capabilities
 (`media_providers`, `subtitle_discovery`, `subtitle_translation`, `language_profiles`, ...),
-não de camadas técnicas. Cada slice contém o que precisa para funcionar de ponta a ponta;
-código realmente compartilhado (config, banco de dados, logging, templates) fica em
-`shared_kernel/`.
+not technical layers. Each slice contains what it needs to work end to end; genuinely
+shared code (config, database, logging, templates) lives in `shared_kernel/`.
 
-## Rodando localmente
+## Running locally
 
-Pré-requisitos: [uv](https://docs.astral.sh/uv/) e Python 3.12+.
+Prerequisites: [uv](https://docs.astral.sh/uv/) and Python 3.12+.
 
 ```bash
 make install   # uv sync --all-packages
-make run       # sobe a web (e o agendador do backend) em http://localhost:8000
+make run       # starts the web app (and the backend scheduler) at http://localhost:8000
 ```
 
-Configuração via variáveis de ambiente (veja `.env.example`), prefixo `LEGENDARR_`:
-URLs e API keys do Radarr/Sonarr, intervalo de sincronização, diretório de dados, etc.
+Configuration is done via environment variables (see `.env.example`), prefix `LEGENDARR_`:
+Radarr/Sonarr URLs and API keys, sync interval, data directory, etc.
 
-## Testes e lint
+## Tests and lint
 
 ```bash
 make test
@@ -43,8 +42,8 @@ make lint
 
 ## Docker
 
-Um único `Dockerfile` builda os dois módulos e roda a web (que sobe o agendador do backend
-internamente):
+A single `Dockerfile` builds both modules and runs the web app (which starts the
+backend's scheduler internally):
 
 ```bash
 make docker-build
@@ -53,5 +52,5 @@ docker run -p 8000:8000 -v ./data:/config legendarr:local
 
 ## CI
 
-O workflow em `.github/workflows/ci.yml` roda lint + testes em toda PR e push para `main`,
-e builda/publica a imagem Docker em `ghcr.io` a cada push na `main`.
+The workflow in `.github/workflows/ci.yml` runs lint + tests on every PR and push to
+`main`, and builds/publishes the Docker image to `ghcr.io` on every push to `main`.

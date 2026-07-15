@@ -7,4 +7,4 @@ def test_language_profiles_page_lists_no_profiles_by_default():
         response = client.get("/language-profiles/")
 
     assert response.status_code == 200
-    assert "Nenhum perfil configurado" in response.text
+    assert "No profile configured" in response.text
