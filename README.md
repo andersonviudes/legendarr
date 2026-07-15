@@ -4,6 +4,8 @@ Self-hosted companion for **Radarr** and **Sonarr** that automatically translate
 subtitles, with flexible language profiles and the ability to translate any subtitle,
 including tracks embedded inside the video.
 
+Full documentation: **https://andersonviudes.github.io/legendarr**
+
 ## Architecture
 
 The project is a Python monorepo with two modules, packaged into a single build (one
@@ -54,3 +56,14 @@ docker run -p 8000:8000 -v ./data:/config legendarr:local
 
 The workflow in `.github/workflows/ci.yml` runs lint + tests, then validates that the
 Docker image builds, on every PR and push to `main`. It does not publish the image.
+
+## Documentation
+
+The docs site lives in `docs/` (MkDocs + Material) and is deployed to GitHub Pages by
+`.github/workflows/docs.yml` on every push to `main` that touches `docs/` or `mkdocs.yml`.
+Preview it locally with:
+
+```bash
+make docs-install
+make docs-serve
+```

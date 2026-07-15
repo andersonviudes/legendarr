@@ -1,4 +1,4 @@
-.PHONY: install lint format test run docker-build
+.PHONY: install lint format test run docker-build docs-install docs-serve docs-build
 
 install:
 	uv sync --all-packages
@@ -18,3 +18,12 @@ run:
 
 docker-build:
 	docker build -t legendarr:local .
+
+docs-install:
+	pip install -r docs/requirements.txt
+
+docs-serve:
+	mkdocs serve
+
+docs-build:
+	mkdocs build --strict
