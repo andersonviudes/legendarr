@@ -52,5 +52,5 @@ docker run -p 8000:8000 -v ./data:/config legendarr:local
 
 ## CI
 
-The workflow in `.github/workflows/ci.yml` runs lint + tests on every PR and push to
-`main`, and builds/publishes the Docker image to `ghcr.io` on every push to `main`.
+The workflow in `.github/workflows/ci.yml` runs lint + tests, then validates that the
+Docker image builds, on every PR and push to `main`. It does not publish the image.

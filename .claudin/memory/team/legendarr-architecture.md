@@ -28,12 +28,14 @@ folders inside each module are named after business capabilities (`media_provide
 `ruff` for lint+format, `pytest`, SQLite for persistence. Single `Dockerfile` builds both
 modules into one image (must pass `--all-packages` to `uv sync` in the Dockerfile — omitting
 it only syncs the virtual root and silently produces an empty venv, a bug hit during bootstrap).
-CI (`.github/workflows/ci.yml`) lints/tests on every push+PR to main, then builds and (on
-main only) pushes the image to `ghcr.io/andersonviudes/legendarr`.
+CI (`.github/workflows/ci.yml`) lints/tests on every push+PR to main, then only validates
+that the Docker image builds (`push: false`) — it does not publish to a registry. (CI
+originally published to `ghcr.io/andersonviudes/legendarr` on push to main; the user asked
+2026-07-15 to drop the publish step and keep CI to build+test only.)
 
 **Why:** these choices came from an explicit AskUserQuestion round with the user: Python-only
-web UI (no React/TS), uv over Poetry, SQLite over Postgres, and CI that builds+publishes a
-Docker image (not just lint/test).
+web UI (no React/TS), uv over Poetry, SQLite over Postgres. The initial "build+publish"
+CI scope was later narrowed to "build+test only" per user request.
 
 **How to apply:** when adding a new feature, create a new top-level slice folder named after
 the business capability inside the right module (backend for domain logic, web for UI/routes)
