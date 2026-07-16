@@ -34,9 +34,11 @@ config.get_main_option("sqlalchemy.url")` — i.e. only for standalone `alembic`
 db-upgrade` CLI invocations, never when a caller already set it programmatically. `alembic.ini`'s
 `sqlalchemy.url` is left blank (not the `driver://...` placeholder) so that falsy-check works.
 
-**Also note:** `AGENTS.md` doesn't exist on `main` (only on the still-unmerged
-`feat/web-ui-shell` branch, added there in commit `49417a1`) — so the "update AGENTS.md
-commands section" step from this task's plan was skipped; redo it once that branch merges.
+**Also note:** `AGENTS.md` didn't exist on `main` (only on the still-unmerged
+`feat/web-ui-shell` branch, added there in commit `49417a1`) — brought it onto `main` via this
+branch instead of waiting for that branch to merge (materialized from `feat/web-ui-shell:AGENTS.md`,
+updated with the `db-revision`/`db-upgrade` targets and the release-only Docker build note). If
+`feat/web-ui-shell` merges later, watch for a duplicate/conflicting `AGENTS.md` add.
 
 **Why:** avoids re-debugging the same `env.py` caching gotcha, and explains why `config.yaml`
 takes precedence over the env var on anything but the very first run.
