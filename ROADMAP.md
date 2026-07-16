@@ -25,7 +25,7 @@ ad-hoc plumbing decided along the way.*
   SQLModel/SQLite setup, replacing implicit `create_all()` schema creation, so the schema
   changes later versions need (forced/HI flags, acquisition tables, settings) are tracked
   instead of improvised.
-- [ ] **Dashboard & UI** — Base UI layout for `legendarr_web`: navigation shell
+- [x] **Dashboard & UI** — Base UI layout for `legendarr_web`: navigation shell
   (header/sidebar) and a shared page template/design system, plus the convention for how
   HTMX partial responses relate to full-page templates — established before any feature page
   exists.
@@ -37,7 +37,7 @@ ad-hoc plumbing decided along the way.*
   convention (already used by the sync job), including named queues and a
   retry/concurrency-dedup policy per job type, so later scheduled work (0.9.0 onward)
   registers into one consistent model instead of each job wiring its own.
-- [ ] **Media providers** — Shared HTTP client conventions (timeout/retry/error handling) for
+- [x] **Media providers** — Shared HTTP client conventions (timeout/retry/error handling) for
   `RadarrClient`/`SonarrClient`-style integrations, so later subtitle-provider and
   translation-API clients follow one shape instead of each being bespoke.
 - [ ] Shared testing conventions (fixtures, test database setup) across
