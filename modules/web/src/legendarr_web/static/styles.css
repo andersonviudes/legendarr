@@ -64,7 +64,6 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--lg-sidebar-background-color);
-  border-right: 1px solid var(--pico-muted-border-color);
 }
 
 .app-brand {
