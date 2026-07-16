@@ -68,7 +68,6 @@ body {
 
 .app-brand {
   padding: 1.5rem;
-  border-bottom: 1px solid var(--pico-muted-border-color);
   margin-bottom: 0.5rem;
 }
 
