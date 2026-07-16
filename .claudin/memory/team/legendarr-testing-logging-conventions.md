@@ -27,9 +27,12 @@ empty-profiles-list handler — used by `tests/dashboard/test_dashboard.py` and
 `tests/language_profiles/test_settings_page.py`.
 
 **Logging — what exists:** `configure_logging()` (`legendarr_backend/logging/setup.py`) is
-called exactly once, in `legendarr_bootstrap/__main__.py::main()` before `uvicorn.run(...)` —
-this is the real entrypoint for both `make run` and the Docker `CMD` (`python -m
-legendarr_bootstrap`). Every module that logs gets its own `logger =
+called exactly once, at module level in `legendarr_bootstrap/app.py` (not in `__main__.py`) —
+this covers both real invocations, `python -m legendarr_bootstrap` (`make run` / Docker `CMD`)
+and a direct `uvicorn legendarr_bootstrap.app:app`, since both import that module before serving
+anything. An earlier version of this fix called it from `__main__.py::main()` instead; moved to
+`app.py` after a validation pass flagged that a direct-uvicorn invocation would've bypassed it.
+Every module that logs gets its own `logger =
 logging.getLogger(__name__)` at the top of the file (already the organic pattern in
 `scheduling/retry.py`/`media_library/jobs.py` before this work; now documented in
 `.claudin/rules/python-conventions.md`). No structured/JSON logging, no correlation IDs, no
@@ -64,4 +67,4 @@ test only needs a `Session` against the current schema (service-function tests),
 `stub_backend_client(app, handler=...)` instead of duplicating the `MockTransport`/
 `dependency_overrides` wiring. When adding logging to new code, add `logger =
 logging.getLogger(__name__)` at module top — never call `configure_logging()` again outside
-`legendarr_bootstrap/__main__.py`.
+`legendarr_bootstrap/app.py`.
