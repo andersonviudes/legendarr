@@ -59,14 +59,16 @@
   </fieldset>
 
   <div id="test-result"></div>
-  <button
-    type="button"
-    class="outline"
-    hx-post="/settings/arr-services/test"
-    hx-include="closest form"
-    hx-target="#test-result"
-    hx-swap="innerHTML"
-  >Test</button>
-  <button type="submit">Save</button>
+  <div class="form-actions">
+    <button
+      type="button"
+      class="outline"
+      hx-post="/settings/arr-services/test"
+      hx-include="closest form"
+      hx-target="#test-result"
+      hx-swap="innerHTML"
+    >Test</button>
+    <button type="submit">Save</button>
+  </div>
 </form>
 {% endblock %}
