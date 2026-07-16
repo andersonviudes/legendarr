@@ -35,14 +35,14 @@ ad-hoc plumbing decided along the way.*
   written to `settings.data_dir` — `/config` in the Docker image) instead of the database, so
   the 0.4.0 Settings page reads and rewrites one file instead of retrofitting onto whatever
   `config_file.py` looks like by then.
-- [ ] **Automation & scheduling** — Formalize the shared `APScheduler` instance/job-registration
+- [x] **Automation & scheduling** — Formalize the shared `APScheduler` instance/job-registration
   convention (already used by the sync job), including named queues and a
   retry/concurrency-dedup policy per job type, so later scheduled work (0.9.0 onward)
   registers into one consistent model instead of each job wiring its own.
 - [x] **Media providers** — Shared HTTP client conventions (timeout/retry/error handling) for
   `RadarrClient`/`SonarrClient`-style integrations, so later subtitle-provider and
   translation-API clients follow one shape instead of each being bespoke.
-- [ ] Shared testing conventions (fixtures, test database setup) across
+- [x] Shared testing conventions (fixtures, test database setup) across
   `modules/<module>/tests/<slice>/`, and structured logging conventions in
   `logging/setup.py` for how slices report errors up to the orchestrators built
   starting 0.2.0.
