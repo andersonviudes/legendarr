@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}legendarr{% endblock %}</title>
+    <script>
+      // Applied before the stylesheets load so a stored preference never flashes the
+      // wrong theme on first paint.
+      (function () {
+        var stored = localStorage.getItem("legendarr-theme");
+        if (stored) document.documentElement.setAttribute("data-theme", stored);
+      })();
+    </script>
+    <link rel="stylesheet" href="/static/vendor/pico.min.css" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/vendor/htmx.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="app-sidebar">
+        <header class="app-brand">
+          <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
+        </header>
+        <nav aria-label="Main">
+          <ul>
+            <li>
+              <a
+                href="/"
+                {% if request.url.path == "/" %}aria-current="page"{% endif %}
+              >{{ icon("layout-dashboard") }}<span>Dashboard</span></a>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
+            aria-controls="nav-library"
+          ><span>Library</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
+            <li>
+              <a
+                href="/media/movies"
+                {% if request.url.path.startswith("/media/movies") %}aria-current="page"{% endif %}
+              >{{ icon("clapperboard") }}<span>Movies</span></a>
+            </li>
+            <li>
+              <a
+                href="/media/series"
+                {% if request.url.path.startswith("/media/series") %}aria-current="page"{% endif %}
+              >{{ icon("tv") }}<span>Series</span></a>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <a
+                href="/history/"
+                {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
+              >{{ icon("history") }}<span>History</span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/"
+                {% if request.url.path.startswith("/settings") %}aria-current="page"{% endif %}
+              >{{ icon("settings") }}<span>Settings</span></a>
+            </li>
+            <li>
+              <a
+                href="/system/"
+                {% if request.url.path.startswith("/system") %}aria-current="page"{% endif %}
+              >{{ icon("server") }}<span>System</span></a>
+            </li>
+          </ul>
+        </nav>
+        <footer class="app-sidebar-footer">
+          <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="Toggle theme">{{ icon("sun") }}</button>
+          <a
+            href="https://github.com/andersonviudes/legendarr"
+            class="app-icon-btn app-icon-btn--github"
+            aria-label="legendarr on GitHub"
+            target="_blank"
+            rel="noopener"
+          >{{ icon("github") }}</a>
+        </footer>
+      </aside>
+      <main class="app-main">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <script src="/static/js/sidebar.js" defer></script>
+    <script src="/static/js/theme.js" defer></script>
+    {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

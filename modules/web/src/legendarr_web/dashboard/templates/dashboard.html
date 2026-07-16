@@ -1,16 +1,31 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-  </head>
-  <body>
-    <h1>legendarr</h1>
-    <p>Automatic subtitle translation for Radarr and Sonarr.</p>
-    <nav>
-      <a href="/media/">Library</a>
-      <a href="/language-profiles/">Language profiles</a>
-    </nav>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}legendarr · Dashboard{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ icon("layout-dashboard") }} Dashboard</h1>
+  <p>What legendarr is doing right now.</p>
+</hgroup>
+
+<div
+  id="dashboard-stats"
+  class="stat-grid"
+  hx-get="/"
+  hx-select="#dashboard-stats"
+  hx-target="this"
+  hx-swap="outerHTML"
+  hx-trigger="every 15s"
+>
+  <article class="stat-card">
+    <p class="stat-value">{{ profile_count }}</p>
+    <p class="stat-label">Language profiles configured</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
+    <p class="stat-label">Until next library sync</p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
+    <p class="stat-label">Sync interval</p>
+  </article>
+</div>
+{% endblock %}

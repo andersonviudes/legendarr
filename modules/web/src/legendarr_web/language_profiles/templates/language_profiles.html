@@ -1,19 +1,12 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>legendarr · Language profiles</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-  </head>
-  <body>
-    <h1>Language profiles</h1>
-    <ul>
-      {% for profile in profiles %}
-      <li>{{ profile.name }}: {{ profile.source_languages }} → {{ profile.target_languages }}</li>
-      {% else %}
-      <li>No profile configured yet.</li>
-      {% endfor %}
-    </ul>
-    <a href="/">Back</a>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}legendarr · Language profiles{% endblock %}
+{% block content %}
+<h1>{{ icon("languages") }} Language profiles</h1>
+<ul class="profile-list">
+  {% for profile in profiles %}
+  <li>{{ profile.name }}: {{ profile.source_languages }} → {{ profile.target_languages }}</li>
+  {% else %}
+  <li class="empty">No profile configured yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

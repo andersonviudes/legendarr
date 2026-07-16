@@ -16,6 +16,6 @@ It lets you say, for example: "for anime, translate embedded Japanese subs to `p
 
 ## Managing profiles
 
-Profiles are viewable at `/language-profiles/` in the web dashboard. They're stored in the
+Profiles are viewable at `/settings/` in the web dashboard. They're stored in the
 `LanguageProfile` table in the shared SQLite database (see
 `modules/backend/src/legendarr_backend/language_profiles/models.py`).
