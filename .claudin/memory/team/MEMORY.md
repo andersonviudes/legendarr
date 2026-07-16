@@ -5,3 +5,4 @@
 - [legendarr Clean Code & SOLID rule](legendarr-clean-code-solid-rule.md) — where the rule lives, what was refactored to comply, what was deliberately left alone and why
 - [legendarr shared HTTP client conventions](legendarr-http-client-conventions.md) — ProviderHttpClient in http_client/client.py, required base for new HTTP integrations
 - [legendarr feature vs. fix branch convention](legendarr-branch-convention.md) — feat: needs branch+PR, fix: can push straight to main
+- [legendarr scheduling/job conventions](legendarr-scheduling-job-conventions.md) — scheduling/ shared module + per-slice jobs.py, required pattern for new APScheduler jobs

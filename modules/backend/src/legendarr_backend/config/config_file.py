@@ -1,5 +1,5 @@
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from legendarr_backend.config.settings import Settings
 
@@ -18,6 +18,10 @@ class AppConfigFile(BaseModel):
     sonarr_url: str = ""
     sonarr_api_key: str = ""
     sync_interval_minutes: int = 15
+    sync_retry_attempts: int = Field(default=3, ge=1)
+    sync_retry_delay_seconds: float = 5.0
+    sync_max_instances: int = 1
+    sync_coalesce: bool = True
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -31,6 +35,10 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "sonarr_url": settings.sonarr_url,
         "sonarr_api_key": settings.sonarr_api_key,
         "sync_interval_minutes": settings.sync_interval_minutes,
+        "sync_retry_attempts": settings.sync_retry_attempts,
+        "sync_retry_delay_seconds": settings.sync_retry_delay_seconds,
+        "sync_max_instances": settings.sync_max_instances,
+        "sync_coalesce": settings.sync_coalesce,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

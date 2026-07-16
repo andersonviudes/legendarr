@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     sonarr_url: str = Field(default="")
     sonarr_api_key: str = Field(default="")
     sync_interval_minutes: int = Field(default=15)
+    sync_retry_attempts: int = Field(default=3, ge=1)
+    sync_retry_delay_seconds: float = Field(default=5.0)
+    sync_max_instances: int = Field(default=1)
+    sync_coalesce: bool = Field(default=True)
 
     @property
     def resolved_database_url(self) -> str:
