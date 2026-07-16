@@ -55,8 +55,14 @@ body {
 
 .app-shell {
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.app-shell-body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
 }
 
 .app-sidebar {
@@ -496,7 +502,6 @@ button.outline.contrast:is(:hover, :focus) {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: auto;
   padding: 1.5rem;
 }
 
