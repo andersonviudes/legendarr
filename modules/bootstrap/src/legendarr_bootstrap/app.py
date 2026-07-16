@@ -5,8 +5,11 @@ import httpx
 from fastapi import FastAPI
 from legendarr_backend.api import create_api_app
 from legendarr_backend.bootstrap import build_scheduler
+from legendarr_backend.logging.setup import configure_logging
 from legendarr_web.app import create_app as create_web_app
 from legendarr_web.backend_client.client import get_backend_client
+
+configure_logging()
 
 
 @asynccontextmanager
