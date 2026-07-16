@@ -1,2 +1,3 @@
 - [legendarr project architecture](legendarr-architecture.md) — monorepo layout, Screaming+VSA slices, uv/Docker/CI setup and gotchas
 - [legendarr roadmap competitive basis](legendarr-roadmap-basis.md) — why roadmap phases are ordered this way: confirmed gaps found in Bazarr/Lingarr source
+- [legendarr Alembic migrations and config.yaml](legendarr-db-migrations.md) — DB migration setup, config.yaml precedence, env.py caching gotcha

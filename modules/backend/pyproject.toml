@@ -10,6 +10,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "sqlmodel>=0.0.22",
     "apscheduler>=3.10",
+    "alembic>=1.13",
+    "pyyaml>=6.0",
 ]
 
 [build-system]

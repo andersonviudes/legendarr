@@ -1,4 +1,4 @@
-.PHONY: install lint format test run docker-build docs-install docs-serve docs-build
+.PHONY: install lint format test run db-revision db-upgrade docker-build docs-install docs-serve docs-build
 
 install:
 	uv sync --all-packages
@@ -15,6 +15,12 @@ test:
 
 run:
 	uv run --package legendarr-web python -m legendarr_web
+
+db-revision:
+	uv run --package legendarr-backend alembic -c modules/backend/alembic.ini revision --autogenerate -m "$(message)"
+
+db-upgrade:
+	uv run --package legendarr-backend alembic -c modules/backend/alembic.ini upgrade head
 
 docker-build:
 	docker build -t legendarr:local .
