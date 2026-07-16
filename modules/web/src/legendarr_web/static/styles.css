@@ -173,9 +173,14 @@ body {
 }
 
 /* Higher specificity than .app-sidebar li a (which sets padding-left too) so the indent
-   actually sticks regardless of source order. */
+   actually sticks regardless of source order. Submenu items are text-only — icons are
+   reserved for top-level nav entries — so the indent replaces the icon's space. */
 .app-sidebar .app-nav-submenu li a {
   padding-left: 2.15rem;
+}
+
+.app-sidebar .app-nav-submenu li a svg {
+  display: none;
 }
 
 .app-sidebar li a svg {
