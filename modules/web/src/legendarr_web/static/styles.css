@@ -1,6 +1,14 @@
 /* Pico.css (vendor/pico.min.css) covers layout, typography and theming.
    Only legendarr-specific overrides belong here. */
 
+/* Pico scales --pico-font-size up at wider breakpoints (up to 131.25% at >=1536px),
+   meant to be paired with its own growing `.container` so proportions stay balanced.
+   This app's `.app-main` has no such container, so on a wide viewport that scaling just
+   inflates every unstyled Pico element (raw form labels/inputs in particular) — pin it. */
+:root {
+  --pico-font-size: 100%;
+}
+
 svg.lucide {
   width: 1em;
   height: 1em;
@@ -369,6 +377,16 @@ body {
 .service-add-card:hover {
   color: var(--pico-primary);
   border-color: var(--pico-primary);
+}
+
+.service-form {
+  max-width: 28rem;
+}
+
+.service-form legend,
+.service-form label,
+.service-form input {
+  font-size: 0.7375rem;
 }
 
 .test-result {
