@@ -1,15 +1,6 @@
-from dataclasses import dataclass
-
 import httpx
 
-
-@dataclass(frozen=True)
-class MediaFile:
-    """A single movie tracked by a Radarr instance."""
-
-    id: int
-    title: str
-    path: str
+from legendarr_backend.media_providers.base import MediaItem
 
 
 class RadarrClient:
@@ -22,11 +13,11 @@ class RadarrClient:
             timeout=10.0,
         )
 
-    def list_movies(self) -> list[MediaFile]:
+    def list_items(self) -> list[MediaItem]:
         response = self._client.get("/api/v3/movie")
         response.raise_for_status()
         return [
-            MediaFile(id=item["id"], title=item["title"], path=item.get("path", ""))
+            MediaItem(id=item["id"], title=item["title"], path=item.get("path", ""))
             for item in response.json()
         ]
 

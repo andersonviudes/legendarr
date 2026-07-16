@@ -1,15 +1,6 @@
-from dataclasses import dataclass
-
 import httpx
 
-
-@dataclass(frozen=True)
-class SeriesFile:
-    """A single series tracked by a Sonarr instance."""
-
-    id: int
-    title: str
-    path: str
+from legendarr_backend.media_providers.base import MediaItem
 
 
 class SonarrClient:
@@ -22,11 +13,11 @@ class SonarrClient:
             timeout=10.0,
         )
 
-    def list_series(self) -> list[SeriesFile]:
+    def list_items(self) -> list[MediaItem]:
         response = self._client.get("/api/v3/series")
         response.raise_for_status()
         return [
-            SeriesFile(id=item["id"], title=item["title"], path=item.get("path", ""))
+            MediaItem(id=item["id"], title=item["title"], path=item.get("path", ""))
             for item in response.json()
         ]
 
