@@ -37,7 +37,8 @@ svg.lucide {
   --pico-card-border-color: rgba(255, 255, 255, 0.08);
 
   --pico-form-element-background-color: #333333;
-  --pico-form-element-border-color: #ffffff;
+  --pico-form-element-border-color: #9a9a9a;
+  --pico-form-element-color: #b3b3b3;
   --pico-form-element-active-background-color: #333333;
   --pico-form-element-active-border-color: var(--pico-primary);
   --pico-form-element-focus-color: var(--pico-primary);
