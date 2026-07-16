@@ -46,3 +46,21 @@ alternatives, reuse these confirmed findings instead of re-exploring the sibling
 the existing architecture memory, keep competitor names out of committed repo content
 (`ROADMAP.md`, README, UI strings) — comparisons by name belong in chat/PR discussion only,
 never in files that ship with the repo.
+
+**2026-07-16 reorder:** milestones `0.2.0`–`0.21.0` were renumbered up by one (now
+`0.2.0`–`0.22.0`; `1.0.0` unchanged) to insert a new `0.2.0` — "Connect Radarr & Sonarr,
+configure languages, and sync your library" — ahead of what was `0.2.0` ("Translate one
+subtitle end to end"). Reasoning: registering a working Radarr/Sonarr connection and creating
+a real (non-CLI/seed) `LanguageProfile` — languages, translation provider, embedded-track
+preference, forced/HI — are themselves a coherent, demoable "setup" use case, and previously
+both were deferred two milestones past the point the roadmap already assumed a synced library
+and a translated subtitle existed. The new `0.2.0` absorbs: persisting synced media (old
+`0.2.0`), `LanguageProfile` backend CRUD + its web UI (old `0.2.0`'s CLI/seed workaround is
+dropped entirely, superseded by old `0.3.0`'s real profile UI moving forward), and the
+Radarr/Sonarr connection-details/validate/path-mapping bullets split out of old `0.4.0`'s
+Settings milestone (sync interval and default translation provider stayed behind at the new
+`0.5.0`). Subtitle-acquisition/download-provider registration (old `0.10.0`/`0.11.0`, now
+`0.11.0`/`0.12.0`) was explicitly *not* pulled forward — no `subtitle_acquisition` slice or
+download-provider code exists yet, unlike `TranslationProvider`
+(`subtitle_translation/providers/base.py`), which already had a working `echo` implementation
+and a field on `LanguageProfile` to select it.
