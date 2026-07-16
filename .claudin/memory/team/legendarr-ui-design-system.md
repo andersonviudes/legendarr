@@ -280,3 +280,13 @@ legendarr_bootstrap` reliably stops the real server (killing only the captured w
 PID leaves it running). Relaunch detached with `nohup make run > /tmp/legendarr-run.log 2>&1 &
 disown`, then poll `curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/...` until it
 returns 200 (the app runs Alembic migrations on startup, so give it ~8s).
+
+**Sandbox caveat (seen 2026-07-16, PR #10):** in some sessions the harness reaps any
+backgrounded `make run` almost immediately — every launch call returns `Exit code 144`
+(128+16, SIGSTKFLT to the process group) and the server never binds the port (empty log, no
+`legendarr_bootstrap` process). `nohup`, `disown`, `setsid`, and Bash `run_in_background` all
+failed the same way. When this happens, live-browser verification is simply unavailable that
+session — fall back to the in-process render path (`fastapi.testclient.TestClient` against
+`create_app()` with a `stub_backend_client` MockTransport) to assert rendered HTML, and lean
+on the fact that CSS `var()` token swaps resolve to identical computed values. Earlier sessions
+the same launch pattern worked, so it's environmental/flaky, not a code problem.

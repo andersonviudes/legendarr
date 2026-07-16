@@ -113,6 +113,17 @@ the business capability inside the right module (backend for domain logic, web f
 rather than adding to an existing generic layer. Keep the Dockerfile's `uv sync` calls using
 `--all-packages`.
 
+**Update (2026-07-16, PR #10 `feat/arr-services-settings`):** the Radarr/Sonarr API clients
+moved OUT of `media_library/providers/` to a new top-level shared module
+`legendarr_backend/arr_clients/` (`base.py` with `MediaItem`/`MediaLibraryClient`,
+`radarr_client.py`, `sonarr_client.py`), with tests at `tests/arr_clients/`. Reason: the new
+`arr_services` slice (Radarr/Sonarr connection CRUD + connection testing) needs the same
+clients as `media_library` (sync), so `arr_services/client_factory.py` importing from
+`media_library.providers` was a cross-slice import. `arr_clients/` is now a cross-cutting peer
+of `http_client/`/`scheduling/`, imported by both slices. **Any earlier reference in these
+memory files to `media_library/providers/{base,radarr_client,sonarr_client}.py` is stale — the
+files now live under `arr_clients/`.** `media_library/providers/` no longer exists.
+
 **AGENTS.md kept lean (2026-07-16):** `AGENTS.md`'s Architecture section only summarizes the
 three modules and points to this doc's `docs/architecture/overview.md` for the full slice
 layout — don't re-inline the detailed folder tree there, it drifted out of sync with the
