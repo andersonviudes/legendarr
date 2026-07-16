@@ -7,6 +7,12 @@
    inflates every unstyled Pico element (raw form labels/inputs in particular) — pin it. */
 :root {
   --pico-font-size: 18px;
+
+  /* Type scale — tokens for the sizes reused across components, so a tweak lands in one
+     place instead of being hunted down in five. Values are rem, tracking the root size. */
+  --lg-font-xs: 0.7375rem; /* meta text: card status/address, stat label, form + buttons */
+  --lg-font-sm: 0.79306rem; /* sidebar nav links and section toggles */
+  --lg-font-md: 0.8125rem; /* inline test-result messages */
 }
 
 svg.lucide {
@@ -46,6 +52,7 @@ svg.lucide {
   --lg-sidebar-background-color: #2a2a2a;
   --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
+  --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* === App shell: full-width topbar over a fixed sidebar + scrolling content === */
@@ -134,10 +141,7 @@ body {
   padding: 1.25rem 0.75rem 0.75rem;
 }
 
-/* Higher specificity than the generic `button, [type="button"]` rule below (which ties
-   with `.app-nav-toggle` on specificity and would otherwise win by source order) so this
-   toggle's font-size actually sticks. */
-.app-sidebar .app-nav-toggle {
+.app-nav-toggle {
   all: unset;
   display: flex;
   align-items: center;
@@ -146,7 +150,7 @@ body {
   box-sizing: border-box;
   margin: 0.15rem 0 0.1rem;
   padding: 0.35rem 0.9rem;
-  font-size: 0.79306rem;
+  font-size: var(--lg-font-sm);
   font-weight: 600;
   color: var(--pico-muted-color);
   cursor: pointer;
@@ -201,7 +205,7 @@ body {
   border-radius: 0.6rem;
   color: var(--pico-muted-color);
   text-decoration: none;
-  font-size: 0.79306rem;
+  font-size: var(--lg-font-sm);
   font-weight: 600;
   transition:
     color 0.15s ease,
@@ -225,7 +229,7 @@ body {
 
 .app-sidebar li a:hover {
   color: var(--pico-primary-hover);
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--lg-neutral-hover-background-color);
 }
 
 .app-sidebar li a[aria-current="page"] {
@@ -274,7 +278,7 @@ body {
 
 .stat-label {
   margin: 0.25rem 0 0;
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
 }
 
@@ -328,6 +332,13 @@ body {
 }
 
 /* === Friendly empty states (language profiles, library) === */
+/* Shared muted placeholder for "nothing here yet" copy — used via the empty_state() macro
+   across the library and arr-services pages. */
+.empty-state {
+  margin: 1.5rem 0 0;
+  color: var(--pico-muted-color);
+}
+
 .profile-list {
   list-style: none;
   margin: 1.5rem 0 0;
@@ -408,7 +419,7 @@ body {
 }
 
 .service-card-status {
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
   color: var(--pico-primary);
 }
 
@@ -418,7 +429,7 @@ body {
 
 .service-card-address {
   margin: 0;
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
 }
 
@@ -472,7 +483,7 @@ body {
 .service-form legend,
 .service-form label,
 .service-form input {
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
 }
 
 .form-actions {
@@ -490,15 +501,18 @@ body {
   flex: 1;
 }
 
-button,
+/* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle
+   and .app-icon-btn — fully reset themselves with `all: unset` and style themselves, so
+   they're excluded here rather than fought with extra specificity elsewhere. */
+button:not(.app-nav-toggle):not(.app-icon-btn),
 [role="button"],
 [type="submit"],
-[type="button"] {
+[type="button"]:not(.app-nav-toggle):not(.app-icon-btn) {
   display: inline-block;
   --pico-border-radius: 0.5rem;
   --pico-form-element-spacing-vertical: 0.5rem;
   --pico-form-element-spacing-horizontal: 0.75rem;
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
 }
 
 /* Pico's `.outline`/`.contrast` button variants aren't included in the vendored
@@ -538,7 +552,7 @@ button.outline.contrast:is(:hover, :focus) {
 
 .test-result {
   margin: 0.75rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--lg-font-md);
 }
 
 .test-result--success {
@@ -592,7 +606,7 @@ button.outline.contrast:is(:hover, :focus) {
 }
 
 .app-icon-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--lg-neutral-hover-background-color);
 }
 
 .app-icon-btn--github {
@@ -601,4 +615,23 @@ button.outline.contrast:is(:hover, :focus) {
 
 .app-icon-btn--github:hover {
   color: var(--pico-color);
+}
+
+/* === Narrow viewports === */
+/* Below ~768px the fixed 15rem sidebar squeezes the content column, so stack the shell:
+   the sidebar drops under the topbar as a full-width nav block and the main padding tightens. */
+@media (max-width: 48rem) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar,
+  .app-brand {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .app-main {
+    padding: 1.5rem 1.25rem;
+  }
 }
