@@ -48,7 +48,8 @@ slice folder in whichever module owns them, not a new generic layer. Tests mirro
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `test:`, ...).
-- Work happens on feature branches with a PR into `main` — don't push directly to `main`.
+- New features go on a feature branch with a PR into `main` — don't push those directly to
+  `main`. Bug fixes (`fix:` commits) can be committed and pushed straight to `main`.
 - Python style, Ruff config, and env var conventions: see `.claudin/rules/python-conventions.md`
   (loads automatically when touching `modules/**/*.py`).
 - Clean Code / SOLID guidance: see `.claudin/rules/clean-code-solid.md` (same trigger).
