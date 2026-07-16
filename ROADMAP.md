@@ -29,10 +29,12 @@ ad-hoc plumbing decided along the way.*
   (header/sidebar) and a shared page template/design system, plus the convention for how
   HTMX partial responses relate to full-page templates — established before any feature page
   exists.
-- [ ] **Settings** — Config foundation: formalize the split between bootstrap config (env vars,
-  `shared_kernel/config/settings.py`) and future runtime-editable settings (DB-backed, landing in
-  0.4.0), so that later slice isn't retrofitted onto whatever `config.py` happens to look
-  like by then.
+- [x] **Settings** — Config foundation: formalize the split between bootstrap config (env vars,
+  `shared_kernel/config/settings.py`) and runtime-editable settings persisted to the existing
+  `config.yaml` file (extending `AppConfigFile` in `shared_kernel/config/config_file.py`, already
+  written to `settings.data_dir` — `/config` in the Docker image) instead of the database, so
+  the 0.4.0 Settings page reads and rewrites one file instead of retrofitting onto whatever
+  `config_file.py` looks like by then.
 - [ ] **Automation & scheduling** — Formalize the shared `APScheduler` instance/job-registration
   convention (already used by the sync job), including named queues and a
   retry/concurrency-dedup policy per job type, so later scheduled work (0.9.0 onward)
