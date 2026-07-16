@@ -18,11 +18,11 @@ svg.lucide {
 /* === Theme: neutral graphite palette, muted gold accent === */
 [data-theme="dark"] {
   --pico-background-color: #202020;
-  --pico-color: #e4e4e7;
-  --pico-h1-color: #f5f5f6;
-  --pico-h2-color: #eeeef0;
-  --pico-muted-color: #8b8d97;
-  --pico-muted-border-color: rgba(255, 255, 255, 0.08);
+  --pico-color: #b3b3b3;
+  --pico-h1-color: #b3b3b3;
+  --pico-h2-color: #b3b3b3;
+  --pico-muted-color: #b3b3b3;
+  --pico-muted-border-color: #9a9a9a;
   --pico-primary: #c9974f;
   --pico-primary-background: #a97c3e;
   --pico-primary-border: var(--pico-primary-background);
@@ -34,7 +34,7 @@ svg.lucide {
   --pico-primary-focus: rgba(201, 151, 79, 0.3);
   --pico-primary-inverse: #17130a;
   --pico-card-background-color: #16181c;
-  --pico-card-border-color: rgba(255, 255, 255, 0.08);
+  --pico-card-border-color: #9a9a9a;
 
   --pico-form-element-background-color: #333333;
   --pico-form-element-border-color: #9a9a9a;
@@ -195,7 +195,7 @@ body {
 }
 
 .app-sidebar li a:hover {
-  color: var(--pico-color);
+  color: var(--pico-primary-hover);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
