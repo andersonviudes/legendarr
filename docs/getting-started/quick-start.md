@@ -18,8 +18,7 @@
 2. **Start legendarr** (see [Installation](installation.md) for Docker or source options).
 
 3. **Open the dashboard** at `http://localhost:8000`. It shows how many language profiles are
-   configured and when the next library sync will run (auto-refreshing every 15 seconds), and
-   links to:
+   configured (auto-refreshing every 15 seconds), and links to:
     - `/media/movies` and `/media/series` — the media library synced from Radarr and Sonarr
     - `/settings/` — configured language profiles
 

@@ -10,9 +10,7 @@ templates = get_templates("dashboard")
 
 
 @router.get("/")
-async def show_dashboard(
-    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
-):
+async def show_dashboard(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     profiles = await service.list_language_profiles(client)
 
     return templates.TemplateResponse(

@@ -88,6 +88,17 @@ scheduler` right after `scheduler.start()`; the router reads `request.app.state.
 and subtracts `datetime.now(tz)` to get whole minutes remaining. `TestClient(create_app())` used
 `with ... as client:` already (runs lifespan for real), so no test mocking was needed.
 
+**Update (rebased onto `main` after the bootstrap-module split, PR #5):** the scheduler/next-sync
+and sync-interval numbers described above no longer exist in `dashboard/router.py`. The bootstrap
+split (`feat: add bootstrap module, split backend API from web`) moved DB/scheduler access out of
+`legendarr_web` entirely — the web module now only reaches the backend through
+`legendarr_web.shared_kernel.backend_client` (an HTTP call to the API app), which has no endpoint
+exposing scheduler state. `dashboard/router.py` was rewritten during the rebase to fetch
+`profile_count` the same way `/settings/` does (via `service.list_language_profiles(client)`), and
+`sync_interval_minutes`/`next_sync_minutes` are passed as `None` (the template already renders
+`—` for `None`). Restoring the live sync countdown would need a small backend API endpoint
+exposing scheduler status first — that's a follow-up, not done in PR #5.
+
 "Real time" is delivered with **htmx** (mentioned in the architecture docs as the intended stack
 but never actually vendored or used until now) — vendored at `static/vendor/htmx.min.js`
 (`https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js`, same vendor-don't-CDN reasoning as

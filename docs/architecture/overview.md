@@ -32,7 +32,7 @@ modules/backend/src/legendarr_backend/
 └── shared_kernel/           # config, database, logging — genuinely cross-slice code
 
 modules/web/src/legendarr_web/
-├── dashboard/               # home page — stats + scheduler status, polls via htmx
+├── dashboard/               # home page — profile-count stats, polls via htmx
 ├── media_library/           # /media/movies, /media/series routes
 ├── language_profiles/       # /settings/ route
 ├── history/                 # /history/ route
