@@ -11,7 +11,8 @@ step this follows). The framework-only step (Pico v2 classless build vendored at
 step added the actual nav shell, which that plan explicitly deferred as "a separate follow-up
 task".
 
-**Layout** (`shared_kernel/templates/base.html`): a persistent left sidebar (`<aside
+**Layout** (`templates/base.html`, promoted out of `shared_kernel/` to the module's top
+level 2026-07-16, see `legendarr-architecture.md`): a persistent left sidebar (`<aside
 class="app-sidebar">` — brand link + `<nav>`) and a right-side `<main class="app-main">`
 content area, styled in `static/styles.css`. Matches the requested Sonarr/Radarr convention:
 sidebar always visible, active item highlighted via `aria-current="page"` (computed inline in
@@ -92,7 +93,7 @@ and subtracts `datetime.now(tz)` to get whole minutes remaining. `TestClient(cre
 and sync-interval numbers described above no longer exist in `dashboard/router.py`. The bootstrap
 split (`feat: add bootstrap module, split backend API from web`) moved DB/scheduler access out of
 `legendarr_web` entirely — the web module now only reaches the backend through
-`legendarr_web.shared_kernel.backend_client.client` (an HTTP call to the API app), which has no endpoint
+`legendarr_web.backend_client.client` (an HTTP call to the API app), which has no endpoint
 exposing scheduler state. `dashboard/router.py` was rewritten during the rebase to fetch
 `profile_count` the same way `/settings/` does (via `service.list_language_profiles(client)`), and
 `sync_interval_minutes`/`next_sync_minutes` are passed as `None` (the template already renders

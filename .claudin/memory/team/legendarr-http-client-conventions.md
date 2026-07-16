@@ -1,6 +1,6 @@
 ---
 name: legendarr shared HTTP client conventions
-description: ProviderHttpClient in shared_kernel/http_client.py — the required base for any new outbound HTTP integration (Radarr/Sonarr today, subtitle-provider/translation-API clients later)
+description: ProviderHttpClient in http_client/client.py — the required base for any new outbound HTTP integration (Radarr/Sonarr today, subtitle-provider/translation-API clients later)
 type: project
 ---
 
@@ -9,9 +9,9 @@ client conventions — timeout/retry/error handling). `RadarrClient`/`SonarrClie
 construct their own `httpx.Client` inline with a hardcoded `timeout=10.0` and no retry/error
 wrapping (`response.raise_for_status()` let raw `httpx.HTTPStatusError` escape).
 
-**What exists:** `legendarr_backend/shared_kernel/http_client/client.py` (moved into its own
-`http_client/` subject folder 2026-07-16, see `legendarr-architecture.md` for the full
-shared_kernel reorg) — `ProviderHttpClient(provider,
+**What exists:** `legendarr_backend/http_client/client.py` (moved into its own `http_client/`
+subject folder 2026-07-16, promoted out of `shared_kernel/` to the module's top level in a
+second reorg the same day — see `legendarr-architecture.md`) — `ProviderHttpClient(provider,
 base_url, headers=None)` wraps an `httpx.Client` with `DEFAULT_TIMEOUT = 10.0` and
 `httpx.HTTPTransport(retries=DEFAULT_RETRIES)` (`DEFAULT_RETRIES = 2`, retries connection-level
 failures only — httpx's transport-level retry doesn't retry on HTTP status codes). Its
@@ -21,19 +21,20 @@ message, instead of leaking raw httpx exceptions to callers. `RadarrClient`/`Son
 just build a `ProviderHttpClient("Radarr"/"Sonarr", base_url, headers={...})` and call
 `get_json(...)`.
 
-**Why shared_kernel and not media_providers:** the roadmap bullet explicitly says this is meant
-for "later subtitle-provider and translation-API clients" too, which live in different slices
-(`subtitle_acquisition`, `subtitle_translation`) — putting it inside `media_providers/` would
-mean those slices reaching into an unrelated slice's internals, which the Dependency Inversion
-rule in `.claudin/rules/clean-code-solid.md` forbids. `shared_kernel/` is the only place both
-current and future integrations can import from.
+**Why a shared top-level folder and not media_library:** the roadmap bullet explicitly says
+this is meant for "later subtitle-provider and translation-API clients" too, which live in
+different slices (`subtitle_acquisition`, `subtitle_translation`) — putting it inside
+`media_library/` would mean those slices reaching into an unrelated slice's internals, which
+the Dependency Inversion rule in `.claudin/rules/clean-code-solid.md` forbids. `http_client/`
+(a top-level folder outside any domain slice, promoted out of `shared_kernel/` 2026-07-16) is
+the only place both current and future integrations can import from.
 
 **How to apply:** any new outbound integration to an external HTTP API (a subtitle provider,
 DeepL/OpenAI-style translation API, etc.) should build a `ProviderHttpClient` instead of
 constructing `httpx.Client` directly, and only add `post_json`/other verbs to
 `http_client.py` if/when a real caller needs them (YAGNI — `get_json` was the only verb an
 actual caller needed as of 2026-07-16). Tests for it use `httpx.MockTransport` (built into
-`httpx`, no extra dependency) — see `modules/backend/tests/shared_kernel/test_http_client.py`
+`httpx`, no extra dependency) — see `modules/backend/tests/http_client/test_http_client.py`
 for the pattern (swap `client._client` for one built with `MockTransport`), and
-`test_radarr_client.py`/`test_sonarr_client.py` for the monkeypatch-`get_json` pattern used to
-test callers without hitting the network.
+`modules/backend/tests/media_library/providers/test_radarr_client.py`/`test_sonarr_client.py`
+for the monkeypatch-`get_json` pattern used to test callers without hitting the network.

@@ -1,7 +1,7 @@
 from legendarr_backend.bootstrap import _build_media_clients
-from legendarr_backend.media_providers.radarr_client import RadarrClient
-from legendarr_backend.media_providers.sonarr_client import SonarrClient
-from legendarr_backend.shared_kernel.config.config_file import AppConfigFile
+from legendarr_backend.config.config_file import AppConfigFile
+from legendarr_backend.media_library.providers.radarr_client import RadarrClient
+from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
 
 
 def test_build_media_clients_constructs_configured_clients():

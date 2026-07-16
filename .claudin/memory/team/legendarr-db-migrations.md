@@ -11,7 +11,8 @@ Implemented the ROADMAP.md 0.1.0 "Database infrastructure" item on branch `feat/
 **Layout:**
 - `modules/backend/alembic.ini` + `modules/backend/db/migrations/{env.py,script.py.mako,versions/}`
   — module-scoped (backend owns the DB), not a top-level `db/` at the repo root.
-- `modules/backend/src/legendarr_backend/shared_kernel/config/config_file.py` — new
+- `modules/backend/src/legendarr_backend/config/config_file.py` (promoted out of
+  `shared_kernel/` to the module's top level 2026-07-16, see `legendarr-architecture.md`) —
   `AppConfigFile`/`load_or_create_config_file()`. On first run, writes
   `{LEGENDARR_DATA_DIR}/config.yaml` (e.g. `/config/config.yaml` in Docker) with
   `database_url` defaulted from `Settings.resolved_database_url`. From then on, `config.yaml`

@@ -1,7 +1,7 @@
 import yaml
 from pydantic import BaseModel
 
-from legendarr_backend.shared_kernel.config.settings import Settings
+from legendarr_backend.config.settings import Settings
 
 
 class AppConfigFile(BaseModel):

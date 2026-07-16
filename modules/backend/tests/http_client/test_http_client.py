@@ -1,6 +1,6 @@
 import httpx
 import pytest
-from legendarr_backend.shared_kernel.http_client.client import (
+from legendarr_backend.http_client.client import (
     ProviderClientError,
     ProviderHttpClient,
 )

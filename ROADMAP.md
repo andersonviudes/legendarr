@@ -9,7 +9,7 @@ unrelated features.
 This is ordered purely by dependency and value: each `0.x.0` below
 is the earliest point a coherent, demoable use case exists — not a grab-bag of tasks, and not
 constrained by anything already shipped. Every item is tagged with the subject it belongs to
-(mirroring the project's slice architecture — `media_providers`, `subtitle_discovery`,
+(mirroring the project's slice architecture — `media_library`, `subtitle_discovery`,
 `subtitle_translation`, `language_profiles`, plus the acquisition, settings, and operations
 areas still to come), so items for the same subject can still be traced across versions.
 `1.0.0` is reached once every use case below works together and the image is published. Items
@@ -30,8 +30,8 @@ ad-hoc plumbing decided along the way.*
   HTMX partial responses relate to full-page templates — established before any feature page
   exists.
 - [x] **Settings** — Config foundation: formalize the split between bootstrap config (env vars,
-  `shared_kernel/config/settings.py`) and runtime-editable settings persisted to the existing
-  `config.yaml` file (extending `AppConfigFile` in `shared_kernel/config/config_file.py`, already
+  `config/settings.py`) and runtime-editable settings persisted to the existing
+  `config.yaml` file (extending `AppConfigFile` in `config/config_file.py`, already
   written to `settings.data_dir` — `/config` in the Docker image) instead of the database, so
   the 0.4.0 Settings page reads and rewrites one file instead of retrofitting onto whatever
   `config_file.py` looks like by then.
@@ -44,7 +44,7 @@ ad-hoc plumbing decided along the way.*
   translation-API clients follow one shape instead of each being bespoke.
 - [ ] Shared testing conventions (fixtures, test database setup) across
   `modules/<module>/tests/<slice>/`, and structured logging conventions in
-  `shared_kernel/logging/setup.py` for how slices report errors up to the orchestrators built
+  `logging/setup.py` for how slices report errors up to the orchestrators built
   starting 0.2.0.
 
 ## 0.2.0 — Translate one already-downloaded subtitle, end to end, in the real UI

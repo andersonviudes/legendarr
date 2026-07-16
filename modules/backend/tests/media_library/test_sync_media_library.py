@@ -1,4 +1,4 @@
-from legendarr_backend.media_providers.sync_media_library import sync_media_library
+from legendarr_backend.media_library.sync_media_library import sync_media_library
 
 
 def test_sync_media_library_with_no_providers_returns_zero_counts():

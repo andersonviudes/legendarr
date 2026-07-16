@@ -6,7 +6,7 @@ named after the template it belongs to (e.g. `dashboard.js` for
 `dashboard/templates/dashboard.html`), served from `/static/js/<page>.js`.
 
 A page that needs JS loads it by overriding the `scripts` block from
-`shared_kernel/templates/base.html`:
+`templates/base.html`:
 
 ```jinja
 {% block scripts %}

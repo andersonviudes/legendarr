@@ -1,5 +1,5 @@
-from legendarr_backend.media_providers.base import MediaItem
-from legendarr_backend.shared_kernel.http_client.client import ProviderHttpClient
+from legendarr_backend.http_client.client import ProviderHttpClient
+from legendarr_backend.media_library.providers.base import MediaItem
 
 
 class RadarrClient:
