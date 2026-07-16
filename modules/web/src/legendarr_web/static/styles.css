@@ -6,7 +6,7 @@
    This app's `.app-main` has no such container, so on a wide viewport that scaling just
    inflates every unstyled Pico element (raw form labels/inputs in particular) — pin it. */
 :root {
-  --pico-font-size: 100%;
+  --pico-font-size: 17px;
 }
 
 svg.lucide {
