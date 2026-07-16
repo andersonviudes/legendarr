@@ -371,6 +371,19 @@ body {
   border-color: var(--pico-primary);
 }
 
+.test-result {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.test-result--success {
+  color: var(--pico-ins-color);
+}
+
+.test-result--error {
+  color: var(--pico-del-color);
+}
+
 /* === Sidebar footer: theme toggle + project links === */
 .app-sidebar-footer {
   display: flex;

@@ -3,6 +3,10 @@
 {% block content %}
 <h1>{{ icon("settings") }} {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server</h1>
 
+{% if error %}
+<p class="test-result test-result--error">{{ error }}</p>
+{% endif %}
+
 <form
   method="post"
   action="{{ '/settings/arr-services/' ~ service.id if service else '/settings/arr-services/' }}"
@@ -42,7 +46,10 @@
     >
 
     <label for="api_key">API Key</label>
-    <input type="text" id="api_key" name="api_key" value="{{ service.api_key if service else '' }}" required>
+    <input
+      type="password" id="api_key" name="api_key" value="{{ service.api_key if service else '' }}"
+      autocomplete="off" required
+    >
 
     <label>
       <input type="checkbox" name="use_ssl" {% if service and service.use_ssl %}checked{% endif %}>

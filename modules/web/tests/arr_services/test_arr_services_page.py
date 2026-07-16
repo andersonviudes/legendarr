@@ -82,3 +82,59 @@ def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend
 
     assert response.status_code == 200
     assert "Connection successful" in response.text
+
+
+def _missing_service_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/arr-services/1":
+        return httpx.Response(404, json={"detail": "Arr service not found"})
+    return httpx.Response(200, json=[])
+
+
+def test_edit_missing_service_redirects_to_list(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_missing_service_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/arr-services/1/edit")
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/arr-services/"
+
+
+def test_delete_missing_service_redirects_to_list(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_missing_service_handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/arr-services/1/delete")
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/arr-services/"
+
+
+def test_create_shows_error_on_duplicate_name(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/":
+            return httpx.Response(
+                409, json={"detail": "An arr service with this name already exists"}
+            )
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/arr-services/",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+            },
+        )
+
+    assert response.status_code == 409
+    assert "already exists" in response.text

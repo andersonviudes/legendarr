@@ -43,6 +43,16 @@ def test_update_arr_service_replaces_fields(in_memory_session):
     assert updated.port == 7879
 
 
+def test_update_arr_service_ignores_service_type_change(in_memory_session):
+    service = create_arr_service(in_memory_session, _radarr_input())
+
+    updated = update_arr_service(
+        in_memory_session, service.id, _radarr_input(service_type="sonarr")
+    )
+
+    assert updated.service_type == "radarr"
+
+
 def test_update_arr_service_returns_none_when_missing(in_memory_session):
     assert update_arr_service(in_memory_session, 1, _radarr_input()) is None
 

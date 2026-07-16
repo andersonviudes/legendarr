@@ -12,6 +12,14 @@ templates = get_templates("arr_services")
 DEFAULT_PORTS = {"radarr": 7878, "sonarr": 8989}
 
 
+def _error_detail(exc: httpx.HTTPStatusError) -> str:
+    """Pull the backend's `detail` message out of an HTTPStatusError's JSON body."""
+    try:
+        return exc.response.json().get("detail", "Something went wrong. Please try again.")
+    except ValueError:
+        return "Something went wrong. Please try again."
+
+
 async def _arr_service_form(
     service_type: str = Form(...),
     name: str = Form(...),
@@ -68,7 +76,12 @@ async def new_arr_service(request: Request, service_type: str):
 async def edit_arr_service(
     request: Request, service_id: int, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
-    existing = await service.get_arr_service(client, service_id)
+    try:
+        existing = await service.get_arr_service(client, service_id)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
+        return RedirectResponse("/settings/arr-services/", status_code=303)
     return templates.TemplateResponse(
         request,
         "arr_service_form.html",
@@ -78,10 +91,26 @@ async def edit_arr_service(
 
 @router.post("/")
 async def create_arr_service(
+    request: Request,
     data: dict = Depends(_arr_service_form),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    await service.create_arr_service(client, data)
+    try:
+        await service.create_arr_service(client, data)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise
+        return templates.TemplateResponse(
+            request,
+            "arr_service_form.html",
+            {
+                "service": data,
+                "service_type": data["service_type"],
+                "default_port": None,
+                "error": _error_detail(exc),
+            },
+            status_code=exc.response.status_code,
+        )
     return RedirectResponse("/settings/arr-services/", status_code=303)
 
 
@@ -97,11 +126,29 @@ async def test_arr_service(
 
 @router.post("/{service_id}")
 async def update_arr_service(
+    request: Request,
     service_id: int,
     data: dict = Depends(_arr_service_form),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    await service.update_arr_service(client, service_id, data)
+    try:
+        await service.update_arr_service(client, service_id, data)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            return RedirectResponse("/settings/arr-services/", status_code=303)
+        if exc.response.status_code >= 500:
+            raise
+        return templates.TemplateResponse(
+            request,
+            "arr_service_form.html",
+            {
+                "service": {**data, "id": service_id},
+                "service_type": data["service_type"],
+                "default_port": None,
+                "error": _error_detail(exc),
+            },
+            status_code=exc.response.status_code,
+        )
     return RedirectResponse("/settings/arr-services/", status_code=303)
 
 
@@ -109,5 +156,9 @@ async def update_arr_service(
 async def delete_arr_service(
     service_id: int, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
-    await service.delete_arr_service(client, service_id)
+    try:
+        await service.delete_arr_service(client, service_id)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
     return RedirectResponse("/settings/arr-services/", status_code=303)

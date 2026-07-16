@@ -26,7 +26,8 @@ def update_arr_service(
     service = session.get(ArrService, service_id)
     if service is None:
         return None
-    for field, value in data.model_dump().items():
+    # service_type is fixed at creation — ignore whatever the caller sent for it.
+    for field, value in data.model_dump(exclude={"service_type"}).items():
         setattr(service, field, value)
     session.add(service)
     session.commit()

@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from legendarr_backend.arr_services.client_factory import build_client
@@ -12,7 +13,7 @@ from legendarr_backend.arr_services.manage_arr_service import (
     update_arr_service,
 )
 from legendarr_backend.arr_services.models import ArrService
-from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.arr_services.schemas import ArrServiceInput, ArrServiceSummary
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.http_client.client import ProviderClientError
 
@@ -24,14 +25,20 @@ def _get_session() -> Iterator[Session]:
         yield session
 
 
-@router.get("/", response_model=list[ArrService])
+@router.get("/", response_model=list[ArrServiceSummary])
 def list_services(session: Session = Depends(_get_session)) -> list[ArrService]:
     return list_arr_services(session)
 
 
 @router.post("/", response_model=ArrService, status_code=201)
 def create_service(data: ArrServiceInput, session: Session = Depends(_get_session)) -> ArrService:
-    return create_arr_service(session, data)
+    try:
+        return create_arr_service(session, data)
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=409, detail="An arr service with this name already exists"
+        ) from exc
 
 
 @router.get("/{service_id}", response_model=ArrService)
@@ -46,7 +53,13 @@ def get_service(service_id: int, session: Session = Depends(_get_session)) -> Ar
 def update_service(
     service_id: int, data: ArrServiceInput, session: Session = Depends(_get_session)
 ) -> ArrService:
-    service = update_arr_service(session, service_id, data)
+    try:
+        service = update_arr_service(session, service_id, data)
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=409, detail="An arr service with this name already exists"
+        ) from exc
     if service is None:
         raise HTTPException(status_code=404, detail="Arr service not found")
     return service

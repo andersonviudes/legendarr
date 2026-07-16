@@ -57,6 +57,42 @@ def test_get_update_delete_return_404_when_missing(isolated_database):
         assert client.delete("/arr-services/1").status_code == 404
 
 
+def test_create_returns_409_on_duplicate_name(isolated_database):
+    with TestClient(create_api_app()) as client:
+        assert client.post("/arr-services/", json=_payload()).status_code == 201
+
+        response = client.post("/arr-services/", json=_payload())
+
+        assert response.status_code == 409
+
+
+def test_update_returns_409_on_duplicate_name(isolated_database):
+    with TestClient(create_api_app()) as client:
+        client.post("/arr-services/", json=_payload())
+        other = client.post("/arr-services/", json=_payload(name="sonarr", service_type="sonarr"))
+        other_id = other.json()["id"]
+
+        response = client.put(f"/arr-services/{other_id}", json=_payload(name="radarr"))
+
+        assert response.status_code == 409
+
+
+def test_create_returns_422_on_invalid_port(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/arr-services/", json=_payload(port=-1))
+
+    assert response.status_code == 422
+
+
+def test_list_services_omits_api_key(isolated_database):
+    with TestClient(create_api_app()) as client:
+        client.post("/arr-services/", json=_payload())
+
+        response = client.get("/arr-services/")
+
+    assert "api_key" not in response.json()[0]
+
+
 def test_test_connection_returns_success(isolated_database, monkeypatch):
     monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"version": "1.0"})
 

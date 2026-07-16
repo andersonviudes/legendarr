@@ -5,6 +5,9 @@
 
 <section>
   <h2>{{ icon("clapperboard") }} Radarr</h2>
+  {% if not radarr_services %}
+  <p>No Radarr server configured yet.</p>
+  {% endif %}
   <div class="service-grid">
     {% for arr_service in radarr_services %}
     <article class="service-card">
@@ -34,6 +37,9 @@
 
 <section>
   <h2>{{ icon("tv") }} Sonarr</h2>
+  {% if not sonarr_services %}
+  <p>No Sonarr server configured yet.</p>
+  {% endif %}
   <div class="service-grid">
     {% for arr_service in sonarr_services %}
     <article class="service-card">
