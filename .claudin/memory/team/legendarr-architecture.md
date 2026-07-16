@@ -65,6 +65,29 @@ would be a stutter) — same convention domain slices already use (e.g.
 after the folder). `logging/setup.py` (not `logging.py`) also sidesteps shadowing the
 stdlib `logging` module it imports internally.
 
+**2026-07-16, post-reorg cleanup (same PR):** a 3-agent audit of the reorg above (stale-path
+sweep, architecture-compliance check, orphaned-files check) found no leftover `shared_kernel`/
+`media_providers` references anywhere, but surfaced three PRE-EXISTING gaps (not caused by the
+reorg — confirmed identical on `main` before it) that were fixed in the same PR while at it:
+1. `modules/web/tests/` was flat (`test_dashboard.py` etc. directly under `tests/`), not
+   mirroring `legendarr_web`'s slice folders per AGENTS.md's "`tests/<slice>/test_*.py`" rule
+   — moved into `tests/dashboard/`, `tests/history/`, `tests/language_profiles/`,
+   `tests/media_library/` (holds both `test_movies_page.py` and `test_series_page.py`, since
+   both routes live in the one `media_library/router.py`), `tests/system/`. `conftest.py`
+   stays at `tests/` root (session-scoped autouse fixture, applies to the whole module, same
+   placement as `modules/bootstrap/tests/conftest.py`).
+2. `test_dashboard.py`/`test_settings_page.py` imported `legendarr_backend.api` directly to
+   spin up an in-process ASGI backend (`httpx.ASGITransport`) for the `get_backend_client`
+   override — a real violation of "`legendarr_web` never imports `legendarr_backend`" (this
+   predates the reorg; the reorg only updated the import's path, from
+   `legendarr_backend.shared_kernel.api.app`). Fixed by swapping `ASGITransport` for
+   `httpx.MockTransport` returning a canned `[]` JSON response for `GET /language-profiles/`,
+   same pattern already used in `modules/backend/tests/http_client/test_http_client.py`. Web
+   tests now have zero imports of `legendarr_backend`.
+3. `logging/setup.py` had no test at all (true both before and after the reorg) — added
+   `modules/backend/tests/logging/test_setup.py`, monkeypatching `logging.basicConfig` to
+   assert `configure_logging()`'s `level`/`stream` kwargs.
+
 **Tooling:** `uv` (workspace root `pyproject.toml` is virtual, `tool.uv.package = false`),
 `ruff` for lint+format, `pytest`, SQLite for persistence. Single `Dockerfile` builds both
 modules into one image (must pass `--all-packages` to `uv sync` in the Dockerfile — omitting
