@@ -1,5 +1,5 @@
-from legendarr_backend.shared_kernel.config.config_file import load_or_create_config_file
-from legendarr_backend.shared_kernel.config.settings import Settings
+from legendarr_backend.config.config_file import load_or_create_config_file
+from legendarr_backend.config.settings import Settings
 
 
 def test_creates_config_file_with_env_derived_defaults(tmp_path):

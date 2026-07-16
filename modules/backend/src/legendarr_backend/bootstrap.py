@@ -2,16 +2,16 @@ import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from legendarr_backend.media_providers.base import MediaLibraryClient
-from legendarr_backend.media_providers.radarr_client import RadarrClient
-from legendarr_backend.media_providers.sonarr_client import SonarrClient
-from legendarr_backend.media_providers.sync_media_library import sync_media_library
-from legendarr_backend.shared_kernel.config.config_file import (
+from legendarr_backend.config.config_file import (
     AppConfigFile,
     load_or_create_config_file,
 )
-from legendarr_backend.shared_kernel.config.settings import get_settings
-from legendarr_backend.shared_kernel.database.engine import init_db
+from legendarr_backend.config.settings import get_settings
+from legendarr_backend.database.engine import init_db
+from legendarr_backend.media_library.providers.base import MediaLibraryClient
+from legendarr_backend.media_library.providers.radarr_client import RadarrClient
+from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
+from legendarr_backend.media_library.sync_media_library import sync_media_library
 
 logger = logging.getLogger(__name__)
 

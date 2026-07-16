@@ -1,5 +1,5 @@
-from legendarr_backend.media_providers.sonarr_client import SonarrClient
-from legendarr_backend.shared_kernel.http_client.client import ProviderHttpClient
+from legendarr_backend.http_client.client import ProviderHttpClient
+from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
 
 
 def test_list_items_maps_response_to_media_items(monkeypatch):

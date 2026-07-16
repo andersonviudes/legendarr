@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
-from legendarr_backend.shared_kernel.api.app import create_api_app
-from legendarr_backend.shared_kernel.config.settings import Settings
-from legendarr_backend.shared_kernel.database import engine as database
+from legendarr_backend.api import create_api_app
+from legendarr_backend.config.settings import Settings
+from legendarr_backend.database import engine as database
 
 
 def test_list_profiles_returns_empty_list_on_fresh_db(tmp_path, monkeypatch):

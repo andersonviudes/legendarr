@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
-TEMPLATES_ROOT = Path(__file__).resolve().parent.parent.parent
+TEMPLATES_ROOT = Path(__file__).resolve().parent.parent
 ICONS_DIR = TEMPLATES_ROOT / "static" / "icons"
 
 
@@ -17,7 +17,7 @@ def get_templates(feature_dir: str) -> Jinja2Templates:
 
     Keeps each VSA slice self-contained instead of sharing one global
     templates/ directory, while still resolving `{% extends "base.html" %}`
-    against the shared layout in this `shared_kernel/templates/` package.
+    against the shared layout in this top-level `templates/` package.
     """
     templates = Jinja2Templates(
         directory=[

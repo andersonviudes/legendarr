@@ -1,9 +1,9 @@
 from logging.config import fileConfig
 
 from alembic import context
+from legendarr_backend.config.config_file import load_or_create_config_file
+from legendarr_backend.config.settings import get_settings
 from legendarr_backend.language_profiles import models as language_profiles_models  # noqa: F401
-from legendarr_backend.shared_kernel.config.config_file import load_or_create_config_file
-from legendarr_backend.shared_kernel.config.settings import get_settings
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 

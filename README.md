@@ -20,10 +20,10 @@ Docker image, one `uv.lock`):
 
 Inside each module, the code is organized using **Screaming Architecture + Vertical
 Slice Architecture**: top-level folders are named after business capabilities
-(`media_providers`, `subtitle_discovery`, `subtitle_translation`, `language_profiles`, ...),
+(`media_library`, `subtitle_discovery`, `subtitle_translation`, `language_profiles`, ...),
 not technical layers. Each slice contains what it needs to work end to end; genuinely
-shared code lives in `shared_kernel/`, itself split into subject subfolders (`config/`,
-`database/`, `logging/`, `templates/`, ...) the same way.
+shared code lives in its own top-level folder (`config/`, `database/`, `logging/`,
+`templates/`, ...), a sibling of the business-domain folders.
 
 ## Running locally
 

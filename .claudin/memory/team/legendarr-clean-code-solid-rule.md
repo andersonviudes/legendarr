@@ -11,7 +11,9 @@ Architecture + Vertical Slice layout.
 Ran an analysis against it and applied the clear-cut, low-risk fixes (codebase was only
 ~430 lines at the time, so most "violations" were structural precursors, not full anti-patterns):
 
-- `modules/backend/src/legendarr_backend/media_providers/base.py` (new) — `MediaItem` dataclass
+- `modules/backend/src/legendarr_backend/media_library/providers/base.py` (`media_providers/`
+  renamed to `media_library/providers/` in the 2026-07-16 domain-driven-slices reorg, see
+  `legendarr-architecture.md`) — `MediaItem` dataclass
   + `MediaLibraryClient` Protocol (`list_items()`, `close()`) shared by `RadarrClient` and
   `SonarrClient`, which previously had no common contract despite being structurally identical
   (`MediaFile`/`SeriesFile` duplicated dataclasses, `list_movies()`/`list_series()` diverging
@@ -28,7 +30,7 @@ Ran an analysis against it and applied the clear-cut, low-risk fixes (codebase w
 
 Deliberately **not** changed (would be over-engineering or would fight existing, documented
 decisions):
-- `shared_kernel/database/engine.py`'s manual `_engine` global cache — tests
+- `database/engine.py`'s manual `_engine` global cache — tests
   (`test_database.py`, `test_router.py`) monkeypatch `database._engine` directly; see
   `legendarr-db-migrations.md` for the documented caching gotcha. Switching to `@lru_cache`
   would require rewriting those tests for a cosmetic consistency gain.

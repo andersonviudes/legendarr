@@ -14,13 +14,13 @@ to other subtitle tools by name.
 2026-07-16, PR #2 "feat/bootstrap-module"):
 - `modules/backend` (package `legendarr_backend`) — domain logic: Radarr/Sonarr clients,
   subtitle discovery/translation, language profiles (SQLModel + SQLite), APScheduler-based
-  periodic sync, **and now an HTTP API** (`shared_kernel/api/app.py::create_api_app()`),
+  periodic sync, **and now an HTTP API** (`api.py::create_api_app()`),
   currently exposing only `/language-profiles/` — the only slice with existing read/write
   functions to wrap. No auth on it yet.
 - `modules/web` (package `legendarr_web`) — FastAPI + Jinja2/HTMX UI, no separate JS
   frontend. As of 2026-07-16 it **no longer imports `legendarr_backend` at all** — its
   routers call the backend over real loopback HTTP via `httpx`
-  (`shared_kernel/backend_client/client.py`, base URL from `LEGENDARR_BACKEND_API_URL`, default
+  (`backend_client/client.py`, base URL from `LEGENDARR_BACKEND_API_URL`, default
   `http://127.0.0.1:8000/api`), not an in-process ASGI shortcut.
 - `modules/bootstrap` (package `legendarr_bootstrap`, added 2026-07-16) — the entrypoint
   that brings the other two up together: one FastAPI instance mounting the backend's API app
@@ -29,23 +29,41 @@ to other subtitle tools by name.
   role — still one process, one port.
 
 Both modules follow **Screaming Architecture + Vertical Slice Architecture**: top-level
-folders inside each module are named after business capabilities (`media_providers`,
+folders inside each module are named after business capabilities (`media_library`,
 `subtitle_discovery`, `subtitle_translation`, `language_profiles`, plus web's `dashboard`,
-`media_library`), not technical layers. Cross-slice code lives in each module's
-`shared_kernel/` — as of 2026-07-16 (same day as the http_client convention below)
-`shared_kernel/` itself is no longer a flat bag of files, it's divided into subject
-subfolders the same way top-level slices are: backend has `config/` (`settings.py` env
-vars + `config_file.py` on-disk `config.yaml`), `database/` (`engine.py`), `api/`
-(`app.py`), `http_client/` (`client.py`), `logging/` (`setup.py`); web has `config/`
-(`settings.py`), `backend_client/` (`client.py`), `templates/` (`loader.py` +
-`base.html`, merged from a `templates.py` file that used to sit *next to* the
-`templates/` asset dir — that split was itself part of the confusion this reorg fixed).
-Every file inside a subject folder is named for its *concern* (`client.py`, `app.py`,
-`settings.py`, `engine.py`), never repeating the folder's own name
-(`http_client/http_client.py` would be a stutter) — same convention slices already use
-(e.g. `language_profiles/manage_language_profile.py`, not `language_profiles/router.py`
-named after the folder). `shared_kernel/logging/setup.py` (not `logging.py`) also sidesteps
-shadowing the stdlib `logging` module it imports internally.
+`media_library`), not technical layers. A domain folder can hold its own **subdomains** —
+`media_library/providers/` (Radarr/Sonarr technical adapters) and
+`subtitle_translation/providers/` (translation-provider adapters) separate a domain's
+business logic from the raw external-API clients it calls.
+
+**2026-07-16, reorg #2 (domain-driven slices, PR `refactor/domain-driven-slices`):**
+`shared_kernel/` was eliminated as a wrapper folder in both modules — each of its subject
+subfolders was promoted to the module's top level, as a sibling of the business-domain
+folders, instead of nested under one "shared" umbrella: backend now has top-level `config/`
+(`settings.py` env vars + `config_file.py` on-disk `config.yaml`), `database/` (`engine.py`),
+`http_client/` (`client.py`), `logging/` (`setup.py`), and `api.py` (was
+`shared_kernel/api/app.py`, now a single top-level module file mirroring
+`legendarr_web/app.py`'s shape — it imports every domain's router directly, so it's no
+longer "shared code reaching into a domain slice"); web has top-level `config/`
+(`settings.py`), `backend_client/` (`client.py`), `templates/` (`loader.py` + `base.html`).
+Also renamed backend's `media_providers/` → `media_library/` to match web's naming for the
+same business capability, splitting it into `media_library/sync_media_library.py` (business
+logic) + `media_library/providers/{base,radarr_client,sonarr_client}.py` (technical
+adapters, mirroring `subtitle_translation/providers/`). Two file-relative path constants
+had to be corrected for the removed nesting level: `database/engine.py`'s
+`Path(__file__).resolve().parents[4]` (alembic.ini lookup) → `parents[3]`, and
+`templates/loader.py`'s `TEMPLATES_ROOT = Path(__file__).resolve().parent.parent.parent`
+→ `.parent.parent`. `dashboard/router.py`'s import of `language_profiles/service.py` was
+deliberately left unchanged (only its import path updated) — reuse of another slice's
+public entry point, not an inversion to fix, per the Clean Code "don't duplicate logic
+across slices" rule.
+
+Every file inside a top-level shared folder is named for its *concern* (`client.py`,
+`settings.py`, `engine.py`), never repeating the folder's own name (`http_client/http_client.py`
+would be a stutter) — same convention domain slices already use (e.g.
+`language_profiles/manage_language_profile.py`, not `language_profiles/router.py` named
+after the folder). `logging/setup.py` (not `logging.py`) also sidesteps shadowing the
+stdlib `logging` module it imports internally.
 
 **Tooling:** `uv` (workspace root `pyproject.toml` is virtual, `tool.uv.package = false`),
 `ruff` for lint+format, `pytest`, SQLite for persistence. Single `Dockerfile` builds both

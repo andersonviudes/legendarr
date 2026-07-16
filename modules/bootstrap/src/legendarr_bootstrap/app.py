@@ -3,10 +3,10 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI
+from legendarr_backend.api import create_api_app
 from legendarr_backend.bootstrap import build_scheduler
-from legendarr_backend.shared_kernel.api.app import create_api_app
 from legendarr_web.app import create_app as create_web_app
-from legendarr_web.shared_kernel.backend_client.client import get_backend_client
+from legendarr_web.backend_client.client import get_backend_client
 
 
 @asynccontextmanager

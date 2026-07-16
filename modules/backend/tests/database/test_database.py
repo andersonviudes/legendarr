@@ -1,5 +1,5 @@
-from legendarr_backend.shared_kernel.config.settings import Settings
-from legendarr_backend.shared_kernel.database import engine as database
+from legendarr_backend.config.settings import Settings
+from legendarr_backend.database import engine as database
 from sqlalchemy import text
 
 

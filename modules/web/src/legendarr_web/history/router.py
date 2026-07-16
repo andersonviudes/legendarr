@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 
-from legendarr_web.shared_kernel.templates.loader import get_templates
+from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/history")
 templates = get_templates("history")

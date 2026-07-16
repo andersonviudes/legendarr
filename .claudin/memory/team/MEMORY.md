@@ -3,5 +3,5 @@
 - [legendarr Alembic migrations and config.yaml](legendarr-db-migrations.md) — DB migration setup, config.yaml precedence, env.py caching gotcha
 - [legendarr web UI design system](legendarr-ui-design-system.md) — dark theme, sidebar nav shell, poster-grid component: what exists and why
 - [legendarr Clean Code & SOLID rule](legendarr-clean-code-solid-rule.md) — where the rule lives, what was refactored to comply, what was deliberately left alone and why
-- [legendarr shared HTTP client conventions](legendarr-http-client-conventions.md) — ProviderHttpClient in shared_kernel/http_client/client.py, required base for new HTTP integrations
+- [legendarr shared HTTP client conventions](legendarr-http-client-conventions.md) — ProviderHttpClient in http_client/client.py, required base for new HTTP integrations
 - [legendarr feature vs. fix branch convention](legendarr-branch-convention.md) — feat: needs branch+PR, fix: can push straight to main
