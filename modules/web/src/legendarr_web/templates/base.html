@@ -36,7 +36,7 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
             aria-controls="nav-library"
-          ><span>Library</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
             <li>
               <a
@@ -64,7 +64,7 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
             aria-controls="nav-settings"
-          ><span>Settings</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("settings") }}<span>Settings</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
             <li>
               <a

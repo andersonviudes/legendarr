@@ -117,7 +117,7 @@ body {
   all: unset;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
   margin: 0.15rem 0 0.1rem;
@@ -129,10 +129,15 @@ body {
 }
 
 .app-nav-toggle svg {
+  flex: none;
   transition: transform 0.15s ease;
 }
 
-.app-nav-toggle[aria-expanded="true"] svg {
+.app-nav-toggle svg:last-child {
+  margin-left: auto;
+}
+
+.app-nav-toggle[aria-expanded="true"] svg:last-child {
   transform: rotate(90deg);
 }
 
