@@ -6,11 +6,17 @@ packaged into a single Docker image with one shared `uv.lock`.
 ## Modules
 
 - **`modules/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr clients,
-  subtitle discovery, subtitle translation, language profiles, and the scheduler that runs
-  the media sync periodically.
-- **`modules/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX). It depends on
-  `legendarr_backend` directly and starts the backend's scheduler in its own FastAPI
-  `lifespan`, so a single process serves both the dashboard and the background sync job.
+  subtitle discovery, subtitle translation, language profiles, the scheduler that runs the
+  media sync periodically, and an HTTP API (`shared_kernel/api.py`) exposing that domain
+  logic — currently `/language-profiles/*`.
+- **`modules/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX): templates,
+  static/JS, and per-slice "services" that call `legendarr_backend`'s API over HTTP
+  (`httpx`). It has no Python dependency on `legendarr_backend` and never imports its code.
+- **`modules/bootstrap`** (`legendarr_bootstrap`) — the entrypoint that brings the other two
+  modules up together: it mounts `legendarr_backend`'s API app at `/api` and
+  `legendarr_web`'s app at `/` behind one FastAPI instance, and owns the single `lifespan`
+  that starts/stops the backend's scheduler. This is `make run` / the Docker `CMD` — a
+  single process still serves the dashboard, the API, and the background sync job.
 
 ## Screaming Architecture + Vertical Slice Architecture
 

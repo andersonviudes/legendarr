@@ -8,6 +8,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY modules/backend/pyproject.toml modules/backend/pyproject.toml
 COPY modules/web/pyproject.toml modules/web/pyproject.toml
+COPY modules/bootstrap/pyproject.toml modules/bootstrap/pyproject.toml
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-packages --no-install-project --no-dev
@@ -30,4 +31,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
 VOLUME ["/config"]
 EXPOSE 8000
 
-CMD ["python", "-m", "legendarr_web"]
+CMD ["python", "-m", "legendarr_bootstrap"]

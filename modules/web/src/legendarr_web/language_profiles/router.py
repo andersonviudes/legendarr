@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request
-from legendarr_backend.language_profiles.manage_language_profile import list_language_profiles
-from legendarr_backend.shared_kernel.database import get_session
+import httpx
+from fastapi import APIRouter, Depends, Request
 
+from legendarr_web.language_profiles import service
+from legendarr_web.shared_kernel.backend_client import get_backend_client
 from legendarr_web.shared_kernel.templates import get_templates
 
 router = APIRouter(prefix="/language-profiles")
@@ -9,9 +10,10 @@ templates = get_templates("language_profiles")
 
 
 @router.get("/")
-def show_language_profiles(request: Request):
-    with get_session() as session:
-        profiles = list_language_profiles(session)
+async def show_language_profiles(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    profiles = await service.list_language_profiles(client)
     return templates.TemplateResponse(
         request,
         "language_profiles.html",
