@@ -1,5 +1,3 @@
-import logging
-
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from legendarr_backend.config.config_file import (
@@ -8,12 +6,11 @@ from legendarr_backend.config.config_file import (
 )
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import init_db
+from legendarr_backend.media_library.jobs import register_sync_job
 from legendarr_backend.media_library.providers.base import MediaLibraryClient
 from legendarr_backend.media_library.providers.radarr_client import RadarrClient
 from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
-from legendarr_backend.media_library.sync_media_library import sync_media_library
-
-logger = logging.getLogger(__name__)
+from legendarr_backend.scheduling.scheduler import build_scheduler as build_bare_scheduler
 
 
 def _build_media_clients(
@@ -31,10 +28,6 @@ def build_scheduler() -> BackgroundScheduler:
     config = load_or_create_config_file(get_settings())
     radarr, sonarr = _build_media_clients(config)
 
-    def run_sync() -> None:
-        result = sync_media_library(radarr, sonarr)
-        logger.info("media library synced: %s", result)
-
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(run_sync, "interval", minutes=config.sync_interval_minutes)
+    scheduler = build_bare_scheduler()
+    register_sync_job(scheduler, config, radarr, sonarr)
     return scheduler
