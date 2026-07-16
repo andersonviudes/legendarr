@@ -32,9 +32,11 @@ modules/backend/src/legendarr_backend/
 └── shared_kernel/           # config, database, logging — genuinely cross-slice code
 
 modules/web/src/legendarr_web/
-├── dashboard/               # home page
-├── media_library/           # /media/ route
-├── language_profiles/       # /language-profiles/ route
+├── dashboard/               # home page — profile-count stats, polls via htmx
+├── media_library/           # /media/movies, /media/series routes
+├── language_profiles/       # /settings/ route
+├── history/                 # /history/ route
+├── system/                  # /system/ route
 └── shared_kernel/            # templates, cross-slice web concerns
 ```
 

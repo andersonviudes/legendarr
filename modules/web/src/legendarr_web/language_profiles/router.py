@@ -5,7 +5,7 @@ from legendarr_web.language_profiles import service
 from legendarr_web.shared_kernel.backend_client import get_backend_client
 from legendarr_web.shared_kernel.templates import get_templates
 
-router = APIRouter(prefix="/language-profiles")
+router = APIRouter(prefix="/settings")
 templates = get_templates("language_profiles")
 
 

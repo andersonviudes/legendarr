@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}legendarr · Series{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ icon("tv") }} Series</h1>
+  <p>{{ series|length }} series synced.</p>
+</hgroup>
+
+{% if series %}
+<div class="poster-grid">
+  {% for show in series %}
+  <article class="poster-card">
+    <div class="poster-art">{{ icon("image-off") }}</div>
+    <p class="poster-title">{{ show.title }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p>Nothing synced yet — run a library sync from Sonarr to see it here.</p>
+{% endif %}
+{% endblock %}

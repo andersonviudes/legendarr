@@ -6,10 +6,11 @@ router = APIRouter(prefix="/media")
 templates = get_templates("media_library")
 
 
-@router.get("/")
-def show_media_library(request: Request):
-    return templates.TemplateResponse(
-        request,
-        "media_library.html",
-        {"movies": [], "series": []},
-    )
+@router.get("/movies")
+def show_movies(request: Request):
+    return templates.TemplateResponse(request, "movies.html", {"movies": []})
+
+
+@router.get("/series")
+def show_series(request: Request):
+    return templates.TemplateResponse(request, "series.html", {"series": []})

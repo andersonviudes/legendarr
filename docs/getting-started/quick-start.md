@@ -17,9 +17,10 @@
 
 2. **Start legendarr** (see [Installation](installation.md) for Docker or source options).
 
-3. **Open the dashboard** at `http://localhost:8000`. It links to:
-    - `/media/` — the media library synced from Radarr and Sonarr
-    - `/language-profiles/` — configured language profiles
+3. **Open the dashboard** at `http://localhost:8000`. It shows how many language profiles are
+   configured (auto-refreshing every 15 seconds), and links to:
+    - `/media/movies` and `/media/series` — the media library synced from Radarr and Sonarr
+    - `/settings/` — configured language profiles
 
 4. **Create a language profile** to tell legendarr which languages to translate to for
    which content, and whether to extract embedded subtitle tracks. See

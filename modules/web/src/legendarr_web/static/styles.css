@@ -1,10 +1,329 @@
-body {
-  font-family: system-ui, sans-serif;
-  max-width: 640px;
-  margin: 2rem auto;
-  color: #1a1a1a;
+/* Pico.css (vendor/pico.min.css) covers layout, typography and theming.
+   Only legendarr-specific overrides belong here. */
+
+svg.lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
 }
 
-nav a {
-  margin-right: 1rem;
+/* === Theme: neutral graphite palette, muted gold accent === */
+[data-theme="dark"] {
+  --pico-background-color: #0f1114;
+  --pico-color: #e4e4e7;
+  --pico-h1-color: #f5f5f6;
+  --pico-h2-color: #eeeef0;
+  --pico-muted-color: #8b8d97;
+  --pico-muted-border-color: rgba(255, 255, 255, 0.08);
+  --pico-primary: #c9974f;
+  --pico-primary-background: #a97c3e;
+  --pico-primary-border: var(--pico-primary-background);
+  --pico-primary-underline: rgba(201, 151, 79, 0.5);
+  --pico-primary-hover: #d9a962;
+  --pico-primary-hover-background: #bd8b47;
+  --pico-primary-hover-border: var(--pico-primary-hover-background);
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(201, 151, 79, 0.3);
+  --pico-primary-inverse: #17130a;
+  --pico-card-background-color: #16181c;
+  --pico-card-border-color: rgba(255, 255, 255, 0.08);
+
+  --lg-sidebar-background-color: #0b0c0f;
+  --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
+  --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* === App shell: fixed sidebar + scrolling content === */
+body {
+  margin: 0;
+}
+
+.app-shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  flex: 0 0 15rem;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--lg-sidebar-background-color);
+  border-right: 1px solid var(--pico-muted-border-color);
+}
+
+.app-brand {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  margin-bottom: 0.5rem;
+}
+
+.app-brand a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9875rem;
+  font-weight: 700;
+  color: var(--pico-h1-color);
+  text-decoration: none;
+}
+
+.app-brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: none;
+  border-radius: 0.65rem;
+  background-color: var(--lg-neutral-dim-background-color);
+  color: var(--pico-h1-color);
+}
+
+.app-brand-mark svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.app-brand a:hover {
+  color: var(--pico-primary);
+}
+
+.app-sidebar nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 0.75rem;
+}
+
+.app-nav-toggle {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.15rem 0 0.1rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.6375rem;
+  font-weight: 600;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+}
+
+.app-nav-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.app-nav-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.app-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.1rem;
+}
+
+.app-sidebar ul + ul {
+  margin-top: 0.6rem;
+}
+
+/* Beats Pico's nav ul:first-of-type/:last-of-type negative side margins (meant to flush
+   horizontal navbars against the nav's own edges) which otherwise shift our stacked vertical
+   ul groups out of alignment with each other. */
+.app-sidebar nav ul:first-of-type,
+.app-sidebar nav ul:last-of-type {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.app-sidebar li {
+  padding: 0;
+}
+
+.app-sidebar li a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.6rem;
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  font-size: 0.7375rem;
+  font-weight: 600;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+/* Higher specificity than .app-sidebar li a (which sets padding-left too) so the indent
+   actually sticks regardless of source order. */
+.app-sidebar .app-nav-submenu li a {
+  padding-left: 2.15rem;
+}
+
+.app-sidebar li a svg {
+  flex: none;
+}
+
+.app-sidebar li a:hover {
+  color: var(--pico-color);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.app-sidebar li a[aria-current="page"] {
+  color: var(--pico-primary);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 3rem 3.5rem;
+}
+
+/* === Stat cards: dashboard === */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1.25rem;
+  margin-block: 1.5rem 2.5rem;
+  max-width: 40rem;
+}
+
+.stat-card {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 1.6875rem;
+  font-weight: 700;
+  color: var(--pico-h1-color);
+}
+
+.stat-label {
+  margin: 0.25rem 0 0;
+  font-size: 0.7375rem;
+  color: var(--pico-muted-color);
+}
+
+/* === Poster grid: media library, Sonarr/Radarr-style === */
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1.75rem;
+  margin-block: 1.5rem 2.5rem;
+}
+
+.poster-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.poster-art {
+  aspect-ratio: 2 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  color: var(--pico-muted-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.poster-card:hover .poster-art {
+  transform: translateY(-3px);
+  border-color: var(--pico-primary);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.poster-art svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.poster-title {
+  margin: 0;
+  font-size: 0.7875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pico-color);
+}
+
+/* === Friendly empty states (language profiles, library) === */
+.profile-list {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.profile-list li {
+  list-style: none;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  color: var(--pico-color);
+}
+
+.profile-list li.empty {
+  color: var(--pico-muted-color);
+  text-align: center;
+  border-style: dashed;
+  background-color: transparent;
+}
+
+/* === Sidebar footer: theme toggle + project links === */
+.app-sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.app-icon-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.0375rem;
+  color: var(--pico-primary);
+  cursor: pointer;
+}
+
+.app-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.app-icon-btn--github {
+  color: var(--pico-muted-color);
+}
+
+.app-icon-btn--github:hover {
+  color: var(--pico-color);
 }

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}legendarr · Movies{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ icon("clapperboard") }} Movies</h1>
+  <p>{{ movies|length }} movies synced.</p>
+</hgroup>
+
+{% if movies %}
+<div class="poster-grid">
+  {% for movie in movies %}
+  <article class="poster-card">
+    <div class="poster-art">{{ icon("image-off") }}</div>
+    <p class="poster-title">{{ movie.title }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p>Nothing synced yet — run a library sync from Radarr to see it here.</p>
+{% endif %}
+{% endblock %}
