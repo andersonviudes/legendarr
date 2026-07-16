@@ -17,99 +17,99 @@
     <script src="/static/vendor/htmx.min.js"></script>
   </head>
   <body>
-    <div class="app-shell">
-      <div class="app-shell-body">
-        <aside class="app-sidebar">
-          <header class="app-brand">
-            <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
-          </header>
-          <nav aria-label="Main">
-            <ul>
-              <li>
-                <a
-                  href="/"
-                  {% if request.url.path == "/" %}aria-current="page"{% endif %}
-                >{{ icon("layout-dashboard") }}<span>Dashboard</span></a>
-              </li>
-            </ul>
-            <button
-              type="button"
-              class="app-nav-toggle"
-              aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
-              aria-controls="nav-library"
-            >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
-            <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
-              <li>
-                <a
-                  href="/media/movies"
-                  {% if request.url.path.startswith("/media/movies") %}aria-current="page"{% endif %}
-                >{{ icon("clapperboard") }}<span>Movies</span></a>
-              </li>
-              <li>
-                <a
-                  href="/media/series"
-                  {% if request.url.path.startswith("/media/series") %}aria-current="page"{% endif %}
-                >{{ icon("tv") }}<span>Series</span></a>
-              </li>
-            </ul>
-            <ul>
-              <li>
-                <a
-                  href="/history/"
-                  {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
-                >{{ icon("history") }}<span>History</span></a>
-              </li>
-            </ul>
-            <button
-              type="button"
-              class="app-nav-toggle"
-              aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
-              aria-controls="nav-settings"
-            >{{ icon("settings") }}<span>Settings</span>{{ icon("chevron-right") }}</button>
-            <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
-              <li>
-                <a
-                  href="/settings/"
-                  {% if request.url.path == "/settings/" %}aria-current="page"{% endif %}
-                >{{ icon("languages") }}<span>Language profiles</span></a>
-              </li>
-              <li>
-                <a
-                  href="/settings/arr-services/"
-                  {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
-                >{{ icon("server") }}<span>Arr Services</span><span
-                  id="arr-services-count-badge"
-                  class="app-nav-badge"
-                  hx-get="/settings/arr-services/count"
-                  hx-trigger="load"
-                  hx-swap="outerHTML"
-                ></span></a>
-              </li>
-            </ul>
-            <ul>
-              <li>
-                <a
-                  href="/system/"
-                  {% if request.url.path.startswith("/system") %}aria-current="page"{% endif %}
-                >{{ icon("server") }}<span>System</span></a>
-              </li>
-            </ul>
-          </nav>
-        </aside>
-        <main class="app-main">
-          {% block content %}{% endblock %}
-        </main>
+    <header class="app-topbar">
+      <div class="app-brand">
+        <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
       </div>
-      <footer class="app-sidebar-footer">
-        <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="Toggle theme">{{ icon("sun") }}</button>
-        <a
-          href="https://github.com/andersonviudes/legendarr"
-          class="app-icon-btn app-icon-btn--github"
-          aria-label="legendarr on GitHub"
-          target="_blank"
-          rel="noopener"
-        >{{ icon("github") }}</a>
-      </footer>
+    </header>
+    <div class="app-shell">
+      <aside class="app-sidebar">
+        <nav aria-label="Main">
+          <ul>
+            <li>
+              <a
+                href="/"
+                {% if request.url.path == "/" %}aria-current="page"{% endif %}
+              >{{ icon("layout-dashboard") }}<span>Dashboard</span></a>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
+            aria-controls="nav-library"
+          >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
+            <li>
+              <a
+                href="/media/movies"
+                {% if request.url.path.startswith("/media/movies") %}aria-current="page"{% endif %}
+              >{{ icon("clapperboard") }}<span>Movies</span></a>
+            </li>
+            <li>
+              <a
+                href="/media/series"
+                {% if request.url.path.startswith("/media/series") %}aria-current="page"{% endif %}
+              >{{ icon("tv") }}<span>Series</span></a>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <a
+                href="/history/"
+                {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
+              >{{ icon("history") }}<span>History</span></a>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
+            aria-controls="nav-settings"
+          >{{ icon("settings") }}<span>Settings</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
+            <li>
+              <a
+                href="/settings/"
+                {% if request.url.path == "/settings/" %}aria-current="page"{% endif %}
+              >{{ icon("languages") }}<span>Language profiles</span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/arr-services/"
+                {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
+              >{{ icon("server") }}<span>Arr Services</span><span
+                id="arr-services-count-badge"
+                hidden
+                hx-get="/settings/arr-services/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <a
+                href="/system/"
+                {% if request.url.path.startswith("/system") %}aria-current="page"{% endif %}
+              >{{ icon("server") }}<span>System</span></a>
+            </li>
+          </ul>
+        </nav>
+        <footer class="app-sidebar-footer">
+          <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="Toggle theme">{{ icon("sun") }}</button>
+          <a
+            href="https://github.com/andersonviudes/legendarr"
+            class="app-icon-btn app-icon-btn--github"
+            aria-label="legendarr on GitHub"
+            target="_blank"
+            rel="noopener"
+          >{{ icon("github") }}</a>
+        </footer>
+      </aside>
+      <main class="app-main">
+        {% block content %}{% endblock %}
+      </main>
     </div>
     <script src="/static/js/sidebar.js" defer></script>
     <script src="/static/js/theme.js" defer></script>
