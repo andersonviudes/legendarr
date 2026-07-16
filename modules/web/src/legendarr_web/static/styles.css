@@ -206,6 +206,17 @@ body {
   color: var(--pico-primary);
 }
 
+.app-nav-badge {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+  font-size: 0.675rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .app-main {
   flex: 1;
   min-width: 0;

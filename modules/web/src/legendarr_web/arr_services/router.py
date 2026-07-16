@@ -59,6 +59,18 @@ async def show_arr_services(
     )
 
 
+@router.get("/count")
+async def arr_services_count(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    services = await service.list_arr_services(client)
+    return templates.TemplateResponse(
+        request,
+        "_count_badge.html",
+        {"count": len(services)},
+    )
+
+
 @router.get("/new")
 async def new_arr_service(request: Request, service_type: str):
     return templates.TemplateResponse(

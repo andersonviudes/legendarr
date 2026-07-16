@@ -19,6 +19,21 @@ def test_arr_services_page_lists_no_servers_by_default(stub_backend_client):
     assert "Add Sonarr Server" in response.text
 
 
+def test_count_badge_reflects_registered_services(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[{"id": 1, "service_type": "radarr"}])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/arr-services/count")
+
+    assert response.status_code == 200
+    assert ">1<" in response.text
+
+
 def test_new_arr_service_form_prefills_default_port(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_empty_services_handler)

@@ -76,7 +76,13 @@
               <a
                 href="/settings/arr-services/"
                 {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
-              >{{ icon("server") }}<span>Arr Services</span></a>
+              >{{ icon("server") }}<span>Arr Services</span><span
+                id="arr-services-count-badge"
+                class="app-nav-badge"
+                hx-get="/settings/arr-services/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
             </li>
           </ul>
           <ul>
