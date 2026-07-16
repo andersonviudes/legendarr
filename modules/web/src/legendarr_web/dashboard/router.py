@@ -2,8 +2,8 @@ import httpx
 from fastapi import APIRouter, Depends, Request
 
 from legendarr_web.language_profiles import service
-from legendarr_web.shared_kernel.backend_client import get_backend_client
-from legendarr_web.shared_kernel.templates import get_templates
+from legendarr_web.shared_kernel.backend_client.client import get_backend_client
+from legendarr_web.shared_kernel.templates.loader import get_templates
 
 router = APIRouter()
 templates = get_templates("dashboard")

@@ -30,7 +30,7 @@ ad-hoc plumbing decided along the way.*
   HTMX partial responses relate to full-page templates — established before any feature page
   exists.
 - [ ] **Settings** — Config foundation: formalize the split between bootstrap config (env vars,
-  `shared_kernel/config.py`) and future runtime-editable settings (DB-backed, landing in
+  `shared_kernel/config/settings.py`) and future runtime-editable settings (DB-backed, landing in
   0.4.0), so that later slice isn't retrofitted onto whatever `config.py` happens to look
   like by then.
 - [ ] **Automation & scheduling** — Formalize the shared `APScheduler` instance/job-registration
@@ -42,7 +42,7 @@ ad-hoc plumbing decided along the way.*
   translation-API clients follow one shape instead of each being bespoke.
 - [ ] Shared testing conventions (fixtures, test database setup) across
   `modules/<module>/tests/<slice>/`, and structured logging conventions in
-  `shared_kernel/logging.py` for how slices report errors up to the orchestrators built
+  `shared_kernel/logging/setup.py` for how slices report errors up to the orchestrators built
   starting 0.2.0.
 
 ## 0.2.0 — Translate one already-downloaded subtitle, end to end, in the real UI

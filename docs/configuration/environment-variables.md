@@ -1,7 +1,7 @@
 # Environment Variables Reference
 
-All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.shared_kernel.config.Settings`
-(or `legendarr_web.shared_kernel.config.WebSettings` for the `LEGENDARR_BACKEND_API_URL` variable).
+All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.shared_kernel.config.settings.Settings`
+(or `legendarr_web.shared_kernel.config.settings.WebSettings` for the `LEGENDARR_BACKEND_API_URL` variable).
 
 | Variable | Default | Description |
 | --- | --- | --- |

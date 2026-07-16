@@ -6,8 +6,8 @@ from legendarr_backend.media_providers.base import MediaLibraryClient
 from legendarr_backend.media_providers.radarr_client import RadarrClient
 from legendarr_backend.media_providers.sonarr_client import SonarrClient
 from legendarr_backend.media_providers.sync_media_library import sync_media_library
-from legendarr_backend.shared_kernel.config import Settings, get_settings
-from legendarr_backend.shared_kernel.database import init_db
+from legendarr_backend.shared_kernel.config.settings import Settings, get_settings
+from legendarr_backend.shared_kernel.database.engine import init_db
 
 logger = logging.getLogger(__name__)
 

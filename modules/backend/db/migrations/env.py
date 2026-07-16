@@ -2,8 +2,8 @@ from logging.config import fileConfig
 
 from alembic import context
 from legendarr_backend.language_profiles import models as language_profiles_models  # noqa: F401
-from legendarr_backend.shared_kernel.config import get_settings
-from legendarr_backend.shared_kernel.config_file import load_or_create_config_file
+from legendarr_backend.shared_kernel.config.config_file import load_or_create_config_file
+from legendarr_backend.shared_kernel.config.settings import get_settings
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
@@ -20,7 +20,7 @@ if config.config_file_name is not None:
 # SQLModel.metadata before autogenerate compares against it
 target_metadata = SQLModel.metadata
 
-# programmatic invocations (database.py's init_db()) already set sqlalchemy.url
+# programmatic invocations (database/engine.py's init_db()) already set sqlalchemy.url
 # on this Config before calling us, targeting a specific engine; only resolve it
 # ourselves for standalone `alembic` CLI invocations, where it's still unset
 if not config.get_main_option("sqlalchemy.url"):

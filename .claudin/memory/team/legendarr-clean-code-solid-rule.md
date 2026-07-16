@@ -28,7 +28,7 @@ Ran an analysis against it and applied the clear-cut, low-risk fixes (codebase w
 
 Deliberately **not** changed (would be over-engineering or would fight existing, documented
 decisions):
-- `shared_kernel/database.py`'s manual `_engine` global cache — tests
+- `shared_kernel/database/engine.py`'s manual `_engine` global cache — tests
   (`test_database.py`, `test_router.py`) monkeypatch `database._engine` directly; see
   `legendarr-db-migrations.md` for the documented caching gotcha. Switching to `@lru_cache`
   would require rewriting those tests for a cosmetic consistency gain.

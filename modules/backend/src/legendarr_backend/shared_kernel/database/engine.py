@@ -6,8 +6,8 @@ from alembic import command
 from alembic.config import Config
 from sqlmodel import Session, create_engine
 
-from legendarr_backend.shared_kernel.config import get_settings
-from legendarr_backend.shared_kernel.config_file import load_or_create_config_file
+from legendarr_backend.shared_kernel.config.config_file import load_or_create_config_file
+from legendarr_backend.shared_kernel.config.settings import get_settings
 
 _engine = None
 
@@ -22,7 +22,7 @@ def get_engine():
 
 def init_db() -> None:
     engine = get_engine()
-    alembic_cfg = Config(str(Path(__file__).resolve().parents[3] / "alembic.ini"))
+    alembic_cfg = Config(str(Path(__file__).resolve().parents[4] / "alembic.ini"))
     alembic_cfg.set_main_option("sqlalchemy.url", engine.url.render_as_string(hide_password=False))
     command.upgrade(alembic_cfg, "head")
 

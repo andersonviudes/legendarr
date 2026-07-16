@@ -22,7 +22,8 @@ Inside each module, the code is organized using **Screaming Architecture + Verti
 Slice Architecture**: top-level folders are named after business capabilities
 (`media_providers`, `subtitle_discovery`, `subtitle_translation`, `language_profiles`, ...),
 not technical layers. Each slice contains what it needs to work end to end; genuinely
-shared code (config, database, logging, templates) lives in `shared_kernel/`.
+shared code lives in `shared_kernel/`, itself split into subject subfolders (`config/`,
+`database/`, `logging/`, `templates/`, ...) the same way.
 
 ## Running locally
 

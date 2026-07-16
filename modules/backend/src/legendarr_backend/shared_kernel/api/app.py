@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from legendarr_backend.language_profiles.router import router as language_profiles_router
-from legendarr_backend.shared_kernel.database import init_db
+from legendarr_backend.shared_kernel.database.engine import init_db
 
 
 @asynccontextmanager

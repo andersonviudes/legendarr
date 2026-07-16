@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 
 import httpx
 
-from legendarr_web.shared_kernel.config import get_web_settings
+from legendarr_web.shared_kernel.config.settings import get_web_settings
 
 
 async def get_backend_client() -> AsyncIterator[httpx.AsyncClient]:

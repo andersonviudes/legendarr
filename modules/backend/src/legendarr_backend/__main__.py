@@ -1,7 +1,7 @@
 import time
 
 from legendarr_backend.bootstrap import build_scheduler
-from legendarr_backend.shared_kernel.logging import configure_logging
+from legendarr_backend.shared_kernel.logging.setup import configure_logging
 
 
 def main() -> None:

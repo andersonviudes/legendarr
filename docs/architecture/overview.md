@@ -7,7 +7,7 @@ packaged into a single Docker image with one shared `uv.lock`.
 
 - **`modules/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr clients,
   subtitle discovery, subtitle translation, language profiles, the scheduler that runs the
-  media sync periodically, and an HTTP API (`shared_kernel/api.py`) exposing that domain
+  media sync periodically, and an HTTP API (`shared_kernel/api/app.py`) exposing that domain
   logic — currently `/language-profiles/*`.
 - **`modules/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX): templates,
   static/JS, and per-slice "services" that call `legendarr_backend`'s API over HTTP
@@ -29,7 +29,12 @@ modules/backend/src/legendarr_backend/
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 ├── language_profiles/       # language profile model + management
-└── shared_kernel/           # config, database, logging — genuinely cross-slice code
+└── shared_kernel/           # genuinely cross-slice code, itself split by subject:
+    ├── config/               # env Settings + on-disk config.yaml
+    ├── database/             # SQLModel engine/session + Alembic migration trigger
+    ├── api/                  # the internal HTTP API app
+    ├── http_client/          # shared outbound-HTTP conventions for provider clients
+    └── logging/              # logging setup
 
 modules/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
@@ -37,11 +42,16 @@ modules/web/src/legendarr_web/
 ├── language_profiles/       # /settings/ route
 ├── history/                 # /history/ route
 ├── system/                  # /system/ route
-└── shared_kernel/            # templates, cross-slice web concerns
+└── shared_kernel/            # cross-slice web concerns, itself split by subject:
+    ├── config/               # env WebSettings
+    ├── backend_client/       # httpx client for calling the backend API
+    └── templates/            # shared Jinja2Templates factory + base.html layout
 ```
 
 Each slice contains what it needs to work end to end. Code that's truly shared across
-slices — configuration, database setup, logging, templates — lives in `shared_kernel/`.
+slices — configuration, database setup, logging, templates — lives in `shared_kernel/`,
+organized into subject subfolders the same way top-level slices are, rather than as a flat
+bag of files.
 
 When adding a new feature, create a new top-level slice folder named after the business
 capability, in whichever module owns it, rather than adding to an existing generic layer.
