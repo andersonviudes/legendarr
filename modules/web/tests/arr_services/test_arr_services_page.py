@@ -19,6 +19,53 @@ def test_arr_services_page_lists_no_servers_by_default(stub_backend_client):
     assert "Add Sonarr Server" in response.text
 
 
+def test_page_renders_registered_service_cards(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "id": 7,
+                    "name": "main-radarr",
+                    "service_type": "radarr",
+                    "enabled": True,
+                    "host": "radarr.local",
+                    "port": 7878,
+                    "use_ssl": False,
+                },
+                {
+                    "id": 9,
+                    "name": "main-sonarr",
+                    "service_type": "sonarr",
+                    "enabled": False,
+                    "host": "sonarr.local",
+                    "port": 8989,
+                    "use_ssl": True,
+                },
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/arr-services/")
+
+    assert response.status_code == 200
+    body = response.text
+    # service_card macro: name, address (scheme from use_ssl), and actions
+    assert "main-radarr" in body
+    assert "http://radarr.local:7878" in body
+    assert "main-sonarr" in body
+    assert "https://sonarr.local:8989" in body
+    # service_status macro: the enable/disable switch + label, reflecting each state
+    assert 'role="switch"' in body
+    assert "Enabled" in body
+    assert "Disabled" in body
+    assert "/settings/arr-services/7/edit" in body
+
+
 def test_count_badge_reflects_registered_services(stub_backend_client):
     app = create_app()
 

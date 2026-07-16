@@ -1,65 +1,9 @@
 {% extends "base.html" %}
+{% from "macros.html" import service_section %}
 {% block title %}legendarr · Arr Services{% endblock %}
 {% block content %}
 <h1>{{ icon("server") }} Arr Services</h1>
 
-<section>
-  <h2>{{ icon("clapperboard") }} Radarr</h2>
-  {% if not radarr_services %}
-  <p>No Radarr server configured yet.</p>
-  {% endif %}
-  <div class="service-grid">
-    {% for arr_service in radarr_services %}
-    <article class="service-card">
-      <header class="service-card-header">
-        <p class="service-card-name">{{ arr_service.name }}</p>
-        {% include "_service_status.html" %}
-      </header>
-      <p class="service-card-address">
-        {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}
-      </p>
-      <div class="service-card-actions">
-        <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">Edit</a>
-        <form method="post" action="/settings/arr-services/{{ arr_service.id }}/delete">
-          <button type="submit" class="outline contrast">Delete</button>
-        </form>
-      </div>
-    </article>
-    {% endfor %}
-    <a href="/settings/arr-services/new?service_type=radarr" class="service-add-card">
-      {{ icon("clapperboard") }}
-      <span>Add Radarr Server</span>
-    </a>
-  </div>
-</section>
-
-<section>
-  <h2>{{ icon("tv") }} Sonarr</h2>
-  {% if not sonarr_services %}
-  <p>No Sonarr server configured yet.</p>
-  {% endif %}
-  <div class="service-grid">
-    {% for arr_service in sonarr_services %}
-    <article class="service-card">
-      <header class="service-card-header">
-        <p class="service-card-name">{{ arr_service.name }}</p>
-        {% include "_service_status.html" %}
-      </header>
-      <p class="service-card-address">
-        {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}
-      </p>
-      <div class="service-card-actions">
-        <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">Edit</a>
-        <form method="post" action="/settings/arr-services/{{ arr_service.id }}/delete">
-          <button type="submit" class="outline contrast">Delete</button>
-        </form>
-      </div>
-    </article>
-    {% endfor %}
-    <a href="/settings/arr-services/new?service_type=sonarr" class="service-add-card">
-      {{ icon("tv") }}
-      <span>Add Sonarr Server</span>
-    </a>
-  </div>
-</section>
+{{ service_section("Radarr", "clapperboard", "radarr", radarr_services) }}
+{{ service_section("Sonarr", "tv", "sonarr", sonarr_services) }}
 {% endblock %}
