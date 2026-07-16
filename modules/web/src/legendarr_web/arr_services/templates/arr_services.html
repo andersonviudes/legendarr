@@ -13,9 +13,7 @@
     <article class="service-card">
       <header class="service-card-header">
         <p class="service-card-name">{{ arr_service.name }}</p>
-        <span class="service-card-status{{ '' if arr_service.enabled else ' is-disabled' }}">
-          {{ "Enabled" if arr_service.enabled else "Disabled" }}
-        </span>
+        {% include "_service_status.html" %}
       </header>
       <p class="service-card-address">
         {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}
@@ -45,9 +43,7 @@
     <article class="service-card">
       <header class="service-card-header">
         <p class="service-card-name">{{ arr_service.name }}</p>
-        <span class="service-card-status{{ '' if arr_service.enabled else ' is-disabled' }}">
-          {{ "Enabled" if arr_service.enabled else "Disabled" }}
-        </span>
+        {% include "_service_status.html" %}
       </header>
       <p class="service-card-address">
         {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}

@@ -30,6 +30,14 @@ async def delete_arr_service(client: httpx.AsyncClient, service_id: int) -> None
     response.raise_for_status()
 
 
+async def set_arr_service_enabled(
+    client: httpx.AsyncClient, service_id: int, enabled: bool
+) -> dict:
+    response = await client.patch(f"/arr-services/{service_id}/enabled", json={"enabled": enabled})
+    response.raise_for_status()
+    return response.json()
+
+
 async def test_arr_service(client: httpx.AsyncClient, data: dict) -> dict:
     response = await client.post("/arr-services/test", json=data)
     response.raise_for_status()

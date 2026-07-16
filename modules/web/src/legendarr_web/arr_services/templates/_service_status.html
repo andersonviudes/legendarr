@@ -1,0 +1,12 @@
+<label class="service-card-toggle" hx-target="this" hx-swap="outerHTML">
+  <input
+    type="checkbox" name="enabled" role="switch"
+    aria-label="{{ 'Enabled' if arr_service.enabled else 'Disabled' }} — toggle to enable or disable this service"
+    {{ 'checked' if arr_service.enabled else '' }}
+    hx-post="/settings/arr-services/{{ arr_service.id }}/enabled"
+    hx-trigger="change"
+  >
+  <span class="service-card-status{{ '' if arr_service.enabled else ' is-disabled' }}">
+    {{ "Enabled" if arr_service.enabled else "Disabled" }}
+  </span>
+</label>

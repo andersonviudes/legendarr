@@ -29,7 +29,7 @@ async def _arr_service_form(
     base_url: str = Form("/"),
     use_ssl: bool = Form(False),
     http_timeout_seconds: int = Form(60),
-    api_key: str = Form(...),
+    api_key: str = Form(""),
 ) -> dict:
     return {
         "service_type": service_type,
@@ -132,8 +132,29 @@ async def test_arr_service(
     data: dict = Depends(_arr_service_form),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    result = await service.test_arr_service(client, data)
+    try:
+        result = await service.test_arr_service(client, data)
+    except httpx.HTTPStatusError:
+        # The probe itself returns 200 with a success flag; a non-2xx here means the
+        # backend call failed outright, so show that instead of swapping an error page.
+        result = {"success": False, "message": "Couldn't reach the backend to run the test."}
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
+@router.post("/{service_id}/enabled")
+async def toggle_arr_service_enabled(
+    request: Request,
+    service_id: int,
+    enabled: bool = Form(False),
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        updated = await service.set_arr_service_enabled(client, service_id, enabled)
+    except httpx.HTTPStatusError:
+        # Backend refused the change — re-render the switch in its prior state so the UI
+        # doesn't drift out of sync with what's actually stored.
+        updated = {"id": service_id, "enabled": not enabled}
+    return templates.TemplateResponse(request, "_service_status.html", {"arr_service": updated})
 
 
 @router.post("/{service_id}")

@@ -15,9 +15,17 @@ class ArrServiceInput(BaseModel):
     api_key: str
 
 
-class ArrServiceSummary(BaseModel):
-    """List-view projection of `ArrService` that omits `api_key` — the list page never
-    needs the raw key, so there's no reason to ship it over the wire for every row."""
+class ArrServiceEnabledInput(BaseModel):
+    """Payload for the enable/disable toggle — flips just the `enabled` flag without
+    re-sending (or re-validating the reachability of) the whole service."""
+
+    enabled: bool
+
+
+class ArrServiceRead(BaseModel):
+    """Read projection of `ArrService` that omits `api_key`. No HTTP consumer needs the
+    raw key back — the web UI never re-displays it — so it never leaves the backend over
+    the wire, on the list view or a single record."""
 
     model_config = {"from_attributes": True}
 

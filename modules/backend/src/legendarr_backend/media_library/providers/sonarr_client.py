@@ -16,8 +16,8 @@ class SonarrClient:
             for item in self._http.get_json("/api/v3/series")
         ]
 
-    def ping(self) -> None:
-        self._http.get_json("/api/v3/system/status")
+    def system_status(self) -> dict:
+        return self._http.get_json("/api/v3/system/status")
 
     def close(self) -> None:
         self._http.close()

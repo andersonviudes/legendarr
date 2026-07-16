@@ -35,6 +35,17 @@ def update_arr_service(
     return service
 
 
+def set_arr_service_enabled(session: Session, service_id: int, enabled: bool) -> ArrService | None:
+    service = session.get(ArrService, service_id)
+    if service is None:
+        return None
+    service.enabled = enabled
+    session.add(service)
+    session.commit()
+    session.refresh(service)
+    return service
+
+
 def delete_arr_service(session: Session, service_id: int) -> bool:
     service = session.get(ArrService, service_id)
     if service is None:

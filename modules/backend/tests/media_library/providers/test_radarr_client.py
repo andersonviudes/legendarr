@@ -18,15 +18,15 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].path == "/movies/movie"
 
 
-def test_ping_requests_system_status(monkeypatch):
+def test_system_status_requests_system_status(monkeypatch):
     requested_paths = []
-    monkeypatch.setattr(
-        ProviderHttpClient,
-        "get_json",
-        lambda self, path: requested_paths.append(path),
-    )
+
+    def _get_json(self, path):
+        requested_paths.append(path)
+        return {"appName": "Radarr"}
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
     client = RadarrClient("http://radarr.local", "api-key")
 
-    client.ping()
-
+    assert client.system_status() == {"appName": "Radarr"}
     assert requested_paths == ["/api/v3/system/status"]

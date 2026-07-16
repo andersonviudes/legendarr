@@ -47,9 +47,11 @@
     >
 
     <label for="api_key">API Key</label>
+    {# Never re-display the stored secret. On edit, a blank field means "keep the current key". #}
     <input
-      type="password" id="api_key" name="api_key" value="{{ service.api_key if service else '' }}"
-      autocomplete="off" required
+      type="password" id="api_key" name="api_key" value=""
+      autocomplete="off"
+      {% if service %}placeholder="Leave blank to keep the current key"{% else %}required{% endif %}
     >
 
     <label>
@@ -58,7 +60,8 @@
     </label>
   </fieldset>
 
-  <div id="test-result"></div>
+  <div id="test-result" aria-live="polite"></div>
+  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
   <div class="form-actions">
     <button
       type="button"
@@ -67,6 +70,9 @@
       hx-include="closest form"
       hx-target="#test-result"
       hx-swap="innerHTML"
+      hx-indicator="#test-indicator"
+      hx-disabled-elt="this"
+      hx-on::before-request="if(!this.closest('form').reportValidity()){event.preventDefault();return;}document.getElementById('test-result').innerHTML=''"
     >Test</button>
     <button type="submit">Save</button>
   </div>

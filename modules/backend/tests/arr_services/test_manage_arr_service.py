@@ -3,6 +3,7 @@ from legendarr_backend.arr_services.manage_arr_service import (
     delete_arr_service,
     get_arr_service,
     list_arr_services,
+    set_arr_service_enabled,
     update_arr_service,
 )
 from legendarr_backend.arr_services.schemas import ArrServiceInput
@@ -55,6 +56,20 @@ def test_update_arr_service_ignores_service_type_change(in_memory_session):
 
 def test_update_arr_service_returns_none_when_missing(in_memory_session):
     assert update_arr_service(in_memory_session, 1, _radarr_input()) is None
+
+
+def test_set_arr_service_enabled_flips_flag(in_memory_session):
+    service = create_arr_service(in_memory_session, _radarr_input(enabled=True))
+
+    disabled = set_arr_service_enabled(in_memory_session, service.id, False)
+    assert disabled.enabled is False
+
+    enabled = set_arr_service_enabled(in_memory_session, service.id, True)
+    assert enabled.enabled is True
+
+
+def test_set_arr_service_enabled_returns_none_when_missing(in_memory_session):
+    assert set_arr_service_enabled(in_memory_session, 1, False) is None
 
 
 def test_delete_arr_service(in_memory_session):
