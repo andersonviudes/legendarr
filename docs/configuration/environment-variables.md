@@ -1,6 +1,7 @@
 # Environment Variables Reference
 
-All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.shared_kernel.config.Settings`.
+All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.shared_kernel.config.Settings`
+(or `legendarr_web.shared_kernel.config.WebSettings` for the `LEGENDARR_BACKEND_API_URL` variable).
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -11,6 +12,7 @@ All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.sha
 | `LEGENDARR_SONARR_URL` | *(empty)* | Base URL of your Sonarr instance. Leave empty to skip Sonarr sync. |
 | `LEGENDARR_SONARR_API_KEY` | *(empty)* | Sonarr API key. |
 | `LEGENDARR_SYNC_INTERVAL_MINUTES` | `15` | How often the background scheduler resyncs the media library. |
+| `LEGENDARR_BACKEND_API_URL` | `http://127.0.0.1:8000/api` | Base URL `legendarr_web` uses to call `legendarr_backend`'s API. Only relevant when running `legendarr_web` standalone against a separately-hosted backend — the default is correct for the normal `legendarr_bootstrap` single-process deploy. |
 
 !!! note
     If `LEGENDARR_DATABASE_URL` is unset, legendarr resolves it to

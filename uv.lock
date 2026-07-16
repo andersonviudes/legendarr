@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "legendarr",
     "legendarr-backend",
+    "legendarr-bootstrap",
     "legendarr-web",
 ]
 
@@ -296,6 +297,7 @@ source = { editable = "modules/backend" }
 dependencies = [
     { name = "alembic" },
     { name = "apscheduler" },
+    { name = "fastapi" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -308,6 +310,7 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.13" },
     { name = "apscheduler", specifier = ">=3.10" },
+    { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pydantic-settings", specifier = ">=2.4" },
@@ -317,13 +320,33 @@ requires-dist = [
 ]
 
 [[package]]
+name = "legendarr-bootstrap"
+version = "0.1.0"
+source = { editable = "modules/bootstrap" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "legendarr-backend" },
+    { name = "legendarr-web" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "legendarr-backend", editable = "modules/backend" },
+    { name = "legendarr-web", editable = "modules/web" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+]
+
+[[package]]
 name = "legendarr-web"
 version = "0.1.0"
 source = { editable = "modules/web" }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
-    { name = "legendarr-backend" },
+    { name = "pydantic-settings" },
     { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -331,8 +354,9 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", specifier = ">=3.1" },
-    { name = "legendarr-backend", editable = "modules/backend" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]

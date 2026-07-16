@@ -4,15 +4,13 @@ version = "0.1.0"
 description = "Web UI (FastAPI + HTMX) for legendarr"
 requires-python = ">=3.12"
 dependencies = [
-    "legendarr-backend",
     "fastapi>=0.115",
+    "httpx>=0.27",
+    "pydantic-settings>=2.4",
     "uvicorn[standard]>=0.30",
     "jinja2>=3.1",
     "python-multipart>=0.0.9",
 ]
-
-[tool.uv.sources]
-legendarr-backend = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

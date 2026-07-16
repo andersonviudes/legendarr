@@ -1,0 +1,22 @@
+[project]
+name = "legendarr-bootstrap"
+version = "0.1.0"
+description = "Runs legendarr-backend and legendarr-web together as a single process"
+requires-python = ">=3.12"
+dependencies = [
+    "legendarr-backend",
+    "legendarr-web",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[tool.uv.sources]
+legendarr-backend = { workspace = true }
+legendarr-web = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/legendarr_bootstrap"]

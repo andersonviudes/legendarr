@@ -14,7 +14,7 @@ test:
 	uv run pytest
 
 run:
-	uv run --package legendarr-web python -m legendarr_web
+	uv run --package legendarr-bootstrap python -m legendarr_bootstrap
 
 db-revision:
 	uv run --package legendarr-backend alembic -c modules/backend/alembic.ini revision --autogenerate -m "$(message)"
