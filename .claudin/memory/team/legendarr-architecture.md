@@ -58,3 +58,12 @@ language-profiles only) — don't treat 0.16.0 as done because of it.
 the business capability inside the right module (backend for domain logic, web for UI/routes)
 rather than adding to an existing generic layer. Keep the Dockerfile's `uv sync` calls using
 `--all-packages`.
+
+**AGENTS.md kept lean (2026-07-16):** `AGENTS.md`'s Architecture section only summarizes the
+three modules and points to this doc's `docs/architecture/overview.md` for the full slice
+layout — don't re-inline the detailed folder tree there, it drifted out of sync with the
+module split once before (still said "two modules" after `bootstrap` was added). Ruff/env-var
+conventions live in `.claudin/rules/python-conventions.md` (path-scoped to `modules/**/*.py`)
+instead of inline in `AGENTS.md`, and the Alembic migration workflow (incl. the `env.py`
+caching gotcha above) is now the `db-migration` skill — update those files, not `AGENTS.md`,
+when this detail changes.

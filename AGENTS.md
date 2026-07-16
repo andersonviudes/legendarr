@@ -15,8 +15,8 @@ make install       # uv sync --all-packages
 make lint          # ruff check . && ruff format --check .
 make format        # ruff format .
 make test          # uv run pytest
-make run           # runs the web app (+ backend scheduler) at http://localhost:8000
-make db-revision message="..."  # generate an Alembic migration from model changes
+make run           # runs legendarr-bootstrap (web UI + backend API + scheduler) at http://localhost:8000
+make db-revision message="..."  # generate an Alembic migration (use the `db-migration` skill)
 make db-upgrade    # apply pending Alembic migrations
 make docker-build  # docker build -t legendarr:local .
 make docs-serve    # preview the MkDocs site locally (needs `make docs-install` first)
@@ -29,34 +29,31 @@ published, not on every push/PR.
 ## Architecture
 
 Python monorepo, one `uv` workspace (`pyproject.toml` → `[tool.uv.workspace] members = ["modules/*"]`),
-built into a single Docker image with one shared `uv.lock`.
+built into a single Docker image with one shared `uv.lock`. Three modules — full breakdown
+and slice layout in `docs/architecture/overview.md`:
 
-- `modules/backend` (`legendarr_backend`) — domain logic: Radarr/Sonarr clients, subtitle
-  discovery/translation, language profiles, the sync scheduler.
-- `modules/web` (`legendarr_web`) — FastAPI + Jinja2/HTMX UI. Depends on `legendarr_backend`
-  directly and starts its scheduler in the FastAPI `lifespan`.
+- `modules/backend` (`legendarr_backend`) — domain logic (Radarr/Sonarr clients, subtitle
+  discovery/translation, language profiles, sync scheduler) plus an internal HTTP API.
+- `modules/web` (`legendarr_web`) — FastAPI + Jinja2/HTMX UI; calls the backend's API over
+  loopback HTTP, never imports `legendarr_backend` directly.
+- `modules/bootstrap` (`legendarr_bootstrap`) — entrypoint (`make run` / Docker `CMD`) that
+  mounts both apps behind one FastAPI instance and owns the scheduler's `lifespan`.
 
-Both modules use **Screaming Architecture + Vertical Slice Architecture**: top-level folders
-are named after business capabilities (`media_providers`, `subtitle_discovery`,
-`subtitle_translation`, `language_profiles`, ...), not technical layers. When adding a
-feature, create a new top-level slice folder in whichever module owns it — don't add to an
-existing generic layer. Code genuinely shared across slices (config, database, logging,
-templates) goes in `shared_kernel/`, nowhere else.
-
-Tests mirror this layout: `modules/<module>/tests/<slice>/test_*.py`.
+`backend` and `web` both use **Screaming Architecture + Vertical Slice Architecture**:
+top-level folders are business capabilities, not technical layers — new features get a new
+slice folder in whichever module owns them, not a new generic layer. Tests mirror this:
+`modules/<module>/tests/<slice>/test_*.py`.
 
 ## Conventions
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `test:`, ...).
 - Work happens on feature branches with a PR into `main` — don't push directly to `main`.
-- Config is env vars prefixed `LEGENDARR_`, loaded via `pydantic-settings` (see `.env.example`
-  and `docs/configuration/environment-variables.md`). Don't hardcode Radarr/Sonarr URLs or
-  keys.
-- Ruff config (`pyproject.toml`): line length 100, `target-version py312`, and an explicit
-  lint `select` list (`E, F, I, UP, B`) — narrower than Ruff's default rule set.
+- Python style, Ruff config, and env var conventions: see `.claudin/rules/python-conventions.md`
+  (loads automatically when touching `modules/**/*.py`).
+- Clean Code / SOLID guidance: see `.claudin/rules/clean-code-solid.md` (same trigger).
 
-Subdirectory `AGENTS.md` files can be added under `modules/backend/` or `modules/web/` for
-module-specific instructions if either grows enough to need them.
+Subdirectory `AGENTS.md` files can be added under `modules/backend/`, `modules/web/`, or
+`modules/bootstrap/` for module-specific instructions if any of them grows enough to need them.
 
 To refine: `/create` (skills, rules, agents), `/agents` (subagents), `/skills` (skills), `/permissions` (viewer for permission rules — edit `settings.json` directly to change them).
