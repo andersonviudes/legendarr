@@ -10,3 +10,9 @@ dist/
 build/
 *.egg-info/
 site/
+
+# Local/private Claudin state; team memory stays tracked so it syncs via git.
+.claudin/*
+!.claudin/memory/
+.claudin/memory/*
+!.claudin/memory/team/
