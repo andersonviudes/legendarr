@@ -1,6 +1,6 @@
+from legendarr_backend.arr_clients.radarr_client import RadarrClient
+from legendarr_backend.arr_clients.sonarr_client import SonarrClient
 from legendarr_backend.arr_services.schemas import ArrServiceInput
-from legendarr_backend.media_library.providers.radarr_client import RadarrClient
-from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
 
 
 def build_base_url(host: str, port: int, base_url: str, use_ssl: bool) -> str:

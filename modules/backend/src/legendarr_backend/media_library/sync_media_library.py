@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from legendarr_backend.media_library.providers.base import MediaLibraryClient
+from legendarr_backend.arr_clients.base import MediaLibraryClient
 
 
 @dataclass(frozen=True)

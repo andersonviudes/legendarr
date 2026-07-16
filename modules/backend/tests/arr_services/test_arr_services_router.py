@@ -2,9 +2,9 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from legendarr_backend.api import create_api_app
+from legendarr_backend.arr_clients.radarr_client import RadarrClient
+from legendarr_backend.arr_clients.sonarr_client import SonarrClient
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
-from legendarr_backend.media_library.providers.radarr_client import RadarrClient
-from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
 
 
 @pytest.fixture

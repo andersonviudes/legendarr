@@ -5,10 +5,10 @@ packaged into a single Docker image with one shared `uv.lock`.
 
 ## Modules
 
-- **`modules/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr clients,
-  subtitle discovery, subtitle translation, language profiles, the scheduler that runs the
-  media sync periodically, and an HTTP API (`api.py`) exposing that domain
-  logic — currently `/language-profiles/*`.
+- **`modules/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr connection
+  management, media library sync, subtitle discovery, subtitle translation, language
+  profiles, the scheduler that runs the media sync periodically, and an HTTP API (`api.py`)
+  exposing that domain logic — currently `/language-profiles/*` and `/arr-services/*`.
 - **`modules/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX): templates,
   static/JS, and per-slice "services" that call `legendarr_backend`'s API over HTTP
   (`httpx`). It has no Python dependency on `legendarr_backend` and never imports its code.
@@ -25,20 +25,24 @@ Top-level folders are named after what the code *does*, not what kind of code it
 
 ```text
 modules/backend/src/legendarr_backend/
+├── arr_services/            # Radarr/Sonarr connection CRUD + connection testing
 ├── language_profiles/       # language profile model + management
 ├── media_library/           # media library sync (business logic)
-│   └── providers/            # subdomain: Radarr/Sonarr technical adapters
+│   └── jobs.py               # the APScheduler job that drives the sync
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
+├── arr_clients/             # shared Radarr/Sonarr API clients (sync + connection test)
 ├── config/                  # env Settings + on-disk config.yaml
 ├── database/                # SQLModel engine/session + Alembic migration trigger
 ├── http_client/             # shared outbound-HTTP conventions for provider clients
 ├── logging/                 # logging setup
+├── scheduling/              # shared APScheduler wrapper (scheduler, queues, retry)
 └── api.py                   # the internal HTTP API app
 
 modules/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
+├── arr_services/            # /settings/arr-services/ routes (CRUD, test, enable/disable)
 ├── language_profiles/       # /settings/ route
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route
@@ -49,12 +53,13 @@ modules/web/src/legendarr_web/
 ```
 
 Each slice contains what it needs to work end to end. A domain folder can hold its own
-**subdomains** — e.g. `media_library/providers/` and `subtitle_translation/providers/`
-separate a domain's business logic from the raw external-API adapters it calls. Code that's
-truly shared across slices — configuration, database setup, logging, templates — lives in its
-own top-level folder (`config/`, `database/`, `http_client/`, `logging/`; web's `config/`,
-`backend_client/`, `templates/`), a sibling of the business-domain folders rather than nested
-under one shared-code wrapper.
+**subdomains** — e.g. `subtitle_translation/providers/` separates a domain's business logic
+from the raw external-API adapters it calls. Code that's truly shared across slices —
+configuration, database setup, logging, templates, the APScheduler wrapper, and the
+Radarr/Sonarr API clients (used by both `media_library` sync and `arr_services` connection
+testing) — lives in its own top-level folder (`arr_clients/`, `config/`, `database/`,
+`http_client/`, `logging/`, `scheduling/`; web's `config/`, `backend_client/`, `templates/`),
+a sibling of the business-domain folders rather than nested under one shared-code wrapper.
 
 When adding a new feature, create a new top-level slice folder named after the business
 capability, in whichever module owns it, rather than adding to an existing generic layer.

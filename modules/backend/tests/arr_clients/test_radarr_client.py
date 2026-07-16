@@ -1,21 +1,21 @@
+from legendarr_backend.arr_clients.radarr_client import RadarrClient
 from legendarr_backend.http_client.client import ProviderHttpClient
-from legendarr_backend.media_library.providers.sonarr_client import SonarrClient
 
 
 def test_list_items_maps_response_to_media_items(monkeypatch):
     monkeypatch.setattr(
         ProviderHttpClient,
         "get_json",
-        lambda self, path: [{"id": 1, "title": "Series", "path": "/series/series"}],
+        lambda self, path: [{"id": 1, "title": "Movie", "path": "/movies/movie"}],
     )
-    client = SonarrClient("http://sonarr.local", "api-key")
+    client = RadarrClient("http://radarr.local", "api-key")
 
     items = client.list_items()
 
     assert len(items) == 1
     assert items[0].id == 1
-    assert items[0].title == "Series"
-    assert items[0].path == "/series/series"
+    assert items[0].title == "Movie"
+    assert items[0].path == "/movies/movie"
 
 
 def test_system_status_requests_system_status(monkeypatch):
@@ -23,10 +23,10 @@ def test_system_status_requests_system_status(monkeypatch):
 
     def _get_json(self, path):
         requested_paths.append(path)
-        return {"appName": "Sonarr"}
+        return {"appName": "Radarr"}
 
     monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
-    client = SonarrClient("http://sonarr.local", "api-key")
+    client = RadarrClient("http://radarr.local", "api-key")
 
-    assert client.system_status() == {"appName": "Sonarr"}
+    assert client.system_status() == {"appName": "Radarr"}
     assert requested_paths == ["/api/v3/system/status"]
