@@ -16,3 +16,10 @@ capability/refactor of scope) or a `fix:` (bug fix). For `feat:`, create a branc
 open a PR — never push a feature branch's work directly to `main`. For `fix:`, it's fine to
 commit and push directly to `main` if the user asks for that. When in doubt about which bucket
 a change falls into, ask rather than assume `fix:` to bypass the PR step.
+
+**2026-07-16 addendum:** `docs:`-only changes (e.g. reordering/editing `ROADMAP.md`, no
+application code touched) were also committed and pushed straight to `main` on explicit user
+request ("pode comitar na main mesmo"), without a branch/PR — confirmed in practice even though
+AGENTS.md's Conventions section only names `fix:` explicitly. Treat pure-`docs:` changes like
+`fix:` (direct-to-main is fine if asked), but still ask if a `docs:` change is entangled with
+non-trivial code.

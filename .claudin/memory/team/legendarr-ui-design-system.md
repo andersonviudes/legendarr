@@ -187,7 +187,13 @@ per-page nav. When Movie/Series gain more persisted fields (0.2.0+), extend `.po
 rather than replacing it. Verification note: this sandbox has no `chromium-cli`/Playwright, but
 `/usr/bin/chromium` exists — `chromium --headless --disable-gpu --no-sandbox --screenshot=out.png
 --window-size=1600,1000 <url>` is a working fallback for one-shot screenshots without a CDP
-driver.
+driver. **The MCP playwright browser tools (`mcp__playwright__browser_*`) do NOT work here** —
+they error `Chromium distribution 'chrome' is not found at /opt/google/chrome/chrome`. For
+anything needing DOM/computed-style reads or click interaction (not just a screenshot), write a
+standalone node script instead: `npx playwright`'s `chromium.launch({executablePath:
+'/usr/bin/chromium'})` (used this session to reproduce a Test-button click and read
+`#test-result` innerHTML + `getComputedStyle` visibility) or the `puppeteer-core` variant noted
+below — both drive `/usr/bin/chromium` directly.
 
 **Pico.css gotchas hit while building this sidebar** (non-obvious, cost real debugging time —
 check for these first if the sidebar nav ever looks subtly wrong again):
@@ -228,11 +234,49 @@ check for these first if the sidebar nav ever looks subtly wrong again):
   into a vertical stack requires auditing every margin Pico sets on `nav`, `nav ul`, and `nav li
   a`, not just `align-items`/`justify-content`.
 
-**Dev-server restart gotcha:** `make run` is `uv run --package legendarr-web python -m
-legendarr_web` — backgrounding it with `nohup make run & ; echo $!` captures the PID of an
-intermediate wrapper process, not the actual `python -m legendarr_web` child that binds the
-port. `kill $(cat pid)` on that captured PID leaves the real server running untouched, so a
-"restart" silently keeps serving the old process — template edits show up live (Jinja isn't
-cached) but Python/router edits do not, which looks like the change didn't take effect. Find
-the real PID with `ss -ltnp | grep 8000` (or `pgrep -af legendarr_web`) and kill that one
-directly before relaunching.
+**Update (2026-07-16, sixth round — sidebar polish pass, PR #10 `feat/arr-services-settings`):**
+several small follow-up tweaks, each driven by a reference screenshot and shipped as its own
+commit:
+- Top-level "Library" and "Settings" `<button class="app-nav-toggle">` items got leading icons
+  (`library`/`settings`) — they'd shipped icon-less while the `<a>` items always had one.
+  `.app-nav-toggle` switched from `justify-content: space-between` to `gap: 0.75rem` +
+  `margin-left: auto` on the trailing chevron (`svg:last-child`) to fit 3 children (icon, label,
+  chevron) instead of 2; the `[aria-expanded="true"] svg` rotate rule also had to be scoped to
+  `svg:last-child`, or it rotated the new leading icon too.
+- All structural borders were removed from the sidebar per user request (`.app-sidebar`'s right
+  border, `.app-brand`'s bottom border, `.app-sidebar-footer`'s top border), and `.app-sidebar`'s
+  background was then unified to `var(--pico-background-color)` (same as `.app-main`).
+  **The two-tone/bordered sidebar described earlier in this file (2026-07-15 build —
+  `--lg-sidebar-background-color: #2a2a2a` nav area vs. header/footer bands, plus a right border)
+  no longer exists; that CSS variable was deleted. The current sidebar is one flat background
+  color with no dividing borders at all.**
+- New per-slice nav count badge pattern (`.app-nav-badge`, gold pill: `var(--pico-primary)` text
+  on `var(--lg-primary-dim-background-color)`): "Arr Services" shows how many Radarr/Sonarr
+  connections are registered. Implemented as `GET /settings/arr-services/count`
+  (`arr_services/router.py`) returning a small partial (`_count_badge.html`); `base.html` renders
+  an empty placeholder `<span hx-get=... hx-trigger="load" hx-swap="outerHTML">` next to the
+  link. Chosen over threading a count through every router's template context, so the count stays
+  owned by the `arr_services` slice (VSA) instead of leaking into unrelated routers
+  (dashboard/history/system/language_profiles). **htmx gotcha:** the swapped-in partial must NOT
+  itself carry `hx-get`/`hx-trigger="load"` — if it does, every swap re-triggers its own load,
+  causing an infinite refetch loop. The trigger lives only on the `base.html` placeholder; the
+  server-rendered partial response is static markup.
+- Sidebar nav font-size and icon size (icons are `1em`, so they scale with the element's
+  font-size) were bumped ~1px per user request. **The "uniform 0.8rem" font-size claimed in the
+  Theme section above is stale** — `.app-sidebar li a` and `.app-nav-toggle` have always had two
+  different font-sizes (regular nav links vs. the Library/Settings toggle buttons), not one
+  shared value; check current `styles.css` rather than trusting that old number.
+
+**Dev-server restart gotcha (updated 2026-07-16 for the bootstrap split):** `make run` is now
+`uv run --package legendarr-bootstrap python -m legendarr_bootstrap` (the old `legendarr_web`
+entrypoint below is pre-split — the process to look for is `legendarr_bootstrap`, not
+`legendarr_web`). It does NOT hot-reload: **Jinja template edits show up live per-request, but
+Python/router edits do NOT take effect until the process is restarted.** Re-running a
+curl/browser check against unrestarted code silently exercises the OLD behavior — this bit a
+live-verification pass this session (a create succeeded without the just-added connection check
+because the pre-edit code was still serving). `ps aux | grep legendarr_bootstrap` shows both a
+`make run` wrapper PID and the real `uv run ... python -m legendarr_bootstrap` child; `pkill -f
+legendarr_bootstrap` reliably stops the real server (killing only the captured wrapper/background
+PID leaves it running). Relaunch detached with `nohup make run > /tmp/legendarr-run.log 2>&1 &
+disown`, then poll `curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/...` until it
+returns 200 (the app runs Alembic migrations on startup, so give it ~8s).
