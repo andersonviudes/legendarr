@@ -381,6 +381,8 @@ body {
 
 .service-form {
   max-width: 28rem;
+  --pico-form-element-spacing-vertical: 0.5rem;
+  --pico-form-element-spacing-horizontal: 0.75rem;
 }
 
 .service-form legend,
@@ -402,6 +404,13 @@ body {
 
 .form-actions [type="submit"] {
   flex: 1;
+}
+
+button,
+[role="button"],
+[type="submit"],
+[type="button"] {
+  --pico-border-radius: 0.5rem;
 }
 
 /* Pico's `.outline`/`.contrast` button variants aren't included in the vendored
