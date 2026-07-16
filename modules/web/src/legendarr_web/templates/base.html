@@ -58,12 +58,28 @@
                 {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
               >{{ icon("history") }}<span>History</span></a>
             </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
+            aria-controls="nav-settings"
+          ><span>Settings</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
             <li>
               <a
                 href="/settings/"
-                {% if request.url.path.startswith("/settings") %}aria-current="page"{% endif %}
-              >{{ icon("settings") }}<span>Settings</span></a>
+                {% if request.url.path == "/settings/" %}aria-current="page"{% endif %}
+              >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
+            <li>
+              <a
+                href="/settings/arr-services/"
+                {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
+              >{{ icon("server") }}<span>Arr Services</span></a>
+            </li>
+          </ul>
+          <ul>
             <li>
               <a
                 href="/system/"

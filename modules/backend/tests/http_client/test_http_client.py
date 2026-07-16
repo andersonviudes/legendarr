@@ -41,3 +41,9 @@ def test_get_json_wraps_request_errors():
 
     with pytest.raises(ProviderClientError, match="TestProvider"):
         client.get_json("/items")
+
+
+def test_init_honors_custom_timeout():
+    client = ProviderHttpClient("TestProvider", "http://provider.local", timeout=5.0)
+
+    assert client._client.timeout.connect == 5.0

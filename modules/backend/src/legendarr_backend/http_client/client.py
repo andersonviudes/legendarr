@@ -17,12 +17,18 @@ class ProviderHttpClient:
     of each configuring httpx from scratch.
     """
 
-    def __init__(self, provider: str, base_url: str, headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        provider: str,
+        base_url: str,
+        headers: dict[str, str] | None = None,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> None:
         self._provider = provider
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers=headers,
-            timeout=DEFAULT_TIMEOUT,
+            timeout=timeout,
             transport=httpx.HTTPTransport(retries=DEFAULT_RETRIES),
         )
 

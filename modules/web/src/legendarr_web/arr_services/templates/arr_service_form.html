@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}legendarr · {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server{% endblock %}
+{% block content %}
+<h1>{{ icon("settings") }} {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server</h1>
+
+<form
+  method="post"
+  action="{{ '/settings/arr-services/' ~ service.id if service else '/settings/arr-services/' }}"
+>
+  <input type="hidden" name="service_type" value="{{ service_type }}">
+
+  <label>
+    <input type="checkbox" name="enabled" {% if not service or service.enabled %}checked{% endif %}>
+    Enabled
+  </label>
+
+  <fieldset>
+    <legend>Host</legend>
+
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="{{ service.name if service else '' }}" required>
+
+    <label for="host">Address</label>
+    <input
+      type="text" id="host" name="host" value="{{ service.host if service else '' }}"
+      placeholder="Hostname or IPv4 Address" required
+    >
+
+    <label for="port">Port</label>
+    <input
+      type="number" id="port" name="port"
+      value="{{ service.port if service else default_port }}" required
+    >
+
+    <label for="base_url">Base URL</label>
+    <input type="text" id="base_url" name="base_url" value="{{ service.base_url if service else '/' }}">
+
+    <label for="http_timeout_seconds">HTTP Timeout</label>
+    <input
+      type="number" id="http_timeout_seconds" name="http_timeout_seconds"
+      value="{{ service.http_timeout_seconds if service else 60 }}"
+    >
+
+    <label for="api_key">API Key</label>
+    <input type="text" id="api_key" name="api_key" value="{{ service.api_key if service else '' }}" required>
+
+    <label>
+      <input type="checkbox" name="use_ssl" {% if service and service.use_ssl %}checked{% endif %}>
+      SSL
+    </label>
+  </fieldset>
+
+  <div id="test-result"></div>
+  <button
+    type="button"
+    class="outline"
+    hx-post="/settings/arr-services/test"
+    hx-include="closest form"
+    hx-target="#test-result"
+    hx-swap="innerHTML"
+  >Test</button>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

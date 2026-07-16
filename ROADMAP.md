@@ -55,10 +55,10 @@ attributes) entirely from the web UI, triggers a sync, and sees their movies/ser
 populate in the dashboard — no shell access, CLI, or env-var editing needed for day-to-day
 setup.*
 
-- [ ] **Settings** — Connection details (Radarr/Sonarr URL + API key) editable from the web UI
+- [x] **Settings** — Connection details (Radarr/Sonarr URL + API key) editable from the web UI
   and persisted, on top of the config foundation from 0.1.0 (env vars remain the way to
-  bootstrap the very first run, per `AGENTS.md`). Secrets (API keys) encrypted at rest instead
-  of stored as plaintext.
+  bootstrap the very first run, per `AGENTS.md`).
+- [ ] **Settings** — Secrets (API keys) encrypted at rest instead of stored as plaintext.
 - [ ] **Settings** — Validate settings on save (e.g. test the Radarr/Sonarr connection before
   storing it).
 - [ ] **Settings** — Path mapping: reconcile filesystem path differences between legendarr and

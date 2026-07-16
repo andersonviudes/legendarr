@@ -16,3 +16,17 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].id == 1
     assert items[0].title == "Movie"
     assert items[0].path == "/movies/movie"
+
+
+def test_ping_requests_system_status(monkeypatch):
+    requested_paths = []
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        lambda self, path: requested_paths.append(path),
+    )
+    client = RadarrClient("http://radarr.local", "api-key")
+
+    client.ping()
+
+    assert requested_paths == ["/api/v3/system/status"]

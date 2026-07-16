@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from legendarr_web.arr_services.router import router as arr_services_router
 from legendarr_web.dashboard.router import router as dashboard_router
 from legendarr_web.history.router import router as history_router
 from legendarr_web.language_profiles.router import router as language_profiles_router
@@ -18,6 +19,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(media_library_router)
     app.include_router(language_profiles_router)
+    app.include_router(arr_services_router)
     app.include_router(history_router)
     app.include_router(system_router)
     return app

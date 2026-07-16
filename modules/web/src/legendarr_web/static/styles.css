@@ -293,6 +293,84 @@ body {
   background-color: transparent;
 }
 
+/* === Service cards: Arr Services settings === */
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.25rem;
+  margin-block: 1rem 2.5rem;
+}
+
+.service-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+}
+
+.service-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.service-card-name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pico-color);
+}
+
+.service-card-status {
+  font-size: 0.7375rem;
+  color: var(--pico-primary);
+}
+
+.service-card-status.is-disabled {
+  color: var(--pico-muted-color);
+}
+
+.service-card-address {
+  margin: 0;
+  font-size: 0.7375rem;
+  color: var(--pico-muted-color);
+}
+
+.service-card-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: auto;
+}
+
+.service-card-actions form {
+  margin: 0;
+}
+
+.service-add-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  min-height: 6rem;
+  border: 1px dashed var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.service-add-card:hover {
+  color: var(--pico-primary);
+  border-color: var(--pico-primary);
+}
+
 /* === Sidebar footer: theme toggle + project links === */
 .app-sidebar-footer {
   display: flex;
