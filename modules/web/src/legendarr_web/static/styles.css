@@ -17,7 +17,7 @@ svg.lucide {
 
 /* === Theme: neutral graphite palette, muted gold accent === */
 [data-theme="dark"] {
-  --pico-background-color: #0f1114;
+  --pico-background-color: #202020;
   --pico-color: #e4e4e7;
   --pico-h1-color: #f5f5f6;
   --pico-h2-color: #eeeef0;
@@ -36,7 +36,7 @@ svg.lucide {
   --pico-card-background-color: #16181c;
   --pico-card-border-color: rgba(255, 255, 255, 0.08);
 
-  --lg-sidebar-background-color: #0b0c0f;
+  --lg-sidebar-background-color: #2a2a2a;
   --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
 }
