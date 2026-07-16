@@ -121,7 +121,7 @@ body {
   box-sizing: border-box;
   margin: 0.15rem 0 0.1rem;
   padding: 0.35rem 0.9rem;
-  font-size: 0.6375rem;
+  font-size: 0.69306rem;
   font-weight: 600;
   color: var(--pico-muted-color);
   cursor: pointer;
@@ -176,7 +176,7 @@ body {
   border-radius: 0.6rem;
   color: var(--pico-muted-color);
   text-decoration: none;
-  font-size: 0.7375rem;
+  font-size: 0.79306rem;
   font-weight: 600;
   transition:
     color 0.15s ease,
