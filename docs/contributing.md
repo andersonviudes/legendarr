@@ -17,7 +17,7 @@ make test    # pytest
 ```
 
 CI runs the same lint, format check, and test suite on every push and pull request to
-`main`, plus a Docker build to validate the image still builds.
+`main`. The Docker image is only built on release, not on every push or pull request.
 
 ## Commit messages
 
