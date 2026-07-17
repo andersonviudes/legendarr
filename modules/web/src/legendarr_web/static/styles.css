@@ -1,6 +1,20 @@
 /* Pico.css (vendor/pico.min.css) covers layout, typography and theming.
    Only legendarr-specific overrides belong here. */
 
+/* Pico scales --pico-font-size up at wider breakpoints (up to 131.25% at >=1536px),
+   meant to be paired with its own growing `.container` so proportions stay balanced.
+   This app's `.app-main` has no such container, so on a wide viewport that scaling just
+   inflates every unstyled Pico element (raw form labels/inputs in particular) — pin it. */
+:root {
+  --pico-font-size: 18px;
+
+  /* Type scale — tokens for the sizes reused across components, so a tweak lands in one
+     place instead of being hunted down in five. Values are rem, tracking the root size. */
+  --lg-font-xs: 0.7375rem; /* meta text: card status/address, stat label, form + buttons */
+  --lg-font-sm: 0.79306rem; /* sidebar nav links and section toggles */
+  --lg-font-md: 0.8125rem; /* inline test-result messages */
+}
+
 svg.lucide {
   width: 1em;
   height: 1em;
@@ -9,12 +23,12 @@ svg.lucide {
 
 /* === Theme: neutral graphite palette, muted gold accent === */
 [data-theme="dark"] {
-  --pico-background-color: #0f1114;
-  --pico-color: #e4e4e7;
-  --pico-h1-color: #f5f5f6;
-  --pico-h2-color: #eeeef0;
-  --pico-muted-color: #8b8d97;
-  --pico-muted-border-color: rgba(255, 255, 255, 0.08);
+  --pico-background-color: #202020;
+  --pico-color: #b3b3b3;
+  --pico-h1-color: #b3b3b3;
+  --pico-h2-color: #b3b3b3;
+  --pico-muted-color: #b3b3b3;
+  --pico-muted-border-color: #9a9a9a;
   --pico-primary: #c9974f;
   --pico-primary-background: #a97c3e;
   --pico-primary-border: var(--pico-primary-background);
@@ -26,22 +40,51 @@ svg.lucide {
   --pico-primary-focus: rgba(201, 151, 79, 0.3);
   --pico-primary-inverse: #17130a;
   --pico-card-background-color: #16181c;
-  --pico-card-border-color: rgba(255, 255, 255, 0.08);
+  --pico-card-border-color: #9a9a9a;
 
-  --lg-sidebar-background-color: #0b0c0f;
+  --pico-form-element-background-color: #333333;
+  --pico-form-element-border-color: #9a9a9a;
+  --pico-form-element-color: #b3b3b3;
+  --pico-form-element-active-background-color: #333333;
+  --pico-form-element-active-border-color: var(--pico-primary);
+  --pico-form-element-focus-color: var(--pico-primary);
+
+  --lg-sidebar-background-color: #2a2a2a;
   --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
+  --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* === App shell: fixed sidebar + scrolling content === */
+/* === App shell: full-width topbar over a fixed sidebar + scrolling content === */
 body {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Full-width header band across the top, spanning both the sidebar and main columns
+   (Sonarr-style). Holds the brand at the left; a home for global controls later. */
+.app-topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  /* Reset Pico's default `header` block spacing and max-width so the band reaches
+     both viewport edges instead of leaving dark insets at the corners. */
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: none;
+  height: 3.75rem;
+  background-color: var(--lg-sidebar-background-color);
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
 }
 
 .app-shell {
   display: flex;
   align-items: stretch;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
 .app-sidebar {
@@ -49,13 +92,13 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--lg-sidebar-background-color);
-  border-right: 1px solid var(--pico-muted-border-color);
 }
 
+/* Sits in the topbar's left segment, aligned over the sidebar column below it. */
 .app-brand {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--pico-muted-border-color);
-  margin-bottom: 0.5rem;
+  flex: 0 0 15rem;
+  box-sizing: border-box;
+  padding: 0 1.5rem;
 }
 
 .app-brand a {
@@ -95,29 +138,34 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  padding: 0.75rem;
+  padding: 1.25rem 0.75rem 0.75rem;
 }
 
 .app-nav-toggle {
   all: unset;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
   margin: 0.15rem 0 0.1rem;
   padding: 0.35rem 0.9rem;
-  font-size: 0.6375rem;
+  font-size: var(--lg-font-sm);
   font-weight: 600;
   color: var(--pico-muted-color);
   cursor: pointer;
 }
 
 .app-nav-toggle svg {
+  flex: none;
   transition: transform 0.15s ease;
 }
 
-.app-nav-toggle[aria-expanded="true"] svg {
+.app-nav-toggle svg:last-child {
+  margin-left: auto;
+}
+
+.app-nav-toggle[aria-expanded="true"] svg:last-child {
   transform: rotate(90deg);
 }
 
@@ -157,7 +205,7 @@ body {
   border-radius: 0.6rem;
   color: var(--pico-muted-color);
   text-decoration: none;
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-sm);
   font-weight: 600;
   transition:
     color 0.15s ease,
@@ -165,9 +213,14 @@ body {
 }
 
 /* Higher specificity than .app-sidebar li a (which sets padding-left too) so the indent
-   actually sticks regardless of source order. */
+   actually sticks regardless of source order. Submenu items are text-only — icons are
+   reserved for top-level nav entries — so the indent replaces the icon's space. */
 .app-sidebar .app-nav-submenu li a {
   padding-left: 2.15rem;
+}
+
+.app-sidebar .app-nav-submenu li a svg {
+  display: none;
 }
 
 .app-sidebar li a svg {
@@ -175,12 +228,23 @@ body {
 }
 
 .app-sidebar li a:hover {
-  color: var(--pico-color);
-  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--pico-primary-hover);
+  background-color: var(--lg-neutral-hover-background-color);
 }
 
 .app-sidebar li a[aria-current="page"] {
   color: var(--pico-primary);
+}
+
+.app-nav-badge {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+  font-size: 0.675rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .app-main {
@@ -214,7 +278,7 @@ body {
 
 .stat-label {
   margin: 0.25rem 0 0;
-  font-size: 0.7375rem;
+  font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
 }
 
@@ -268,6 +332,13 @@ body {
 }
 
 /* === Friendly empty states (language profiles, library) === */
+/* Shared muted placeholder for "nothing here yet" copy — used via the empty_state() macro
+   across the library and arr-services pages. */
+.empty-state {
+  margin: 1.5rem 0 0;
+  color: var(--pico-muted-color);
+}
+
 .profile-list {
   list-style: none;
   margin: 1.5rem 0 0;
@@ -293,14 +364,232 @@ body {
   background-color: transparent;
 }
 
+/* === Service cards: Arr Services settings === */
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.25rem;
+  margin-block: 1rem 2.5rem;
+}
+
+.service-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* Drop Pico's default `article` margin so this card and the dashed add-card end up
+     the same height in the grid row (the stray margin made the add-card look taller). */
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+}
+
+.service-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* Neutralize Pico's default `article > header` band (background, padding, border)
+     so the card header matches the clean card style used elsewhere. */
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+}
+
+.service-card-name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pico-color);
+}
+
+/* Enable/disable toggle sitting in the card header: a Pico switch plus its label,
+   laid out inline with no default form-element margins. */
+.service-card-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.service-card-toggle input[type="checkbox"][role="switch"] {
+  margin: 0;
+}
+
+.service-card-status {
+  font-size: var(--lg-font-xs);
+  color: var(--pico-primary);
+}
+
+.service-card-status.is-disabled {
+  color: var(--pico-muted-color);
+}
+
+.service-card-address {
+  margin: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+}
+
+.service-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: auto;
+}
+
+/* Edit is a block-level <a role="button"> that otherwise renders taller than the
+   Delete <button>; inline-flex gives it the same natural height so the two align. */
+.service-card-actions a[role="button"] {
+  display: inline-flex;
+  align-items: center;
+}
+
+.service-card-actions form,
+.service-card-actions form button {
+  margin: 0;
+}
+
+.service-add-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  min-height: 6rem;
+  border: 1px dashed var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.service-add-card:hover {
+  color: var(--pico-primary);
+  border-color: var(--pico-primary);
+}
+
+.service-form {
+  max-width: 28rem;
+  --pico-form-element-spacing-vertical: 0.5rem;
+  --pico-form-element-spacing-horizontal: 0.75rem;
+}
+
+.service-form legend,
+.service-form label,
+.service-form input {
+  font-size: var(--lg-font-xs);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.form-actions button {
+  width: auto;
+  min-width: 6rem;
+}
+
+.form-actions [type="submit"] {
+  flex: 1;
+}
+
+/* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle
+   and .app-icon-btn — fully reset themselves with `all: unset` and style themselves, so
+   they're excluded here rather than fought with extra specificity elsewhere. */
+button:not(.app-nav-toggle):not(.app-icon-btn),
+[role="button"],
+[type="submit"],
+[type="button"]:not(.app-nav-toggle):not(.app-icon-btn) {
+  display: inline-block;
+  --pico-border-radius: 0.5rem;
+  --pico-form-element-spacing-vertical: 0.5rem;
+  --pico-form-element-spacing-horizontal: 0.75rem;
+  font-size: var(--lg-font-xs);
+}
+
+/* Pico's `.outline`/`.contrast` button variants aren't included in the vendored
+   pico.min.css build, so buttons using those classes rendered as plain filled
+   buttons — reimplement them here using the same custom-property hooks Pico's own
+   button rule reads (--pico-background-color/--pico-border-color/--pico-color). */
+[role="button"].outline,
+button.outline,
+[type="submit"].outline,
+[type="button"].outline {
+  --pico-background-color: transparent;
+  --pico-border-color: var(--pico-primary);
+  --pico-color: var(--pico-primary);
+}
+
+[role="button"].outline:is(:hover, :focus),
+button.outline:is(:hover, :focus),
+[type="submit"].outline:is(:hover, :focus),
+[type="button"].outline:is(:hover, :focus) {
+  --pico-background-color: var(--pico-primary);
+  --pico-border-color: var(--pico-primary);
+  --pico-color: var(--pico-primary-inverse);
+}
+
+[role="button"].outline.contrast,
+button.outline.contrast {
+  --pico-border-color: var(--pico-del-color);
+  --pico-color: var(--pico-del-color);
+}
+
+[role="button"].outline.contrast:is(:hover, :focus),
+button.outline.contrast:is(:hover, :focus) {
+  --pico-background-color: var(--pico-del-color);
+  --pico-border-color: var(--pico-del-color);
+  --pico-color: var(--pico-primary-inverse);
+}
+
+.test-result {
+  margin: 0.75rem 0 0;
+  font-size: var(--lg-font-md);
+}
+
+.test-result--success {
+  color: var(--pico-ins-color);
+}
+
+.test-result--error {
+  color: var(--pico-del-color);
+}
+
+/* Shown only while the "Test" request is in flight (htmx toggles .htmx-request). */
+.test-indicator {
+  display: none;
+  color: var(--pico-muted-color);
+}
+
+.test-indicator.htmx-request {
+  display: block;
+}
+
 /* === Sidebar footer: theme toggle + project links === */
 .app-sidebar-footer {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: auto;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--pico-muted-border-color);
+  padding: 0.75rem 1.5rem;
+}
+
+/* Divider above the footer, inset from the sidebar edges to match the content padding. */
+.app-sidebar-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  border-top: 1px solid var(--pico-color);
 }
 
 .app-icon-btn {
@@ -317,7 +606,7 @@ body {
 }
 
 .app-icon-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--lg-neutral-hover-background-color);
 }
 
 .app-icon-btn--github {
@@ -326,4 +615,23 @@ body {
 
 .app-icon-btn--github:hover {
   color: var(--pico-color);
+}
+
+/* === Narrow viewports === */
+/* Below ~768px the fixed 15rem sidebar squeezes the content column, so stack the shell:
+   the sidebar drops under the topbar as a full-width nav block and the main padding tightens. */
+@media (max-width: 48rem) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar,
+  .app-brand {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .app-main {
+    padding: 1.5rem 1.25rem;
+  }
 }

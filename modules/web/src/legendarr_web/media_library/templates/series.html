@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import empty_state %}
 {% block title %}legendarr · Series{% endblock %}
 {% block content %}
 <hgroup>
@@ -16,6 +17,6 @@
   {% endfor %}
 </div>
 {% else %}
-<p>Nothing synced yet — run a library sync from Sonarr to see it here.</p>
+{{ empty_state("Nothing synced yet — run a library sync from Sonarr to see it here.") }}
 {% endif %}
 {% endblock %}

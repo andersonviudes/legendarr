@@ -17,11 +17,13 @@
     <script src="/static/vendor/htmx.min.js"></script>
   </head>
   <body>
+    <header class="app-topbar">
+      <div class="app-brand">
+        <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
+      </div>
+    </header>
     <div class="app-shell">
       <aside class="app-sidebar">
-        <header class="app-brand">
-          <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
-        </header>
         <nav aria-label="Main">
           <ul>
             <li>
@@ -36,7 +38,7 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
             aria-controls="nav-library"
-          ><span>Library</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
             <li>
               <a
@@ -58,12 +60,34 @@
                 {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
               >{{ icon("history") }}<span>History</span></a>
             </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
+            aria-controls="nav-settings"
+          >{{ icon("settings") }}<span>Settings</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
             <li>
               <a
                 href="/settings/"
-                {% if request.url.path.startswith("/settings") %}aria-current="page"{% endif %}
-              >{{ icon("settings") }}<span>Settings</span></a>
+                {% if request.url.path == "/settings/" %}aria-current="page"{% endif %}
+              >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
+            <li>
+              <a
+                href="/settings/arr-services/"
+                {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
+              >{{ icon("server") }}<span>Arr Services</span><span
+                id="arr-services-count-badge"
+                hidden
+                hx-get="/settings/arr-services/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
+            </li>
+          </ul>
+          <ul>
             <li>
               <a
                 href="/system/"

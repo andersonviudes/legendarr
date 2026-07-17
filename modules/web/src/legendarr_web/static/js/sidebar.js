@@ -1,4 +1,4 @@
-// Toggles the sidebar's collapsible nav groups (currently just "Library").
+// Toggles the sidebar's collapsible nav groups ("Library", "Settings").
 document.querySelectorAll(".app-nav-toggle").forEach((toggle) => {
   const submenu = document.getElementById(toggle.getAttribute("aria-controls"));
   toggle.addEventListener("click", () => {

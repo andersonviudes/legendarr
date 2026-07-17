@@ -2,8 +2,8 @@ import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from legendarr_backend.arr_clients.base import MediaLibraryClient
 from legendarr_backend.config.config_file import AppConfigFile
-from legendarr_backend.media_library.providers.base import MediaLibraryClient
 from legendarr_backend.media_library.sync_media_library import sync_media_library
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import register_job

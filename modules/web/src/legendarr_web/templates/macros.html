@@ -1,0 +1,85 @@
+{#
+  Shared UI components. Live in the top-level templates/ package so every slice can
+  reach them: {% from "macros.html" import field, empty_state %}. The `icon()` global is
+  available inside these macros just like in any template.
+#}
+
+{% macro empty_state(message) %}
+<p class="empty-state">{{ message }}</p>
+{% endmacro %}
+
+{% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="") %}
+<label for="{{ name }}">{{ label }}</label>
+<input
+  type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}"
+  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+  {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+  {% if required %}required{% endif %}
+>
+{% endmacro %}
+
+{% macro checkbox_field(name, label, checked=false) %}
+<label>
+  <input type="checkbox" name="{{ name }}" {% if checked %}checked{% endif %}>
+  {{ label }}
+</label>
+{% endmacro %}
+
+{#
+  Enable/disable toggle for an arr-service card. Also rendered standalone by the toggle
+  route (via _service_status.html) so the switch can swap itself after a PATCH.
+#}
+{% macro service_status(arr_service) %}
+<label class="service-card-toggle" hx-target="this" hx-swap="outerHTML">
+  <input
+    type="checkbox" name="enabled" role="switch"
+    aria-label="{{ 'Enabled' if arr_service.enabled else 'Disabled' }} — toggle to enable or disable this service"
+    {{ 'checked' if arr_service.enabled else '' }}
+    hx-post="/settings/arr-services/{{ arr_service.id }}/enabled"
+    hx-trigger="change"
+  >
+  <span class="service-card-status{{ '' if arr_service.enabled else ' is-disabled' }}">
+    {{ "Enabled" if arr_service.enabled else "Disabled" }}
+  </span>
+</label>
+{% endmacro %}
+
+{% macro service_card(arr_service) %}
+<article class="service-card">
+  <header class="service-card-header">
+    <p class="service-card-name">{{ arr_service.name }}</p>
+    {{ service_status(arr_service) }}
+  </header>
+  <p class="service-card-address">
+    {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}
+  </p>
+  <div class="service-card-actions">
+    <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">Edit</a>
+    <form method="post" action="/settings/arr-services/{{ arr_service.id }}/delete">
+      <button type="submit" class="outline contrast">Delete</button>
+    </form>
+  </div>
+</article>
+{% endmacro %}
+
+{#
+  One Radarr/Sonarr section: heading, empty-state, the registered cards, and the add-card.
+  Both arr sections are identical bar the label/icon/type, so they share this macro.
+#}
+{% macro service_section(label, icon_name, service_type, services) %}
+<section>
+  <h2>{{ icon(icon_name) }} {{ label }}</h2>
+  {% if not services %}
+  {{ empty_state("No " ~ label ~ " server configured yet.") }}
+  {% endif %}
+  <div class="service-grid">
+    {% for arr_service in services %}
+    {{ service_card(arr_service) }}
+    {% endfor %}
+    <a href="/settings/arr-services/new?service_type={{ service_type }}" class="service-add-card">
+      {{ icon(icon_name) }}
+      <span>Add {{ label }} Server</span>
+    </a>
+  </div>
+</section>
+{% endmacro %}

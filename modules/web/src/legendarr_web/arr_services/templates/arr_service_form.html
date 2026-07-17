@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, checkbox_field %}
+{% block title %}legendarr · {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server{% endblock %}
+{% block content %}
+<h1>{{ icon("settings") }} {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server</h1>
+
+{% if error %}
+<p class="test-result test-result--error">{{ error }}</p>
+{% endif %}
+
+<form
+  class="service-form"
+  method="post"
+  action="{{ '/settings/arr-services/' ~ service.id if service else '/settings/arr-services/' }}"
+>
+  <input type="hidden" name="service_type" value="{{ service_type }}">
+
+  {{ checkbox_field("enabled", "Enabled", checked=(not service or service.enabled)) }}
+
+  <fieldset>
+    <legend>Host</legend>
+
+    {{ field("name", "Name", value=(service.name if service else ""), required=true) }}
+    {{ field("host", "Address", value=(service.host if service else ""),
+             placeholder="Hostname or IPv4 Address", required=true) }}
+    {{ field("port", "Port", type="number", value=(service.port if service else default_port),
+             required=true) }}
+    {{ field("base_url", "Base URL", value=(service.base_url if service else "/")) }}
+    {{ field("http_timeout_seconds", "HTTP Timeout", type="number",
+             value=(service.http_timeout_seconds if service else 60)) }}
+
+    {# Never re-display the stored secret. On edit, a blank field means "keep the current key". #}
+    {{ field("api_key", "API Key", type="password", autocomplete="off",
+             required=(not service),
+             placeholder=("Leave blank to keep the current key" if service else "")) }}
+
+    {{ checkbox_field("use_ssl", "SSL", checked=(service and service.use_ssl)) }}
+  </fieldset>
+
+  <div id="test-result" aria-live="polite"></div>
+  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+  <div class="form-actions">
+    <button
+      type="button"
+      class="outline"
+      data-test-connection
+      hx-post="/settings/arr-services/test"
+      hx-include="closest form"
+      hx-target="#test-result"
+      hx-swap="innerHTML"
+      hx-indicator="#test-indicator"
+      hx-disabled-elt="this"
+    >Test</button>
+    <button type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/arr-service-form.js" defer></script>
+{% endblock %}

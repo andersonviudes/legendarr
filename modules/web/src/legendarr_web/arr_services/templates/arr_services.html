@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "macros.html" import service_section %}
+{% block title %}legendarr · Arr Services{% endblock %}
+{% block content %}
+<h1>{{ icon("server") }} Arr Services</h1>
+
+{{ service_section("Radarr", "clapperboard", "radarr", radarr_services) }}
+{{ service_section("Sonarr", "tv", "sonarr", sonarr_services) }}
+{% endblock %}
