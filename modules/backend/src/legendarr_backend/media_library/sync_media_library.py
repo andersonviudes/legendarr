@@ -34,6 +34,7 @@ def sync_media_library(session: Session) -> SyncResult:
     for arr_service in list_enabled_arr_services(session):
         try:
             synced = _sync_service(session, arr_service)
+            session.commit()
         except Exception:
             session.rollback()
             logger.exception(
@@ -42,7 +43,6 @@ def sync_media_library(session: Session) -> SyncResult:
                 arr_service.service_type,
             )
             continue
-        session.commit()
         if arr_service.service_type == "radarr":
             movies_synced += synced
         else:

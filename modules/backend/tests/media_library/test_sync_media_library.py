@@ -157,3 +157,24 @@ def test_failing_connection_does_not_block_others(in_memory_session, fake_client
     assert len(kept) == 1
     assert kept[0].title == "Old"
     assert len(_series(in_memory_session)) == 1
+
+
+def test_commit_failure_does_not_block_other_connections(in_memory_session, fake_clients):
+    """A duplicate arr_id in one connection's response only blows up at flush/commit time —
+    the failure must stay scoped to that connection, not propagate out of the loop."""
+    broken = create_arr_service(in_memory_session, _service_input("broken", "radarr"))
+    healthy = create_arr_service(in_memory_session, _service_input("healthy", "sonarr"))
+    fake_clients[broken.id] = _FakeClient(
+        [
+            MediaItem(id=1, title="A", path="/movies/A"),
+            MediaItem(id=1, title="A2", path="/movies/A2"),
+        ]
+    )
+    fake_clients[healthy.id] = _FakeClient([MediaItem(id=2, title="Bar", path="/tv/Bar")])
+
+    result = sync_media_library(in_memory_session)
+
+    assert result.movies_synced == 0
+    assert result.series_synced == 1
+    assert _movies(in_memory_session) == []
+    assert len(_series(in_memory_session)) == 1

@@ -67,7 +67,8 @@ setup.*
   remote→local path prefix pair, reconciling filesystem differences when legendarr and
   Radarr/Sonarr run in separate containers with different mounts. Paths are stored as
   reported and translated at read time (`resolve_local_path`), so editing a mapping
-  never requires a re-sync.
+  never requires a re-sync. Known gap (deferred): Windows-style paths (`C:\Movies\...`)
+  don't match prefix boundaries yet — `resolve_local_path` only handles `/` separators.
 - [x] **Media providers** — Sync persists media (`Movie`/`Series` + the path as reported
   by the server) per connection, keyed by `(arr_service_id, arr_id)` so multiple Radarr/
   Sonarr instances never collide; rows a server stops reporting are deleted only within
