@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
@@ -23,6 +24,13 @@ def _get_session() -> Iterator[Session]:
         yield session
 
 
+def _raise_duplicate_name(session: Session, exc: IntegrityError) -> NoReturn:
+    session.rollback()
+    raise HTTPException(
+        status_code=409, detail="A language profile with this name already exists"
+    ) from exc
+
+
 @router.get("/", response_model=list[LanguageProfile])
 def list_profiles(session: Session = Depends(_get_session)) -> list[LanguageProfile]:
     return list_language_profiles(session)
@@ -35,10 +43,7 @@ def create_profile(
     try:
         return create_language_profile(session, data)
     except IntegrityError as exc:
-        session.rollback()
-        raise HTTPException(
-            status_code=409, detail="A language profile with this name already exists"
-        ) from exc
+        _raise_duplicate_name(session, exc)
 
 
 @router.get("/{profile_id}", response_model=LanguageProfile)
@@ -56,10 +61,7 @@ def update_profile(
     try:
         profile = update_language_profile(session, profile_id, data)
     except IntegrityError as exc:
-        session.rollback()
-        raise HTTPException(
-            status_code=409, detail="A language profile with this name already exists"
-        ) from exc
+        _raise_duplicate_name(session, exc)
     if profile is None:
         raise HTTPException(status_code=404, detail="Language profile not found")
     return profile
