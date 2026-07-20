@@ -15,3 +15,6 @@ class LanguageProfile(SQLModel, table=True):
     target_languages: str
     translation_provider: str = Field(default="echo")
     extract_embedded_subtitles: bool = Field(default=True)
+    forced: bool = Field(default=False)
+    hearing_impaired: bool = Field(default=False)
+    is_default: bool = Field(default=False)

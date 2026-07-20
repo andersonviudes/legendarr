@@ -17,6 +17,11 @@ class Movie(SQLModel, table=True):
     arr_id: int
     title: str
     remote_path: str
+    # Pins this movie to a profile other than whichever one is marked `is_default` —
+    # nullable, so most rows fall back to the default instead of needing an explicit link.
+    language_profile_id: int | None = Field(
+        default=None, foreign_key="languageprofile.id", index=True
+    )
 
 
 class Series(SQLModel, table=True):
@@ -32,3 +37,6 @@ class Series(SQLModel, table=True):
     arr_id: int
     title: str
     remote_path: str
+    language_profile_id: int | None = Field(
+        default=None, foreign_key="languageprofile.id", index=True
+    )

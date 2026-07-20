@@ -339,32 +339,7 @@ body {
   color: var(--pico-muted-color);
 }
 
-.profile-list {
-  list-style: none;
-  margin: 1.5rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.profile-list li {
-  list-style: none;
-  padding: 0.9rem 1.1rem;
-  border: 1px solid var(--pico-card-border-color);
-  border-radius: 0.75rem;
-  background-color: var(--pico-card-background-color);
-  color: var(--pico-color);
-}
-
-.profile-list li.empty {
-  color: var(--pico-muted-color);
-  text-align: center;
-  border-style: dashed;
-  background-color: transparent;
-}
-
-/* === Service cards: Arr Services settings === */
+/* === Service cards: Arr Services and Language Profiles settings === */
 .service-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

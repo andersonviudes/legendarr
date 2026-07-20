@@ -62,6 +62,26 @@
 </article>
 {% endmacro %}
 
+{% macro profile_card(profile) %}
+<article class="service-card">
+  <header class="service-card-header">
+    <p class="service-card-name">{{ profile.name }}</p>
+    {% if profile.is_default %}<span class="app-nav-badge">Default</span>{% endif %}
+  </header>
+  <p class="service-card-address">{{ profile.source_languages }} → {{ profile.target_languages }}</p>
+  <p class="service-card-address">
+    {{ profile.translation_provider }}{% if profile.forced %} · Forced{% endif %}{% if
+    profile.hearing_impaired %} · HI{% endif %}
+  </p>
+  <div class="service-card-actions">
+    <a href="/settings/{{ profile.id }}/edit" role="button" class="outline">Edit</a>
+    <form method="post" action="/settings/{{ profile.id }}/delete">
+      <button type="submit" class="outline contrast">Delete</button>
+    </form>
+  </div>
+</article>
+{% endmacro %}
+
 {#
   One Radarr/Sonarr section: heading, empty-state, the registered cards, and the add-card.
   Both arr sections are identical bar the label/icon/type, so they share this macro.
