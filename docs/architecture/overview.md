@@ -38,6 +38,7 @@ modules/backend/src/legendarr_backend/
 ├── http_client/             # shared outbound-HTTP conventions for provider clients
 ├── logging/                 # logging setup
 ├── scheduling/              # shared APScheduler wrapper (scheduler, queues, retry)
+├── security/                # secrets encryption at rest (Fernet key, encrypt/decrypt, EncryptedString column type)
 └── api.py                   # the internal HTTP API app
 
 modules/web/src/legendarr_web/
@@ -55,10 +56,11 @@ modules/web/src/legendarr_web/
 Each slice contains what it needs to work end to end. A domain folder can hold its own
 **subdomains** — e.g. `subtitle_translation/providers/` separates a domain's business logic
 from the raw external-API adapters it calls. Code that's truly shared across slices —
-configuration, database setup, logging, templates, the APScheduler wrapper, and the
-Radarr/Sonarr API clients (used by both `media_library` sync and `arr_services` connection
-testing) — lives in its own top-level folder (`arr_clients/`, `config/`, `database/`,
-`http_client/`, `logging/`, `scheduling/`; web's `config/`, `backend_client/`, `templates/`),
+configuration, database setup, logging, templates, the APScheduler wrapper, secrets
+encryption at rest, and the Radarr/Sonarr API clients (used by both `media_library` sync
+and `arr_services` connection testing) — lives in its own top-level folder (`arr_clients/`,
+`config/`, `database/`, `http_client/`, `logging/`, `scheduling/`, `security/`; web's
+`config/`, `backend_client/`, `templates/`),
 a sibling of the business-domain folders rather than nested under one shared-code wrapper.
 
 When adding a new feature, create a new top-level slice folder named after the business

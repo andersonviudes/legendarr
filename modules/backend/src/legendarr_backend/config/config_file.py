@@ -1,7 +1,14 @@
+from pathlib import Path
+
 import yaml
+from cryptography.fernet import Fernet
 from pydantic import BaseModel, Field
 
 from legendarr_backend.config.settings import Settings
+from legendarr_backend.security.fernet import resolve_fernet
+from legendarr_backend.security.secrets import decrypt_secret, encrypt_secret, is_encrypted
+
+_SECRET_FIELDS = ("radarr_api_key", "sonarr_api_key")
 
 
 class AppConfigFile(BaseModel):
@@ -10,6 +17,8 @@ class AppConfigFile(BaseModel):
     Unlike `Settings` (bootstrap config sourced from env vars), this file is read
     before the database is created/opened, and is the file the Settings feature
     will read and rewrite once it exists.
+
+    In-memory values are plaintext; the `*_api_key` fields are encrypted on disk.
     """
 
     database_url: str = ""
@@ -43,8 +52,25 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)
 
-    if merged != data:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(yaml.safe_dump(config.model_dump()))
+    fernet = resolve_fernet(settings)
+    if merged != data or _has_plaintext_secrets(merged):
+        _write_config_file(path, config, fernet)
 
-    return config
+    # Callers always get plaintext, regardless of what's stored on disk.
+    return config.model_copy(
+        update={field: decrypt_secret(merged[field], fernet) for field in _SECRET_FIELDS}
+    )
+
+
+def _has_plaintext_secrets(data: dict) -> bool:
+    """Detect legacy plaintext secrets so they get re-encrypted even when nothing else
+    in the file changed."""
+    return any(data[field] and not is_encrypted(data[field]) for field in _SECRET_FIELDS)
+
+
+def _write_config_file(path: Path, config: AppConfigFile, fernet: Fernet) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stored = config.model_dump()
+    for field in _SECRET_FIELDS:
+        stored[field] = encrypt_secret(stored[field], fernet)
+    path.write_text(yaml.safe_dump(stored))

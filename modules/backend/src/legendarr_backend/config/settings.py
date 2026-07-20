@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     data_dir: Path = Field(default=Path("./data"))
     database_url: str = Field(default="")
+    secret_key: str = Field(default="")
     radarr_url: str = Field(default="")
     radarr_api_key: str = Field(default="")
     sonarr_url: str = Field(default="")

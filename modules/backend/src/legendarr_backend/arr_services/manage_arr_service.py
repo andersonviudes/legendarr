@@ -1,3 +1,4 @@
+from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session, select
 
 from legendarr_backend.arr_services.models import ArrService
@@ -29,6 +30,9 @@ def update_arr_service(
     # service_type is fixed at creation — ignore whatever the caller sent for it.
     for field, value in data.model_dump(exclude={"service_type"}).items():
         setattr(service, field, value)
+    # Force api_key into the UPDATE even when unchanged, so a legacy plaintext value
+    # read back by EncryptedString is re-encrypted on any edit, not just key rotations.
+    flag_modified(service, "api_key")
     session.add(service)
     session.commit()
     session.refresh(service)

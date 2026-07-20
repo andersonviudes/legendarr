@@ -58,7 +58,7 @@ setup.*
 - [x] **Settings** — Connection details (Radarr/Sonarr URL + API key) editable from the web UI
   and persisted, on top of the config foundation from 0.1.0 (env vars remain the way to
   bootstrap the very first run, per `AGENTS.md`).
-- [ ] **Settings** — Secrets (API keys) encrypted at rest instead of stored as plaintext.
+- [x] **Settings** — Secrets (API keys) encrypted at rest instead of stored as plaintext.
 - [ ] **Settings** — Validate settings on save (e.g. test the Radarr/Sonarr connection before
   storing it).
 - [ ] **Settings** — Path mapping: reconcile filesystem path differences between legendarr and

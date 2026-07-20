@@ -7,6 +7,8 @@ from legendarr_backend.arr_services.manage_arr_service import (
     update_arr_service,
 )
 from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
+from sqlalchemy import text
 
 
 def _radarr_input(**overrides) -> ArrServiceInput:
@@ -56,6 +58,37 @@ def test_update_arr_service_ignores_service_type_change(in_memory_session):
 
 def test_update_arr_service_returns_none_when_missing(in_memory_session):
     assert update_arr_service(in_memory_session, 1, _radarr_input()) is None
+
+
+def test_api_key_is_encrypted_at_rest(in_memory_session):
+    service = create_arr_service(in_memory_session, _radarr_input(api_key="secret-key"))
+
+    raw = in_memory_session.execute(text("SELECT api_key FROM arrservice")).scalar()
+
+    assert raw.startswith(ENCRYPTED_PREFIX)
+    assert "secret-key" not in raw
+    assert service.api_key == "secret-key"
+
+
+def test_legacy_plaintext_api_key_is_read_and_reencrypted_on_update(in_memory_session):
+    in_memory_session.execute(
+        text(
+            "INSERT INTO arrservice (name, service_type, enabled, host, port, base_url,"
+            " use_ssl, http_timeout_seconds, api_key) VALUES ('radarr', 'radarr', 1,"
+            " 'radarr', 7878, '/', 0, 60, 'legacy-key')"
+        )
+    )
+    in_memory_session.commit()
+
+    service = get_arr_service(in_memory_session, 1)
+    assert service.api_key == "legacy-key"
+
+    update_arr_service(in_memory_session, 1, _radarr_input(api_key="legacy-key"))
+
+    in_memory_session.expunge_all()
+    raw = in_memory_session.execute(text("SELECT api_key FROM arrservice")).scalar()
+    assert raw.startswith(ENCRYPTED_PREFIX)
+    assert get_arr_service(in_memory_session, 1).api_key == "legacy-key"
 
 
 def test_set_arr_service_enabled_flips_flag(in_memory_session):
