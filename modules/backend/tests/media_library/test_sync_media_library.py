@@ -1,5 +1,5 @@
 import pytest
-from legendarr_backend.arr_clients.base import MediaItem
+from legendarr_backend.arr_clients.base import MediaItem, MediaLibraryClient
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library import sync_media_library as sync_module
@@ -28,9 +28,9 @@ class _FailingClient:
 
 
 @pytest.fixture
-def fake_clients(monkeypatch) -> dict:
+def fake_clients(monkeypatch) -> dict[int, MediaLibraryClient]:
     """Clients handed out by the patched `build_client`, keyed by ArrService id."""
-    clients: dict = {}
+    clients: dict[int, MediaLibraryClient] = {}
     monkeypatch.setattr(sync_module, "build_client", lambda arr_service: clients[arr_service.id])
     return clients
 
