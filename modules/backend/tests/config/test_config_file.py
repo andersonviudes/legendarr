@@ -1,5 +1,7 @@
+import yaml
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import Settings
+from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
 
 
 def test_creates_config_file_with_env_derived_defaults(tmp_path):
@@ -77,3 +79,50 @@ def test_backfills_missing_fields_from_settings_and_rewrites_file(tmp_path):
 
     rewritten = (tmp_path / "config.yaml").read_text()
     assert "radarr_url: http://radarr:7878" in rewritten
+
+
+def test_api_keys_are_encrypted_on_disk_but_returned_as_plaintext(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path,
+        database_url="",
+        radarr_api_key="radarr-key",
+        sonarr_api_key="sonarr-key",
+    )
+
+    config = load_or_create_config_file(settings)
+
+    assert config.radarr_api_key == "radarr-key"
+    assert config.sonarr_api_key == "sonarr-key"
+
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["radarr_api_key"].startswith(ENCRYPTED_PREFIX)
+    assert stored["sonarr_api_key"].startswith(ENCRYPTED_PREFIX)
+    assert "radarr-key" not in stored["radarr_api_key"]
+    assert "sonarr-key" not in stored["sonarr_api_key"]
+
+
+def test_already_encrypted_config_file_is_not_rewritten(tmp_path):
+    settings = Settings(data_dir=tmp_path, database_url="", radarr_api_key="radarr-key")
+    load_or_create_config_file(settings)
+    written_once = (tmp_path / "config.yaml").read_text()
+
+    config = load_or_create_config_file(settings)
+
+    assert (tmp_path / "config.yaml").read_text() == written_once
+    assert config.radarr_api_key == "radarr-key"
+
+
+def test_legacy_plaintext_api_keys_are_read_and_reencrypted_on_disk(tmp_path):
+    settings = Settings(data_dir=tmp_path, database_url="")
+    load_or_create_config_file(settings)  # establishes schema + key file
+    (tmp_path / "config.yaml").write_text(
+        "radarr_api_key: legacy-radarr-key\nsonarr_api_key: legacy-sonarr-key\n"
+    )
+
+    config = load_or_create_config_file(settings)
+
+    assert config.radarr_api_key == "legacy-radarr-key"
+    assert config.sonarr_api_key == "legacy-sonarr-key"
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["radarr_api_key"].startswith(ENCRYPTED_PREFIX)
+    assert stored["sonarr_api_key"].startswith(ENCRYPTED_PREFIX)
