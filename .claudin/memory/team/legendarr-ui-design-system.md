@@ -291,3 +291,25 @@ session — fall back to the in-process render path (`fastapi.testclient.TestCli
 `create_app()` with a `stub_backend_client` MockTransport) to assert rendered HTML, and lean
 on the fact that CSS `var()` token swaps resolve to identical computed values. Earlier sessions
 the same launch pattern worked, so it's environmental/flaky, not a code problem.
+
+**Form-control specificity gotcha (2026-07-20, language-profile tag multiselect, PR
+#13-ish `feat/language-profile-crud`):** the custom `.lang-multiselect-search` input (part of
+a tag-multiselect widget replacing free-text language fields) rendered visibly taller/shorter
+than plain Pico inputs no matter what padding/line-height was set on the lone class. Cause:
+Pico's own rule is `input:not([type=checkbox],[type=radio],[type=range],...)`, and a
+`:not()` chain of attribute selectors out-specifies a single class selector — so the class-only
+override never won. Fix pattern: scope the override with an extra ancestor class, e.g.
+`.lang-multiselect-control .lang-multiselect-search { ... }`, not `.lang-multiselect-search`
+alone. **General lesson (extends the nav-specificity gotchas above to form controls):** any
+custom `<input>`-based widget in this app needs an ancestor-scoped selector to beat Pico's
+`input:not(...)` rule — a bare class will silently lose.
+
+Also on this widget: its container `.lang-multiselect-control`'s `min-height` is a **literal,
+user-specified `38px`**, not a value derived from Pico's own input-height formula (`1rem *
+line-height + spacing-vertical*2 + border-width*2`, which computes to 47.25px at this app's
+pinned 18px root and would pixel-match plain text inputs exactly). An agent tried the
+formula-derived value first; the user explicitly asked to replace it with a flat `38px`
+instead, even though that leaves the control a few px shorter than sibling text inputs.
+**How to apply:** if this field's height looks "wrong" again, don't reflexively re-derive
+the Pico formula — check with the user first, since the current mismatch vs. plain inputs is
+an intentional, explicit choice, not an unnoticed bug.
