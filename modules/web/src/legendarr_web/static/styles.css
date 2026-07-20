@@ -450,7 +450,7 @@ body {
 }
 
 .service-form {
-  max-width: 28rem;
+  max-width: 22rem;
   --pico-form-element-spacing-vertical: 0.5rem;
   --pico-form-element-spacing-horizontal: 0.75rem;
 }
@@ -517,9 +517,13 @@ body {
   color: var(--pico-primary-inverse);
 }
 
-.lang-multiselect-search {
+/* Pico's own `input:not([type=checkbox],[type=radio],...)` selector out-specifies a lone
+   class (it packs an extra attribute-selector via :not()), so the padding/line-height
+   reset below needs the extra .lang-multiselect-control ancestor to actually win. */
+.lang-multiselect-control .lang-multiselect-search {
   flex: 1;
   min-width: 6rem;
+  height: auto;
   margin: 0;
   border: none;
   padding: 0.15rem 0;
@@ -527,7 +531,7 @@ body {
   font-size: var(--lg-font-xs);
 }
 
-.lang-multiselect-search:focus {
+.lang-multiselect-control .lang-multiselect-search:focus {
   box-shadow: none;
 }
 
