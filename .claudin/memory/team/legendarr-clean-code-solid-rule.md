@@ -18,13 +18,12 @@ Ran an analysis against it and applied the clear-cut, low-risk fixes (codebase w
   `SonarrClient`, which previously had no common contract despite being structurally identical
   (`MediaFile`/`SeriesFile` duplicated dataclasses, `list_movies()`/`list_series()` diverging
   method names). `list_movies`/`list_series` were renamed to `list_items` on both clients.
-- `sync_media_library.py` now type-hints its `radarr`/`sonarr` params against
-  `MediaLibraryClient` instead of importing the two concrete client classes (DIP) — kwarg names
-  (`radarr=`, `sonarr=`) kept unchanged so the existing test and `bootstrap.py` call site didn't
-  need to change.
-- `bootstrap.py::build_scheduler()` split out `_build_media_clients(settings)` (SRP) — the
-  concrete `RadarrClient`/`SonarrClient` construction still happens here (the composition root),
-  which is correct DIP, not a violation.
+- `sync_media_library.py` — superseded 2026-07-20 (PR #12): it now takes a DB `Session`
+  and iterates enabled `ArrService` rows, building a client per connection via
+  `client_factory.build_client` (widened to accept the `ArrService` model, not just
+  `ArrServiceInput`). The old `radarr`/`sonarr` params and
+  `bootstrap.py::_build_media_clients` are gone — the composition root no longer
+  constructs media clients at all.
 - `modules/web/.../media_library/router.py` — added a `# TODO` on the hard-coded empty
   `{"movies": [], "series": []}` stub so it isn't mistaken for finished behavior.
 

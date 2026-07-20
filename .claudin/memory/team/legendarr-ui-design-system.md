@@ -113,8 +113,9 @@ polling loop actually fires end-to-end, not just "renders the right attributes".
 `static/icons/layout-dashboard.svg` was vendored (same lucide-static v1.24.0) for the nav entry.
 **How to apply:** if another page needs a live-updating fragment, copy the self-select htmx
 pattern above rather than building a dedicated JSON endpoint — it's less code for same-page data.
-Do not add movies/series counts to the dashboard until `sync_media_library` actually persists
-something (0.2.0) — a live per-request Radarr/Sonarr call was deliberately out of scope here.
+Dashboard movies/series counts were blocked on `sync_media_library` persisting something —
+that landed 2026-07-20 (PR #12: `Movie`/`Series` tables, per-connection sync), so counts
+from the DB are now unblocked (a live per-request Radarr/Sonarr call is still out of scope).
 
 **Sidebar footer: theme toggle + GitHub link (added same day, fifth round)**: the user pasted a
 reference screenshot (a divider line, then a gold sun icon and a coral heart icon side by side at
