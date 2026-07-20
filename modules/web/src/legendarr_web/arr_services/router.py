@@ -3,21 +3,13 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.arr_services import service
-from legendarr_web.backend_client.client import get_backend_client
+from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings/arr-services")
 templates = get_templates("arr_services")
 
 DEFAULT_PORTS = {"radarr": 7878, "sonarr": 8989}
-
-
-def _error_detail(exc: httpx.HTTPStatusError) -> str:
-    """Pull the backend's `detail` message out of an HTTPStatusError's JSON body."""
-    try:
-        return exc.response.json().get("detail", "Something went wrong. Please try again.")
-    except ValueError:
-        return "Something went wrong. Please try again."
 
 
 async def _arr_service_form(
@@ -123,7 +115,7 @@ async def create_arr_service(
                 "service": data,
                 "service_type": data["service_type"],
                 "default_port": None,
-                "error": _error_detail(exc),
+                "error": error_detail(exc),
             },
             status_code=exc.response.status_code,
         )
@@ -182,7 +174,7 @@ async def update_arr_service(
                 "service": {**data, "id": service_id},
                 "service_type": data["service_type"],
                 "default_port": None,
-                "error": _error_detail(exc),
+                "error": error_detail(exc),
             },
             status_code=exc.response.status_code,
         )

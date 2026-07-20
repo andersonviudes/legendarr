@@ -2,21 +2,13 @@ import httpx
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
-from legendarr_web.backend_client.client import get_backend_client
+from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.language_profiles import service
 from legendarr_web.language_profiles.languages import SUPPORTED_LANGUAGES
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings")
 templates = get_templates("language_profiles")
-
-
-def _error_detail(exc: httpx.HTTPStatusError) -> str:
-    """Pull the backend's `detail` message out of an HTTPStatusError's JSON body."""
-    try:
-        return exc.response.json().get("detail", "Something went wrong. Please try again.")
-    except ValueError:
-        return "Something went wrong. Please try again."
 
 
 async def _language_profile_form(
@@ -91,7 +83,7 @@ async def create_language_profile(
         return templates.TemplateResponse(
             request,
             "language_profile_form.html",
-            {"profile": data, "error": _error_detail(exc), "languages": SUPPORTED_LANGUAGES},
+            {"profile": data, "error": error_detail(exc), "languages": SUPPORTED_LANGUAGES},
             status_code=exc.response.status_code,
         )
     return RedirectResponse("/settings/", status_code=303)
@@ -116,7 +108,7 @@ async def update_language_profile(
             "language_profile_form.html",
             {
                 "profile": {**data, "id": profile_id},
-                "error": _error_detail(exc),
+                "error": error_detail(exc),
                 "languages": SUPPORTED_LANGUAGES,
             },
             status_code=exc.response.status_code,
