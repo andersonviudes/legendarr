@@ -91,13 +91,21 @@
 </article>
 {% endmacro %}
 
+{% macro lang_pill_group(codes) %}
+{% for code in codes.split(",") %}<span class="lang-pill">{{ code }}</span>{% endfor %}
+{% endmacro %}
+
 {% macro profile_card(profile) %}
 <article class="service-card">
   <header class="service-card-header">
     <p class="service-card-name">{{ profile.name }}</p>
     {% if profile.is_default %}<span class="app-nav-badge">Default</span>{% endif %}
   </header>
-  <p class="service-card-address">{{ profile.source_languages }} → {{ profile.target_languages }}</p>
+  <p class="service-card-languages">
+    {{ lang_pill_group(profile.source_languages) }}
+    <span class="lang-pill-arrow">{{ icon("arrow-right") }}</span>
+    {{ lang_pill_group(profile.target_languages) }}
+  </p>
   {% if profile.forced or profile.hearing_impaired %}
   <p class="service-card-address">
     {% if profile.forced %}Forced{% endif %}{% if profile.forced and profile.hearing_impaired %}

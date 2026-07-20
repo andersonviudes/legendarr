@@ -48,7 +48,7 @@ def test_page_renders_registered_profile_cards(stub_backend_client):
     assert response.status_code == 200
     body = response.text
     assert "anime" in body
-    assert "ja" in body and "pt-BR,en" in body
+    assert "ja" in body and "pt-BR" in body and "en" in body
     assert "Forced" in body
     assert "Default" in body
     assert "/settings/3/edit" in body
