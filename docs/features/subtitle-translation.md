@@ -19,5 +19,5 @@ between two language codes.
 | --- | --- |
 | `echo` | Returns the input unchanged. Used for local development and tests. |
 
-A [language profile](language-profiles.md)'s `translation_provider` field selects which
-provider to use.
+Provider selection isn't wired up yet — it isn't a [language profile](language-profiles.md)
+field, and will land as a separate feature/use case.

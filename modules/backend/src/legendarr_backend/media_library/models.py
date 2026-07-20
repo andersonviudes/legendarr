@@ -13,10 +13,15 @@ class Movie(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("arr_service_id", "arr_id"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    arr_service_id: int = Field(foreign_key="arrservice.id", index=True)
+    arr_service_id: int = Field(foreign_key="arrservice.id", index=True, ondelete="CASCADE")
     arr_id: int
     title: str
     remote_path: str
+    # Pins this movie to a profile other than whichever one is marked `is_default` —
+    # nullable, so most rows fall back to the default instead of needing an explicit link.
+    language_profile_id: int | None = Field(
+        default=None, foreign_key="languageprofile.id", index=True, ondelete="SET NULL"
+    )
 
 
 class Series(SQLModel, table=True):
@@ -28,7 +33,10 @@ class Series(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("arr_service_id", "arr_id"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    arr_service_id: int = Field(foreign_key="arrservice.id", index=True)
+    arr_service_id: int = Field(foreign_key="arrservice.id", index=True, ondelete="CASCADE")
     arr_id: int
     title: str
     remote_path: str
+    language_profile_id: int | None = Field(
+        default=None, foreign_key="languageprofile.id", index=True, ondelete="SET NULL"
+    )

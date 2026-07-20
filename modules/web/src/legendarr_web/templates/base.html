@@ -71,7 +71,8 @@
             <li>
               <a
                 href="/settings/"
-                {% if request.url.path == "/settings/" %}aria-current="page"{% endif %}
+                {% if request.url.path.startswith("/settings/") and not
+                  request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
             <li>

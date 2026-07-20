@@ -33,9 +33,6 @@ decisions):
   (`test_database.py`, `test_router.py`) monkeypatch `database._engine` directly; see
   `legendarr-db-migrations.md` for the documented caching gotcha. Switching to `@lru_cache`
   would require rewriting those tests for a cosmetic consistency gain.
-- A translation-provider registry keyed by `LanguageProfile.translation_provider` — no call site
-  reads that field yet (checked: nothing dispatches on it), so adding a registry now would be
-  speculative (YAGNI), not a fix for an existing violation.
 - Duplicated `Settings`/`WebSettings` boilerplate between `legendarr_backend` and `legendarr_web`
   — intentional per `legendarr-architecture.md`: web no longer imports the backend package at
   all as of the 2026-07-16 split, so a shared base class isn't available without reintroducing

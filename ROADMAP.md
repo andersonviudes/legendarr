@@ -73,12 +73,15 @@ setup.*
   by the server) per connection, keyed by `(arr_service_id, arr_id)` so multiple Radarr/
   Sonarr instances never collide; rows a server stops reporting are deleted only within
   that connection's scope.
-- [ ] **Language profiles** — Complete `LanguageProfile` CRUD in the backend (`update`/`delete`
-  are missing today, not just their UI).
-- [ ] **Language profiles** — Create/edit/delete language profiles from the web UI. Forced and
-  hearing-impaired (HI) as first-class attributes on a profile, so it can require or exclude
-  them per language rather than treating every subtitle as equivalent. Per-item override: a
-  specific movie or series can be pinned to a profile other than its default.
+- [x] **Language profiles** — Complete `LanguageProfile` CRUD in the backend
+  (`get`/`update`/`delete`, on top of the `create`/`list` that already existed).
+- [x] **Language profiles** — Create/edit/delete language profiles from the web UI. Forced and
+  hearing-impaired (HI) as first-class attributes on a profile, plus an `is_default` flag, so a
+  profile can require or exclude them per language rather than treating every subtitle as
+  equivalent. Per-item override: `Movie`/`Series` carry an optional `language_profile_id` to pin
+  a specific item to a profile other than the default. Known gap (deferred): no UI to set the
+  override yet — `media_library` has no movies/series listing API to hang a selector off of
+  (tracked for whenever that listing lands, likely 0.4.0).
 
 ## 0.3.0 — Translate one already-downloaded subtitle, end to end, in the real UI
 

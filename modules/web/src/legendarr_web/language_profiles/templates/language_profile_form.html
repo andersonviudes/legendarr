@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, checkbox_field, language_multiselect %}
+{% block title %}legendarr · {{ "Edit" if profile else "Add" }} Language Profile{% endblock %}
+{% block content %}
+<h1>{{ icon("languages") }} {{ "Edit" if profile else "Add" }} Language Profile</h1>
+
+{% if error %}
+<p class="test-result test-result--error">{{ error }}</p>
+{% endif %}
+
+<form
+  class="service-form"
+  method="post"
+  action="{{ '/settings/' ~ profile.id if profile else '/settings/' }}"
+>
+  {{ field("name", "Name", value=(profile.name if profile else ""), required=true) }}
+  {{ language_multiselect("source_languages", "Source Languages", languages,
+                           selected=(profile.source_languages.split(",") if profile else []),
+                           required=true) }}
+  {{ language_multiselect("target_languages", "Target Languages", languages,
+                           selected=(profile.target_languages.split(",") if profile else []),
+                           required=true) }}
+
+  {{ checkbox_field("extract_embedded_subtitles", "Extract embedded subtitles",
+                     checked=(not profile or profile.extract_embedded_subtitles)) }}
+  {{ checkbox_field("forced", "Forced", checked=(profile and profile.forced)) }}
+  {{ checkbox_field("hearing_impaired", "Hearing-impaired (HI)",
+                     checked=(profile and profile.hearing_impaired)) }}
+  {{ checkbox_field("is_default", "Default profile", checked=(profile and profile.is_default)) }}
+
+  <div class="form-actions">
+    <button type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/language-profile-form.js" defer></script>
+{% endblock %}
