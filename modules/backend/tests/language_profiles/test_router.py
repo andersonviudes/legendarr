@@ -7,7 +7,6 @@ def _payload(**overrides) -> dict:
         "name": "anime",
         "source_languages": "ja",
         "target_languages": "pt-BR,en",
-        "translation_provider": "echo",
         "extract_embedded_subtitles": True,
         "forced": False,
         "hearing_impaired": False,

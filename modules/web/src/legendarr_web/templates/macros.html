@@ -98,10 +98,12 @@
     {% if profile.is_default %}<span class="app-nav-badge">Default</span>{% endif %}
   </header>
   <p class="service-card-address">{{ profile.source_languages }} → {{ profile.target_languages }}</p>
+  {% if profile.forced or profile.hearing_impaired %}
   <p class="service-card-address">
-    {{ profile.translation_provider }}{% if profile.forced %} · Forced{% endif %}{% if
-    profile.hearing_impaired %} · HI{% endif %}
+    {% if profile.forced %}Forced{% endif %}{% if profile.forced and profile.hearing_impaired %}
+    · {% endif %}{% if profile.hearing_impaired %}HI{% endif %}
   </p>
+  {% endif %}
   <div class="service-card-actions">
     <a href="/settings/{{ profile.id }}/edit" role="button" class="outline">Edit</a>
     <form method="post" action="/settings/{{ profile.id }}/delete">

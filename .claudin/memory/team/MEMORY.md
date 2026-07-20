@@ -8,3 +8,4 @@
 - [legendarr scheduling/job conventions](legendarr-scheduling-job-conventions.md) — scheduling/ shared module + per-slice jobs.py, required pattern for new APScheduler jobs
 - [legendarr testing & logging conventions](legendarr-testing-logging-conventions.md) — per-module conftest.py fixtures, configure_logging() wired into bootstrap's real entrypoint
 - [legendarr media-library deferred follow-ups](legendarr-media-library-deferred-followups.md) — PR #12 triage leftovers: Windows path mapping, DB-cascade to fix reverse slice dependency, minor form gaps
+- [legendarr language profile provider removal](legendarr-language-profile-provider-removal.md) — translation_provider was removed from LanguageProfile; provider selection is a separate future feature

@@ -20,8 +20,6 @@
   {{ language_multiselect("target_languages", "Target Languages", languages,
                            selected=(profile.target_languages.split(",") if profile else []),
                            required=true) }}
-  {{ field("translation_provider", "Translation Provider",
-           value=(profile.translation_provider if profile else "echo")) }}
 
   {{ checkbox_field("extract_embedded_subtitles", "Extract embedded subtitles",
                      checked=(not profile or profile.extract_embedded_subtitles)) }}

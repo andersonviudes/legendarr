@@ -32,7 +32,6 @@ def test_page_renders_registered_profile_cards(stub_backend_client):
                     "name": "anime",
                     "source_languages": "ja",
                     "target_languages": "pt-BR,en",
-                    "translation_provider": "echo",
                     "extract_embedded_subtitles": True,
                     "forced": True,
                     "hearing_impaired": False,
@@ -109,14 +108,12 @@ def test_create_language_profile_forwards_fields(stub_backend_client):
                 "name": "anime",
                 "source_languages": "ja",
                 "target_languages": "pt-BR,en",
-                "translation_provider": "deepl",
                 "forced": "on",
                 "hearing_impaired": "on",
                 "is_default": "on",
             },
         )
 
-    assert captured["translation_provider"] == "deepl"
     assert captured["forced"] is True
     assert captured["hearing_impaired"] is True
     assert captured["is_default"] is True
