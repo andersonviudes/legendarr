@@ -4,6 +4,8 @@ import tempfile
 import pytest
 from legendarr_backend.config.settings import Settings
 from legendarr_backend.database import engine as database
+from legendarr_backend.database.engine import enable_sqlite_foreign_keys
+from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 
 
@@ -37,6 +39,7 @@ def in_memory_session():
     migration path.
     """
     engine = create_engine("sqlite://")
+    event.listen(engine, "connect", enable_sqlite_foreign_keys)
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
