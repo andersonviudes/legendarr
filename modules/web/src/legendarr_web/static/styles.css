@@ -478,13 +478,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  /* Match Pico's own input height formula (see vendor/pico.min.css) so the empty
-     control lines up with plain text inputs; still grows via flex-wrap once chips
-     take more than one row. */
-  min-height: calc(
-    1rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 +
-      var(--pico-border-width) * 2
-  );
+  min-height: 38px;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--pico-form-element-border-color);
   border-radius: var(--pico-border-radius);
