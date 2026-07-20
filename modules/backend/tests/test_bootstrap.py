@@ -1,27 +1,11 @@
-from legendarr_backend.arr_clients.radarr_client import RadarrClient
-from legendarr_backend.arr_clients.sonarr_client import SonarrClient
-from legendarr_backend.bootstrap import _build_media_clients
+from legendarr_backend import bootstrap
 from legendarr_backend.config.config_file import AppConfigFile
 
 
-def test_build_media_clients_constructs_configured_clients():
-    config = AppConfigFile(
-        radarr_url="http://radarr:7878",
-        radarr_api_key="radarr-key",
-        sonarr_url="http://sonarr:8989",
-        sonarr_api_key="sonarr-key",
-    )
+def test_build_scheduler_registers_media_sync_job(monkeypatch):
+    monkeypatch.setattr(bootstrap, "init_db", lambda: None)
+    monkeypatch.setattr(bootstrap, "load_or_create_config_file", lambda settings: AppConfigFile())
 
-    radarr, sonarr = _build_media_clients(config)
+    scheduler = bootstrap.build_scheduler()
 
-    assert isinstance(radarr, RadarrClient)
-    assert isinstance(sonarr, SonarrClient)
-
-
-def test_build_media_clients_skips_unconfigured_clients():
-    config = AppConfigFile()
-
-    radarr, sonarr = _build_media_clients(config)
-
-    assert radarr is None
-    assert sonarr is None
+    assert scheduler.get_job("media_library_sync") is not None

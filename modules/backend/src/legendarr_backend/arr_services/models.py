@@ -19,3 +19,5 @@ class ArrService(SQLModel, table=True):
     use_ssl: bool = Field(default=False)
     http_timeout_seconds: int = Field(default=60)
     api_key: str = Field(sa_column=Column(EncryptedString, nullable=False))
+    remote_path_prefix: str | None = Field(default=None)
+    local_path_prefix: str | None = Field(default=None)

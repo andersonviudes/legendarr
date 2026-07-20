@@ -28,7 +28,7 @@ COPY --from=builder /app /app
 ENV PATH="/app/.venv/bin:$PATH" \
     LEGENDARR_DATA_DIR=/config
 
-VOLUME ["/config"]
+VOLUME ["/config", "/media"]
 EXPOSE 8000
 
 CMD ["python", "-m", "legendarr_bootstrap"]

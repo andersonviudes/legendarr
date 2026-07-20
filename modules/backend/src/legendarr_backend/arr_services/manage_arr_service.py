@@ -17,6 +17,10 @@ def list_arr_services(session: Session) -> list[ArrService]:
     return list(session.exec(select(ArrService)).all())
 
 
+def list_enabled_arr_services(session: Session) -> list[ArrService]:
+    return list(session.exec(select(ArrService).where(ArrService.enabled)).all())
+
+
 def get_arr_service(session: Session, service_id: int) -> ArrService | None:
     return session.get(ArrService, service_id)
 

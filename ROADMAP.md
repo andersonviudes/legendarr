@@ -59,12 +59,19 @@ setup.*
   and persisted, on top of the config foundation from 0.1.0 (env vars remain the way to
   bootstrap the very first run, per `AGENTS.md`).
 - [x] **Settings** — Secrets (API keys) encrypted at rest instead of stored as plaintext.
-- [ ] **Settings** — Validate settings on save (e.g. test the Radarr/Sonarr connection before
-  storing it).
-- [ ] **Settings** — Path mapping: reconcile filesystem path differences between legendarr and
-  Radarr/Sonarr when they run in separate containers with different mounts.
-- [ ] **Media providers** — Persist synced media (`Movie`/`Series` + file path) instead of only
-  counting it — `sync_media_library()` currently discards what it fetches.
+- [x] **Settings** — Validate settings on save: creating/editing a Radarr/Sonarr connection
+  probes the server (`/system/status`) and rejects unreachable servers, wrong app types, and
+  bad API keys with an actionable message instead of persisting them. A "test connection"
+  button in the form runs the same probe without saving.
+- [x] **Settings** — Path mapping: each connection carries an optional
+  remote→local path prefix pair, reconciling filesystem differences when legendarr and
+  Radarr/Sonarr run in separate containers with different mounts. Paths are stored as
+  reported and translated at read time (`resolve_local_path`), so editing a mapping
+  never requires a re-sync.
+- [x] **Media providers** — Sync persists media (`Movie`/`Series` + the path as reported
+  by the server) per connection, keyed by `(arr_service_id, arr_id)` so multiple Radarr/
+  Sonarr instances never collide; rows a server stops reporting are deleted only within
+  that connection's scope.
 - [ ] **Language profiles** — Complete `LanguageProfile` CRUD in the backend (`update`/`delete`
   are missing today, not just their UI).
 - [ ] **Language profiles** — Create/edit/delete language profiles from the web UI. Forced and

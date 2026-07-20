@@ -51,8 +51,12 @@ backend's scheduler internally):
 
 ```bash
 make docker-build
-docker run -p 8000:8000 -v ./data:/config legendarr:local
+docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media legendarr:local
 ```
+
+Mount your media library into the container (the `/media` above is just a convention —
+any path works). If Radarr/Sonarr see the same files under a different path, set a path
+mapping on each connection in **Settings → Servers**.
 
 ## CI
 
