@@ -7,8 +7,10 @@ from legendarr_backend.arr_services.manage_arr_service import (
     update_arr_service,
 )
 from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.media_library.models import Movie, Series
 from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
 from sqlalchemy import text
+from sqlmodel import select
 
 
 def _radarr_input(**overrides) -> ArrServiceInput:
@@ -114,3 +116,25 @@ def test_delete_arr_service(in_memory_session):
 
 def test_delete_arr_service_returns_false_when_missing(in_memory_session):
     assert delete_arr_service(in_memory_session, 1) is False
+
+
+def test_delete_arr_service_removes_its_synced_media_only(in_memory_session):
+    doomed = create_arr_service(in_memory_session, _radarr_input())
+    survivor = create_arr_service(
+        in_memory_session, _radarr_input(name="other-radarr", host="other-radarr")
+    )
+    in_memory_session.add_all(
+        [
+            Movie(arr_service_id=doomed.id, arr_id=1, title="A", remote_path="/movies/A"),
+            Movie(arr_service_id=survivor.id, arr_id=1, title="B", remote_path="/filmes/B"),
+            Series(arr_service_id=doomed.id, arr_id=2, title="C", remote_path="/tv/C"),
+        ]
+    )
+    in_memory_session.commit()
+
+    assert delete_arr_service(in_memory_session, doomed.id) is True
+
+    movies = list(in_memory_session.exec(select(Movie)).all())
+    assert len(movies) == 1
+    assert movies[0].arr_service_id == survivor.id
+    assert list(in_memory_session.exec(select(Series)).all()) == []

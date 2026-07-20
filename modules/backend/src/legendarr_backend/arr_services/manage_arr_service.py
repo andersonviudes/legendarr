@@ -1,8 +1,9 @@
 from sqlalchemy.orm.attributes import flag_modified
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.media_library.models import Movie, Series
 
 
 def create_arr_service(session: Session, data: ArrServiceInput) -> ArrService:
@@ -15,6 +16,10 @@ def create_arr_service(session: Session, data: ArrServiceInput) -> ArrService:
 
 def list_arr_services(session: Session) -> list[ArrService]:
     return list(session.exec(select(ArrService)).all())
+
+
+def list_enabled_arr_services(session: Session) -> list[ArrService]:
+    return list(session.exec(select(ArrService).where(ArrService.enabled)).all())
 
 
 def get_arr_service(session: Session, service_id: int) -> ArrService | None:
@@ -54,6 +59,10 @@ def delete_arr_service(session: Session, service_id: int) -> bool:
     service = session.get(ArrService, service_id)
     if service is None:
         return False
+    # SQLite runs with FK enforcement off by default, so the database won't cascade
+    # for us — remove the connection's synced media explicitly instead of orphaning it.
+    for model in (Movie, Series):
+        session.exec(delete(model).where(model.arr_service_id == service_id))
     session.delete(service)
     session.commit()
     return True

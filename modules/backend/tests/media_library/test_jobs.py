@@ -14,7 +14,7 @@ def test_register_sync_job_wires_config_derived_policy():
         sync_coalesce=False,
     )
 
-    register_sync_job(scheduler, config, radarr=None, sonarr=None)
+    register_sync_job(scheduler, config)
 
     job = scheduler.get_job("media_library_sync")
     assert job is not None

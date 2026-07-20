@@ -486,6 +486,12 @@ body {
   font-size: var(--lg-font-xs);
 }
 
+.service-form .field-hint {
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+  margin-bottom: 0.75rem;
+}
+
 .form-actions {
   display: flex;
   gap: 0.75rem;

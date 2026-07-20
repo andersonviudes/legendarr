@@ -13,6 +13,8 @@ class ArrServiceInput(BaseModel):
     use_ssl: bool = False
     http_timeout_seconds: int = Field(default=60, gt=0)
     api_key: str
+    remote_path_prefix: str | None = None
+    local_path_prefix: str | None = None
 
 
 class ArrServiceEnabledInput(BaseModel):
@@ -38,3 +40,5 @@ class ArrServiceRead(BaseModel):
     base_url: str
     use_ssl: bool
     http_timeout_seconds: int
+    remote_path_prefix: str | None
+    local_path_prefix: str | None

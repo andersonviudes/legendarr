@@ -65,6 +65,27 @@ def test_create_get_update_delete_service(isolated_database, reachable_server):
         assert missing_response.status_code == 404
 
 
+def test_create_and_update_roundtrip_path_mapping(isolated_database, reachable_server):
+    with TestClient(create_api_app()) as client:
+        created = client.post(
+            "/arr-services/",
+            json=_payload(remote_path_prefix="/movies", local_path_prefix="/media/movies"),
+        )
+        assert created.status_code == 201
+        assert created.json()["remote_path_prefix"] == "/movies"
+        assert created.json()["local_path_prefix"] == "/media/movies"
+        service_id = created.json()["id"]
+
+        updated = client.put(f"/arr-services/{service_id}", json=_payload(local_path_prefix="/mnt"))
+        assert updated.status_code == 200
+        assert updated.json()["local_path_prefix"] == "/mnt"
+
+        cleared = client.put(f"/arr-services/{service_id}", json=_payload())
+        assert cleared.status_code == 200
+        assert cleared.json()["remote_path_prefix"] is None
+        assert cleared.json()["local_path_prefix"] is None
+
+
 def test_get_update_delete_return_404_when_missing(isolated_database, reachable_server):
     with TestClient(create_api_app()) as client:
         assert client.get("/arr-services/1").status_code == 404

@@ -30,6 +30,8 @@ async def _arr_service_form(
     use_ssl: bool = Form(False),
     http_timeout_seconds: int = Form(60),
     api_key: str = Form(""),
+    remote_path_prefix: str = Form(""),
+    local_path_prefix: str = Form(""),
 ) -> dict:
     return {
         "service_type": service_type,
@@ -41,6 +43,8 @@ async def _arr_service_form(
         "use_ssl": use_ssl,
         "http_timeout_seconds": http_timeout_seconds,
         "api_key": api_key,
+        "remote_path_prefix": remote_path_prefix or None,
+        "local_path_prefix": local_path_prefix or None,
     }
 
 

@@ -37,6 +37,22 @@
     {{ checkbox_field("use_ssl", "SSL", checked=(service and service.use_ssl)) }}
   </fieldset>
 
+  <fieldset>
+    <legend>Path Mapping</legend>
+    <p class="field-hint">
+      Only needed when legendarr and this server run in separate containers with different
+      mounts — e.g. the server reports <code>/movies</code> but legendarr sees the same
+      files under <code>/media/movies</code>.
+    </p>
+
+    {{ field("remote_path_prefix", "Remote Path Prefix",
+             value=((service.remote_path_prefix or "") if service else ""),
+             placeholder="/movies") }}
+    {{ field("local_path_prefix", "Local Path Prefix",
+             value=((service.local_path_prefix or "") if service else ""),
+             placeholder="/media/movies") }}
+  </fieldset>
+
   <div id="test-result" aria-live="polite"></div>
   <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
   <div class="form-actions">

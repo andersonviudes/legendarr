@@ -5,6 +5,7 @@ from legendarr_backend.arr_services import models as arr_services_models  # noqa
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.language_profiles import models as language_profiles_models  # noqa: F401
+from legendarr_backend.media_library import models as media_library_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 

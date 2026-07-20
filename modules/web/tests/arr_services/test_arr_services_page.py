@@ -1,3 +1,5 @@
+import json
+
 import httpx
 from fastapi.testclient import TestClient
 from legendarr_web.app import create_app
@@ -128,6 +130,64 @@ def test_create_arr_service_redirects_to_list(stub_backend_client):
 
     assert response.status_code == 200
     assert response.request.url.path == "/settings/arr-services/"
+
+
+def test_create_arr_service_forwards_path_mapping(stub_backend_client):
+    app = create_app()
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/":
+            captured.update(json.loads(request.content))
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/arr-services/",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+                "remote_path_prefix": "/movies",
+                "local_path_prefix": "/media/movies",
+            },
+        )
+
+    assert captured["remote_path_prefix"] == "/movies"
+    assert captured["local_path_prefix"] == "/media/movies"
+
+
+def test_create_arr_service_sends_blank_path_mapping_as_null(stub_backend_client):
+    app = create_app()
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/":
+            captured.update(json.loads(request.content))
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/arr-services/",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+            },
+        )
+
+    assert captured["remote_path_prefix"] is None
+    assert captured["local_path_prefix"] is None
 
 
 def test_create_arr_service_rerenders_form_when_server_unreachable(stub_backend_client):
