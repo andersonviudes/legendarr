@@ -26,6 +26,35 @@
 {% endmacro %}
 
 {#
+  Tag-style multi-select: chips for the selected languages plus a searchable dropdown of
+  the rest, backed by a single hidden input holding the comma-joined codes. Behavior lives
+  in static/js/language-profile-form.js — this macro only renders the (progressively
+  enhanced) markup it wires up.
+#}
+{% macro language_multiselect(name, label, languages, selected=[], required=false) %}
+<div class="lang-multiselect" data-name="{{ name }}" {% if required %}data-required="true"{% endif %}>
+  <label for="{{ name }}-search">{{ label }}</label>
+  <div class="lang-multiselect-control">
+    <ul class="lang-multiselect-tags">
+      {% for code in selected %}
+      <li class="lang-multiselect-tag" data-code="{{ code }}">
+        <span>{{ code }}</span>
+        <button type="button" class="lang-multiselect-tag-remove" aria-label="Remove {{ code }}">&times;</button>
+      </li>
+      {% endfor %}
+    </ul>
+    <input type="text" id="{{ name }}-search" class="lang-multiselect-search" autocomplete="off">
+  </div>
+  <ul class="lang-multiselect-options" hidden>
+    {% for code, display in languages %}
+    <li data-code="{{ code }}" {% if code in selected %}hidden{% endif %}>{{ display }} <small>{{ code }}</small></li>
+    {% endfor %}
+  </ul>
+  <input type="hidden" name="{{ name }}" value="{{ selected | join(',') }}">
+</div>
+{% endmacro %}
+
+{#
   Enable/disable toggle for an arr-service card. Also rendered standalone by the toggle
   route (via _service_status.html) so the switch can swap itself after a PATCH.
 #}

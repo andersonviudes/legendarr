@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import get_backend_client
 from legendarr_web.language_profiles import service
+from legendarr_web.language_profiles.languages import SUPPORTED_LANGUAGES
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings")
@@ -57,7 +58,7 @@ async def new_language_profile(request: Request):
     return templates.TemplateResponse(
         request,
         "language_profile_form.html",
-        {"profile": None},
+        {"profile": None, "languages": SUPPORTED_LANGUAGES},
     )
 
 
@@ -74,7 +75,7 @@ async def edit_language_profile(
     return templates.TemplateResponse(
         request,
         "language_profile_form.html",
-        {"profile": existing},
+        {"profile": existing, "languages": SUPPORTED_LANGUAGES},
     )
 
 
@@ -92,7 +93,7 @@ async def create_language_profile(
         return templates.TemplateResponse(
             request,
             "language_profile_form.html",
-            {"profile": data, "error": _error_detail(exc)},
+            {"profile": data, "error": _error_detail(exc), "languages": SUPPORTED_LANGUAGES},
             status_code=exc.response.status_code,
         )
     return RedirectResponse("/settings/", status_code=303)
@@ -115,7 +116,11 @@ async def update_language_profile(
         return templates.TemplateResponse(
             request,
             "language_profile_form.html",
-            {"profile": {**data, "id": profile_id}, "error": _error_detail(exc)},
+            {
+                "profile": {**data, "id": profile_id},
+                "error": _error_detail(exc),
+                "languages": SUPPORTED_LANGUAGES,
+            },
             status_code=exc.response.status_code,
         )
     return RedirectResponse("/settings/", status_code=303)

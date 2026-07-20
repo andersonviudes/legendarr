@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import field, checkbox_field %}
+{% from "macros.html" import field, checkbox_field, language_multiselect %}
 {% block title %}legendarr · {{ "Edit" if profile else "Add" }} Language Profile{% endblock %}
 {% block content %}
 <h1>{{ icon("languages") }} {{ "Edit" if profile else "Add" }} Language Profile</h1>
@@ -14,12 +14,12 @@
   action="{{ '/settings/' ~ profile.id if profile else '/settings/' }}"
 >
   {{ field("name", "Name", value=(profile.name if profile else ""), required=true) }}
-  {{ field("source_languages", "Source Languages",
-           value=(profile.source_languages if profile else ""),
-           placeholder="ja", required=true) }}
-  {{ field("target_languages", "Target Languages",
-           value=(profile.target_languages if profile else ""),
-           placeholder="pt-BR,en", required=true) }}
+  {{ language_multiselect("source_languages", "Source Languages", languages,
+                           selected=(profile.source_languages.split(",") if profile else []),
+                           required=true) }}
+  {{ language_multiselect("target_languages", "Target Languages", languages,
+                           selected=(profile.target_languages.split(",") if profile else []),
+                           required=true) }}
   {{ field("translation_provider", "Translation Provider",
            value=(profile.translation_provider if profile else "echo")) }}
 
@@ -34,4 +34,7 @@
     <button type="submit">Save</button>
   </div>
 </form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/language-profile-form.js" defer></script>
 {% endblock %}

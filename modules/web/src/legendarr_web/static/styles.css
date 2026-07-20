@@ -467,6 +467,103 @@ body {
   margin-bottom: 0.75rem;
 }
 
+/* === Language multi-select: chips + searchable dropdown, see macros.html::language_multiselect === */
+.lang-multiselect {
+  position: relative;
+  margin-bottom: var(--pico-spacing);
+}
+
+.lang-multiselect-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--pico-form-element-border-color);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-form-element-background-color);
+  cursor: text;
+}
+
+.lang-multiselect-tags {
+  display: contents;
+}
+
+.lang-multiselect-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+  border-radius: 999px;
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+  font-size: var(--lg-font-xs);
+}
+
+.lang-multiselect-tag-remove {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  color: inherit;
+}
+
+.lang-multiselect-tag-remove:hover {
+  background-color: var(--pico-primary);
+  color: var(--pico-primary-inverse);
+}
+
+.lang-multiselect-search {
+  flex: 1;
+  min-width: 6rem;
+  margin: 0;
+  border: none;
+  padding: 0.15rem 0;
+  background: transparent;
+  font-size: var(--lg-font-xs);
+}
+
+.lang-multiselect-search:focus {
+  box-shadow: none;
+}
+
+.lang-multiselect-options {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-card-background-color);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.lang-multiselect-options li {
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-color);
+  cursor: pointer;
+}
+
+.lang-multiselect-options li small {
+  color: var(--pico-muted-color);
+}
+
+.lang-multiselect-options li:hover {
+  background-color: var(--lg-neutral-hover-background-color);
+}
+
 .form-actions {
   display: flex;
   gap: 0.75rem;
@@ -482,13 +579,14 @@ body {
   flex: 1;
 }
 
-/* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle
-   and .app-icon-btn — fully reset themselves with `all: unset` and style themselves, so
-   they're excluded here rather than fought with extra specificity elsewhere. */
-button:not(.app-nav-toggle):not(.app-icon-btn),
+/* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle,
+   .app-icon-btn and .lang-multiselect-tag-remove — fully reset themselves with `all: unset`
+   and style themselves, so they're excluded here rather than fought with extra specificity
+   elsewhere. */
+button:not(.app-nav-toggle):not(.app-icon-btn):not(.lang-multiselect-tag-remove),
 [role="button"],
 [type="submit"],
-[type="button"]:not(.app-nav-toggle):not(.app-icon-btn) {
+[type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.lang-multiselect-tag-remove) {
   display: inline-block;
   --pico-border-radius: 0.5rem;
   --pico-form-element-spacing-vertical: 0.5rem;
