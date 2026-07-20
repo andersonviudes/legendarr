@@ -1,5 +1,5 @@
 # Language-profile form's multi-select — codes are what actually get stored (comma-joined)
-# on `source_languages`/`target_languages`, names are display-only. Curated to the ~25
+# on `source_languages`/`target_languages`, names are display-only. Curated to the ~30
 # languages that ship by default as subtitle/audio options on major video streaming
 # platforms (Netflix, Prime Video, Disney+), not an exhaustive ISO list.
 SUPPORTED_LANGUAGES: list[tuple[str, str]] = [
@@ -26,6 +26,12 @@ SUPPORTED_LANGUAGES: list[tuple[str, str]] = [
     ("ja", "Japanese"),
     ("ko", "Korean"),
     ("zh", "Chinese (Simplified)"),
+    ("zh-Hant", "Chinese (Traditional)"),
     ("th", "Thai"),
     ("vi", "Vietnamese"),
+    ("id", "Indonesian"),
+    ("ro", "Romanian"),
+    ("cs", "Czech"),
+    ("hu", "Hungarian"),
+    ("el", "Greek"),
 ]
