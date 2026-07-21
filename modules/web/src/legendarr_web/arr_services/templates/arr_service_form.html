@@ -2,13 +2,35 @@
 {% from "macros.html" import field, checkbox_field %}
 {% block title %}legendarr · {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server{% endblock %}
 {% block content %}
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    data-test-connection
+    hx-post="/settings/arr-services/test"
+    hx-include="#arr-service-form"
+    hx-target="#test-result"
+    hx-swap="innerHTML"
+    hx-indicator="#test-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("plug-zap") }}
+    <span>Test</span>
+  </button>
+  <button type="submit" form="arr-service-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
 <h1>{{ icon("settings") }} {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server</h1>
 
 {% if error %}
-<p class="test-result test-result--error">{{ error }}</p>
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
 {% endif %}
 
 <form
+  id="arr-service-form"
   class="service-form"
   method="post"
   action="{{ '/settings/arr-services/' ~ service.id if service else '/settings/arr-services/' }}"
@@ -55,20 +77,6 @@
 
   <div id="test-result" aria-live="polite"></div>
   <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
-  <div class="form-actions">
-    <button
-      type="button"
-      class="outline"
-      data-test-connection
-      hx-post="/settings/arr-services/test"
-      hx-include="closest form"
-      hx-target="#test-result"
-      hx-swap="innerHTML"
-      hx-indicator="#test-indicator"
-      hx-disabled-elt="this"
-    >Test</button>
-    <button type="submit">Save</button>
-  </div>
 </form>
 {% endblock %}
 {% block scripts %}

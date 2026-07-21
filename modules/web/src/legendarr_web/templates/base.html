@@ -112,8 +112,10 @@
         {% block content %}{% endblock %}
       </main>
     </div>
+    <div id="toast-container" class="toast-container"></div>
     <script src="/static/js/sidebar.js" defer></script>
     <script src="/static/js/theme.js" defer></script>
+    <script src="/static/js/toast.js" defer></script>
     {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
     {% block scripts %}{% endblock %}
   </body>

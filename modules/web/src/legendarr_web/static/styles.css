@@ -53,6 +53,7 @@ svg.lucide {
   --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
   --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
+  --lg-warn-color: #d9b23c;
 }
 
 /* === App shell: full-width topbar over a fixed sidebar + scrolling content === */
@@ -480,7 +481,8 @@ body {
 }
 
 .service-form {
-  max-width: 22rem;
+  width: 100%;
+  max-width: 36rem;
   --pico-form-element-spacing-vertical: 0.5rem;
   --pico-form-element-spacing-horizontal: 0.75rem;
 }
@@ -614,14 +616,69 @@ body {
   flex: 1;
 }
 
+/* === Page toolbar: Sonarr-style icon-over-label action row above a form page's
+   heading (Save, Test, ...), first thing in `.app-main`'s content block — `.app-main`
+   already pads the top, so this only needs bottom spacing. Buttons live outside the
+   <form> element and target it via the `form` attribute, so the toolbar can sit above
+   the page while the form itself renders below. */
+.page-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--pico-card-border-color);
+}
+
+/* Element-qualified so this beats Pico's `button[type=submit] { width: 100% }`
+   (same 0,1,1 specificity, later in source) — the Save button in this toolbar is
+   type="submit" but must stay content-width like its type="button" siblings. */
+button.page-toolbar-btn {
+  all: unset;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: auto;
+  min-width: 4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.page-toolbar-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.page-toolbar-btn:hover {
+  color: var(--pico-primary);
+  background-color: var(--lg-neutral-hover-background-color);
+}
+
+.page-toolbar-btn--primary {
+  color: var(--pico-primary);
+}
+
+.page-toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle,
-   .app-icon-btn and .lang-multiselect-tag-remove — fully reset themselves with `all: unset`
-   and style themselves, so they're excluded here rather than fought with extra specificity
-   elsewhere. */
-button:not(.app-nav-toggle):not(.app-icon-btn):not(.lang-multiselect-tag-remove),
+   .app-icon-btn, .page-toolbar-btn and .lang-multiselect-tag-remove — fully reset themselves
+   with `all: unset` and style themselves, so they're excluded here rather than fought with
+   extra specificity elsewhere. */
+button:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove),
 [role="button"],
-[type="submit"],
-[type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.lang-multiselect-tag-remove) {
+[type="submit"]:not(.page-toolbar-btn),
+[type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove) {
   display: inline-block;
   --pico-border-radius: 0.5rem;
   --pico-form-element-spacing-vertical: 0.5rem;
@@ -669,14 +726,6 @@ button.outline.contrast:is(:hover, :focus) {
   font-size: var(--lg-font-md);
 }
 
-.test-result--success {
-  color: var(--pico-ins-color);
-}
-
-.test-result--error {
-  color: var(--pico-del-color);
-}
-
 /* Shown only while the "Test" request is in flight (htmx toggles .htmx-request). */
 .test-indicator {
   display: none;
@@ -685,6 +734,68 @@ button.outline.contrast:is(:hover, :focus) {
 
 .test-indicator.htmx-request {
   display: block;
+}
+
+/* === Toast notifications: bottom-right, auto-dismiss after 3s (static/js/toast.js).
+   Fed by a same-page `[data-toast-message]` element (form validation errors) or a
+   `toast`/`toast_type` query param surviving a redirect (save success) — see toast.js
+   for the two trigger paths. */
+.toast-container {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.toast {
+  max-width: 22rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  border: 1px solid var(--pico-card-border-color);
+  font-size: var(--lg-font-md);
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  animation: lg-toast-in 0.2s ease forwards;
+}
+
+.toast.is-leaving {
+  animation: lg-toast-out 0.2s ease forwards;
+}
+
+@keyframes lg-toast-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lg-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.toast--success {
+  border-color: var(--pico-ins-color);
+  color: var(--pico-ins-color);
+}
+
+.toast--error {
+  border-color: var(--pico-del-color);
+  color: var(--pico-del-color);
+}
+
+.toast--warning {
+  border-color: var(--lg-warn-color);
+  color: var(--lg-warn-color);
 }
 
 /* === Sidebar footer: theme toggle + project links === */

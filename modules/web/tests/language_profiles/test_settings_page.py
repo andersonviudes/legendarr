@@ -87,6 +87,34 @@ def test_create_language_profile_redirects_to_list(stub_backend_client):
 
     assert response.status_code == 200
     assert response.request.url.path == "/settings/"
+    assert "toast=Language+profile+added." in str(response.request.url)
+    assert "toast_type=success" in str(response.request.url)
+
+
+def test_update_language_profile_redirects_with_success_toast(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/language-profiles/1":
+            return httpx.Response(200, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/1",
+            data={
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/"
+    assert "toast=Language+profile+updated." in str(response.request.url)
+    assert "toast_type=success" in str(response.request.url)
 
 
 def test_create_language_profile_forwards_fields(stub_backend_client):
@@ -144,6 +172,7 @@ def test_create_shows_error_on_duplicate_name(stub_backend_client):
 
     assert response.status_code == 409
     assert "already exists" in response.text
+    assert 'data-toast-type="error"' in response.text
 
 
 def _missing_profile_handler(request: httpx.Request) -> httpx.Response:
