@@ -1,5 +1,1 @@
-{% if result.success %}
-<p class="test-result test-result--success">{{ result.message }}</p>
-{% else %}
-<p class="test-result test-result--error">{{ result.message }}</p>
-{% endif %}
+<div hidden data-toast-message="{{ result.message }}" data-toast-type="{{ 'success' if result.success else 'error' }}"></div>

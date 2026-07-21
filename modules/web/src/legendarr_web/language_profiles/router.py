@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 import httpx
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -86,7 +88,8 @@ async def create_language_profile(
             {"profile": data, "error": error_detail(exc), "languages": SUPPORTED_LANGUAGES},
             status_code=exc.response.status_code,
         )
-    return RedirectResponse("/settings/", status_code=303)
+    toast = urlencode({"toast": "Language profile added.", "toast_type": "success"})
+    return RedirectResponse(f"/settings/?{toast}", status_code=303)
 
 
 @router.post("/{profile_id}")
@@ -113,7 +116,8 @@ async def update_language_profile(
             },
             status_code=exc.response.status_code,
         )
-    return RedirectResponse("/settings/", status_code=303)
+    toast = urlencode({"toast": "Language profile updated.", "toast_type": "success"})
+    return RedirectResponse(f"/settings/?{toast}", status_code=303)
 
 
 @router.post("/{profile_id}/delete")

@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 import httpx
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -119,7 +121,10 @@ async def create_arr_service(
             },
             status_code=exc.response.status_code,
         )
-    return RedirectResponse("/settings/arr-services/", status_code=303)
+    toast = urlencode(
+        {"toast": f"{data['service_type'].capitalize()} server added.", "toast_type": "success"}
+    )
+    return RedirectResponse(f"/settings/arr-services/?{toast}", status_code=303)
 
 
 @router.post("/test")
@@ -178,7 +183,10 @@ async def update_arr_service(
             },
             status_code=exc.response.status_code,
         )
-    return RedirectResponse("/settings/arr-services/", status_code=303)
+    toast = urlencode(
+        {"toast": f"{data['service_type'].capitalize()} server updated.", "toast_type": "success"}
+    )
+    return RedirectResponse(f"/settings/arr-services/?{toast}", status_code=303)
 
 
 @router.post("/{service_id}/delete")

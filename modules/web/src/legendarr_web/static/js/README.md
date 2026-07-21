@@ -14,6 +14,6 @@ A page that needs JS loads it by overriding the `scripts` block from
 {% endblock %}
 ```
 
-Exception: `sidebar.js` and `theme.js` belong to the shared sidebar in `base.html` itself
-(every page has one), so they're loaded directly in `base.html` rather than through the
-per-page `scripts` block.
+Exception: `sidebar.js`, `theme.js`, and `toast.js` belong to `base.html` itself (every page
+has the sidebar, the theme toggle, and the toast container), so they're loaded directly in
+`base.html` rather than through the per-page `scripts` block.

@@ -313,3 +313,186 @@ instead, even though that leaves the control a few px shorter than sibling text 
 **How to apply:** if this field's height looks "wrong" again, don't reflexively re-derive
 the Pico formula — check with the user first, since the current mismatch vs. plain inputs is
 an intentional, explicit choice, not an unnoticed bug.
+
+**Update (2026-07-21, seventh round — `.service-form` width + Sonarr-style page toolbar):**
+two related fixes to the two full-form pages (`language_profile_form.html`,
+`arr_service_form.html`), both driven by reference screenshots of Sonarr's UI.
+
+1. `.service-form { max-width: 22rem }` (`styles.css`) left a huge empty gap on the right of
+   wide viewports — `.app-main` itself is correctly `flex: 1` with no cap, the narrow width was
+   purely the form's own hardcoded max-width. Bumped to `max-width: 36rem; width: 100%` (36rem
+   chosen to stay close to `.stat-grid`'s existing `40rem`, avoiding an unreadably long input
+   row on ultrawide screens rather than going fully fluid). No other page uses `.service-form`
+   besides these two, so this was a single-rule fix. The only real responsive breakpoint in the
+   app is still the pre-existing `@media (max-width: 48rem)` sidebar-stacking rule — nothing new
+   was needed for mobile since `width: 100%` + `max-width` is inherently fluid down to any
+   viewport.
+
+2. New `.page-toolbar`/`.page-toolbar-btn` component: a Sonarr-style icon-over-label button row
+   sitting between the `<h1>` and the `<form>`, replacing the old bottom-of-form `.form-actions`
+   Save/Test buttons entirely (no page keeps both). Buttons live **outside** the `<form>` element
+   and reconnect to it via the HTML `form="<form-id>"` attribute (`language-profile-form` /
+   `arr-service-form` ids added to the two `<form>`s) so native submit still works. New vendored
+   icons: `save.svg` (Save) and `plug-zap.svg` (arr-service Test), sourced the same way as
+   documented in `legendarr-lucide-icon-source.md`.
+   - **Pico specificity gotcha hit here, new one, not covered by the gotcha list above:** Pico
+     sets a global `button[type=submit], input:not(...), select, textarea { width: 100% }`.
+     This selector's specificity is `(0,1,1)` (element + attribute) — a plain class selector
+     like `.page-toolbar-btn { width: auto }` is only `(0,1,0)` and **loses even though it's
+     declared later in the file**, because specificity beats source order. Only the
+     `type="submit"` Save button was affected (the `type="button"` Test button was fine, since
+     no equivalent Pico rule targets `[type=button]`). Fix: qualify the override with the
+     element too — `button.page-toolbar-btn { ... }` — matching Pico's `(0,1,1)` and then
+     winning on source order (styles.css loads after pico.min.css). **General lesson: matching
+     specificity isn't enough to guarantee a win by declaring the override "later" — check
+     whether Pico's rule already includes an element-type selector (not just `:not()`
+     exclusions) and mirror that in the override, not just add a class.**
+   - Also had to rewire the arr-service "Test" button's htmx/JS now that it's no longer a DOM
+     descendant of `<form>`: `hx-include="closest form"` → `hx-include="#arr-service-form"` (an
+     ID selector, since `closest` can't reach a sibling), and `arr-service-form.js`'s
+     `event.detail.elt.closest("form")` → `document.getElementById("arr-service-form")` for the
+     same reason. **Lesson: any button moved out of a `<form>` and reconnected via `form="id"`
+     for native submit purposes still needs every `closest("form")`/`hx-include="closest form"`
+     reference (JS or htmx) updated to an explicit ID selector — the `form` attribute only wires
+     up submission, not DOM ancestry.**
+   - Verified end-to-end with Playwright (not just visual): clicked the toolbar Test button and
+     got a real backend validation response ("The server rejected the API Key..."), and clicked
+     both toolbar Save buttons and confirmed each redirected to its list page — confirms the
+     `form="..."` wiring actually submits, not just renders correctly.
+   - **Playwright/browser-cache gotcha hit while verifying:** repeated `page.goto()` calls to the
+     same origin during one session can silently reuse a stale cached `styles.css` (Chromium's
+     heuristic freshness caching keys off `Last-Modified`, so edits made *after* the first load
+     in a session don't always trigger a real refetch). Screenshots showed stale (pre-fix)
+     layout even though `curl`ing `/static/styles.css` directly confirmed the served file was
+     already correct. Fix used to force a real refetch mid-session:
+     `page.evaluate(() => { link.href = new URL(link.href); url.searchParams.set('v', Date.now()); ... })`
+     (cache-bust the `<link>` href) before each screenshot. **Don't trust a Playwright screenshot
+     that looks unchanged after a CSS edit without cache-busting first — verify against `curl`
+     on the actual served file before concluding a fix didn't work.**
+
+**Immediate follow-up, same round:** the user saw a screenshot of the toolbar-below-`<h1>`
+layout above and asked to flip the order — toolbar first, then the divider line, then the
+title ("coloca os botoes para cima do titulo... separa com uma linha"). Both templates now
+render `<div class="page-toolbar">` before `<h1>`, not after. `.page-toolbar`'s `margin` lost
+its `1.25rem` top value (was `1.25rem 0 1.75rem`, now `0 0 1.75rem`) since it's the first
+element in `.app-main`'s content block and `.app-main` already has `padding: 3rem 3.5rem` —
+keeping the old top margin would have doubled the gap above the buttons. **How to apply:** if
+another form page adopts this toolbar, put it as literally the first thing after `{% block
+content %}`, before the page's `<h1>`, matching this final layout — not the earlier
+title-then-toolbar order this same round briefly shipped.
+
+**Update (2026-07-21, eighth round — toast notifications, replacing the static inline
+error banner and adding a save-success signal that didn't exist before):** the user asked to
+standardize success/error/warning feedback as a bottom-right floating toast, rounded border,
+auto-dismissing after 3s, green/red/yellow by type. Scope was deliberately limited to the two
+real message-producing flows (create/update on `arr_service_form.html` and
+`language_profile_form.html`) — the arr-service "Test connection" result (`_test_result.html`,
+swapped into a persistent `#test-result` div under the toolbar) was **not** converted; that's
+an intentionally lasting status the user is actively looking at while adjusting fields, and
+turning it into a 3s-then-gone toast would be a UX regression, not an improvement.
+
+- **New sitewide component**: `#toast-container` (`base.html`, `position: fixed` bottom-right,
+  added once as a sibling of `.app-shell`) + `static/js/toast.js` (third sitewide-exception
+  script alongside `sidebar.js`/`theme.js`, per `static/js/README.md`) + `.toast`/`.toast--success`
+  `/--error`/`--warning` in `styles.css`. Pill shape via `border-radius: 999px`; color is
+  border+text only (reusing `--pico-ins-color`/`--pico-del-color`, same as the pre-existing
+  `.test-result--success`/`--error`, plus one new token `--lg-warn-color: #d9b23c` for the
+  warning state — no wired warning trigger exists yet, added ready for future use per the
+  user's own "quando houver" framing). `window.showToast(message, type)` is exposed globally
+  so any future page script can call it directly, not just the two built-in triggers below.
+- **The hard part: this app is PRG (POST-redirect-GET, see `router.py` in both slices) with no
+  session/flash-cookie mechanism**, so a toast has to survive two different transports depending
+  on whether the response is a redirect or a same-page re-render:
+  - Same-page (4xx validation error, form re-rendered with the submitted values so the user can
+    fix them): the old `<p class="test-result test-result--error">{{ error }}</p>` was replaced
+    with a hidden `<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>`
+    (same `hidden`-placeholder idiom as the `#arr-services-count-badge` span in `base.html`).
+    `toast.js` finds it on load, fires the toast, and removes the element.
+  - Cross-redirect (successful create/update, which didn't show *any* feedback before this
+    round): the router appends `?toast=<message>&toast_type=success` to the 303 `Location`
+    (`urlencode()`, both routers) instead of introducing session/cookie flash infrastructure —
+    proportional to the need, matches this app's existing "no server-side session state" shape.
+    `toast.js` reads `toast`/`toast_type` from `location.search` on load, fires the toast, then
+    strips both params via `history.replaceState` so a manual reload doesn't repeat it.
+- **Verification hit two *already-documented* gotchas again, back to back — both are logged
+  above in this same file, and both bit again despite that:**
+  1. **Dev-server Python-reload gotcha** (see the "Dev-server restart gotcha" entry above): the
+     first live test showed the redirect `Location` header as plain `/settings/` with no toast
+     query string at all, even though the router source clearly had it — `make run`'s
+     `legendarr_bootstrap` process was still the one started before this round's router.py
+     edits (Python changes don't hot-reload, only Jinja does). Fixed by `pkill -f
+     legendarr_bootstrap` + relaunch (`nohup make run > /tmp/legendarr-run.log 2>&1 & disown`).
+     **This will keep happening every session that edits a `router.py`/`service.py`/any
+     non-template file — check `ps aux | grep legendarr_bootstrap`'s start time against the
+     edit time before trusting a live redirect/response body.**
+  2. **Browser-cache gotcha** (see the "Playwright/browser-cache gotcha" note above), but a
+     stronger form of it this time: manually cache-busting the `<link>` `href` with a `?v=`
+     query param (the fix used earlier this session) only forces a fresh fetch *for that one
+     document* — the moment the flow does a real navigation (e.g. clicking Save, which POSTs
+     and redirects to a new page), the freshly-loaded document's own `<link href="/static/styles.css">`
+     (no query param) goes straight back to the browser's stale cached copy, so the toast
+     rendered as an unstyled, unpositioned plain block (no `position: fixed`, no border-radius,
+     stuck at the literal bottom of the document instead of floating bottom-right) even though
+     `curl`ing the file directly, and even a mid-page fetch(), both confirmed the served CSS
+     was already correct. Query-string busting doesn't survive a navigation; what actually fixed
+     it: a CDP session — `const client = await page.context().newCDPSession(page); await
+     client.send('Network.clearBrowserCache'); await client.send('Network.setCacheDisabled',
+     {cacheDisabled: true});` — run once, before navigating, disables the cache for the rest of
+     that page's navigations. **Also caught a false alarm from the same latency this causes at
+     the tool layer**: a screenshot taken via a *separate* tool call after `click()` + the 3s
+     auto-dismiss can easily land after the toast has already been removed (each Playwright MCP
+     round-trip has real wall-clock latency) — that looked like "the toast didn't render" but
+     was actually "the toast rendered, did its job, and left before the next tool call ran".
+     Fix: do the `click()` + `waitForSelector('.toast')` + `page.screenshot()` **inside a single
+     `browser_run_code_unsafe` call**, not as three separate tool round-trips, whenever the
+     thing being screenshotted is time-limited.
+- **How to apply:** if a future flow needs a warning toast, call
+  `showToast("message", "warning")` from that page's own script, or set
+  `data-toast-type="warning"` on a same-page hidden trigger — no CSS/JS changes needed, the
+  three color variants already exist. If a new page needs the same save-success behavior,
+  copy the `urlencode({"toast": ..., "toast_type": "success"})` pattern onto its redirect
+  rather than inventing a second flash mechanism.
+
+**Immediate follow-up, same round:** the user then asked for the arr-service "Test connection"
+button's result (`_test_result.html`, swapped into `#test-result` via HTMX, `hx-target`/`hx-swap`
+on `[data-test-connection]` in `arr_service_form.html`) to *also* toast — reversing the
+deliberate exclusion two paragraphs up. Kept the persistent `#test-result` panel as-is (still
+useful while the user is mid-edit) and additionally added a `data-toast-message`/`data-toast-type`
+trigger to `_test_result.html`, success or error, alongside the existing `<p class="test-result
+...">`. **The gotcha this exposed:** `toast.js`'s `[data-toast-message]` scan originally only ran
+once, at `DOMContentLoaded`/script-load time (`document.querySelectorAll(...)` at the top level)
+— it never saw a trigger element that arrived later via an HTMX swap, since HTMX doesn't reload
+the page. Fixed by extracting the scan into `fireToastTriggersIn(root)`, calling it once for
+`document` on load (unchanged), and adding `document.addEventListener("htmx:afterSwap", (event) =>
+fireToastTriggersIn(event.detail.target))` so any future `hx-swap` target carrying a
+`[data-toast-message]` picks it up automatically — no per-page wiring needed, htmx.min.js is
+already loaded sitewide in `base.html`. **How to apply:** any future HTMX partial (a new
+`_*.html` swapped by `hx-target`/`hx-swap`) gets a toast for free just by including the same
+`<div hidden data-toast-message="..." data-toast-type="...">` — no JS changes needed, that path
+is now generic. Also added Python-level tests for all three toast triggers (`test_arr_services_page.py`,
+`test_settings_page.py`) — since this repo's web tests are `TestClient` + HTML-string assertions
+with no JS execution, "does the toast show" is tested as "does the redirect URL carry
+`toast=`/`toast_type=success`" (success case, `TestClient` follows redirects by default so
+`response.request.url` is the final GET) and "does the response body contain the
+`data-toast-message`/`data-toast-type` element" (error and HTMX-swap cases) — there's no
+browser-level toast-rendering test in this suite, that gap was covered manually via Playwright
+during this same round instead.
+
+**Immediate follow-up, same round:** the user then decided the inline `<p class="test-result
+test-result--success/--error">{{ result.message }}</p>` in `_test_result.html` was now redundant
+with the toast and asked to drop it, toast-only. `_test_result.html` is now just the one hidden
+`data-toast-message` trigger div — the `#test-result` swap target in `arr_service_form.html`
+still exists (still a valid `hx-target`) but ends up empty after `toast.js` fires and removes the
+trigger, so nothing renders there anymore. Removed the now-dead `.test-result--success`/
+`.test-result--error` CSS rules; kept the base `.test-result` rule since `#test-indicator`
+("Testing connection…", shown only while `.htmx-request` is toggled by htmx) still uses it for
+`font-size`/`margin`. **How to apply:** if the persistent panel gets removed for the two form
+pages' validation errors too, check `styles.css` again — nothing currently reads their inline
+error text, it's toast-only there too, so no similar cleanup is pending. If a future page still
+wants a lasting (non-3s) inline result alongside the toast, don't reuse `_test_result.html`'s
+old shape — this round intentionally collapsed it to toast-only per explicit request.
+
+**Immediate follow-up, same round:** shape tweak — `.toast`'s `border-radius` went from `999px`
+(full pill) to `0.75rem`, matching the radius already used by card-like surfaces
+(`.service-card` and friends use the same `0.75rem`) instead of the badge/pill radius. Squared
+off but still visibly rounded, per the user's "mais quadrado... mas ainda com canto arredondado".

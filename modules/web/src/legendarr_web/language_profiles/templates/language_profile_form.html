@@ -2,13 +2,21 @@
 {% from "macros.html" import field, checkbox_field, language_multiselect %}
 {% block title %}legendarr · {{ "Edit" if profile else "Add" }} Language Profile{% endblock %}
 {% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="language-profile-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
 <h1>{{ icon("languages") }} {{ "Edit" if profile else "Add" }} Language Profile</h1>
 
 {% if error %}
-<p class="test-result test-result--error">{{ error }}</p>
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
 {% endif %}
 
 <form
+  id="language-profile-form"
   class="service-form"
   method="post"
   action="{{ '/settings/' ~ profile.id if profile else '/settings/' }}"
@@ -27,10 +35,6 @@
   {{ checkbox_field("hearing_impaired", "Hearing-impaired (HI)",
                      checked=(profile and profile.hearing_impaired)) }}
   {{ checkbox_field("is_default", "Default profile", checked=(profile and profile.is_default)) }}
-
-  <div class="form-actions">
-    <button type="submit">Save</button>
-  </div>
 </form>
 {% endblock %}
 {% block scripts %}

@@ -130,6 +130,36 @@ def test_create_arr_service_redirects_to_list(stub_backend_client):
 
     assert response.status_code == 200
     assert response.request.url.path == "/settings/arr-services/"
+    assert "toast=Radarr+server+added." in str(response.request.url)
+    assert "toast_type=success" in str(response.request.url)
+
+
+def test_update_arr_service_redirects_with_success_toast(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/1":
+            return httpx.Response(200, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/arr-services/1",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/arr-services/"
+    assert "toast=Radarr+server+updated." in str(response.request.url)
+    assert "toast_type=success" in str(response.request.url)
 
 
 def test_create_arr_service_forwards_path_mapping(stub_backend_client):
@@ -215,6 +245,7 @@ def test_create_arr_service_rerenders_form_when_server_unreachable(stub_backend_
     assert response.status_code == 422
     assert "Could not connect to the radarr server" in response.text
     assert 'name="host"' in response.text  # the form is shown again, not a redirect
+    assert 'data-toast-type="error"' in response.text
 
 
 def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend_client):
@@ -243,6 +274,8 @@ def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend
 
     assert response.status_code == 200
     assert "Connection successful" in response.text
+    assert 'data-toast-message="Connection successful"' in response.text
+    assert 'data-toast-type="success"' in response.text
 
 
 def _missing_service_handler(request: httpx.Request) -> httpx.Response:
@@ -307,6 +340,7 @@ def test_test_connection_shows_message_on_backend_error(stub_backend_client):
 
     assert response.status_code == 200
     assert "reach the backend to run the test" in response.text
+    assert 'data-toast-type="error"' in response.text
 
 
 def test_toggle_enabled_reverts_switch_on_backend_error(stub_backend_client):
@@ -376,3 +410,4 @@ def test_create_shows_error_on_duplicate_name(stub_backend_client):
 
     assert response.status_code == 409
     assert "already exists" in response.text
+    assert 'data-toast-type="error"' in response.text
