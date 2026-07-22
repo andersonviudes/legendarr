@@ -91,13 +91,13 @@ opens legendarr's web UI and gets a translated file back — fully automated, no
 editing, using the Radarr/Sonarr connection, synced library, and language profile already set
 up in 0.2.0.*
 
-- [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
-  and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
-  can produce a real file without this.
 - [ ] **Subtitle acquisition** — New `subtitle_acquisition` slice with a `SubtitleProvider`
   protocol, mirroring `TranslationProvider`'s shape and the shared HTTP client conventions from
   0.1.0. One real provider wired in, with a basic match score/cutoff per language profile (full
   per-attribute weighting comes later, at 0.12.0).
+- [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
+  and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
+  can produce a real file without this.
 - [ ] **Subtitle translation** — An orchestrator that ties a `LanguageProfile` to a media item:
   run external discovery, fall back to acquisition when no external subtitle exists in the
   source language, translate with the configured provider, write the result. One real
