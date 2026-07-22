@@ -1,3 +1,3 @@
-{# Standalone render of the enable/disable toggle for the PATCH .../enabled swap. #}
+{# Standalone render of the enable/disable toggle for the POST .../enabled swap. #}
 {% from "macros.html" import service_status %}
-{{ service_status(arr_service) }}
+{{ service_status(arr_service, "/settings/arr-services/" ~ arr_service.id ~ "/enabled") }}

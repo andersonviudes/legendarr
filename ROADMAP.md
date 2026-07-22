@@ -91,12 +91,19 @@ opens legendarr's web UI and gets a translated file back — fully automated, no
 editing, using the Radarr/Sonarr connection, synced library, and language profile already set
 up in 0.2.0.*
 
-- [ ] **Subtitle acquisition** — New `subtitle_acquisition` slice with a `SubtitleProvider`
-  protocol, mirroring `TranslationProvider`'s shape and the shared HTTP client conventions from
-  0.1.0. Target pool of the 8 most broadly used general-purpose subtitle sources — OpenSubtitles,
-  Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, BSPlayer, Napiprojekt, and Subsource — with one
-  wired in here, a basic match score/cutoff per language profile (full per-attribute weighting
-  comes later, at 0.12.0), and the rest added incrementally through 0.11.0/0.12.0.
+- [x] **Subtitle acquisition** — New `subtitle_acquisition` slice: registration for the target
+  pool of 13 general-purpose subtitle sources — OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl,
+  TVsubtitles, legendas.net, Napiprojekt, Subsource, Anime Tosho, Supersubtitles, AnimeKalesi,
+  GreekSubtitles, and BetaSeries — with enable/disable, credentials (API key or
+  username/password, per provider), and a "Test connection" check per provider, from the web
+  UI. Known gap (deferred): no `SubtitleProvider` protocol, HTTP client, search, match score,
+  or download yet — registration only. That lands in a future item, not yet placed on this
+  roadmap; 0.11.0/0.12.0 below still assume it exists by the time they start.
+- [ ] **Subtitle acquisition** — A `SubtitleProvider` protocol mirroring `TranslationProvider`'s
+  shape and the shared HTTP client conventions from 0.1.0, with one real provider's search and
+  download wired in and a basic match score/cutoff per language profile (full per-attribute
+  weighting comes later, at 0.12.0). The rest of the registered pool gets real search/download
+  incrementally through 0.11.0/0.12.0.
 - [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.
@@ -186,12 +193,12 @@ just landed.*
 
 ## 0.11.0 — More providers, and manual control over acquisition
 
-*Use case: the single provider wired in at 0.3.0 doesn't have a subtitle for this movie, so a
-second or third provider backs it up — or a user would rather browse results and pick one
-themselves, or upload their own file, instead of trusting the automatic match.*
+*Use case: the first provider wired in doesn't have a subtitle for this movie, so a second or
+third provider backs it up — or a user would rather browse results and pick one themselves, or
+upload their own file, instead of trusting the automatic match.*
 
-- [ ] **Subtitle acquisition** — A second and third `SubtitleProvider` behind the protocol from
-  0.3.0, so a miss on one provider doesn't dead-end acquisition.
+- [ ] **Subtitle acquisition** — A second and third `SubtitleProvider` implementation, so a miss
+  on one provider doesn't dead-end acquisition.
 - [ ] Manual search and manual upload: let a user browse provider search results and pick one
   themselves, or upload their own subtitle file for a specific media item, bypassing the
   automatic match.

@@ -68,3 +68,20 @@ test only needs a `Session` against the current schema (service-function tests),
 `dependency_overrides` wiring. When adding logging to new code, add `logger =
 logging.getLogger(__name__)` at module top — never call `configure_logging()` again outside
 `legendarr_bootstrap/app.py`.
+
+**Two pytest gotchas hit while building `subtitle_acquisition` (2026-07-22), worth avoiding
+proactively:**
+1. Test dirs under `tests/` have no `__init__.py` (confirmed convention, not an oversight), so
+   two files with the same basename in different slice test dirs collide at import time
+   (`import file mismatch`) — e.g. a second `test_router.py` next to `arr_services`' and
+   `language_profiles`' own `test_router.py` files broke collection for the whole suite, not
+   just that file. Always give a slice's router test a qualified name,
+   `test_<slice>_router.py` (already the convention for `arr_services` —
+   `test_arr_services_router.py` — just wasn't followed once and had to be renamed).
+2. A source module that defines a function named `test_<something>` (a real name, e.g.
+   `subtitle_acquisition/connection_tests.py`'s `test_connection(config)` entry point) breaks
+   if a test file does `from ... import test_connection` — pytest also tries to collect the
+   imported name as a test *inside* the test module, fails with `fixture 'config' not found`.
+   Fix at the test-file import site with `import test_connection as check_connection` (or
+   similar), not by renaming the source function — the `test_` prefix there is meaningful
+   product naming, not a test artifact.

@@ -5,7 +5,11 @@ import httpx
 from fastapi import FastAPI
 from legendarr_backend.api import create_api_app
 from legendarr_backend.bootstrap import build_scheduler
+from legendarr_backend.database.engine import get_session, init_db
 from legendarr_backend.logging.setup import configure_logging
+from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
+    ensure_subtitle_providers_seeded,
+)
 from legendarr_web.app import create_app as create_web_app
 from legendarr_web.backend_client.client import get_backend_client
 
@@ -14,6 +18,13 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # This lifespan's own context runs before the mounted `api_app`'s (which normally
+    # applies migrations), so the schema isn't guaranteed to exist yet — call `init_db()`
+    # here too (idempotent: it just runs Alembic's "upgrade head", a no-op if already there)
+    # before touching the database.
+    init_db()
+    with get_session() as session:
+        ensure_subtitle_providers_seeded(session)
     scheduler = build_scheduler()
     scheduler.start()
     yield

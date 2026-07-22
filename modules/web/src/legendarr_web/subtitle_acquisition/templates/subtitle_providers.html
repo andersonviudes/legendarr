@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "macros.html" import service_status %}
+{% block title %}legendarr · Subtitle Providers{% endblock %}
+{% block content %}
+<h1>{{ icon("captions") }} Subtitle Providers</h1>
+<p class="field-hint">
+  Enable the subtitle providers you want legendarr to use, and configure credentials where a
+  provider needs them. Searching and downloading subtitles from these providers isn't built
+  yet — this only registers which ones are available and confirms they're reachable.
+</p>
+
+<div class="service-grid">
+  {% for provider in providers %}
+  <article class="service-card">
+    <header class="service-card-header">
+      <p class="service-card-name">{{ provider.label }}</p>
+      {% if provider.is_configured %}
+      {{ service_status(provider, "/settings/subtitle-providers/" ~ provider.id ~ "/enabled", noun="provider") }}
+      {% else %}
+      <span class="service-card-status is-disabled">Not configured</span>
+      {% endif %}
+    </header>
+    <p class="service-card-address">
+      {% if provider.credential_fields %}
+      Requires credentials
+      {% elif provider.is_configured %}
+      No credentials needed
+      {% else %}
+      Run "Test connection" to enable
+      {% endif %}
+    </p>
+    <div class="service-card-actions">
+      <a href="/settings/subtitle-providers/{{ provider.id }}/edit" role="button" class="outline">Edit</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
