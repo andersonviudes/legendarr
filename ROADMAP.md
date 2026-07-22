@@ -93,8 +93,10 @@ up in 0.2.0.*
 
 - [ ] **Subtitle acquisition** — New `subtitle_acquisition` slice with a `SubtitleProvider`
   protocol, mirroring `TranslationProvider`'s shape and the shared HTTP client conventions from
-  0.1.0. One real provider wired in, with a basic match score/cutoff per language profile (full
-  per-attribute weighting comes later, at 0.12.0).
+  0.1.0. Target pool of the 8 most broadly used general-purpose subtitle sources — OpenSubtitles,
+  Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, BSPlayer, Napiprojekt, and Subsource — with one
+  wired in here, a basic match score/cutoff per language profile (full per-attribute weighting
+  comes later, at 0.12.0), and the rest added incrementally through 0.11.0/0.12.0.
 - [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.
