@@ -58,3 +58,20 @@ takes precedence over the env var on anything but the very first run.
 **How to apply:** when adding new SQLModel tables, import their model module in
 `db/migrations/env.py` (next to the existing `language_profiles.models` import) so
 `--autogenerate` picks them up, then run `make db-revision message="..."`.
+
+**2026-07-22 — autogenerate never handles a new FK column correctly on SQLite:** confirmed a
+third time (after `35527f37e677` and `3605a01d1781`) while adding `SubtitleProxy` +
+`SubtitleProviderConfig.proxy_id`. `alembic revision --autogenerate` emits a plain
+`op.add_column(...)` + `op.create_foreign_key(...)` for a new FK column on an *existing* table,
+which fails at `db-upgrade` time with `NotImplementedError: No support for ALTER of constraints
+in SQLite dialect` — SQLite can't `ALTER` a constraint directly. Always hand-rewrite that part
+of the generated migration to wrap the add_column/create_index/create_foreign_key in
+`op.batch_alter_table("<table>")`, with an explicit FK constraint name (existing convention:
+`fk_<table>_<column>_<referenced_table>`) since batch mode needs one to target it in a later
+`drop_constraint`. New tables created from scratch (`op.create_table(...)`) don't need this —
+only a new FK column on a table that already exists. Also: since SQLite DDL isn't
+transactional, a migration that fails partway through (as this one did before the fix) can
+leave the dev DB in a partial state — `alembic_version` stuck at the old revision while the
+new table/column already exist. The dev `data/` directory is gitignored, so the fastest fix is
+deleting it entirely (`rm -rf data modules/backend/data`) and re-running `make db-upgrade` from
+a clean slate, rather than trying to hand-reconcile the partial schema.

@@ -1,10 +1,10 @@
 - [legendarr project architecture](legendarr-architecture.md) — monorepo layout, Screaming+VSA slices, uv/Docker/CI setup and gotchas
 - [legendarr roadmap competitive basis](legendarr-roadmap-basis.md) — why roadmap phases are ordered this way: confirmed gaps found in Bazarr/Lingarr source
-- [legendarr Alembic migrations and config.yaml](legendarr-db-migrations.md) — DB migration setup, config.yaml precedence, env.py caching gotcha
+- [legendarr Alembic migrations and config.yaml](legendarr-db-migrations.md) — DB migration setup; env.py caching + SQLite FK batch_alter_table gotchas
 - [legendarr web UI design system](legendarr-ui-design-system.md) — dark theme, sidebar nav shell, poster-grid component: what exists and why
 - [legendarr Clean Code & SOLID rule](legendarr-clean-code-solid-rule.md) — where the rule lives, what was refactored to comply, what was deliberately left alone and why
 - [legendarr shared HTTP client conventions](legendarr-http-client-conventions.md) — ProviderHttpClient in http_client/client.py, required base for new HTTP integrations
-- [legendarr feature vs. fix branch convention](legendarr-branch-convention.md) — feat: needs branch+PR, fix: can push straight to main
+- [legendarr feature vs. fix branch convention](legendarr-branch-convention.md) — feat: needs branch+PR — put it in the plan's own Tasks list, don't wait to be told
 - [legendarr scheduling/job conventions](legendarr-scheduling-job-conventions.md) — scheduling/ shared module + per-slice jobs.py, required pattern for new APScheduler jobs
 - [legendarr testing & logging conventions](legendarr-testing-logging-conventions.md) — per-module conftest.py fixtures, configure_logging() wired into bootstrap's real entrypoint
 - [legendarr media-library deferred follow-ups](legendarr-media-library-deferred-followups.md) — PR #12 triage leftovers: Windows path mapping, minor form gaps (DB-cascade item resolved 2026-07-20)

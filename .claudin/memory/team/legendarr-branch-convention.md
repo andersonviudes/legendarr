@@ -23,3 +23,16 @@ request ("pode comitar na main mesmo"), without a branch/PR — confirmed in pra
 AGENTS.md's Conventions section only names `fix:` explicitly. Treat pure-`docs:` changes like
 `fix:` (direct-to-main is fine if asked), but still ask if a `docs:` change is entangled with
 non-trivial code.
+
+**2026-07-22 — proactively put branch/PR steps in the plan itself for `feat:` work:** when
+building an `EnterPlanMode` plan for a new feature (e.g. the subtitle-proxy-registration
+feature), the initial plan's Tasks list jumped straight into model/router/test work without an
+explicit "create the feature branch" task — the user had to reject `ExitPlanMode` and ask
+("adiciona ao plano para trabalharmos em uma branch") for it to be added, even though this
+convention was already documented in `AGENTS.md` and this file. **Why:** knowing the rule isn't
+the same as applying it inside a concrete plan; the plan's task list is what actually gets
+executed step-by-step, so if branch creation isn't a task in it, it's easy to skip straight to
+implementation on `main`. **How to apply:** for any plan whose scope is `feat:`-sized, add
+"create and switch to the feature branch" as the first Tasks entry and "push the branch and
+open the PR" as the last, before ever calling `ExitPlanMode` — don't wait for the user to point
+this out.
