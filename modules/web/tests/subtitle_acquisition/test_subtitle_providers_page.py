@@ -146,6 +146,8 @@ def test_edit_form_shows_credential_fields_for_kind_that_needs_them(stub_backend
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
         return httpx.Response(200, json=_provider(id=1, kind="opensubtitles"))
 
     stub_backend_client(app, handler=handler)
@@ -162,6 +164,8 @@ def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
         return httpx.Response(200, json=_provider(id=1, kind="napiprojekt"))
 
     stub_backend_client(app, handler=handler)
@@ -179,6 +183,8 @@ def test_edit_form_shows_search_options_for_opensubtitles(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
         return httpx.Response(
             200, json=_provider(id=1, kind="opensubtitles", include_ai_translated=True)
         )
@@ -201,6 +207,8 @@ def test_edit_form_hides_search_options_for_other_kinds(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
         return httpx.Response(200, json=_provider(id=1, kind="addic7ed"))
 
     stub_backend_client(app, handler=handler)
@@ -216,6 +224,8 @@ def test_edit_form_does_not_prefill_api_key(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
         return httpx.Response(200, json=_provider(id=1, kind="opensubtitles"))
 
     stub_backend_client(app, handler=handler)
@@ -224,6 +234,46 @@ def test_edit_form_does_not_prefill_api_key(stub_backend_client):
         response = client.get("/settings/subtitle-providers/1/edit")
 
     assert 'value=""' in response.text or "value=''" in response.text
+
+
+def test_edit_form_shows_registered_proxies_in_a_combo(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[{"id": 1, "name": "FlareSolverr", "host": "..."}])
+        return httpx.Response(200, json=_provider(id=1, kind="addic7ed", proxy_id=1))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="proxy_id"' in response.text
+    assert "FlareSolverr" in response.text
+    assert 'value="1" selected' in response.text
+
+
+def test_update_provider_forwards_proxy_id(stub_backend_client):
+    app = create_app()
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PATCH" and request.url.path == "/subtitle-providers/1":
+            captured.update(json.loads(request.content))
+            return httpx.Response(200, json=_provider(id=1, kind="addic7ed"))
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/subtitle-providers/1",
+            data={"kind": "addic7ed", "username": "user", "password": "pass", "proxy_id": "1"},
+        )
+
+    assert captured["proxy_id"] == 1
 
 
 def test_update_provider_redirects_with_success_toast(stub_backend_client):

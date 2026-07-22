@@ -47,6 +47,13 @@ class SubtitleProviderConfig(SQLModel, table=True):
     username: str | None = Field(default=None)
     password: str | None = Field(default=None, sa_column=Column(EncryptedString))
     connection_verified: bool = Field(default=False)
+    # Which registered `SubtitleProxy` (if any) this provider's requests should go through —
+    # e.g. a FlareSolverr instance for a CAPTCHA/Cloudflare-gated kind. Nullable: most kinds
+    # don't need one. `ondelete="SET NULL"` so deleting a proxy just unassigns it here instead
+    # of blocking the delete or cascading.
+    proxy_id: int | None = Field(
+        default=None, foreign_key="subtitleproxy.id", index=True, ondelete="SET NULL"
+    )
     # OpenSubtitles-only search options — defaults mirror Bazarr's opensubtitlescom
     # provider (use_hash=True, both "include ..." flags default off, since the API
     # itself excludes AI/machine-translated results unless asked to include them).
@@ -76,3 +83,20 @@ class SubtitleProviderConfig(SQLModel, table=True):
         if self.kind in _API_KEY_KINDS or self.kind in _USERNAME_PASSWORD_KINDS:
             return self.has_credentials
         return self.connection_verified
+
+
+class SubtitleProxy(SQLModel, table=True):
+    """A user-registered indexer-style proxy (e.g. FlareSolverr) a `SubtitleProviderConfig`
+    can be pointed at to get past a CAPTCHA/Cloudflare wall.
+
+    User-created and arbitrary in count, unlike `SubtitleProviderConfig`'s fixed, seeded
+    catalog — mirrors `ArrService`'s shape instead. `host` is stored as a full base URL
+    (e.g. `http://10.0.1.1:8191/`), not split into host/port/use_ssl like `ArrService`, since
+    that's the single field FlareSolverr (and any future proxy kind) needs.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    host: str
+    enabled: bool = Field(default=True)
+    connection_verified: bool = Field(default=False)

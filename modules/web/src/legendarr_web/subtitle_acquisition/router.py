@@ -11,6 +11,7 @@ from legendarr_web.subtitle_acquisition.provider_display import (
     provider_label,
     provider_search_options,
 )
+from legendarr_web.subtitle_proxies import service as proxy_service
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings/subtitle-providers")
@@ -26,11 +27,16 @@ def _with_display(provider: dict) -> dict:
     }
 
 
+def _proxy_options(proxies: list[dict]) -> list[tuple[str, str]]:
+    return [("", "None")] + [(str(proxy["id"]), proxy["name"]) for proxy in proxies]
+
+
 async def _credential_form(
     kind: str = Form(...),
     api_key: str = Form(""),
     username: str = Form(""),
     password: str = Form(""),
+    proxy_id: str = Form(""),
     use_hash: bool = Form(False),
     include_ai_translated: bool = Form(False),
     include_machine_translated: bool = Form(False),
@@ -49,6 +55,7 @@ async def _credential_form(
         "api_key": api_key,
         "username": username,
         "password": password,
+        "proxy_id": int(proxy_id) if proxy_id else None,
         **{k: v for k, v in search_options.items() if k in provider_search_options(kind)},
     }
 
@@ -84,8 +91,11 @@ async def edit_subtitle_provider(
         if exc.response.status_code != 404:
             raise
         return RedirectResponse("/settings/subtitle-providers/", status_code=303)
+    proxies = await proxy_service.list_subtitle_proxies(client)
     return templates.TemplateResponse(
-        request, "subtitle_provider_form.html", {"provider": _with_display(existing)}
+        request,
+        "subtitle_provider_form.html",
+        {"provider": _with_display(existing), "proxy_options": _proxy_options(proxies)},
     )
 
 
@@ -103,10 +113,15 @@ async def update_subtitle_provider(
             return RedirectResponse("/settings/subtitle-providers/", status_code=303)
         if exc.response.status_code >= 500:
             raise
+        proxies = await proxy_service.list_subtitle_proxies(client)
         return templates.TemplateResponse(
             request,
             "subtitle_provider_form.html",
-            {"provider": _with_display({**data, "id": provider_id}), "error": error_detail(exc)},
+            {
+                "provider": _with_display({**data, "id": provider_id}),
+                "proxy_options": _proxy_options(proxies),
+                "error": error_detail(exc),
+            },
             status_code=exc.response.status_code,
         )
     toast = urlencode(

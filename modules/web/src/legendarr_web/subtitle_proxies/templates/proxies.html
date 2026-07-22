@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state, service_status %}
+{% block title %}legendarr · Proxies / Captcha{% endblock %}
+{% block content %}
+<h1>{{ icon("shield") }} Proxies / Captcha</h1>
+<p class="field-hint">
+  Register a proxy (e.g. FlareSolverr) subtitle providers can be pointed at from their own
+  edit page to get past a CAPTCHA or Cloudflare wall.
+</p>
+
+{% if not proxies %}
+{{ empty_state("No proxy configured yet.") }}
+{% endif %}
+
+<div class="service-grid">
+  {% for proxy in proxies %}
+  <article class="service-card">
+    <header class="service-card-header">
+      <p class="service-card-name">{{ proxy.name }}</p>
+      {{ service_status(proxy, "/settings/subtitle-proxies/" ~ proxy.id ~ "/enabled", noun="proxy") }}
+    </header>
+    <p class="service-card-address">{{ proxy.host }}</p>
+    <div class="service-card-actions">
+      <a href="/settings/subtitle-proxies/{{ proxy.id }}/edit" role="button" class="outline">Edit</a>
+      <form method="post" action="/settings/subtitle-proxies/{{ proxy.id }}/delete">
+        <button type="submit" class="outline contrast">Delete</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+  <a href="/settings/subtitle-proxies/new" class="service-add-card">
+    {{ icon("shield") }}
+    <span>Add Proxy</span>
+  </a>
+</div>
+{% endblock %}
