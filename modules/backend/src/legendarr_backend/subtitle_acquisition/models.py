@@ -99,4 +99,3 @@ class SubtitleProxy(SQLModel, table=True):
     name: str = Field(index=True, unique=True)
     host: str
     enabled: bool = Field(default=True)
-    connection_verified: bool = Field(default=False)

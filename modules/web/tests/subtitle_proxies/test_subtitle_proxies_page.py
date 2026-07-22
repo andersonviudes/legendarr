@@ -30,7 +30,6 @@ def test_page_renders_registered_proxy_cards(stub_backend_client):
                     "name": "FlareSolverr",
                     "host": "http://10.0.1.1:8191/",
                     "enabled": True,
-                    "connection_verified": True,
                 }
             ],
         )

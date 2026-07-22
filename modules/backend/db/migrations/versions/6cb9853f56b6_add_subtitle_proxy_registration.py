@@ -27,7 +27,6 @@ def upgrade() -> None:
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("host", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("enabled", sa.Boolean(), nullable=False),
-        sa.Column("connection_verified", sa.Boolean(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_subtitleproxy_name"), "subtitleproxy", ["name"], unique=True)

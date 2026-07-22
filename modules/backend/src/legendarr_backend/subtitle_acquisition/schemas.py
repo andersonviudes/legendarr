@@ -58,4 +58,3 @@ class SubtitleProxyRead(BaseModel):
     name: str
     host: str
     enabled: bool
-    connection_verified: bool
