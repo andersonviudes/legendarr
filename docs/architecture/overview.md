@@ -29,6 +29,7 @@ modules/backend/src/legendarr_backend/
 ├── language_profiles/       # language profile model + management
 ├── media_library/           # media library sync (business logic)
 │   └── jobs.py               # the APScheduler job that drives the sync
+├── subtitle_acquisition/    # subtitle-provider registration (credentials, test connection)
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
@@ -44,6 +45,7 @@ modules/backend/src/legendarr_backend/
 modules/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
 ├── arr_services/            # /settings/arr-services/ routes (CRUD, test, enable/disable)
+├── subtitle_acquisition/    # /settings/subtitle-providers/ routes (enable, credentials, test)
 ├── language_profiles/       # /settings/ route
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route

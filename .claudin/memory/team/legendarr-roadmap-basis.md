@@ -64,3 +64,33 @@ Settings milestone (sync interval and default translation provider stayed behind
 download-provider code exists yet, unlike `TranslationProvider`
 (`subtitle_translation/providers/base.py`), which already had a working `echo` implementation
 and a field on `LanguageProfile` to select it.
+
+**2026-07-22 — `subtitle_acquisition` lands, scope narrowed to registration only:** a session
+refining 0.3.0's acquisition item first explored collapsing all of 0.11.0/0.12.0 (all 8
+providers + full matching/weighting/blacklist/audit-trail) forward into 0.3.0, then backed off
+after hitting a real gap — there's no `Episode` model, so acquisition can't cleanly target a
+`Series` yet, only `Movie`. Final scope actually built: `subtitle_acquisition/models.py`'s
+`SubtitleProviderConfig` table (fixed catalog, one row per kind, seeded at startup via
+`ensure_subtitle_providers_seeded`), a settings page at `/settings/subtitle-providers/`
+(enable/disable, credentials, "Test connection"), and per-kind connection-test functions in
+`subtitle_acquisition/connection_tests.py`. The `SubtitleProvider` protocol, real HTTP clients,
+search, match scoring, and download are still not built — `ROADMAP.md`'s 0.3.0 now has two
+acquisition bullets, one checked (registration) and one not (protocol + first real provider).
+
+**Provider pool changed**: BSPlayer was dropped and replaced with **legendas.net**
+(Brazilian PT-BR subtitle site). Reason, confirmed by reading Bazarr's own
+`custom_libs/subliminal_patch/providers/bsplayer.py:88-90`: Bazarr disabled BSPlayer outright
+("prevent usage of this provider and return no subtitles") because it was too unreliable —
+same reasoning applied here rather than shipping a provider already known to be dead weight.
+legendas.net's shape was confirmed via Bazarr's `legendasnet.py:82-133` (official API,
+username/password → `access_token`).
+
+**Auth shapes are not uniform across the 8 providers** — confirmed by reading each Bazarr
+provider file directly (`opensubtitlescom.py`, `addic7ed.py`, `subdl.py`, `subsource.py`,
+`yifysubtitles.py`, `napiprojekt.py`, `tvsubtitles.py`, `legendasnet.py`) plus live web research
+on each one's current API docs: OpenSubtitles/Subdl/Subsource use an API key, Addic7ed/
+legendas.net use username+password (Addic7ed has no official API and can be CAPTCHA-gated —
+Bazarr's own login flow needs a third-party CAPTCHA solver it doesn't always have), and YIFY
+Subtitles/TVsubtitles/Napiprojekt need no credential at all (their "test connection" is a bare
+reachability ping, not real validation). This is why `SubtitleProviderConfig` has three nullable
+columns (`api_key`, `username`, `password`) instead of one.

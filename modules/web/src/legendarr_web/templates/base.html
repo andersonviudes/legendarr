@@ -72,7 +72,8 @@
               <a
                 href="/settings/"
                 {% if request.url.path.startswith("/settings/") and not
-                  request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
+                  request.url.path.startswith("/settings/arr-services") and not
+                  request.url.path.startswith("/settings/subtitle-providers") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
             <li>
@@ -83,6 +84,18 @@
                 id="arr-services-count-badge"
                 hidden
                 hx-get="/settings/arr-services/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/subtitle-providers/"
+                {% if request.url.path.startswith("/settings/subtitle-providers") %}aria-current="page"{% endif %}
+              >{{ icon("captions") }}<span>Subtitle Providers</span><span
+                id="subtitle-providers-count-badge"
+                hidden
+                hx-get="/settings/subtitle-providers/count"
                 hx-trigger="load"
                 hx-swap="outerHTML"
               ></span></a>

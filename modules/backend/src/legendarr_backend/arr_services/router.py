@@ -1,6 +1,5 @@
 from collections.abc import Iterator
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
@@ -21,7 +20,7 @@ from legendarr_backend.arr_services.schemas import (
     ArrServiceRead,
 )
 from legendarr_backend.database.engine import get_session
-from legendarr_backend.http_client.client import ProviderClientError
+from legendarr_backend.http_client.client import ProviderClientError, describe_error
 
 router = APIRouter(prefix="/arr-services")
 
@@ -35,16 +34,6 @@ def _get_session() -> Iterator[Session]:
         yield session
 
 
-def _connection_error_message(exc: ProviderClientError) -> str:
-    """Turn a raw client error into something a user can act on. A 401/403 almost always
-    means the API Key is missing or wrong, which is far more useful than a bare status code.
-    """
-    cause = exc.__cause__
-    if isinstance(cause, httpx.HTTPStatusError) and cause.response.status_code in (401, 403):
-        return "The server rejected the API Key — check that it's correct"
-    return str(exc)
-
-
 def _probe_connection(data: ArrServiceInput) -> tuple[bool, str]:
     """Ping the arr server and confirm it's the expected app.
 
@@ -55,7 +44,7 @@ def _probe_connection(data: ArrServiceInput) -> tuple[bool, str]:
     try:
         status = client.system_status()
     except ProviderClientError as exc:
-        return False, _connection_error_message(exc)
+        return False, describe_error(exc)
     finally:
         client.close()
 

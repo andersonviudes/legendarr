@@ -9,3 +9,4 @@
 - [legendarr testing & logging conventions](legendarr-testing-logging-conventions.md) — per-module conftest.py fixtures, configure_logging() wired into bootstrap's real entrypoint
 - [legendarr media-library deferred follow-ups](legendarr-media-library-deferred-followups.md) — PR #12 triage leftovers: Windows path mapping, minor form gaps (DB-cascade item resolved 2026-07-20)
 - [legendarr language profile provider removal](legendarr-language-profile-provider-removal.md) — translation_provider was removed from LanguageProfile; provider selection is a separate future feature
+- [legendarr OpenSubtitles search options kept despite YAGNI flag](legendarr-opensubtitles-search-options-kept.md) — use_hash/include_ai_translated/include_machine_translated unused but deliberately kept, confirmed 2026-07-22

@@ -1,0 +1,7 @@
+{# Standalone render of the enable/disable toggle for the POST .../enabled swap. #}
+{% from "macros.html" import service_status %}
+{% if provider.is_configured %}
+{{ service_status(provider, "/settings/subtitle-providers/" ~ provider.id ~ "/enabled", noun="provider") }}
+{% else %}
+<span class="service-card-status is-disabled">Not configured</span>
+{% endif %}

@@ -55,20 +55,21 @@
 {% endmacro %}
 
 {#
-  Enable/disable toggle for an arr-service card. Also rendered standalone by the toggle
-  route (via _service_status.html) so the switch can swap itself after a PATCH.
+  Enable/disable toggle for a card with an `enabled` field — arr-service or subtitle
+  provider. Also rendered standalone by a toggle route (via _service_status.html /
+  _provider_status.html) so the switch can swap itself after a PATCH.
 #}
-{% macro service_status(arr_service) %}
+{% macro service_status(item, toggle_url, noun="service") %}
 <label class="service-card-toggle" hx-target="this" hx-swap="outerHTML">
   <input
     type="checkbox" name="enabled" role="switch"
-    aria-label="{{ 'Enabled' if arr_service.enabled else 'Disabled' }} — toggle to enable or disable this service"
-    {{ 'checked' if arr_service.enabled else '' }}
-    hx-post="/settings/arr-services/{{ arr_service.id }}/enabled"
+    aria-label="{{ 'Enabled' if item.enabled else 'Disabled' }} — toggle to enable or disable this {{ noun }}"
+    {{ 'checked' if item.enabled else '' }}
+    hx-post="{{ toggle_url }}"
     hx-trigger="change"
   >
-  <span class="service-card-status{{ '' if arr_service.enabled else ' is-disabled' }}">
-    {{ "Enabled" if arr_service.enabled else "Disabled" }}
+  <span class="service-card-status{{ '' if item.enabled else ' is-disabled' }}">
+    {{ "Enabled" if item.enabled else "Disabled" }}
   </span>
 </label>
 {% endmacro %}
@@ -77,7 +78,7 @@
 <article class="service-card">
   <header class="service-card-header">
     <p class="service-card-name">{{ arr_service.name }}</p>
-    {{ service_status(arr_service) }}
+    {{ service_status(arr_service, "/settings/arr-services/" ~ arr_service.id ~ "/enabled") }}
   </header>
   <p class="service-card-address">
     {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}

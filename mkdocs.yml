@@ -88,6 +88,7 @@ nav:
     - Language Profiles: features/language-profiles.md
     - Media Library Sync: features/media-library.md
     - Subtitle Discovery: features/subtitle-discovery.md
+    - Subtitle Acquisition: features/subtitle-acquisition.md
     - Subtitle Translation: features/subtitle-translation.md
   - Architecture:
     - Overview: architecture/overview.md

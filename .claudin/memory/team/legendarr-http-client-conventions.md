@@ -38,3 +38,15 @@ actual caller needed as of 2026-07-16). Tests for it use `httpx.MockTransport` (
 for the pattern (swap `client._client` for one built with `MockTransport`), and
 `modules/backend/tests/media_library/providers/test_radarr_client.py`/`test_sonarr_client.py`
 for the monkeypatch-`get_json` pattern used to test callers without hitting the network.
+
+**Update 2026-07-22 (`post_json`, `ping`, `request`, shared `_send`):** added while building
+`subtitle_acquisition`'s connection tests — `post_json(path, json)` (JSON body, JSON response,
+for legendas.net's login), `ping(path="/")` (confirms reachability without parsing a body, for
+providers with no JSON API), and `request(method, path, data=None, follow_redirects=False)`
+(returns the raw `httpx.Response`, for Addic7ed's cookie-based HTML login flow). All four
+public methods now funnel through one private `_send(send_fn, check_status=True)` that does
+the try/except wrapping once. **Gotcha:** `httpx.Response.raise_for_status()` raises on *any*
+non-2xx status, including 3xx redirects — not just 4xx/5xx like the name suggests. `request()`
+passes `check_status=False` because of this: Addic7ed's login treats a 302 as the *success*
+case and needs to inspect it, not have it raised as an error. If you add another verb that
+needs to see a non-2xx response on purpose, default it to `check_status=False` too.

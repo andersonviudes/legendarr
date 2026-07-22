@@ -22,6 +22,17 @@ Implemented the ROADMAP.md 0.1.0 "Database infrastructure" item on branch `feat/
   `SQLModel.metadata.create_all()`, automatically at every app startup (self-hosted operators
   shouldn't need a manual migration step) — `bootstrap.py`'s single `init_db()` call site is
   unchanged.
+
+  **Update 2026-07-22:** `modules/bootstrap/src/legendarr_bootstrap/app.py`'s own `lifespan()`
+  now *also* calls `init_db()`, before anything that touches the database in that lifespan
+  (currently `ensure_subtitle_providers_seeded()`). Reason: `app.py` mounts `api_app` — whose
+  own lifespan is what originally called `init_db()` — via `app.mount("/api", api_app)` on an
+  outer `FastAPI(lifespan=lifespan)` with its *own* custom lifespan function; mounting doesn't
+  chain the mounted app's lifespan into the outer one, so nothing guarantees the schema exists
+  before the outer lifespan's own startup code runs. `init_db()` is idempotent (a no-op
+  "upgrade head" if already current), so calling it from both places is safe by design, not
+  an oversight — any future startup code added to `bootstrap/app.py`'s `lifespan()` that reads
+  the database needs `init_db()` to have already run there, not just in `api_app`.
 - `make db-revision message="..."` / `make db-upgrade` — manual escape hatches, still run
   migrations through the same `alembic.ini`.
 
