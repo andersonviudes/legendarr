@@ -41,6 +41,7 @@ def _merge_with_existing(
             "username": data.username if "username" in provided else existing.username,
             "api_key": data.api_key or existing.api_key,
             "password": data.password or existing.password,
+            "proxy_id": data.proxy_id if "proxy_id" in provided else existing.proxy_id,
             "use_hash": data.use_hash if "use_hash" in provided else existing.use_hash,
             "include_ai_translated": data.include_ai_translated
             if "include_ai_translated" in provided

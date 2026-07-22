@@ -94,3 +94,33 @@ Bazarr's own login flow needs a third-party CAPTCHA solver it doesn't always hav
 Subtitles/TVsubtitles/Napiprojekt need no credential at all (their "test connection" is a bare
 reachability ping, not real validation). This is why `SubtitleProviderConfig` has three nullable
 columns (`api_key`, `username`, `password`) instead of one.
+
+**2026-07-22 — indexer-style proxy registration added to 0.3.0:** user asked (via a Prowlarr
+"Indexer Proxy"/FlareSolverr screenshot) for a Settings → "Proxies / Captcha" cadastro, same
+pattern as the just-shipped `SubtitleProviderConfig` registration page, plus a combo on each
+provider to pick a registered proxy (multiple proxies supported). Placement was ambiguous
+("no próximo" didn't say which milestone), so it was confirmed via AskUserQuestion rather than
+guessed: it lands as a new unchecked bullet in 0.3.0, right after the two existing acquisition
+bullets — not 0.11.0 or a new milestone — because it directly extends the registration slice
+that was just built, ahead of the real-HTTP-provider bullet. Addic7ed and legendas.net are
+named as the two providers in the pool that would actually need CAPTCHA/Cloudflare bypass.
+
+**2026-07-22 — proxy registration shipped, bullet checked off:** built on
+`feat/subtitle-proxy-registration`. `SubtitleProxy` (`subtitle_acquisition/models.py`) is
+user-created/arbitrary-count like `ArrService`, not a fixed seeded catalog like
+`SubtitleProviderConfig` — fields are just `name`/`host` (a full base URL) plus
+`enabled`/`connection_verified`, no `kind` discriminator yet (only FlareSolverr exists) and no
+Tags/auto-matching field (Prowlarr's own modal has one, but the user's own ask described a
+manual combo, not tag-based auto-assignment, so that's what got built). Two confirmed
+decisions that widened scope past the minimal reading: the proxy combo shows on all 13
+provider kinds (not just Addic7ed/legendas.net), and saving a proxy row requires a passing
+"Test connection" first, same as `ArrService`'s `_require_reachable` — both were offered as
+recommended defaults and confirmed, not assumed. New backend router `proxy_router.py` +
+`manage_subtitle_proxy.py` inside the existing `subtitle_acquisition` slice; new web slice
+`legendarr_web/subtitle_proxies/` gets its own settings page, separate from the
+`subtitle_acquisition` web slice which still owns the provider pages (that page's edit form
+gained the `proxy_id` combo). Migration `6cb9853f56b6` needed `op.batch_alter_table` for the
+new FK column on `subtitleproviderconfig` — SQLite can't `ALTER` a constraint directly, same
+gotcha as `35527f37e677`/`3605a01d1781`. As with the provider registration bullet, actually
+routing a provider's HTTP requests through its assigned proxy is still deferred — this is
+registration-only, same increment shape as the rest of 0.3.0.

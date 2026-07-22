@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import field, checkbox_field %}
+{% from "macros.html" import field, checkbox_field, select_field %}
 {% block title %}legendarr · {{ provider.label }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
@@ -50,6 +50,9 @@
   {{ field("password", "Password", type="password", autocomplete="off",
            placeholder="Leave blank to keep the current password") }}
   {% endif %}
+
+  {{ select_field("proxy_id", "Proxy", proxy_options,
+                   selected=(provider.proxy_id|string if provider.proxy_id else "")) }}
 
   {% if "use_hash" in provider.search_options %}
   {{ checkbox_field("use_hash", "Use Hash", checked=provider.use_hash) }}

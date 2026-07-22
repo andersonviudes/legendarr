@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, checkbox_field %}
+{% block title %}legendarr · {{ "Edit" if proxy else "Add" }} Proxy{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    data-test-connection
+    hx-post="/settings/subtitle-proxies/test"
+    hx-include="#subtitle-proxy-form"
+    hx-target="#test-result"
+    hx-swap="innerHTML"
+    hx-indicator="#test-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("plug-zap") }}
+    <span>Test</span>
+  </button>
+  <button type="submit" form="subtitle-proxy-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
+<h1>{{ icon("shield") }} {{ "Edit" if proxy else "Add" }} Proxy</h1>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form
+  id="subtitle-proxy-form"
+  class="service-form"
+  method="post"
+  action="{{ '/settings/subtitle-proxies/' ~ proxy.id if proxy else '/settings/subtitle-proxies/' }}"
+>
+  {{ checkbox_field("enabled", "Enabled", checked=(not proxy or proxy.enabled)) }}
+
+  {{ field("name", "Name", value=(proxy.name if proxy else ""), required=true) }}
+  {{ field("host", "Host", value=(proxy.host if proxy else ""),
+           placeholder="http://10.0.1.1:8191/", required=true) }}
+
+  <div id="test-result" aria-live="polite"></div>
+  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/subtitle-proxy-form.js" defer></script>
+{% endblock %}

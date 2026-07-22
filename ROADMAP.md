@@ -104,6 +104,13 @@ up in 0.2.0.*
   download wired in and a basic match score/cutoff per language profile (full per-attribute
   weighting comes later, at 0.12.0). The rest of the registered pool gets real search/download
   incrementally through 0.11.0/0.12.0.
+- [x] **Subtitle acquisition** — Proxy registration, same cadastro pattern as provider
+  registration above: a Settings → "Proxies / Captcha" page to register one or more
+  indexer-style proxies (e.g. FlareSolverr) by name and host, each with its own "Test
+  connection" check. Every `SubtitleProviderConfig` gets an optional proxy selector (a combo,
+  since more than one proxy can be registered) — Addic7ed and legendas.net are the two in the
+  pool that actually need CAPTCHA/Cloudflare bypass today, but the selector isn't restricted
+  to just those two.
 - [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.

@@ -5,12 +5,22 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     ensure_subtitle_providers_seeded,
     get_subtitle_provider,
 )
+from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import create_subtitle_proxy
 from legendarr_backend.subtitle_acquisition.models import SUBTITLE_PROVIDER_KINDS
+from legendarr_backend.subtitle_acquisition.schemas import SubtitleProxyInput
 
 
 def _seed() -> None:
     with get_session() as session:
         ensure_subtitle_providers_seeded(session)
+
+
+def _seed_proxy() -> int:
+    with get_session() as session:
+        proxy = create_subtitle_proxy(
+            session, SubtitleProxyInput(name="FlareSolverr", host="http://10.0.1.1:8191/")
+        )
+        return proxy.id
 
 
 def test_list_providers_returns_empty_list_on_fresh_db(isolated_database):
@@ -161,6 +171,33 @@ def test_update_without_username_keeps_existing_username(isolated_database):
 
         assert response.status_code == 200
         assert response.json()["username"] == "me@example.com"
+
+
+def test_update_provider_sets_proxy_id(isolated_database):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        proxy_id = _seed_proxy()
+        provider_id = client.get("/subtitle-providers/").json()[0]["id"]
+
+        response = client.patch(f"/subtitle-providers/{provider_id}", json={"proxy_id": proxy_id})
+
+        assert response.status_code == 200
+        assert response.json()["proxy_id"] == proxy_id
+
+
+def test_update_without_proxy_id_keeps_existing_proxy_id(isolated_database):
+    """A PATCH that never mentions `proxy_id` (the enable/disable toggle only sends
+    `enabled`) must not null out a previously-assigned proxy."""
+    with TestClient(create_api_app()) as client:
+        _seed()
+        proxy_id = _seed_proxy()
+        provider_id = client.get("/subtitle-providers/").json()[0]["id"]
+        client.patch(f"/subtitle-providers/{provider_id}", json={"proxy_id": proxy_id})
+
+        response = client.patch(f"/subtitle-providers/{provider_id}", json={"enabled": False})
+
+        assert response.status_code == 200
+        assert response.json()["proxy_id"] == proxy_id
 
 
 def test_list_and_get_omit_secrets(isolated_database):

@@ -25,6 +25,15 @@
 </label>
 {% endmacro %}
 
+{% macro select_field(name, label, options, selected="") %}
+<label for="{{ name }}">{{ label }}</label>
+<select id="{{ name }}" name="{{ name }}">
+  {% for value, display in options %}
+  <option value="{{ value }}" {% if value == selected %}selected{% endif %}>{{ display }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
 {#
   Tag-style multi-select: chips for the selected languages plus a searchable dropdown of
   the rest, backed by a single hidden input holding the comma-joined codes. Behavior lives

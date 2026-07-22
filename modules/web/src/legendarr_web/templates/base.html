@@ -73,7 +73,8 @@
                 href="/settings/"
                 {% if request.url.path.startswith("/settings/") and not
                   request.url.path.startswith("/settings/arr-services") and not
-                  request.url.path.startswith("/settings/subtitle-providers") %}aria-current="page"{% endif %}
+                  request.url.path.startswith("/settings/subtitle-providers") and not
+                  request.url.path.startswith("/settings/subtitle-proxies") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
             <li>
@@ -96,6 +97,18 @@
                 id="subtitle-providers-count-badge"
                 hidden
                 hx-get="/settings/subtitle-providers/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/subtitle-proxies/"
+                {% if request.url.path.startswith("/settings/subtitle-proxies") %}aria-current="page"{% endif %}
+              >{{ icon("shield") }}<span>Proxies / Captcha</span><span
+                id="subtitle-proxies-count-badge"
+                hidden
+                hx-get="/settings/subtitle-proxies/count"
                 hx-trigger="load"
                 hx-swap="outerHTML"
               ></span></a>
