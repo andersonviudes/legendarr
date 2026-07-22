@@ -83,19 +83,25 @@ setup.*
   override yet — `media_library` has no movies/series listing API to hang a selector off of
   (tracked for whenever that listing lands, likely 0.4.0).
 
-## 0.3.0 — Translate one already-downloaded subtitle, end to end, in the real UI
+## 0.3.0 — Translate a subtitle end to end, downloading one if needed, in the real UI
 
-*Use case: a movie has an external `.srt` sitting next to it; a user opens legendarr's web
-UI, sees it, and gets a translated file back — fully automated, no manual database editing,
-using the Radarr/Sonarr connection, synced library, and language profile already set up in
-0.2.0.*
+*Use case: a movie has an external `.srt` sitting next to it — or none does, and legendarr
+fetches one from a subtitle-provider site with a basic match score first. Either way, a user
+opens legendarr's web UI and gets a translated file back — fully automated, no manual database
+editing, using the Radarr/Sonarr connection, synced library, and language profile already set
+up in 0.2.0.*
 
 - [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.
+- [ ] **Subtitle acquisition** — New `subtitle_acquisition` slice with a `SubtitleProvider`
+  protocol, mirroring `TranslationProvider`'s shape and the shared HTTP client conventions from
+  0.1.0. One real provider wired in, with a basic match score/cutoff per language profile (full
+  per-attribute weighting comes later, at 0.12.0).
 - [ ] **Subtitle translation** — An orchestrator that ties a `LanguageProfile` to a media item:
-  run external-only discovery, translate with the configured provider, write the result. One
-  real `TranslationProvider` (e.g. LibreTranslate or DeepL) alongside `echo`.
+  run external discovery, fall back to acquisition when no external subtitle exists in the
+  source language, translate with the configured provider, write the result. One real
+  `TranslationProvider` (e.g. LibreTranslate or DeepL) alongside `echo`.
 - [ ] Manual trigger only (CLI or a "translate now" action in the UI) — no scheduling yet.
 
 ## 0.4.0 — See what's missing, from the dashboard
@@ -176,18 +182,14 @@ just landed.*
   next scheduled pass.
 - [ ] **Language profiles** — Per-profile or per-media opt-out of automated translation.
 
-## 0.11.0 — Download subtitles from external providers
+## 0.11.0 — More providers, and manual control over acquisition
 
-*Use case: no usable external or embedded subtitle exists in the source language, so
-legendarr fetches one from a subtitle-provider site before translating — or a user picks a
-specific result themselves.*
+*Use case: the single provider wired in at 0.3.0 doesn't have a subtitle for this movie, so a
+second or third provider backs it up — or a user would rather browse results and pick one
+themselves, or upload their own file, instead of trusting the automatic match.*
 
-- [ ] **Subtitle acquisition** — New `subtitle_acquisition` slice with a provider-plugin
-  protocol, mirroring `TranslationProvider`'s shape and the shared HTTP client conventions
-  from 0.1.0, so subtitle-provider sites can be added without hardcoding one integration.
-  First one or two providers wired in, with a basic match-score/cutoff model per language
-  profile. Orchestrator falls back to acquisition when local discovery (external + embedded)
-  comes up empty.
+- [ ] **Subtitle acquisition** — A second and third `SubtitleProvider` behind the protocol from
+  0.3.0, so a miss on one provider doesn't dead-end acquisition.
 - [ ] Manual search and manual upload: let a user browse provider search results and pick one
   themselves, or upload their own subtitle file for a specific media item, bypassing the
   automatic match.
