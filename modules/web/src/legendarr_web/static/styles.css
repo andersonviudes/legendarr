@@ -340,6 +340,29 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* === Provider tabs: switches between the Subtitle and Translation provider list pages
+   under the single "Providers" nav entry, see templates/_provider_tabs.html === */
+.provider-tabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-block: 0.5rem 1rem;
+}
+
+.provider-tabs a {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  font-size: var(--lg-font-sm);
+  font-weight: 600;
+}
+
+.provider-tabs a[aria-current="page"] {
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+}
+
 /* === Service cards: Arr Services and Language Profiles settings === */
 .service-grid {
   display: grid;

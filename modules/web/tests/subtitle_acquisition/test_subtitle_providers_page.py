@@ -32,7 +32,8 @@ def test_subtitle_providers_page_lists_none_by_default(stub_backend_client):
         response = client.get("/settings/subtitle-providers/")
 
     assert response.status_code == 200
-    assert "Subtitle Providers" in response.text
+    assert "Providers" in response.text
+    assert 'aria-current="page"' in response.text
 
 
 def test_page_renders_provider_cards(stub_backend_client):

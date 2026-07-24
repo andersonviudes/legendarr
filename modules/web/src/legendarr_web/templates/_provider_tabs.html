@@ -1,0 +1,8 @@
+{#
+  Shared tab bar between the "Subtitle" and "Translation" provider list pages, both reachable
+  from the single "Providers" sidebar entry. `active_tab` is "subtitle" or "translation".
+#}
+<nav class="provider-tabs">
+  <a href="/settings/subtitle-providers/" {% if active_tab == "subtitle" %}aria-current="page"{% endif %}>Subtitle</a>
+  <a href="/settings/translation-providers/" {% if active_tab == "translation" %}aria-current="page"{% endif %}>Translation</a>
+</nav>

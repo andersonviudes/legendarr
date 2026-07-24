@@ -74,6 +74,7 @@
                 {% if request.url.path.startswith("/settings/") and not
                   request.url.path.startswith("/settings/arr-services") and not
                   request.url.path.startswith("/settings/subtitle-providers") and not
+                  request.url.path.startswith("/settings/translation-providers") and not
                   request.url.path.startswith("/settings/subtitle-proxies") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
@@ -92,8 +93,9 @@
             <li>
               <a
                 href="/settings/subtitle-providers/"
-                {% if request.url.path.startswith("/settings/subtitle-providers") %}aria-current="page"{% endif %}
-              >{{ icon("captions") }}<span>Subtitle Providers</span><span
+                {% if request.url.path.startswith("/settings/subtitle-providers") or
+                  request.url.path.startswith("/settings/translation-providers") %}aria-current="page"{% endif %}
+              >{{ icon("captions") }}<span>Providers</span><span
                 id="subtitle-providers-count-badge"
                 hidden
                 hx-get="/settings/subtitle-providers/count"

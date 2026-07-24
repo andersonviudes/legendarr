@@ -10,6 +10,7 @@ from legendarr_web.language_profiles.router import router as language_profiles_r
 from legendarr_web.media_library.router import router as media_library_router
 from legendarr_web.subtitle_acquisition.router import router as subtitle_acquisition_router
 from legendarr_web.subtitle_proxies.router import router as subtitle_proxies_router
+from legendarr_web.subtitle_translation.router import router as translation_provider_router
 from legendarr_web.system.router import router as system_router
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(arr_services_router)
     app.include_router(subtitle_acquisition_router)
     app.include_router(subtitle_proxies_router)
+    app.include_router(translation_provider_router)
     app.include_router(history_router)
     app.include_router(system_router)
     return app

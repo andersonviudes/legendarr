@@ -68,7 +68,7 @@ async def show_subtitle_providers(
     return templates.TemplateResponse(
         request,
         "subtitle_providers.html",
-        {"providers": [_with_display(p) for p in providers]},
+        {"providers": [_with_display(p) for p in providers], "active_tab": "subtitle"},
     )
 
 
@@ -144,7 +144,11 @@ async def toggle_subtitle_provider_enabled(
         # doesn't drift out of sync with what's actually stored. Reaching this route at all
         # means the switch was rendered, which only happens for a configured provider.
         updated = {"id": provider_id, "enabled": not enabled, "is_configured": True}
-    return templates.TemplateResponse(request, "_provider_status.html", {"provider": updated})
+    return templates.TemplateResponse(
+        request,
+        "_provider_status.html",
+        {"provider": updated, "toggle_url_prefix": "/settings/subtitle-providers/"},
+    )
 
 
 @router.post("/{provider_id}/test")
