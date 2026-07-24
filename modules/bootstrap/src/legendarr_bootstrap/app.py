@@ -10,6 +10,9 @@ from legendarr_backend.logging.setup import configure_logging
 from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     ensure_subtitle_providers_seeded,
 )
+from legendarr_backend.subtitle_translation.manage_translation_provider import (
+    ensure_translation_providers_seeded,
+)
 from legendarr_web.app import create_app as create_web_app
 from legendarr_web.backend_client.client import get_backend_client
 
@@ -25,6 +28,7 @@ async def lifespan(app: FastAPI):
     init_db()
     with get_session() as session:
         ensure_subtitle_providers_seeded(session)
+        ensure_translation_providers_seeded(session)
     scheduler = build_scheduler()
     scheduler.start()
     yield

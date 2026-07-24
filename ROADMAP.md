@@ -102,10 +102,6 @@ up in 0.2.0.*
 - [ ] **Subtitle acquisition** — A `SubtitleProvider` protocol mirroring `TranslationProvider`'s
   shape and the shared HTTP client conventions from 0.1.0 (interface only, no implementation
   yet).
-- [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
-  `SubtitleProvider` protocol above, with a basic match score/cutoff per language profile (full
-  per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets real
-  search/download incrementally through 0.11.0/0.12.0.
 - [x] **Subtitle acquisition** — Proxy registration, same cadastro pattern as provider
   registration above: a Settings → "Proxies / Captcha" page to register one or more
   indexer-style proxies (e.g. FlareSolverr) by name and host, each with its own "Test
@@ -113,6 +109,13 @@ up in 0.2.0.*
   since more than one proxy can be registered) — Addic7ed and legendas.net are the two in the
   pool that actually need CAPTCHA/Cloudflare bypass today, but the selector isn't restricted
   to just those two.
+- [x] **Subtitle translation** — Registration/cadastro for a fixed catalog of translation
+  engines — DeepL, Google Translate, and LibreTranslate — with enable/disable, credentials
+  (API key, or an endpoint URL for self-hosted LibreTranslate), and a "Test connection" check
+  per provider, from the same Settings → "Providers" page as subtitle sources (a Subtitle /
+  Translation tab switches between the two catalogs). Known gap (deferred): no real
+  `translate()` wiring for these three yet — only `echo` works end to end. That lands at
+  0.6.0, alongside real subtitle-provider search/download.
 - [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.
@@ -120,8 +123,6 @@ up in 0.2.0.*
   run external discovery, fall back to acquisition (via the `SubtitleProvider` protocol) when
   no external subtitle exists in the source language, translate with the configured provider,
   write the result. Ships against `echo` first.
-- [ ] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
-  wired in alongside `echo`.
 - [ ] Manual trigger only (CLI or a "translate now" action in the UI) — blocked on
   media-library being wired to real synced data first (`movies`/`series` lists aren't populated
   from a sync yet); no scheduling either way.
@@ -141,8 +142,8 @@ given their language profiles.*
 library folders or recent logs, all from a Settings page, no shell access needed.*
 
 - [ ] **Settings** — Sync interval and default translation provider/language editable from the
-  web UI and persisted, on top of the config foundation from 0.1.0. Secrets (translation
-  provider credentials) encrypted at rest instead of stored as plaintext.
+  web UI and persisted, on top of the config foundation from 0.1.0. Translation provider
+  credentials are already encrypted at rest, from their 0.3.0 registration screen onward.
 - [ ] **Settings** — In-app directory browser (to pick library paths without typing them blind)
   and a log viewer, so day-to-day operation doesn't require shelling into the container.
 
@@ -158,6 +159,16 @@ file — and legendarr extracts and translates it anyway.*
   attributes from 0.2.0.
 - [ ] Orchestrator falls back to an embedded track when no external file matches the source
   language.
+- [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
+  `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
+  (full per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets
+  real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs a real
+  media scan/listing from the connected Radarr/Sonarr instances to search against first.
+- [ ] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
+  wired in alongside `echo`, using the credentials registered at 0.3.0. Moved here from 0.3.0
+  so it lands together with real subtitle-provider search/download — this is the version
+  where the end-to-end pipeline stops running entirely on `echo`/registration screens and
+  starts using real providers on both sides.
 
 ## 0.7.0 — Subtitle timing sync
 

@@ -10,6 +10,7 @@ dist/
 build/
 *.egg-info/
 site/
+.playwright-mcp/
 
 # Claudin: share rules/skills/agents/workflows via git; keep local/private
 # state (private memory, session plans) out of the repo.

@@ -1,0 +1,11 @@
+{# Standalone render of the enable/disable toggle for the POST .../enabled swap — shared
+   between the subtitle- and translation-provider list pages (both have the same
+   is_configured-gated shape; arr_services/subtitle_proxies have a simpler shape without that
+   gate, so they keep their own `_service_status.html`/`_proxy_status.html`). Callers pass
+   `toggle_url_prefix` (their own `/settings/.../` base). #}
+{% from "macros.html" import service_status %}
+{% if provider.is_configured %}
+{{ service_status(provider, toggle_url_prefix ~ provider.id ~ "/enabled", noun="provider") }}
+{% else %}
+<span class="service-card-status is-disabled">Not configured</span>
+{% endif %}

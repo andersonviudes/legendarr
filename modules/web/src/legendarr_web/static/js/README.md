@@ -17,3 +17,9 @@ A page that needs JS loads it by overriding the `scripts` block from
 Exception: `sidebar.js`, `theme.js`, and `toast.js` belong to `base.html` itself (every page
 has the sidebar, the theme toggle, and the toast container), so they're loaded directly in
 `base.html` rather than through the per-page `scripts` block.
+
+Exception: `provider-test-connection.js` is shared by any edit-form page whose "Test" button
+has no client-side required fields to validate first (`subtitle_provider_form.html`,
+`translation_provider_form.html`) — the behavior is identical across those pages, so it isn't
+duplicated per-page like `arr-service-form.js`/`subtitle-proxy-form.js` (which additionally run
+`reportValidity()` and so stay separate, one per page).
