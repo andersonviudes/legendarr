@@ -100,10 +100,12 @@ up in 0.2.0.*
   or download yet — registration only. That lands in a future item, not yet placed on this
   roadmap; 0.11.0/0.12.0 below still assume it exists by the time they start.
 - [ ] **Subtitle acquisition** — A `SubtitleProvider` protocol mirroring `TranslationProvider`'s
-  shape and the shared HTTP client conventions from 0.1.0, with one real provider's search and
-  download wired in and a basic match score/cutoff per language profile (full per-attribute
-  weighting comes later, at 0.12.0). The rest of the registered pool gets real search/download
-  incrementally through 0.11.0/0.12.0.
+  shape and the shared HTTP client conventions from 0.1.0 (interface only, no implementation
+  yet).
+- [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
+  `SubtitleProvider` protocol above, with a basic match score/cutoff per language profile (full
+  per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets real
+  search/download incrementally through 0.11.0/0.12.0.
 - [x] **Subtitle acquisition** — Proxy registration, same cadastro pattern as provider
   registration above: a Settings → "Proxies / Captcha" page to register one or more
   indexer-style proxies (e.g. FlareSolverr) by name and host, each with its own "Test
@@ -115,10 +117,14 @@ up in 0.2.0.*
   and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
   can produce a real file without this.
 - [ ] **Subtitle translation** — An orchestrator that ties a `LanguageProfile` to a media item:
-  run external discovery, fall back to acquisition when no external subtitle exists in the
-  source language, translate with the configured provider, write the result. One real
-  `TranslationProvider` (e.g. LibreTranslate or DeepL) alongside `echo`.
-- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — no scheduling yet.
+  run external discovery, fall back to acquisition (via the `SubtitleProvider` protocol) when
+  no external subtitle exists in the source language, translate with the configured provider,
+  write the result. Ships against `echo` first.
+- [ ] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
+  wired in alongside `echo`.
+- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — blocked on
+  media-library being wired to real synced data first (`movies`/`series` lists aren't populated
+  from a sync yet); no scheduling either way.
 
 ## 0.4.0 — See what's missing, from the dashboard
 
