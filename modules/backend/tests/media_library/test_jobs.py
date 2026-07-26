@@ -1,7 +1,19 @@
+from contextlib import contextmanager
+
+from legendarr_backend.arr_services.manage_arr_service import create_arr_service
+from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.config.config_file import AppConfigFile
-from legendarr_backend.media_library.jobs import register_sync_job
+from legendarr_backend.media_library import jobs as jobs_module
+from legendarr_backend.media_library.jobs import (
+    enqueue_media_scan,
+    register_history_poll_job,
+    register_scan_job,
+    register_sync_job,
+)
+from legendarr_backend.media_library.models import MediaFile, Movie
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
+from sqlmodel import select
 
 
 def test_register_sync_job_wires_config_derived_policy():
@@ -22,3 +34,123 @@ def test_register_sync_job_wires_config_derived_policy():
     assert job.max_instances == 3
     assert job.coalesce is False
     assert job.trigger.interval.total_seconds() == 30 * 60
+
+
+def test_register_scan_job_wires_config_derived_policy():
+    scheduler = build_scheduler()
+    config = AppConfigFile(
+        scan_interval_minutes=45,
+        scan_max_instances=2,
+        scan_coalesce=False,
+    )
+
+    register_scan_job(scheduler, config)
+
+    job = scheduler.get_job("media_library_scan_fanout")
+    assert job is not None
+    assert job.executor == JobQueue.SYNC.value
+    assert job.max_instances == 2
+    assert job.coalesce is False
+    assert job.trigger.interval.total_seconds() == 45 * 60
+
+
+def test_register_history_poll_job_wires_config_derived_policy():
+    scheduler = build_scheduler()
+    config = AppConfigFile(history_poll_interval_minutes=10)
+
+    register_history_poll_job(scheduler, config)
+
+    job = scheduler.get_job("arr_history_poll")
+    assert job is not None
+    assert job.executor == JobQueue.SYNC.value
+    assert job.trigger.interval.total_seconds() == 10 * 60
+
+
+def test_enqueue_media_scan_adds_adhoc_job_with_event_safe_policy(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueue_media_scan(
+        scheduler, "movie", 7, JobQueue.SCAN, retry_attempts=2, retry_delay_seconds=1.0
+    )
+
+    _, kwargs = added[0]
+    assert kwargs["id"] == "media_scan:movie:7"
+    assert kwargs["executor"] == JobQueue.SCAN.value
+    assert kwargs["misfire_grace_time"] is None
+
+
+def test_enqueue_media_scan_dedupes_by_stable_job_id(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueue_media_scan(
+        scheduler, "movie", 7, JobQueue.SCAN, retry_attempts=2, retry_delay_seconds=1.0
+    )
+    enqueue_media_scan(
+        scheduler, "movie", 7, JobQueue.SCAN_BULK, retry_attempts=2, retry_delay_seconds=1.0
+    )
+
+    ids = [kwargs["id"] for _, kwargs in added]
+    assert ids == ["media_scan:movie:7", "media_scan:movie:7"]
+    assert all(kwargs["replace_existing"] for _, kwargs in added)
+
+
+def test_enqueued_scan_job_scans_the_item(in_memory_session, tmp_path, monkeypatch):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    service = create_arr_service(
+        in_memory_session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.write_bytes(b"x" * 42)
+
+    scheduler = build_scheduler()
+    enqueue_media_scan(
+        scheduler,
+        "movie",
+        movie.id,
+        JobQueue.SCAN,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+    )
+    scheduler.get_job("media_scan:movie:1").func()
+
+    rows = list(in_memory_session.exec(select(MediaFile)).all())
+    assert len(rows) == 1
+    assert rows[0].relative_path == "Foo.mkv"
+    assert rows[0].size_bytes == 42
+
+
+def test_enqueued_scan_job_tolerates_deleted_item(in_memory_session, monkeypatch):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+
+    scheduler = build_scheduler()
+    enqueue_media_scan(
+        scheduler, "movie", 999, JobQueue.SCAN, retry_attempts=1, retry_delay_seconds=0.0
+    )
+
+    # Must not raise — the row can be gone by the time the job runs.
+    scheduler.get_job("media_scan:movie:999").func()

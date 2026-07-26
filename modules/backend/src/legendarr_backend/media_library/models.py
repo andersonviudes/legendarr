@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
@@ -40,3 +42,32 @@ class Series(SQLModel, table=True):
     language_profile_id: int | None = Field(
         default=None, foreign_key="languageprofile.id", index=True, ondelete="SET NULL"
     )
+
+
+class MediaFile(SQLModel, table=True):
+    """A video file located on disk for a synced `Movie` or `Series`.
+
+    Exactly one of `movie_id`/`series_id` is set. `relative_path` is stored relative
+    to the media item's root folder, so editing a connection's path mapping never
+    invalidates rows. Written by the filesystem scan; later consumed by subtitle
+    discovery (0.3.0) and the wanted dashboard (0.4.0).
+    """
+
+    __table_args__ = (
+        UniqueConstraint("movie_id", "relative_path"),
+        UniqueConstraint("series_id", "relative_path"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    movie_id: int | None = Field(
+        default=None, foreign_key="movie.id", index=True, ondelete="CASCADE"
+    )
+    series_id: int | None = Field(
+        default=None, foreign_key="series.id", index=True, ondelete="CASCADE"
+    )
+    relative_path: str
+    size_bytes: int
+    scanned_at: datetime
+
+
+MEDIA_MODEL_BY_TYPE = {"radarr": Movie, "sonarr": Series}

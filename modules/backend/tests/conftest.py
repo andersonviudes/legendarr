@@ -2,9 +2,23 @@ import os
 import tempfile
 
 import pytest
+
+# Every table module must register on SQLModel.metadata before `in_memory_session`
+# calls create_all — importing them here instead of relying on whichever test module
+# happened to be collected first (FK resolution fails otherwise, e.g. movie ->
+# languageprofile when only media_library.models was imported).
+from legendarr_backend.arr_services import models as _arr_services_models  # noqa: F401
 from legendarr_backend.config.settings import Settings
 from legendarr_backend.database import engine as database
 from legendarr_backend.database.engine import enable_sqlite_foreign_keys
+from legendarr_backend.language_profiles import models as _language_profiles_models  # noqa: F401
+from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
+from legendarr_backend.subtitle_acquisition import (
+    models as _subtitle_acquisition_models,  # noqa: F401
+)
+from legendarr_backend.subtitle_translation import (
+    models as _subtitle_translation_models,  # noqa: F401
+)
 from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 
