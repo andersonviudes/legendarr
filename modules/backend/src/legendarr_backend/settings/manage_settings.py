@@ -1,0 +1,48 @@
+import logging
+
+from apscheduler.schedulers.background import BackgroundScheduler
+
+from legendarr_backend.config.config_file import (
+    load_or_create_config_file,
+    update_config_file,
+)
+from legendarr_backend.config.settings import Settings
+from legendarr_backend.media_library.jobs import (
+    register_history_poll_job,
+    register_scan_job,
+    register_sync_job,
+)
+from legendarr_backend.settings.schemas import TaskSettings
+
+logger = logging.getLogger(__name__)
+
+
+def get_task_settings(settings: Settings) -> TaskSettings:
+    """Read the current task settings from `config.yaml` (fresh from disk)."""
+    config = load_or_create_config_file(settings)
+    return TaskSettings.model_validate(config.model_dump())
+
+
+def update_task_settings(
+    settings: Settings,
+    update: TaskSettings,
+    scheduler: BackgroundScheduler | None = None,
+) -> TaskSettings:
+    """Persist task settings to `config.yaml` and, when a scheduler is running,
+    re-register the three interval jobs with the new policy.
+
+    Re-registering replaces each job wholesale (`replace_existing=True`), applying
+    the new trigger, retry wrapper and concurrency policy at once — the interval
+    countdown restarts from the save, and pending ad-hoc scans keep the policy they
+    were enqueued with. Without a scheduler (backend run standalone) the change is
+    still persisted and takes effect on the next start.
+    """
+    config = update_config_file(settings, update.model_dump())
+    if scheduler is not None:
+        register_sync_job(scheduler, config)
+        register_scan_job(scheduler, config)
+        register_history_poll_job(scheduler, config)
+        logger.info("task settings updated and scheduled jobs re-registered")
+    else:
+        logger.info("task settings updated (no running scheduler; applies on next start)")
+    return TaskSettings.model_validate(config.model_dump())

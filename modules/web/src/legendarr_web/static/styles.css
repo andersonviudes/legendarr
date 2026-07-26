@@ -522,6 +522,26 @@ body {
   margin-bottom: 0.75rem;
 }
 
+/* === Settings → Tasks: collapsible "Advanced" knob groups under each scheduled task === */
+.service-form section {
+  margin-bottom: 1.5rem;
+}
+
+.task-advanced {
+  margin-top: 0.25rem;
+}
+
+.task-advanced summary {
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.task-advanced summary:hover {
+  color: var(--pico-primary);
+}
+
 /* === Language multi-select: chips + searchable dropdown, see macros.html::language_multiselect === */
 .lang-multiselect {
   position: relative;

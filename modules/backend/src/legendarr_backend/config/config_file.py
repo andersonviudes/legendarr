@@ -82,6 +82,19 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
     )
 
 
+def update_config_file(settings: Settings, updates: dict) -> AppConfigFile:
+    """Apply `updates` to the persisted runtime config and rewrite `config.yaml`.
+
+    Loads the current file (so untouched fields — including the encrypted secrets —
+    round-trip), validates the merged result through `AppConfigFile`, and rewrites the
+    whole file. Returns the updated config with plaintext secrets, like the loader.
+    """
+    config = load_or_create_config_file(settings)
+    updated = config.model_copy(update=updates)
+    _write_config_file(settings.data_dir / "config.yaml", updated, resolve_fernet(settings))
+    return updated
+
+
 def _has_plaintext_secrets(data: dict) -> bool:
     """Detect legacy plaintext secrets so they get re-encrypted even when nothing else
     in the file changed."""
