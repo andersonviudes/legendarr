@@ -73,6 +73,16 @@ setup.*
   by the server) per connection, keyed by `(arr_service_id, arr_id)` so multiple Radarr/
   Sonarr instances never collide; rows a server stops reporting are deleted only within
   that connection's scope.
+- [x] **Media library** — Filesystem scan: resolve each synced `Movie`/`Series`'s stored
+  path through its connection's path mapping and walk the local directory to locate the
+  actual video file(s) on disk, persisting them as `MediaFile` rows. This is the bridge
+  between server-reported metadata and the real filesystem — later subtitle discovery
+  (0.3.0) scans these files' directories for sibling `.srt`s, and 0.6.0's "media
+  scan/listing" assumes this exists. Three triggers: a periodic full-scan fan-out
+  (safety net), a per-connection Arr webhook (`/api/webhooks/arr/{id}`) that rescans
+  just the affected item on import/rename/delete events, and a periodic poll of each
+  connection's history API for recent imports (for setups without the webhook
+  configured). Locating video files only; no subtitle parsing yet.
 - [x] **Language profiles** — Complete `LanguageProfile` CRUD in the backend
   (`get`/`update`/`delete`, on top of the `create`/`list` that already existed).
 - [x] **Language profiles** — Create/edit/delete language profiles from the web UI. Forced and
@@ -123,9 +133,10 @@ up in 0.2.0.*
   run external discovery, fall back to acquisition (via the `SubtitleProvider` protocol) when
   no external subtitle exists in the source language, translate with the configured provider,
   write the result. Ships against `echo` first.
-- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — blocked on
-  media-library being wired to real synced data first (`movies`/`series` lists aren't populated
-  from a sync yet); no scheduling either way.
+- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — the library is
+  synced (0.2.0) and video files are located on disk by the filesystem scan (0.2.0),
+  but there's still no per-media listing API to hang a selector off of (likely 0.4.0);
+  no scheduling either way.
 
 ## 0.4.0 — See what's missing, from the dashboard
 
@@ -162,8 +173,8 @@ file — and legendarr extracts and translates it anyway.*
 - [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
   `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
   (full per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets
-  real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs a real
-  media scan/listing from the connected Radarr/Sonarr instances to search against first.
+  real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs the
+  0.2.0 filesystem scan's `MediaFile` rows to search against first.
 - [ ] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
   wired in alongside `echo`, using the credentials registered at 0.3.0. Moved here from 0.3.0
   so it lands together with real subtitle-provider search/download — this is the version

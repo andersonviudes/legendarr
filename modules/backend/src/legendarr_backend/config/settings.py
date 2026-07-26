@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     sync_retry_delay_seconds: float = Field(default=5.0)
     sync_max_instances: int = Field(default=1)
     sync_coalesce: bool = Field(default=True)
+    scan_interval_minutes: int = Field(default=60)
+    scan_retry_attempts: int = Field(default=3, ge=1)
+    scan_retry_delay_seconds: float = Field(default=5.0)
+    scan_max_instances: int = Field(default=1)
+    scan_coalesce: bool = Field(default=True)
+    history_poll_interval_minutes: int = Field(default=15)
+    history_poll_retry_attempts: int = Field(default=3, ge=1)
+    history_poll_retry_delay_seconds: float = Field(default=5.0)
+    history_poll_max_instances: int = Field(default=1)
+    history_poll_coalesce: bool = Field(default=True)
 
     @property
     def resolved_database_url(self) -> str:

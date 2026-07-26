@@ -7,7 +7,7 @@ from legendarr_backend.arr_clients.base import MediaItem
 from legendarr_backend.arr_services.client_factory import build_client
 from legendarr_backend.arr_services.manage_arr_service import list_enabled_arr_services
 from legendarr_backend.arr_services.models import ArrService
-from legendarr_backend.media_library.models import Movie, Series
+from legendarr_backend.media_library.models import MEDIA_MODEL_BY_TYPE, Movie, Series
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,6 @@ logger = logging.getLogger(__name__)
 class SyncResult:
     movies_synced: int
     series_synced: int
-
-
-_MEDIA_MODEL_BY_TYPE = {"radarr": Movie, "sonarr": Series}
 
 
 def sync_media_library(session: Session) -> SyncResult:
@@ -55,7 +52,7 @@ def _sync_service(session: Session, arr_service: ArrService) -> int:
         items = client.list_items()
     finally:
         client.close()
-    model = _MEDIA_MODEL_BY_TYPE[arr_service.service_type]
+    model = MEDIA_MODEL_BY_TYPE[arr_service.service_type]
     _replace_service_items(session, model, arr_service.id, items)
     return len(items)
 

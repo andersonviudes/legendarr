@@ -31,6 +31,16 @@ class AppConfigFile(BaseModel):
     sync_retry_delay_seconds: float = 5.0
     sync_max_instances: int = 1
     sync_coalesce: bool = True
+    scan_interval_minutes: int = 60
+    scan_retry_attempts: int = Field(default=3, ge=1)
+    scan_retry_delay_seconds: float = 5.0
+    scan_max_instances: int = 1
+    scan_coalesce: bool = True
+    history_poll_interval_minutes: int = 15
+    history_poll_retry_attempts: int = Field(default=3, ge=1)
+    history_poll_retry_delay_seconds: float = 5.0
+    history_poll_max_instances: int = 1
+    history_poll_coalesce: bool = True
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -48,6 +58,16 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "sync_retry_delay_seconds": settings.sync_retry_delay_seconds,
         "sync_max_instances": settings.sync_max_instances,
         "sync_coalesce": settings.sync_coalesce,
+        "scan_interval_minutes": settings.scan_interval_minutes,
+        "scan_retry_attempts": settings.scan_retry_attempts,
+        "scan_retry_delay_seconds": settings.scan_retry_delay_seconds,
+        "scan_max_instances": settings.scan_max_instances,
+        "scan_coalesce": settings.scan_coalesce,
+        "history_poll_interval_minutes": settings.history_poll_interval_minutes,
+        "history_poll_retry_attempts": settings.history_poll_retry_attempts,
+        "history_poll_retry_delay_seconds": settings.history_poll_retry_delay_seconds,
+        "history_poll_max_instances": settings.history_poll_max_instances,
+        "history_poll_coalesce": settings.history_poll_coalesce,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

@@ -19,25 +19,28 @@ from legendarr_web.backend_client.client import get_backend_client
 configure_logging()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # This lifespan's own context runs before the mounted `api_app`'s (which normally
-    # applies migrations), so the schema isn't guaranteed to exist yet — call `init_db()`
-    # here too (idempotent: it just runs Alembic's "upgrade head", a no-op if already there)
-    # before touching the database.
-    init_db()
-    with get_session() as session:
-        ensure_subtitle_providers_seeded(session)
-        ensure_translation_providers_seeded(session)
-    scheduler = build_scheduler()
-    scheduler.start()
-    yield
-    scheduler.shutdown()
-
-
 def create_app() -> FastAPI:
     api_app = create_api_app()
     web_app = create_web_app()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # This lifespan's own context runs before the mounted `api_app`'s (which normally
+        # applies migrations), so the schema isn't guaranteed to exist yet — call `init_db()`
+        # here too (idempotent: it just runs Alembic's "upgrade head", a no-op if already
+        # there) before touching the database.
+        init_db()
+        with get_session() as session:
+            ensure_subtitle_providers_seeded(session)
+            ensure_translation_providers_seeded(session)
+        scheduler = build_scheduler()
+        # The webhook/scan routers live on the mounted `api_app`, so the scheduler is
+        # exposed on its state — `request.app` inside those routes is `api_app`, not
+        # this parent app.
+        api_app.state.scheduler = scheduler
+        scheduler.start()
+        yield
+        scheduler.shutdown()
 
     async def get_in_process_backend_client() -> AsyncIterator[httpx.AsyncClient]:
         async with httpx.AsyncClient(
