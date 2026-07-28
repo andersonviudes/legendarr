@@ -9,6 +9,7 @@ from legendarr_backend.media_library.jobs import (
     register_sync_job,
 )
 from legendarr_backend.scheduling.scheduler import build_scheduler as build_bare_scheduler
+from legendarr_backend.subtitle_discovery.jobs import register_subtitle_scan_job
 
 
 def build_scheduler() -> BackgroundScheduler:
@@ -20,4 +21,5 @@ def build_scheduler() -> BackgroundScheduler:
     register_sync_job(scheduler, config)
     register_scan_job(scheduler, config)
     register_history_poll_job(scheduler, config)
+    register_subtitle_scan_job(scheduler, config)
     return scheduler

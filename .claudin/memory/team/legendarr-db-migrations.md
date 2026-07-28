@@ -75,3 +75,15 @@ leave the dev DB in a partial state — `alembic_version` stuck at the old revis
 new table/column already exist. The dev `data/` directory is gitignored, so the fastest fix is
 deleting it entirely (`rm -rf data modules/backend/data`) and re-running `make db-upgrade` from
 a clean slate, rather than trying to hand-reconcile the partial schema.
+
+**2026-07-27 — `StrEnum` columns persist `.name`, not `.value`, unless told otherwise:**
+`subtitle_discovery/models.py`'s `Subtitle.origin: SubtitleOrigin` (first `Enum` column in the
+codebase) defaulted to SQLAlchemy's `sa.Enum(SubtitleOrigin)`, which stores the member's
+`.name` (`"EXTERNAL"`) even though `SubtitleOrigin` is a `StrEnum` with lowercase `.value`s
+(`"external"`). Fix: `origin: SubtitleOrigin = Field(sa_column=Column(Enum(SubtitleOrigin,
+values_callable=lambda enum: [m.value for m in enum]), nullable=False))` — same `sa_column=
+Column(...)` shape already used for `EncryptedString` fields. Apply this to any future `Enum`
+column backed by a `StrEnum`. Also hit again during the same fix: `alembic revision
+--autogenerate` sometimes omits `import sqlmodel` from the generated file even though the body
+references `sqlmodel.sql.sqltypes.AutoString(...)` — always diff the new migration's imports
+against a sibling one before running `db-upgrade`, not just the schema body.

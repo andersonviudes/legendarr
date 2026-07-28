@@ -1,0 +1,266 @@
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+from legendarr_backend.arr_services.manage_arr_service import create_arr_service
+from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.subtitle_discovery import scan_media_subtitles as scan_media_subtitles_module
+from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_media_subtitles import (
+    scan_subtitles_for_media_file,
+)
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import (
+    DiscoveredSubtitle,
+    SubtitleOrigin,
+)
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import select
+
+
+def _movie(session, tmp_path: Path) -> Movie:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    session.add(movie)
+    session.commit()
+    return movie
+
+
+def _series(session, tmp_path: Path) -> Series:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="sonarr",
+            service_type="sonarr",
+            host="sonarr",
+            port=8989,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    series = Series(arr_service_id=service.id, arr_id=1, title="Bar", remote_path="/remote/Bar")
+    session.add(series)
+    session.commit()
+    return series
+
+
+def _media_file(session, movie: Movie, relative: str) -> MediaFile:
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path=relative,
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
+
+
+def _series_media_file(session, series: Series, relative: str) -> MediaFile:
+    media_file = MediaFile(
+        series_id=series.id,
+        relative_path=relative,
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
+
+
+def _subtitles(session) -> list[Subtitle]:
+    return list(session.exec(select(Subtitle)).all())
+
+
+def test_scan_persists_discovered_subtitle(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.pt-BR.srt").touch()
+
+    result = scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    assert result.added == 1
+    assert result.removed == 0
+    assert result.skipped is False
+    row = _subtitles(in_memory_session)[0]
+    assert row.media_file_id == media_file.id
+    assert row.language == "pt-br"
+    assert row.relative_path == "Foo/Foo.pt-BR.srt"
+
+
+def test_rescan_removes_stale_subtitle_rows(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    sibling = tmp_path / "Foo" / "Foo.en.srt"
+    sibling.touch()
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    sibling.unlink()
+    result = scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    assert result.added == 0
+    assert result.removed == 1
+    assert _subtitles(in_memory_session) == []
+
+
+def test_scan_with_missing_video_skips_and_keeps_rows(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Gone/Gone.mkv")
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin="external",
+            relative_path="Gone/Gone.en.srt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    result = scan_subtitles_for_media_file(
+        in_memory_session, media_file, tmp_path / "Gone" / "Gone.mkv"
+    )
+
+    assert result.skipped is True
+    assert result.added == 0
+    assert result.removed == 0
+    assert len(_subtitles(in_memory_session)) == 1
+
+
+def test_scan_persists_discovered_subtitle_for_series_media_file(in_memory_session, tmp_path):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series, "Bar/Season 01/Bar.S01E01.mkv")
+    video = tmp_path / "Bar" / "Season 01" / "Bar.S01E01.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    (tmp_path / "Bar" / "Season 01" / "Bar.S01E01.en.srt").touch()
+
+    result = scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    assert result.added == 1
+    row = _subtitles(in_memory_session)[0]
+    assert row.media_file_id == media_file.id
+    assert row.relative_path == "Bar/Season 01/Bar.S01E01.en.srt"
+
+
+def test_rescan_updates_existing_subtitle_row_fields(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    sibling = tmp_path / "Foo" / "Foo.en.srt"
+    sibling.touch()
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    monkeypatch.setattr(
+        scan_media_subtitles_module,
+        "scan_video_subtitles",
+        lambda _video_path: [
+            DiscoveredSubtitle(
+                language="pt-br",
+                origin=SubtitleOrigin.EMBEDDED,
+                source_path=sibling,
+                track_index=2,
+            )
+        ],
+    )
+    result = scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    assert result.added == 0
+    assert result.removed == 0
+    row = _subtitles(in_memory_session)[0]
+    assert row.language == "pt-br"
+    assert row.origin == SubtitleOrigin.EMBEDDED
+    assert row.track_index == 2
+
+
+def test_scan_persists_origin_as_lowercase_enum_value(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.en.srt").touch()
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    stored = in_memory_session.exec(text("select origin from subtitle")).first()
+    assert stored[0] == "external"
+
+
+def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin="external",
+            relative_path="Foo/Foo.en.srt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin="external",
+            relative_path="Foo/Foo.en.srt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    try:
+        with pytest.raises(IntegrityError):
+            in_memory_session.commit()
+    finally:
+        in_memory_session.rollback()
+
+
+def test_deleting_media_file_cascades_to_subtitles(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin="external",
+            relative_path="Foo/Foo.en.srt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    in_memory_session.delete(media_file)
+    in_memory_session.commit()
+
+    assert _subtitles(in_memory_session) == []
