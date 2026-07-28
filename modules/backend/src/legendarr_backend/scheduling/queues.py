@@ -16,10 +16,17 @@ class JobQueue(StrEnum):
     # Interval fan-out walks the whole library one item at a time — slow on purpose,
     # the pool sizes are the I/O throttle on network mounts.
     SCAN_BULK = "scan_bulk"
+    # Translation calls a real provider API per subtitle line — its own queue so a slow
+    # provider never starves (or queues behind) subtitle scans.
+    TRANSLATE = "translate"
+    # Manual bulk fan-out over every `MediaFile`, same reasoning as `SCAN_BULK`.
+    TRANSLATE_BULK = "translate_bulk"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.SYNC: 1,
     JobQueue.SCAN: 2,
     JobQueue.SCAN_BULK: 1,
+    JobQueue.TRANSLATE: 2,
+    JobQueue.TRANSLATE_BULK: 1,
 }

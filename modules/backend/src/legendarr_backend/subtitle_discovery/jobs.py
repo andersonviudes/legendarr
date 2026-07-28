@@ -1,14 +1,12 @@
 import logging
-from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
-from legendarr_backend.arr_services.models import ArrService
-from legendarr_backend.arr_services.path_mapping import resolve_local_path
 from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.database.engine import get_session
-from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.media_library.locate import resolve_media_file_path
+from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
@@ -93,17 +91,14 @@ def enqueue_subtitle_scan(
             if media_file is None:
                 logger.info("subtitle scan skipped: media file %d no longer exists", media_file_id)
                 return
-            item, arr_service = _resolve_owner(session, media_file)
-            if item is None or arr_service is None:
+            video_path = resolve_media_file_path(session, media_file)
+            if video_path is None:
                 logger.info(
                     "subtitle scan skipped: owner of media file %d no longer exists",
                     media_file_id,
                 )
                 return
-            root = Path(resolve_local_path(arr_service, item.remote_path))
-            result = scan_subtitles_for_media_file(
-                session, media_file, root / media_file.relative_path
-            )
+            result = scan_subtitles_for_media_file(session, media_file, video_path)
             session.commit()
             logger.info("subtitle scan finished for media file %d: %s", media_file_id, result)
 
@@ -117,15 +112,3 @@ def enqueue_subtitle_scan(
         replace_existing=True,
         misfire_grace_time=None,
     )
-
-
-def _resolve_owner(
-    session: Session, media_file: MediaFile
-) -> tuple[Movie | Series | None, ArrService | None]:
-    if media_file.movie_id is not None:
-        item = session.get(Movie, media_file.movie_id)
-    else:
-        item = session.get(Series, media_file.series_id)
-    if item is None:
-        return None, None
-    return item, session.get(ArrService, item.arr_service_id)

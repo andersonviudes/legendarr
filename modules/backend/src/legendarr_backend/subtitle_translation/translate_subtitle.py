@@ -1,14 +1,5 @@
-from dataclasses import dataclass
-
+from legendarr_backend.subtitle_discovery.subtitle_format import SubtitleLine
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
-
-
-@dataclass(frozen=True)
-class SubtitleLine:
-    index: int
-    start_ms: int
-    end_ms: int
-    text: str
 
 
 def translate_subtitle(

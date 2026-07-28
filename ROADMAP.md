@@ -123,20 +123,23 @@ up in 0.2.0.*
   engines — DeepL, Google Translate, and LibreTranslate — with enable/disable, credentials
   (API key, or an endpoint URL for self-hosted LibreTranslate), and a "Test connection" check
   per provider, from the same Settings → "Providers" page as subtitle sources (a Subtitle /
-  Translation tab switches between the two catalogs). Known gap (deferred): no real
-  `translate()` wiring for these three yet — only `echo` works end to end. That lands at
-  0.6.0, alongside real subtitle-provider search/download.
-- [ ] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
-  and write translated lines back out to a new `.srt`, preserving timing. Nothing downstream
-  can produce a real file without this.
-- [ ] **Subtitle translation** — An orchestrator that ties a `LanguageProfile` to a media item:
-  run external discovery, fall back to acquisition (via the `SubtitleProvider` protocol) when
-  no external subtitle exists in the source language, translate with the configured provider,
-  write the result. Ships against `echo` first.
-- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — the library is
-  synced (0.2.0) and video files are located on disk by the filesystem scan (0.2.0),
-  but there's still no per-media listing API to hang a selector off of (likely 0.4.0);
-  no scheduling either way.
+  Translation tab switches between the two catalogs). Real `translate()` wiring for all three
+  landed early alongside the orchestrator below, instead of waiting for 0.6.0 — `echo` remains
+  a dev-only fallback, never auto-selected.
+- [x] **Subtitle discovery** — Subtitle file round-trip: parse an `.srt` into translatable lines
+  and write translated lines back out to a new `.srt`, preserving timing
+  (`subtitle_discovery/subtitle_format.py`, built on the `srt` package).
+- [x] **Subtitle translation** — An orchestrator that ties a `LanguageProfile` to a media item:
+  run external discovery, translate with the first configured provider (falling back to the
+  next configured one on failure), write the result
+  (`subtitle_translation/translate_media_file.py`). Known gap (deferred): no acquisition
+  fallback yet when no external subtitle exists in a source language — that needs real
+  `SubtitleProvider` search/download, still 0.6.0/0.11.0/0.12.0 work; this orchestrator is a
+  no-op until a subtitle already exists.
+- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — the enqueue machinery
+  exists (`subtitle_translation/jobs.py`, on-demand only, mirroring the subtitle-scan jobs) and
+  is reusable by a future CLI/UI trigger, but there's still no per-media listing API to hang a
+  selector off of (likely 0.4.0) and no actual CLI/UI entry point yet; no scheduling either way.
 
 ## 0.4.0 — See what's missing, from the dashboard
 
@@ -179,11 +182,10 @@ file — and legendarr extracts and translates it anyway.*
   (full per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets
   real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs the
   0.2.0 filesystem scan's `MediaFile` rows to search against first.
-- [ ] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
-  wired in alongside `echo`, using the credentials registered at 0.3.0. Moved here from 0.3.0
-  so it lands together with real subtitle-provider search/download — this is the version
-  where the end-to-end pipeline stops running entirely on `echo`/registration screens and
-  starts using real providers on both sides.
+- [x] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
+  wired in alongside `echo`, using the credentials registered at 0.3.0. Landed early with
+  0.3.0's translation orchestrator instead — all three catalog providers (DeepL, Google,
+  LibreTranslate) got real `translate()` calls at once, not just one.
 
 ## 0.7.0 — Subtitle timing sync
 
