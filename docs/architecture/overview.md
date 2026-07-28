@@ -30,6 +30,7 @@ modules/backend/src/legendarr_backend/
 ├── media_library/           # media library sync (business logic)
 │   └── jobs.py               # the APScheduler job that drives the sync
 ├── subtitle_acquisition/    # subtitle-provider registration (credentials, test connection)
+│   └── providers/            # subdomain: SubtitleProvider protocol (interface only)
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
