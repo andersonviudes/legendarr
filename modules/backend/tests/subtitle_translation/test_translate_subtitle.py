@@ -1,8 +1,6 @@
+from legendarr_backend.subtitle_discovery.subtitle_format import SubtitleLine
 from legendarr_backend.subtitle_translation.providers.echo import EchoTranslationProvider
-from legendarr_backend.subtitle_translation.translate_subtitle import (
-    SubtitleLine,
-    translate_subtitle,
-)
+from legendarr_backend.subtitle_translation.translate_subtitle import translate_subtitle
 
 
 def test_translate_subtitle_preserves_timing_and_order():
