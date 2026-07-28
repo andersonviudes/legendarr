@@ -109,7 +109,7 @@ up in 0.2.0.*
   UI. Known gap (deferred): no `SubtitleProvider` protocol, HTTP client, search, match score,
   or download yet — registration only. That lands in a future item, not yet placed on this
   roadmap; 0.11.0/0.12.0 below still assume it exists by the time they start.
-- [ ] **Subtitle acquisition** — A `SubtitleProvider` protocol mirroring `TranslationProvider`'s
+- [x] **Subtitle acquisition** — A `SubtitleProvider` protocol mirroring `TranslationProvider`'s
   shape and the shared HTTP client conventions from 0.1.0 (interface only, no implementation
   yet).
 - [x] **Subtitle acquisition** — Proxy registration, same cadastro pattern as provider
