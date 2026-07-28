@@ -152,8 +152,12 @@ given their language profiles.*
 *Use case: a user sets the sync interval, picks default translation providers, and can browse
 library folders or recent logs, all from a Settings page, no shell access needed.*
 
-- [ ] **Settings** — Sync interval and default translation provider/language editable from the
-  web UI and persisted, on top of the config foundation from 0.1.0. Translation provider
+- [x] **Settings** — Tasks page (`/settings/tasks/`): interval, retry and concurrency policy
+  of the three scheduled tasks (library sync, library scan, history poll) editable from the
+  web UI, persisted to `config.yaml` and re-scheduled on the running scheduler — no restart.
+  Pulled forward from this milestone to land with the 0.2.0 scan/webhook/poll knobs.
+- [ ] **Settings** — Default translation provider/language editable from the web UI and
+  persisted, on top of the config foundation from 0.1.0. Translation provider
   credentials are already encrypted at rest, from their 0.3.0 registration screen onward.
 - [ ] **Settings** — In-app directory browser (to pick library paths without typing them blind)
   and a log viewer, so day-to-day operation doesn't require shelling into the container.

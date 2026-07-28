@@ -1,5 +1,5 @@
 import yaml
-from legendarr_backend.config.config_file import load_or_create_config_file
+from legendarr_backend.config.config_file import load_or_create_config_file, update_config_file
 from legendarr_backend.config.settings import Settings
 from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
 
@@ -126,3 +126,16 @@ def test_legacy_plaintext_api_keys_are_read_and_reencrypted_on_disk(tmp_path):
     stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
     assert stored["radarr_api_key"].startswith(ENCRYPTED_PREFIX)
     assert stored["sonarr_api_key"].startswith(ENCRYPTED_PREFIX)
+
+
+def test_update_config_file_applies_updates_and_keeps_secrets_encrypted(tmp_path):
+    settings = Settings(data_dir=tmp_path, database_url="", radarr_api_key="radarr-key")
+    load_or_create_config_file(settings)
+
+    updated = update_config_file(settings, {"scan_interval_minutes": 5})
+
+    assert updated.scan_interval_minutes == 5
+    assert updated.radarr_api_key == "radarr-key"
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["scan_interval_minutes"] == 5
+    assert stored["radarr_api_key"].startswith(ENCRYPTED_PREFIX)

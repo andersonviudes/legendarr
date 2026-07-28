@@ -8,12 +8,13 @@
 <p class="empty-state">{{ message }}</p>
 {% endmacro %}
 
-{% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="") %}
+{% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="", step="") %}
 <label for="{{ name }}">{{ label }}</label>
 <input
   type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value }}"
   {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
   {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+  {% if step %}step="{{ step }}"{% endif %}
   {% if required %}required{% endif %}
 >
 {% endmacro %}

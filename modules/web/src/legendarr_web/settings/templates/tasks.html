@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, checkbox_field %}
+{% block title %}legendarr · Tasks{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="task-settings-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
+<h1>{{ icon("list-checks") }} Tasks</h1>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form id="task-settings-form" class="service-form" method="post" action="/settings/tasks/">
+  <p class="field-hint">
+    Changes apply to the running scheduler immediately — no restart needed. Saving
+    restarts each task's interval countdown.
+  </p>
+
+  <section>
+    <h2>{{ icon("refresh-cw") }} Library sync</h2>
+    <p class="field-hint">
+      Pulls the movie and series lists from every enabled Radarr/Sonarr connection.
+    </p>
+    {{ field("sync_interval_minutes", "Interval (minutes)", type="number",
+             value=settings.sync_interval_minutes, required=true) }}
+    <details class="task-advanced">
+      <summary>Advanced</summary>
+      {{ field("sync_retry_attempts", "Retry attempts", type="number",
+               value=settings.sync_retry_attempts, required=true) }}
+      {{ field("sync_retry_delay_seconds", "Retry delay (seconds)", type="number", step="any",
+               value=settings.sync_retry_delay_seconds, required=true) }}
+      {{ field("sync_max_instances", "Max instances", type="number",
+               value=settings.sync_max_instances, required=true) }}
+      {{ checkbox_field("sync_coalesce", "Coalesce missed runs into one",
+                        checked=settings.sync_coalesce) }}
+    </details>
+  </section>
+
+  <section>
+    <h2>{{ icon("folder-search") }} Library scan</h2>
+    <p class="field-hint">
+      Walks every synced item's local folder to locate the video files on disk. Imports
+      also trigger immediate per-item scans via webhook or history poll.
+    </p>
+    {{ field("scan_interval_minutes", "Interval (minutes)", type="number",
+             value=settings.scan_interval_minutes, required=true) }}
+    <details class="task-advanced">
+      <summary>Advanced</summary>
+      {{ field("scan_retry_attempts", "Retry attempts", type="number",
+               value=settings.scan_retry_attempts, required=true) }}
+      {{ field("scan_retry_delay_seconds", "Retry delay (seconds)", type="number", step="any",
+               value=settings.scan_retry_delay_seconds, required=true) }}
+      {{ field("scan_max_instances", "Max instances", type="number",
+               value=settings.scan_max_instances, required=true) }}
+      {{ checkbox_field("scan_coalesce", "Coalesce missed runs into one",
+                        checked=settings.scan_coalesce) }}
+    </details>
+  </section>
+
+  <section>
+    <h2>{{ icon("rss") }} History poll</h2>
+    <p class="field-hint">
+      Asks each connection's history for recent imports and rescans just those items —
+      catches new files quickly when the Arr webhook isn't configured.
+    </p>
+    {{ field("history_poll_interval_minutes", "Interval (minutes)", type="number",
+             value=settings.history_poll_interval_minutes, required=true) }}
+    <details class="task-advanced">
+      <summary>Advanced</summary>
+      {{ field("history_poll_retry_attempts", "Retry attempts", type="number",
+               value=settings.history_poll_retry_attempts, required=true) }}
+      {{ field("history_poll_retry_delay_seconds", "Retry delay (seconds)", type="number",
+               step="any", value=settings.history_poll_retry_delay_seconds, required=true) }}
+      {{ field("history_poll_max_instances", "Max instances", type="number",
+               value=settings.history_poll_max_instances, required=true) }}
+      {{ checkbox_field("history_poll_coalesce", "Coalesce missed runs into one",
+                        checked=settings.history_poll_coalesce) }}
+    </details>
+  </section>
+</form>
+{% endblock %}
