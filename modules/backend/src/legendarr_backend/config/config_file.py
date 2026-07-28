@@ -41,6 +41,11 @@ class AppConfigFile(BaseModel):
     history_poll_retry_delay_seconds: float = 5.0
     history_poll_max_instances: int = 1
     history_poll_coalesce: bool = True
+    subtitle_scan_interval_minutes: int = 60
+    subtitle_scan_retry_attempts: int = Field(default=3, ge=1)
+    subtitle_scan_retry_delay_seconds: float = 5.0
+    subtitle_scan_max_instances: int = 1
+    subtitle_scan_coalesce: bool = True
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -68,6 +73,11 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "history_poll_retry_delay_seconds": settings.history_poll_retry_delay_seconds,
         "history_poll_max_instances": settings.history_poll_max_instances,
         "history_poll_coalesce": settings.history_poll_coalesce,
+        "subtitle_scan_interval_minutes": settings.subtitle_scan_interval_minutes,
+        "subtitle_scan_retry_attempts": settings.subtitle_scan_retry_attempts,
+        "subtitle_scan_retry_delay_seconds": settings.subtitle_scan_retry_delay_seconds,
+        "subtitle_scan_max_instances": settings.subtitle_scan_max_instances,
+        "subtitle_scan_coalesce": settings.subtitle_scan_coalesce,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

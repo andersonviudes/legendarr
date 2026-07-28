@@ -128,6 +128,30 @@ def test_legacy_plaintext_api_keys_are_read_and_reencrypted_on_disk(tmp_path):
     assert stored["sonarr_api_key"].startswith(ENCRYPTED_PREFIX)
 
 
+def test_subtitle_scan_settings_round_trip_through_config_file(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path,
+        database_url="",
+        subtitle_scan_interval_minutes=30,
+        subtitle_scan_retry_attempts=4,
+        subtitle_scan_retry_delay_seconds=2.5,
+        subtitle_scan_max_instances=2,
+        subtitle_scan_coalesce=False,
+    )
+
+    config = load_or_create_config_file(settings)
+
+    assert config.subtitle_scan_interval_minutes == 30
+    assert config.subtitle_scan_retry_attempts == 4
+    assert config.subtitle_scan_retry_delay_seconds == 2.5
+    assert config.subtitle_scan_max_instances == 2
+    assert config.subtitle_scan_coalesce is False
+
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["subtitle_scan_interval_minutes"] == 30
+    assert stored["subtitle_scan_max_instances"] == 2
+
+
 def test_update_config_file_applies_updates_and_keeps_secrets_encrypted(tmp_path):
     settings = Settings(data_dir=tmp_path, database_url="", radarr_api_key="radarr-key")
     load_or_create_config_file(settings)

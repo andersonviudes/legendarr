@@ -9,6 +9,7 @@ from legendarr_backend.media_library import models as media_library_models  # no
 from legendarr_backend.subtitle_acquisition import (
     models as subtitle_acquisition_models,  # noqa: F401
 )
+from legendarr_backend.subtitle_discovery import models as subtitle_discovery_models  # noqa: F401
 from legendarr_backend.subtitle_translation import (
     models as subtitle_translation_models,  # noqa: F401
 )

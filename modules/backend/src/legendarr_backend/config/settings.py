@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     history_poll_retry_delay_seconds: float = Field(default=5.0)
     history_poll_max_instances: int = Field(default=1)
     history_poll_coalesce: bool = Field(default=True)
+    subtitle_scan_interval_minutes: int = Field(default=60)
+    subtitle_scan_retry_attempts: int = Field(default=3, ge=1)
+    subtitle_scan_retry_delay_seconds: float = Field(default=5.0)
+    subtitle_scan_max_instances: int = Field(default=1)
+    subtitle_scan_coalesce: bool = Field(default=True)
 
     @property
     def resolved_database_url(self) -> str:
