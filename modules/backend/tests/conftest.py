@@ -13,6 +13,7 @@ from legendarr_backend.database import engine as database
 from legendarr_backend.database.engine import enable_sqlite_foreign_keys
 from legendarr_backend.language_profiles import models as _language_profiles_models  # noqa: F401
 from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
+from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
 from legendarr_backend.subtitle_acquisition import (
     models as _subtitle_acquisition_models,  # noqa: F401
 )

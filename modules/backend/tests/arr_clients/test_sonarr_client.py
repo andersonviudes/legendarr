@@ -8,7 +8,15 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     monkeypatch.setattr(
         ProviderHttpClient,
         "get_json",
-        lambda self, path: [{"id": 1, "title": "Series", "path": "/series/series"}],
+        lambda self, path: [
+            {
+                "id": 1,
+                "title": "Series",
+                "path": "/series/series",
+                "tvdbId": 121361,
+                "imdbId": "tt0944947",
+            }
+        ],
     )
     client = SonarrClient("http://sonarr.local", "api-key")
 
@@ -18,6 +26,8 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].id == 1
     assert items[0].title == "Series"
     assert items[0].path == "/series/series"
+    assert items[0].tvdb_id == 121361
+    assert items[0].imdb_id == "tt0944947"
 
 
 def test_system_status_requests_system_status(monkeypatch):

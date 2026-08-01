@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "macros.html" import service_status %}
+{% block title %}legendarr · Metadata source{% endblock %}
+{% block content %}
+<h1>{{ icon("database") }} Metadata source</h1>
+<p class="field-hint">
+  Enable the metadata sources legendarr should use to fetch info about new series and
+  movies, and set the API key each one needs. Runs automatically the next time a
+  library sync finds a brand-new series or movie.
+</p>
+
+<div class="service-grid">
+  {% for provider in providers %}
+  <article class="service-card">
+    <header class="service-card-header">
+      <p class="service-card-name">{{ provider.label }}</p>
+      {% if provider.is_configured %}
+      {{ service_status(provider, "/settings/metadata-source/" ~ provider.id ~ "/enabled", noun="provider") }}
+      {% else %}
+      <span class="service-card-status is-disabled">Not configured</span>
+      {% endif %}
+    </header>
+    <p class="service-card-address">
+      {% if provider.is_configured %}
+      Requires an API key
+      {% else %}
+      Add an API key to enable
+      {% endif %}
+    </p>
+    <div class="service-card-actions">
+      <a href="/settings/metadata-source/{{ provider.id }}/edit" role="button" class="outline">Edit</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
