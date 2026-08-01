@@ -13,6 +13,11 @@ class MediaItem:
     id: int
     title: str
     path: str
+    # External catalog ids as reported by the Arr app itself — Sonarr's series payload
+    # always has both; Radarr's movie payload never has `tvdbId` (Radarr's own canonical
+    # id system is TMDb), so `tvdb_id` stays `None` for every movie.
+    tvdb_id: int | None = None
+    imdb_id: str | None = None
 
 
 class MediaLibraryClient(Protocol):

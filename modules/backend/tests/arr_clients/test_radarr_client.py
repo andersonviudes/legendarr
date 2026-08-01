@@ -8,7 +8,9 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     monkeypatch.setattr(
         ProviderHttpClient,
         "get_json",
-        lambda self, path: [{"id": 1, "title": "Movie", "path": "/movies/movie"}],
+        lambda self, path: [
+            {"id": 1, "title": "Movie", "path": "/movies/movie", "imdbId": "tt1234567"}
+        ],
     )
     client = RadarrClient("http://radarr.local", "api-key")
 
@@ -18,6 +20,9 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].id == 1
     assert items[0].title == "Movie"
     assert items[0].path == "/movies/movie"
+    # Radarr's API has no `tvdbId` field (its own canonical id system is TMDb).
+    assert items[0].tvdb_id is None
+    assert items[0].imdb_id == "tt1234567"
 
 
 def test_system_status_requests_system_status(monkeypatch):

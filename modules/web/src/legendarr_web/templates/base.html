@@ -76,6 +76,7 @@
                   request.url.path.startswith("/settings/subtitle-providers") and not
                   request.url.path.startswith("/settings/translation-providers") and not
                   request.url.path.startswith("/settings/subtitle-proxies") and not
+                  request.url.path.startswith("/settings/metadata-source") and not
                   request.url.path.startswith("/settings/tasks") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>Language profiles</span></a>
             </li>
@@ -100,6 +101,18 @@
                 id="subtitle-providers-count-badge"
                 hidden
                 hx-get="/settings/subtitle-providers/count"
+                hx-trigger="load"
+                hx-swap="outerHTML"
+              ></span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/metadata-source/"
+                {% if request.url.path.startswith("/settings/metadata-source") %}aria-current="page"{% endif %}
+              >{{ icon("database") }}<span>Metadata source</span><span
+                id="metadata-providers-count-badge"
+                hidden
+                hx-get="/settings/metadata-source/count"
                 hx-trigger="load"
                 hx-swap="outerHTML"
               ></span></a>

@@ -24,6 +24,11 @@ class Movie(SQLModel, table=True):
     language_profile_id: int | None = Field(
         default=None, foreign_key="languageprofile.id", index=True, ondelete="SET NULL"
     )
+    # External catalog ids as reported by Radarr — the fetch keys `media_metadata`'s
+    # providers use. Radarr has no `tvdbId` field (its own canonical id system is TMDb),
+    # so this is always `None` for a movie.
+    tvdb_id: int | None = Field(default=None)
+    imdb_id: str | None = Field(default=None)
 
 
 class Series(SQLModel, table=True):
@@ -42,6 +47,9 @@ class Series(SQLModel, table=True):
     language_profile_id: int | None = Field(
         default=None, foreign_key="languageprofile.id", index=True, ondelete="SET NULL"
     )
+    # Sonarr reports both ids directly, so these are populated for every series.
+    tvdb_id: int | None = Field(default=None)
+    imdb_id: str | None = Field(default=None)
 
 
 class MediaFile(SQLModel, table=True):

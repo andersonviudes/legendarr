@@ -23,7 +23,12 @@ class RadarrClient:
 
     def list_items(self) -> list[MediaItem]:
         return [
-            MediaItem(id=item["id"], title=item["title"], path=item.get("path", ""))
+            MediaItem(
+                id=item["id"],
+                title=item["title"],
+                path=item.get("path", ""),
+                imdb_id=item.get("imdbId"),
+            )
             for item in self._http.get_json("/api/v3/movie")
         ]
 

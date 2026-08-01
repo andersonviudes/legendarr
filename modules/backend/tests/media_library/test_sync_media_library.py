@@ -159,6 +159,56 @@ def test_failing_connection_does_not_block_others(in_memory_session, fake_client
     assert len(_series(in_memory_session)) == 1
 
 
+def test_sync_persists_tvdb_and_imdb_ids_from_the_arr_response(in_memory_session, fake_clients):
+    sonarr = create_arr_service(in_memory_session, _service_input("sonarr", "sonarr"))
+    fake_clients[sonarr.id] = _FakeClient(
+        [MediaItem(id=7, title="Bar", path="/tv/Bar", tvdb_id=121361, imdb_id="tt0944947")]
+    )
+
+    sync_media_library(in_memory_session)
+
+    series = _series(in_memory_session)[0]
+    assert series.tvdb_id == 121361
+    assert series.imdb_id == "tt0944947"
+
+
+def test_sync_fetches_metadata_only_for_newly_created_items(
+    in_memory_session, fake_clients, monkeypatch
+):
+    calls: list[tuple[list, list]] = []
+    monkeypatch.setattr(
+        sync_module,
+        "fetch_metadata_for_new_items",
+        lambda session, movies, series: calls.append((movies, series)),
+    )
+    radarr = create_arr_service(in_memory_session, _service_input("radarr", "radarr"))
+    fake_clients[radarr.id] = _FakeClient([MediaItem(id=1, title="Foo", path="/movies/Foo")])
+
+    sync_media_library(in_memory_session)
+    # Second run reports the same item — it's not new anymore, so nothing to fetch.
+    sync_media_library(in_memory_session)
+
+    assert len(calls) == 2
+    assert len(calls[0][0]) == 1  # first run: one newly created movie
+    assert calls[1][0] == []  # second run: no new movies
+
+
+def test_metadata_fetch_failure_does_not_fail_the_sync(
+    in_memory_session, fake_clients, monkeypatch
+):
+    def _raise(session, movies, series):
+        raise RuntimeError("metadata source unreachable")
+
+    monkeypatch.setattr(sync_module, "fetch_metadata_for_new_items", _raise)
+    radarr = create_arr_service(in_memory_session, _service_input("radarr", "radarr"))
+    fake_clients[radarr.id] = _FakeClient([MediaItem(id=1, title="Foo", path="/movies/Foo")])
+
+    result = sync_media_library(in_memory_session)
+
+    assert result.movies_synced == 1
+    assert len(_movies(in_memory_session)) == 1
+
+
 def test_commit_failure_does_not_block_other_connections(in_memory_session, fake_clients):
     """A duplicate arr_id in one connection's response only blows up at flush/commit time —
     the failure must stay scoped to that connection, not propagate out of the loop."""
