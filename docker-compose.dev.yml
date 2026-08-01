@@ -1,0 +1,48 @@
+# Local dev stack for testing legendarr against a real Sonarr instance.
+#
+# Not part of the shipped product (see docs/getting-started/installation.md for the
+# production `docker run` command) — this is a throwaway sandbox for manually exercising
+# the media-library sync, webhooks, and history poll against real Sonarr behavior.
+#
+# Usage:
+#   1. mkdir -p dev/media/tv && drop a real episode file in there (e.g. a
+#      Show.Name.S01E01.mkv, named the way Sonarr expects so it can match it).
+#   2. docker compose -f docker-compose.dev.yml up --build
+#   3. Open Sonarr at http://localhost:8989, finish setup, grab its API key from
+#      Settings → General, add the series so it recognizes dev/media/tv, then
+#      trigger a manual import / disk scan for the file you dropped in.
+#   4. Open legendarr at http://localhost:8000 → Settings → Servers → add a Sonarr
+#      connection: host "sonarr", port 8989, the API key from step 3. Sonarr and
+#      legendarr mount the same host folder at different container paths on purpose
+#      (/tv vs /media/tv) — set remote path prefix "/tv" and local path prefix
+#      "/media/tv" on the connection to exercise path mapping too.
+#   5. Watch the media library sync in, then use Sonarr's webhook (Settings →
+#      Connect → legendarr, target http://legendarr:8000/api/webhooks/arr/<id>) or
+#      wait for the scheduled sync/scan/history-poll jobs to pick the file up.
+#
+# `dev/` is gitignored — it holds Sonarr's config and whatever media you drop in.
+
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./dev/sonarr-config:/config
+      - ./dev/media/tv:/tv
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+
+  legendarr:
+    build: .
+    volumes:
+      - ./dev/legendarr-config:/config
+      - ./dev/media/tv:/media/tv
+    ports:
+      - "8000:8000"
+    depends_on:
+      - sonarr
+    restart: unless-stopped

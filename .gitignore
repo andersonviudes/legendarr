@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 data/
+dev/
 *.db
 .pytest_cache/
 .ruff_cache/
