@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state %}
+{% from "macros.html" import empty_state, sync_now_toolbar %}
 {% block title %}legendarr · Movies{% endblock %}
 {% block content %}
+{{ sync_now_toolbar() }}
 <hgroup>
   <h1>{{ icon("clapperboard") }} Movies</h1>
   <p>{{ movies|length }} movies synced.</p>

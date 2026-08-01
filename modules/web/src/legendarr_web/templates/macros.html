@@ -8,6 +8,29 @@
 <p class="empty-state">{{ message }}</p>
 {% endmacro %}
 
+{#
+  "Sync Now" trigger for the Library pages (Series/Movies) — enqueues an immediate
+  library sync via POST /media/sync instead of waiting for the scheduled interval.
+#}
+{% macro sync_now_toolbar() %}
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    hx-post="/media/sync"
+    hx-target="#sync-result"
+    hx-swap="innerHTML"
+    hx-indicator="#sync-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("refresh-cw") }}
+    <span>Sync Now</span>
+  </button>
+</div>
+<div id="sync-result" aria-live="polite"></div>
+<p id="sync-indicator" class="test-indicator test-result" role="status">Syncing library…</p>
+{% endmacro %}
+
 {% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="", step="") %}
 <label for="{{ name }}">{{ label }}</label>
 <input

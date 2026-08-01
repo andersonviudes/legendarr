@@ -27,14 +27,9 @@ def register_sync_job(
 ) -> None:
     """Register the periodic media library sync job on the shared scheduler."""
 
-    def run_sync() -> None:
-        with get_session() as session:
-            result = sync_media_library(session)
-        logger.info("media library synced: %s", result)
-
     register_job(
         scheduler,
-        run_sync,
+        _run_sync,
         queue=JobQueue.SYNC,
         job_id="media_library_sync",
         trigger="interval",
@@ -44,6 +39,38 @@ def register_sync_job(
         max_instances=config.sync_max_instances,
         coalesce=config.sync_coalesce,
     )
+
+
+def enqueue_media_sync(
+    scheduler: BackgroundScheduler,
+    *,
+    retry_attempts: int,
+    retry_delay_seconds: float,
+) -> None:
+    """Enqueue an ad-hoc library sync for immediate execution.
+
+    Shared by the manual "Sync Now" trigger and the arr-service-created hook. Uses
+    `add_job` directly instead of `register_job` — same one-off `"date"` trigger
+    reasoning as `enqueue_media_scan` — and a fixed job id so repeated triggers (a
+    second "Sync Now" click, several connections added in a row) collapse into a
+    single pending run instead of stacking up.
+    """
+    scheduler.add_job(
+        with_retry(_run_sync, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
+        "date",
+        id="media_library_sync_manual",
+        name="media_library_sync_manual",
+        executor=JobQueue.SYNC.value,
+        max_instances=1,
+        replace_existing=True,
+        misfire_grace_time=None,
+    )
+
+
+def _run_sync() -> None:
+    with get_session() as session:
+        result = sync_media_library(session)
+    logger.info("media library synced: %s", result)
 
 
 def register_scan_job(

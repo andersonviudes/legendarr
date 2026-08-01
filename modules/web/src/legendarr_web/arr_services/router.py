@@ -121,6 +121,12 @@ async def create_arr_service(
             },
             status_code=exc.response.status_code,
         )
+    try:
+        await service.trigger_library_sync(client)
+    except httpx.HTTPStatusError:
+        # Best-effort — the connection was still added successfully; the periodic sync
+        # will pick it up on its own schedule if this immediate kick fails.
+        pass
     toast = urlencode(
         {"toast": f"{data['service_type'].capitalize()} server added.", "toast_type": "success"}
     )

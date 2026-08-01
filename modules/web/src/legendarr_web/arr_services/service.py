@@ -42,3 +42,8 @@ async def test_arr_service(client: httpx.AsyncClient, data: dict) -> dict:
     response = await client.post("/arr-services/test", json=data)
     response.raise_for_status()
     return response.json()
+
+
+async def trigger_library_sync(client: httpx.AsyncClient) -> None:
+    response = await client.post("/media/sync")
+    response.raise_for_status()

@@ -134,6 +134,63 @@ def test_create_arr_service_redirects_to_list(stub_backend_client):
     assert "toast_type=success" in str(response.request.url)
 
 
+def test_create_arr_service_triggers_library_sync(stub_backend_client):
+    app = create_app()
+    sync_calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/":
+            return httpx.Response(201, json={"id": 1})
+        if request.method == "POST" and request.url.path == "/media/sync":
+            sync_calls.append(request)
+            return httpx.Response(202, json={"status": "enqueued"})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/arr-services/",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+            },
+        )
+
+    assert len(sync_calls) == 1
+
+
+def test_create_arr_service_succeeds_even_when_sync_trigger_fails(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/arr-services/":
+            return httpx.Response(201, json={"id": 1})
+        if request.method == "POST" and request.url.path == "/media/sync":
+            return httpx.Response(503, json={"detail": "Scheduler is not running"})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/arr-services/",
+            data={
+                "service_type": "radarr",
+                "name": "radarr",
+                "host": "radarr",
+                "port": 7878,
+                "api_key": "api-key",
+            },
+        )
+
+    assert response.status_code == 200
+    assert "toast=Radarr+server+added." in str(response.request.url)
+
+
 def test_update_arr_service_redirects_with_success_toast(stub_backend_client):
     app = create_app()
 
