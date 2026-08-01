@@ -6,7 +6,7 @@ from sqlmodel import Session
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
-from legendarr_backend.media_library.jobs import enqueue_full_scan
+from legendarr_backend.media_library.jobs import enqueue_full_scan, enqueue_media_sync
 
 router = APIRouter(prefix="/media")
 
@@ -14,6 +14,24 @@ router = APIRouter(prefix="/media")
 def _get_session() -> Iterator[Session]:
     with get_session() as session:
         yield session
+
+
+@router.post("/sync", status_code=202)
+def trigger_media_sync(request: Request) -> dict[str, str]:
+    """Enqueue an immediate library sync — same job body the periodic sync job runs.
+
+    Shared by the web "Sync Now" button and the "sync after adding a connection" hook.
+    """
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler is None:
+        raise HTTPException(status_code=503, detail="Scheduler is not running")
+    config = load_or_create_config_file(get_settings())
+    enqueue_media_sync(
+        scheduler,
+        retry_attempts=config.sync_retry_attempts,
+        retry_delay_seconds=config.sync_retry_delay_seconds,
+    )
+    return {"status": "enqueued"}
 
 
 @router.post("/scan", status_code=202)
