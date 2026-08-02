@@ -5,13 +5,22 @@ from legendarr_backend.http_client.client import ProviderHttpClient
 
 
 def test_list_items_maps_response_to_media_items(monkeypatch):
-    monkeypatch.setattr(
-        ProviderHttpClient,
-        "get_json",
-        lambda self, path: [
-            {"id": 1, "title": "Movie", "path": "/movies/movie", "imdbId": "tt1234567"}
-        ],
-    )
+    def _get_json(self, path):
+        if path == "/api/v3/qualityprofile":
+            return [{"id": 4, "name": "Any"}]
+        return [
+            {
+                "id": 1,
+                "title": "Movie",
+                "path": "/movies/movie",
+                "imdbId": "tt1234567",
+                "monitored": True,
+                "status": "released",
+                "qualityProfileId": 4,
+            }
+        ]
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
     client = RadarrClient("http://radarr.local", "api-key")
 
     items = client.list_items()
@@ -23,6 +32,10 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     # Radarr's API has no `tvdbId` field (its own canonical id system is TMDb).
     assert items[0].tvdb_id is None
     assert items[0].imdb_id == "tt1234567"
+    assert items[0].monitored is True
+    assert items[0].status == "released"
+    assert items[0].quality_profile_id == 4
+    assert items[0].quality_profile_name == "Any"
 
 
 def test_system_status_requests_system_status(monkeypatch):

@@ -12,8 +12,24 @@
 <div class="poster-grid">
   {% for show in series %}
   <article class="poster-card">
-    <div class="poster-art">{{ icon("image-off") }}</div>
+    <div class="poster-art">
+      {% if show.poster_url %}
+      <img src="{{ show.poster_url }}" alt="" loading="lazy">
+      {% else %}
+      {{ icon("image-off") }}
+      {% endif %}
+    </div>
     <p class="poster-title">{{ show.title }}</p>
+    {% if show.episode_count %}
+    <div class="episode-bar {{ 'episode-bar--ended' if show.status == 'ended' else 'episode-bar--continuing' }}">
+      <span class="episode-bar-fill" style="width: {{ (show.episode_file_count / show.episode_count * 100)|round(0, 'floor')|int }}%"></span>
+    </div>
+    <p class="poster-count">{{ show.episode_file_count }} / {{ show.episode_count }}</p>
+    {% endif %}
+    <p class="poster-meta">
+      {{ "Monitored" if show.monitored else "Unmonitored" }}
+      {% if show.quality_profile_name %} · {{ show.quality_profile_name }}{% endif %}
+    </p>
   </article>
   {% endfor %}
 </div>

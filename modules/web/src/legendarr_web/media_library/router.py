@@ -10,13 +10,15 @@ templates = get_templates("media_library")
 
 
 @router.get("/movies")
-def show_movies(request: Request):
-    return templates.TemplateResponse(request, "movies.html", {"movies": []})
+async def show_movies(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    movies = await service.list_movies(client)
+    return templates.TemplateResponse(request, "movies.html", {"movies": movies})
 
 
 @router.get("/series")
-def show_series(request: Request):
-    return templates.TemplateResponse(request, "series.html", {"series": []})
+async def show_series(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    series = await service.list_series(client)
+    return templates.TemplateResponse(request, "series.html", {"series": series})
 
 
 @router.post("/sync")

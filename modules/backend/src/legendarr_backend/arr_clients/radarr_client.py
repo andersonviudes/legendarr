@@ -21,13 +21,24 @@ class RadarrClient:
             "Radarr", base_url, headers={"X-Api-Key": api_key}, timeout=timeout
         )
 
+    def _quality_profile_names(self) -> dict[int, str]:
+        return {
+            profile["id"]: profile["name"]
+            for profile in self._http.get_json("/api/v3/qualityprofile")
+        }
+
     def list_items(self) -> list[MediaItem]:
+        quality_profile_names = self._quality_profile_names()
         return [
             MediaItem(
                 id=item["id"],
                 title=item["title"],
                 path=item.get("path", ""),
                 imdb_id=item.get("imdbId"),
+                monitored=item.get("monitored", False),
+                status=item.get("status"),
+                quality_profile_id=item.get("qualityProfileId"),
+                quality_profile_name=quality_profile_names.get(item.get("qualityProfileId")),
             )
             for item in self._http.get_json("/api/v3/movie")
         ]

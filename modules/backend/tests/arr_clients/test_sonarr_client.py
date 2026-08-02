@@ -5,19 +5,24 @@ from legendarr_backend.http_client.client import ProviderHttpClient
 
 
 def test_list_items_maps_response_to_media_items(monkeypatch):
-    monkeypatch.setattr(
-        ProviderHttpClient,
-        "get_json",
-        lambda self, path: [
+    def _get_json(self, path):
+        if path == "/api/v3/qualityprofile":
+            return [{"id": 4, "name": "Any"}]
+        return [
             {
                 "id": 1,
                 "title": "Series",
                 "path": "/series/series",
                 "tvdbId": 121361,
                 "imdbId": "tt0944947",
+                "monitored": True,
+                "status": "continuing",
+                "qualityProfileId": 4,
+                "statistics": {"episodeCount": 8, "episodeFileCount": 8},
             }
-        ],
-    )
+        ]
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
     client = SonarrClient("http://sonarr.local", "api-key")
 
     items = client.list_items()
@@ -28,6 +33,12 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].path == "/series/series"
     assert items[0].tvdb_id == 121361
     assert items[0].imdb_id == "tt0944947"
+    assert items[0].monitored is True
+    assert items[0].status == "continuing"
+    assert items[0].quality_profile_id == 4
+    assert items[0].quality_profile_name == "Any"
+    assert items[0].episode_count == 8
+    assert items[0].episode_file_count == 8
 
 
 def test_system_status_requests_system_status(monkeypatch):

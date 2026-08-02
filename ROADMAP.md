@@ -73,6 +73,11 @@ setup.*
   by the server) per connection, keyed by `(arr_service_id, arr_id)` so multiple Radarr/
   Sonarr instances never collide; rows a server stops reporting are deleted only within
   that connection's scope.
+- [x] **Media library** — Movies/Series list pages backed by a real `GET /media/movies`/
+  `GET /media/series` API instead of hardcoded empty lists. Sync now also captures
+  `monitored`/`status`/quality profile name (resolved from Radarr/Sonarr's own
+  quality-profile endpoint) plus Sonarr's per-series episode counts, joined with
+  `media_metadata`'s poster/overview/year/rating for the poster-grid UI.
 - [x] **Media library** — Filesystem scan: resolve each synced `Movie`/`Series`'s stored
   path through its connection's path mapping and walk the local directory to locate the
   actual video file(s) on disk, persisting them as `MediaFile` rows. This is the bridge
@@ -90,8 +95,9 @@ setup.*
   profile can require or exclude them per language rather than treating every subtitle as
   equivalent. Per-item override: `Movie`/`Series` carry an optional `language_profile_id` to pin
   a specific item to a profile other than the default. Known gap (deferred): no UI to set the
-  override yet — `media_library` has no movies/series listing API to hang a selector off of
-  (tracked for whenever that listing lands, likely 0.4.0).
+  override yet — `media_library` now has a `GET /media/movies`/`GET /media/series` listing API
+  (added alongside the real Movies/Series pages) to hang a selector off of, but the selector
+  itself hasn't been built.
 
 ## 0.3.0 — Translate a subtitle end to end, downloading one if needed, in the real UI
 
@@ -138,8 +144,9 @@ up in 0.2.0.*
   no-op until a subtitle already exists.
 - [ ] Manual trigger only (CLI or a "translate now" action in the UI) — the enqueue machinery
   exists (`subtitle_translation/jobs.py`, on-demand only, mirroring the subtitle-scan jobs) and
-  is reusable by a future CLI/UI trigger, but there's still no per-media listing API to hang a
-  selector off of (likely 0.4.0) and no actual CLI/UI entry point yet; no scheduling either way.
+  is reusable by a future CLI/UI trigger; `media_library`'s `GET /media/movies`/`GET
+  /media/series` listing API now exists to hang a per-media selector off of, but there's still
+  no actual CLI/UI entry point yet; no scheduling either way.
 
 ## 0.4.0 — See what's missing, from the dashboard
 

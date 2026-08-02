@@ -74,6 +74,26 @@ def _sync_service(
     return len(items), new_items
 
 
+def _row_fields(model: type[Movie] | type[Series], item: MediaItem) -> dict:
+    """Attributes to write onto a `Movie`/`Series` row from the arr response —
+    `episode_count`/`episode_file_count` only apply to `Series`, since Radarr has no
+    per-movie equivalent."""
+    fields = {
+        "title": item.title,
+        "remote_path": item.path,
+        "tvdb_id": item.tvdb_id,
+        "imdb_id": item.imdb_id,
+        "monitored": item.monitored,
+        "status": item.status,
+        "quality_profile_id": item.quality_profile_id,
+        "quality_profile_name": item.quality_profile_name,
+    }
+    if model is Series:
+        fields["episode_count"] = item.episode_count
+        fields["episode_file_count"] = item.episode_file_count
+    return fields
+
+
 def _replace_service_items(
     session: Session, model: type[Movie] | type[Series], arr_service_id: int, items: list[MediaItem]
 ) -> list[Movie] | list[Series]:
@@ -88,21 +108,12 @@ def _replace_service_items(
     for item in items:
         row = existing.pop(item.id, None)
         if row is None:
-            row = model(
-                arr_service_id=arr_service_id,
-                arr_id=item.id,
-                title=item.title,
-                remote_path=item.path,
-                tvdb_id=item.tvdb_id,
-                imdb_id=item.imdb_id,
-            )
+            row = model(arr_service_id=arr_service_id, arr_id=item.id, **_row_fields(model, item))
             session.add(row)
             new_rows.append(row)
         else:
-            row.title = item.title
-            row.remote_path = item.path
-            row.tvdb_id = item.tvdb_id
-            row.imdb_id = item.imdb_id
+            for field, value in _row_fields(model, item).items():
+                setattr(row, field, value)
             session.add(row)
     for stale in existing.values():
         session.delete(stale)

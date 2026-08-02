@@ -29,6 +29,11 @@ class Movie(SQLModel, table=True):
     # so this is always `None` for a movie.
     tvdb_id: int | None = Field(default=None)
     imdb_id: str | None = Field(default=None)
+    # Arr-reported status fields, refreshed on every sync.
+    monitored: bool = Field(default=False)
+    status: str | None = Field(default=None)
+    quality_profile_id: int | None = Field(default=None)
+    quality_profile_name: str | None = Field(default=None)
 
 
 class Series(SQLModel, table=True):
@@ -50,6 +55,14 @@ class Series(SQLModel, table=True):
     # Sonarr reports both ids directly, so these are populated for every series.
     tvdb_id: int | None = Field(default=None)
     imdb_id: str | None = Field(default=None)
+    # Arr-reported status fields, refreshed on every sync.
+    monitored: bool = Field(default=False)
+    status: str | None = Field(default=None)
+    quality_profile_id: int | None = Field(default=None)
+    quality_profile_name: str | None = Field(default=None)
+    # Sonarr-only episode counts, from the series' `statistics` object.
+    episode_count: int | None = Field(default=None)
+    episode_file_count: int | None = Field(default=None)
 
 
 class MediaFile(SQLModel, table=True):
