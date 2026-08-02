@@ -7,6 +7,8 @@ from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.jobs import enqueue_full_scan, enqueue_media_sync
+from legendarr_backend.media_library.list_media_library import list_movies, list_series
+from legendarr_backend.media_library.schemas import MovieRead, SeriesRead
 
 router = APIRouter(prefix="/media")
 
@@ -14,6 +16,16 @@ router = APIRouter(prefix="/media")
 def _get_session() -> Iterator[Session]:
     with get_session() as session:
         yield session
+
+
+@router.get("/movies", response_model=list[MovieRead])
+def get_movies(session: Session = Depends(_get_session)) -> list[MovieRead]:
+    return list_movies(session)
+
+
+@router.get("/series", response_model=list[SeriesRead])
+def get_series(session: Session = Depends(_get_session)) -> list[SeriesRead]:
+    return list_series(session)
 
 
 @router.post("/sync", status_code=202)

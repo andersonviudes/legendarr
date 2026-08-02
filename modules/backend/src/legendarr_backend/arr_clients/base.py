@@ -18,6 +18,14 @@ class MediaItem:
     # id system is TMDb), so `tvdb_id` stays `None` for every movie.
     tvdb_id: int | None = None
     imdb_id: str | None = None
+    monitored: bool = False
+    status: str | None = None
+    quality_profile_id: int | None = None
+    quality_profile_name: str | None = None
+    # Sonarr-only: episode counts from the series' `statistics` object. Always `None`
+    # for a movie — Radarr has no equivalent per-item metric.
+    episode_count: int | None = None
+    episode_file_count: int | None = None
 
 
 class MediaLibraryClient(Protocol):

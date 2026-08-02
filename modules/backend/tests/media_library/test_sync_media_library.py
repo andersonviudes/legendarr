@@ -172,6 +172,77 @@ def test_sync_persists_tvdb_and_imdb_ids_from_the_arr_response(in_memory_session
     assert series.imdb_id == "tt0944947"
 
 
+def test_sync_persists_arr_status_fields_for_movies(in_memory_session, fake_clients):
+    radarr = create_arr_service(in_memory_session, _service_input("radarr", "radarr"))
+    fake_clients[radarr.id] = _FakeClient(
+        [
+            MediaItem(
+                id=1,
+                title="Foo",
+                path="/movies/Foo",
+                monitored=True,
+                status="released",
+                quality_profile_id=4,
+                quality_profile_name="Any",
+            )
+        ]
+    )
+
+    sync_media_library(in_memory_session)
+
+    movie = _movies(in_memory_session)[0]
+    assert movie.monitored is True
+    assert movie.status == "released"
+    assert movie.quality_profile_id == 4
+    assert movie.quality_profile_name == "Any"
+
+
+def test_sync_persists_arr_status_and_episode_fields_for_series(in_memory_session, fake_clients):
+    sonarr = create_arr_service(in_memory_session, _service_input("sonarr", "sonarr"))
+    fake_clients[sonarr.id] = _FakeClient(
+        [
+            MediaItem(
+                id=7,
+                title="Bar",
+                path="/tv/Bar",
+                monitored=True,
+                status="continuing",
+                quality_profile_id=4,
+                quality_profile_name="Any",
+                episode_count=8,
+                episode_file_count=8,
+            )
+        ]
+    )
+
+    sync_media_library(in_memory_session)
+
+    series = _series(in_memory_session)[0]
+    assert series.monitored is True
+    assert series.status == "continuing"
+    assert series.quality_profile_id == 4
+    assert series.quality_profile_name == "Any"
+    assert series.episode_count == 8
+    assert series.episode_file_count == 8
+
+
+def test_sync_updates_arr_status_fields_on_existing_rows(in_memory_session, fake_clients):
+    radarr = create_arr_service(in_memory_session, _service_input("radarr", "radarr"))
+    fake_clients[radarr.id] = _FakeClient(
+        [MediaItem(id=1, title="Foo", path="/movies/Foo", monitored=False, status="tba")]
+    )
+    sync_media_library(in_memory_session)
+
+    fake_clients[radarr.id] = _FakeClient(
+        [MediaItem(id=1, title="Foo", path="/movies/Foo", monitored=True, status="released")]
+    )
+    sync_media_library(in_memory_session)
+
+    movie = _movies(in_memory_session)[0]
+    assert movie.monitored is True
+    assert movie.status == "released"
+
+
 def test_sync_fetches_metadata_only_for_newly_created_items(
     in_memory_session, fake_clients, monkeypatch
 ):
