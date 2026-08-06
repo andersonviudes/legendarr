@@ -11,7 +11,7 @@
 {% if series %}
 <div class="poster-grid">
   {% for show in series %}
-  <article class="poster-card">
+  <a class="poster-card" href="/media/series/{{ show.id }}">
     <div class="poster-art">
       {% if show.poster_url %}
       <img src="{{ show.poster_url }}" alt="" loading="lazy">
@@ -30,7 +30,7 @@
       {{ "Monitored" if show.monitored else "Unmonitored" }}
       {% if show.quality_profile_name %} · {{ show.quality_profile_name }}{% endif %}
     </p>
-  </article>
+  </a>
   {% endfor %}
 </div>
 {% else %}

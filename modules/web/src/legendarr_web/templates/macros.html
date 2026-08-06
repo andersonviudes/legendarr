@@ -31,6 +31,43 @@
 <p id="sync-indicator" class="test-indicator test-result" role="status">Syncing library…</p>
 {% endmacro %}
 
+{#
+  Toolbar for a movie/series detail page: Sync (same trigger as the list pages) plus a
+  per-item "Scan Disk" that rescans just this item's files and subtitles.
+#}
+{% macro media_detail_toolbar(scan_url) %}
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    hx-post="/media/sync"
+    hx-target="#sync-result"
+    hx-swap="innerHTML"
+    hx-indicator="#sync-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("refresh-cw") }}
+    <span>Sync</span>
+  </button>
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    hx-post="{{ scan_url }}"
+    hx-target="#scan-result"
+    hx-swap="innerHTML"
+    hx-indicator="#scan-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("hard-drive") }}
+    <span>Scan Disk</span>
+  </button>
+</div>
+<div id="sync-result" aria-live="polite"></div>
+<p id="sync-indicator" class="test-indicator test-result" role="status">Syncing library…</p>
+<div id="scan-result" aria-live="polite"></div>
+<p id="scan-indicator" class="test-indicator test-result" role="status">Scanning disk…</p>
+{% endmacro %}
+
 {% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="", step="") %}
 <label for="{{ name }}">{{ label }}</label>
 <input
@@ -123,6 +160,18 @@
     </form>
   </div>
 </article>
+{% endmacro %}
+
+{#
+  Language-pill badges for the subtitles already discovered on one `MediaFile` — reused
+  by the movie and series detail pages' file/episode rows.
+#}
+{% macro subtitle_badges(subtitles) %}
+{% if subtitles %}
+{% for subtitle in subtitles %}<span class="lang-pill" data-tooltip="{{ subtitle.origin }}">{{ subtitle.language }}</span>{% endfor %}
+{% else %}
+<span class="badge-empty">—</span>
+{% endif %}
 {% endmacro %}
 
 {% macro lang_pill_group(codes) %}

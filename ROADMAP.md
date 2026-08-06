@@ -142,11 +142,19 @@ up in 0.2.0.*
   fallback yet when no external subtitle exists in a source language — that needs real
   `SubtitleProvider` search/download, still 0.6.0/0.11.0/0.12.0 work; this orchestrator is a
   no-op until a subtitle already exists.
-- [ ] Manual trigger only (CLI or a "translate now" action in the UI) — the enqueue machinery
-  exists (`subtitle_translation/jobs.py`, on-demand only, mirroring the subtitle-scan jobs) and
-  is reusable by a future CLI/UI trigger; `media_library`'s `GET /media/movies`/`GET
-  /media/series` listing API now exists to hang a per-media selector off of, but there's still
-  no actual CLI/UI entry point yet; no scheduling either way.
+- [x] **Media library** — Movie/series detail pages (`/media/movies/{id}`, `/media/series/{id}`)
+  showing the subtitles already discovered per file — external today, embedded once 0.6.0 lands,
+  no schema change needed — plus a per-file "translate now" action wired to the existing
+  `subtitle_translation/jobs.py:enqueue_translation` (manual trigger only; still no scheduling,
+  per 0.10.0). Series episodes (number/title) are fetched live from Sonarr's per-episode API and
+  matched to `MediaFile` rows by path — no persisted `Episode` entity. A "Scan Disk" action
+  rescans one item's files and subtitles on demand. Known gap (deferred): no audio-language
+  column (no `ffprobe` integration yet) and no per-file translation history. The "translate now"
+  button also shows for any row with a `MediaFile` regardless of whether a language profile or
+  provider is configured, and the `POST /media/files/{id}/translate` endpoint only validates that
+  the `MediaFile` exists — if the job is skipped internally (no profile, no provider, no source
+  subtitle, already translated), the UI still reports "Translation queued." with no indication
+  that nothing happened.
 
 ## 0.4.0 — See what's missing, from the dashboard
 

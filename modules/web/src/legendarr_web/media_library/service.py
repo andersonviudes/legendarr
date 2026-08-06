@@ -17,3 +17,33 @@ async def list_series(client: httpx.AsyncClient) -> list[dict]:
     response = await client.get("/media/series")
     response.raise_for_status()
     return response.json()
+
+
+async def get_movie(client: httpx.AsyncClient, movie_id: int) -> dict:
+    response = await client.get(f"/media/movies/{movie_id}")
+    response.raise_for_status()
+    return response.json()
+
+
+async def get_series_item(client: httpx.AsyncClient, series_id: int) -> dict:
+    response = await client.get(f"/media/series/{series_id}")
+    response.raise_for_status()
+    return response.json()
+
+
+async def trigger_movie_scan(client: httpx.AsyncClient, movie_id: int) -> dict:
+    response = await client.post(f"/media/movies/{movie_id}/scan")
+    response.raise_for_status()
+    return response.json()
+
+
+async def trigger_series_scan(client: httpx.AsyncClient, series_id: int) -> dict:
+    response = await client.post(f"/media/series/{series_id}/scan")
+    response.raise_for_status()
+    return response.json()
+
+
+async def trigger_file_translation(client: httpx.AsyncClient, media_file_id: int) -> dict:
+    response = await client.post(f"/media/files/{media_file_id}/translate")
+    response.raise_for_status()
+    return response.json()

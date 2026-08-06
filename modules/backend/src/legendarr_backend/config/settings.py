@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     subtitle_scan_retry_delay_seconds: float = Field(default=5.0)
     subtitle_scan_max_instances: int = Field(default=1)
     subtitle_scan_coalesce: bool = Field(default=True)
+    # Manual "translate now" only (0.10.0 unattended scheduling is a future item), so no
+    # interval/max_instances/coalesce fields — just the retry policy `enqueue_translation`
+    # needs.
+    translate_retry_attempts: int = Field(default=3, ge=1)
+    translate_retry_delay_seconds: float = Field(default=5.0)
 
     @property
     def resolved_database_url(self) -> str:

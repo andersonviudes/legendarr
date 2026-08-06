@@ -24,3 +24,44 @@ class SeriesRead(MediaRead):
     # Sonarr-only episode counts — no equivalent for a movie.
     episode_count: int | None = None
     episode_file_count: int | None = None
+
+
+class SubtitleRead(BaseModel):
+    """One discovered subtitle, badge-sized: just what a language pill needs."""
+
+    language: str
+    origin: str
+
+
+class MediaFileRead(BaseModel):
+    """A `MediaFile` plus the subtitles discovered for it, for a detail-page row."""
+
+    id: int
+    relative_path: str
+    size_bytes: int
+    subtitles: list[SubtitleRead]
+
+
+class MediaDetailRead(BaseModel):
+    """Fields shared by `MovieDetailRead`/`SeriesDetailRead` on top of `MediaRead`."""
+
+    remote_path: str
+    language_profile_name: str | None = None
+    target_languages: list[str] = []
+    missing_subtitles_count: int
+
+
+class MovieDetailRead(MovieRead, MediaDetailRead):
+    files: list[MediaFileRead]
+
+
+class EpisodeRead(BaseModel):
+    season_number: int
+    episode_number: int
+    title: str
+    media_file: MediaFileRead | None = None
+
+
+class SeriesDetailRead(SeriesRead, MediaDetailRead):
+    episodes: list[EpisodeRead]
+    episodes_unavailable: bool = False

@@ -28,7 +28,7 @@ def _metadata_by_key(session: Session, key_column) -> dict[int, MediaMetadata]:
     return {getattr(row, key_column.key): row for row in rows}
 
 
-def _metadata_fields(metadata: MediaMetadata | None) -> dict:
+def metadata_fields(metadata: MediaMetadata | None) -> dict:
     if metadata is None:
         return {"overview": None, "poster_url": None, "year": None, "imdb_rating": None}
     return {
@@ -46,7 +46,7 @@ def _movie_read(movie: Movie, metadata: MediaMetadata | None) -> MovieRead:
         monitored=movie.monitored,
         status=movie.status,
         quality_profile_name=movie.quality_profile_name,
-        **_metadata_fields(metadata),
+        **metadata_fields(metadata),
     )
 
 
@@ -59,5 +59,5 @@ def _series_read(series: Series, metadata: MediaMetadata | None) -> SeriesRead:
         quality_profile_name=series.quality_profile_name,
         episode_count=series.episode_count,
         episode_file_count=series.episode_file_count,
-        **_metadata_fields(metadata),
+        **metadata_fields(metadata),
     )

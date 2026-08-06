@@ -10,5 +10,5 @@
 - [legendarr media-library deferred follow-ups](legendarr-media-library-deferred-followups.md) — PR #12 triage leftovers: Windows path mapping, minor form gaps (DB-cascade item resolved 2026-07-20)
 - [legendarr language profile provider removal](legendarr-language-profile-provider-removal.md) — translation_provider was removed from LanguageProfile; provider selection is a separate future feature
 - [legendarr OpenSubtitles search options kept despite YAGNI flag](legendarr-opensubtitles-search-options-kept.md) — use_hash/include_ai_translated/include_machine_translated unused but deliberately kept, confirmed 2026-07-22
-- [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — /media/series, /media/movies are stub pages; sync works but never shows there, confirmed 2026-08-01
+- [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — RESOLVED 2026-08-01 by PR #25; kept as history only
 - [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/IMDb(OMDb) provider registration + fetch-on-sync, PR #24, merge policy and Radarr-has-no-tvdbId gap
