@@ -124,3 +124,17 @@ new FK column on `subtitleproviderconfig` — SQLite can't `ALTER` a constraint 
 gotcha as `35527f37e677`/`3605a01d1781`. As with the provider registration bullet, actually
 routing a provider's HTTP requests through its assigned proxy is still deferred — this is
 registration-only, same increment shape as the rest of 0.3.0.
+
+**2026-08-06 — known gap added to the "Media library" bullet:** while adding a `data-tooltip`
+to the file-row "translate now" button and an "Actions" column header, confirmed the button's
+only visibility condition is `episode.media_file`/`file` existing (`series_detail.html`,
+`movie_detail.html`) — no check for a configured language profile, provider, or missing
+subtitles. Traced `POST /media/files/{id}/translate`
+(`modules/web/.../media_library/router.py` → `modules/backend/.../media_library/router.py:148`)
+and confirmed the backend endpoint only 404s if the `MediaFile` doesn't exist; it does not
+validate profile/provider/source-subtitle availability before enqueuing. When
+`translate_media_file()` (`subtitle_translation/translate_media_file.py`) skips internally
+(returns `skipped_reason`) for any of those reasons, the HTTP response is still the generic
+success ("Translation queued."), so the UI never surfaces that nothing happened. Recorded as a
+new known gap on the existing 0.3.0 "Media library" bullet — not a new milestone item, since the
+button/endpoint themselves are fully wired to real providers (not a stub).

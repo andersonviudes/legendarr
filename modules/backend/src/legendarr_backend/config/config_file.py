@@ -46,6 +46,8 @@ class AppConfigFile(BaseModel):
     subtitle_scan_retry_delay_seconds: float = 5.0
     subtitle_scan_max_instances: int = 1
     subtitle_scan_coalesce: bool = True
+    translate_retry_attempts: int = Field(default=3, ge=1)
+    translate_retry_delay_seconds: float = 5.0
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -78,6 +80,8 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "subtitle_scan_retry_delay_seconds": settings.subtitle_scan_retry_delay_seconds,
         "subtitle_scan_max_instances": settings.subtitle_scan_max_instances,
         "subtitle_scan_coalesce": settings.subtitle_scan_coalesce,
+        "translate_retry_attempts": settings.translate_retry_attempts,
+        "translate_retry_delay_seconds": settings.translate_retry_delay_seconds,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

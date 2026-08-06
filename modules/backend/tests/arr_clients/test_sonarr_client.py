@@ -75,3 +75,37 @@ def test_list_recent_import_ids_maps_series_ids(monkeypatch):
 
     assert sorted(ids) == [3, 5]
     assert requested_paths[0].startswith("/api/v3/history?eventType=3")
+
+
+def test_list_episodes_maps_response_to_episode_items(monkeypatch):
+    requested_paths = []
+
+    def _get_json(self, path):
+        requested_paths.append(path)
+        return [
+            {
+                "seasonNumber": 3,
+                "episodeNumber": 7,
+                "title": "The Dragon in Winter",
+                "hasFile": True,
+                "episodeFile": {"relativePath": "Season 03/House.S03E07.mkv"},
+            },
+            {
+                "seasonNumber": 3,
+                "episodeNumber": 8,
+                "title": "TBA",
+                "hasFile": False,
+            },
+        ]
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+    client = SonarrClient("http://sonarr.local", "api-key")
+
+    episodes = client.list_episodes(1)
+
+    assert requested_paths == ["/api/v3/episode?seriesId=1&includeEpisodeFile=true"]
+    assert episodes[0].season_number == 3
+    assert episodes[0].episode_number == 7
+    assert episodes[0].title == "The Dragon in Winter"
+    assert episodes[0].relative_path == "Season 03/House.S03E07.mkv"
+    assert episodes[1].relative_path is None

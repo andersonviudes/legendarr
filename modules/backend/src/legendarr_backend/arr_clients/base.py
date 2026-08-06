@@ -36,3 +36,18 @@ class MediaLibraryClient(Protocol):
     def list_recent_import_ids(self, since: datetime) -> list[int]: ...
 
     def close(self) -> None: ...
+
+
+@dataclass(frozen=True)
+class EpisodeItem:
+    """A single episode of a Sonarr series, as reported by its per-episode API.
+
+    `relative_path` is Sonarr's own `episodeFile.relativePath` (relative to the series'
+    root folder) — the same convention `MediaFile.relative_path` uses, so the two can be
+    matched directly. `None` when the episode has no file yet.
+    """
+
+    season_number: int
+    episode_number: int
+    title: str
+    relative_path: str | None

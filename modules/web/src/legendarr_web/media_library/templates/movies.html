@@ -11,7 +11,7 @@
 {% if movies %}
 <div class="poster-grid">
   {% for movie in movies %}
-  <article class="poster-card">
+  <a class="poster-card" href="/media/movies/{{ movie.id }}">
     <div class="poster-art">
       {% if movie.poster_url %}
       <img src="{{ movie.poster_url }}" alt="" loading="lazy">
@@ -24,7 +24,7 @@
       {{ "Monitored" if movie.monitored else "Unmonitored" }}
       {% if movie.quality_profile_name %} · {{ movie.quality_profile_name }}{% endif %}
     </p>
-  </article>
+  </a>
   {% endfor %}
 </div>
 {% else %}

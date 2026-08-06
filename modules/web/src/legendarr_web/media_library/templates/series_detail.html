@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_badges %}
+{% block title %}legendarr · {{ series.title }}{% endblock %}
+{% block content %}
+{{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan") }}
+
+<div class="media-detail-header">
+  <div class="media-detail-poster">
+    <div class="poster-art">
+      {% if series.poster_url %}
+      <img src="{{ series.poster_url }}" alt="" loading="lazy">
+      {% else %}
+      {{ icon("image-off") }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="media-detail-meta">
+    <hgroup>
+      <h1>{{ icon("tv") }} {{ series.title }}</h1>
+      <p>{{ series.remote_path }}</p>
+    </hgroup>
+    <p class="media-detail-facts">
+      <span>{{ series.episode_file_count }} / {{ series.episode_count }} episodes</span>
+      <span>{{ series.missing_subtitles_count }} missing subtitles</span>
+      <span>{{ "Monitored" if series.monitored else "Unmonitored" }}</span>
+      {% if series.status %}<span>{{ series.status }}</span>{% endif %}
+      {% if series.quality_profile_name %}<span>{{ series.quality_profile_name }}</span>{% endif %}
+    </p>
+    {% if series.language_profile_name %}
+    <p class="media-detail-facts">
+      <span>{{ series.language_profile_name }}</span>
+      {{ lang_pill_group(series.target_languages|join(",")) }}
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% if series.episodes %}
+{% for season_number, season_episodes in series.episodes|groupby("season_number")|reverse %}
+<details class="season-group" {% if loop.first %}open{% endif %}>
+  <summary>Season {{ season_number }}</summary>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Episode</th>
+        <th scope="col">Title</th>
+        <th scope="col">Subtitles</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for episode in season_episodes|sort(attribute="episode_number", reverse=True) %}
+      <tr>
+        <td>{{ episode.episode_number }}</td>
+        <td>{{ episode.title }}</td>
+        <td>
+          {% if episode.media_file %}
+          {{ subtitle_badges(episode.media_file.subtitles) }}
+          {% else %}
+          <span class="badge-empty">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if episode.media_file %}
+          <div class="file-row-actions">
+            <button
+              type="button"
+              class="app-icon-btn"
+              aria-label="Translate now"
+              data-tooltip="Translate now"
+              hx-post="/media/files/{{ episode.media_file.id }}/translate"
+              hx-target="#translate-result-{{ episode.media_file.id }}"
+              hx-swap="innerHTML"
+              hx-disabled-elt="this"
+            >{{ icon("send") }}</button>
+            <span id="translate-result-{{ episode.media_file.id }}"></span>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endfor %}
+{% elif series.episodes_unavailable %}
+{{ empty_state("Couldn't reach Sonarr — episodes are unavailable right now.") }}
+{% else %}
+{{ empty_state("No episodes found for this series yet.") }}
+{% endif %}
+{% endblock %}

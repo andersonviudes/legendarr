@@ -297,6 +297,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
 }
 
 .poster-art {
@@ -366,6 +368,55 @@ body {
 
 .episode-bar--continuing .episode-bar-fill {
   background-color: var(--lg-status-continuing-color);
+}
+
+/* === Media detail: movie/series detail page header, episode/file table === */
+.media-detail-header {
+  display: flex;
+  gap: 1.5rem;
+  margin-block: 0 2rem;
+}
+
+.media-detail-poster {
+  flex: 0 0 10rem;
+}
+
+.media-detail-poster .poster-art {
+  aspect-ratio: 2 / 3;
+}
+
+.media-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.media-detail-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+}
+
+.season-group {
+  margin-bottom: 0.75rem;
+}
+
+.season-group summary {
+  font-weight: 600;
+}
+
+.file-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.badge-empty {
+  color: var(--pico-muted-color);
 }
 
 /* === Friendly empty states (language profiles, library) === */
@@ -898,6 +949,7 @@ button.outline.contrast:is(:hover, :focus) {
 
 .app-icon-btn {
   all: unset;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;

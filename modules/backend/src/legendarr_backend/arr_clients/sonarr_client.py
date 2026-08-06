@@ -2,6 +2,7 @@ from datetime import datetime
 
 from legendarr_backend.arr_clients.base import (
     DOWNLOAD_FOLDER_IMPORTED_EVENT_TYPE,
+    EpisodeItem,
     MediaItem,
 )
 from legendarr_backend.http_client.client import DEFAULT_TIMEOUT, ProviderHttpClient
@@ -60,6 +61,27 @@ class SonarrClient:
                 if datetime.fromisoformat(record["date"]) >= since
             }
         )
+
+    def list_episodes(self, series_id: int) -> list[EpisodeItem]:
+        """Every episode of a series, with the video file's relative path when it exists.
+
+        `includeEpisodeFile=true` embeds each episode's `episodeFile` object (when
+        `hasFile` is true) instead of a separate `/api/v3/episodefile` request.
+        """
+        episodes = self._http.get_json(
+            f"/api/v3/episode?seriesId={series_id}&includeEpisodeFile=true"
+        )
+        return [
+            EpisodeItem(
+                season_number=episode["seasonNumber"],
+                episode_number=episode["episodeNumber"],
+                title=episode["title"],
+                relative_path=(episode.get("episodeFile") or {}).get("relativePath")
+                if episode.get("hasFile")
+                else None,
+            )
+            for episode in episodes
+        ]
 
     def system_status(self) -> dict:
         return self._http.get_json("/api/v3/system/status")

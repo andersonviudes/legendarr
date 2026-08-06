@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_badges %}
+{% block title %}legendarr · {{ movie.title }}{% endblock %}
+{% block content %}
+{{ media_detail_toolbar("/media/movies/" ~ movie.id ~ "/scan") }}
+
+<div class="media-detail-header">
+  <div class="media-detail-poster">
+    <div class="poster-art">
+      {% if movie.poster_url %}
+      <img src="{{ movie.poster_url }}" alt="" loading="lazy">
+      {% else %}
+      {{ icon("image-off") }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="media-detail-meta">
+    <hgroup>
+      <h1>{{ icon("clapperboard") }} {{ movie.title }}</h1>
+      <p>{{ movie.remote_path }}</p>
+    </hgroup>
+    <p class="media-detail-facts">
+      <span>{{ movie.files|length }} file{{ "s" if movie.files|length != 1 else "" }}</span>
+      <span>{{ movie.missing_subtitles_count }} missing subtitles</span>
+      <span>{{ "Monitored" if movie.monitored else "Unmonitored" }}</span>
+      {% if movie.status %}<span>{{ movie.status }}</span>{% endif %}
+      {% if movie.quality_profile_name %}<span>{{ movie.quality_profile_name }}</span>{% endif %}
+    </p>
+    {% if movie.language_profile_name %}
+    <p class="media-detail-facts">
+      <span>{{ movie.language_profile_name }}</span>
+      {{ lang_pill_group(movie.target_languages|join(",")) }}
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% if movie.files %}
+<table>
+  <thead>
+    <tr>
+      <th scope="col">File</th>
+      <th scope="col">Subtitles</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for file in movie.files %}
+    <tr>
+      <td>{{ file.relative_path }}</td>
+      <td>{{ subtitle_badges(file.subtitles) }}</td>
+      <td>
+        <div class="file-row-actions">
+          <button
+            type="button"
+            class="app-icon-btn"
+            aria-label="Translate now"
+            data-tooltip="Translate now"
+            hx-post="/media/files/{{ file.id }}/translate"
+            hx-target="#translate-result-{{ file.id }}"
+            hx-swap="innerHTML"
+            hx-disabled-elt="this"
+          >{{ icon("send") }}</button>
+          <span id="translate-result-{{ file.id }}"></span>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ empty_state("No files found on disk for this movie yet.") }}
+{% endif %}
+{% endblock %}

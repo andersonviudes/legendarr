@@ -5,6 +5,9 @@ from pathlib import Path
 from sqlmodel import Session, select
 
 from legendarr_backend.language_profiles.models import LanguageProfile
+from legendarr_backend.language_profiles.resolve_effective_profile import (
+    resolve_effective_profile,
+)
 from legendarr_backend.media_library.locate import resolve_media_file_owner
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -117,9 +120,7 @@ def _resolve_language_profile(session: Session, media_file: MediaFile) -> Langua
     item = resolve_media_file_owner(session, media_file)
     if item is None:
         return None
-    if item.language_profile_id is not None:
-        return session.get(LanguageProfile, item.language_profile_id)
-    return session.exec(select(LanguageProfile).where(LanguageProfile.is_default)).first()
+    return resolve_effective_profile(session, item)
 
 
 def _pick_source_subtitle(
