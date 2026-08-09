@@ -43,7 +43,7 @@ ad-hoc plumbing decided along the way.*
   `RadarrClient`/`SonarrClient`-style integrations, so later subtitle-provider and
   translation-API clients follow one shape instead of each being bespoke.
 - [x] Shared testing conventions (fixtures, test database setup) across
-  `modules/<module>/tests/<slice>/`, and structured logging conventions in
+  `src/<module>/tests/<slice>/`, and structured logging conventions in
   `logging/setup.py` for how slices report errors up to the orchestrators built
   starting 0.3.0.
 

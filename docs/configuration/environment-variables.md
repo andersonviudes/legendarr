@@ -28,5 +28,5 @@ All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.con
     on an existing installation whose file predates it (e.g. upgrading from a version that
     only tracked `database_url`), that one field is backfilled from its env var once and the
     file is rewritten — every other field already in the file is left untouched. Database
-    schema changes are applied via Alembic migrations (`modules/backend/db/migrations/`), run
+    schema changes are applied via Alembic migrations (`src/backend/db/migrations/`), run
     automatically at startup.

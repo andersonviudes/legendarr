@@ -5,14 +5,14 @@ packaged into a single Docker image with one shared `uv.lock`.
 
 ## Modules
 
-- **`modules/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr connection
+- **`src/backend`** (`legendarr_backend`) — domain logic: Radarr/Sonarr connection
   management, media library sync, subtitle discovery, subtitle translation, language
   profiles, the scheduler that runs the media sync periodically, and an HTTP API (`api.py`)
   exposing that domain logic — currently `/language-profiles/*` and `/arr-services/*`.
-- **`modules/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX): templates,
+- **`src/web`** (`legendarr_web`) — the web UI (FastAPI + Jinja2/HTMX): templates,
   static/JS, and per-slice "services" that call `legendarr_backend`'s API over HTTP
   (`httpx`). It has no Python dependency on `legendarr_backend` and never imports its code.
-- **`modules/bootstrap`** (`legendarr_bootstrap`) — the entrypoint that brings the other two
+- **`src/bootstrap`** (`legendarr_bootstrap`) — the entrypoint that brings the other two
   modules up together: it mounts `legendarr_backend`'s API app at `/api` and
   `legendarr_web`'s app at `/` behind one FastAPI instance, and owns the single `lifespan`
   that starts/stops the backend's scheduler. This is `make run` / the Docker `CMD` — a
@@ -24,7 +24,7 @@ Inside each module, code is organized by **business capability**, not technical 
 Top-level folders are named after what the code *does*, not what kind of code it is:
 
 ```text
-modules/backend/src/legendarr_backend/
+src/backend/src/legendarr_backend/
 ├── arr_services/            # Radarr/Sonarr connection CRUD + connection testing
 ├── language_profiles/       # language profile model + management
 ├── media_library/           # media library sync (business logic)
@@ -45,7 +45,7 @@ modules/backend/src/legendarr_backend/
 ├── security/                # secrets encryption at rest (Fernet key, encrypt/decrypt, EncryptedString column type)
 └── api.py                   # the internal HTTP API app
 
-modules/web/src/legendarr_web/
+src/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
 ├── arr_services/            # /settings/arr-services/ routes (CRUD, test, enable/disable)
 ├── subtitle_acquisition/    # /settings/subtitle-providers/ routes (enable, credentials, test)

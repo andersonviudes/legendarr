@@ -29,8 +29,8 @@ imperative summary.
 
 Follow the existing [Screaming Architecture + Vertical Slice](architecture/overview.md)
 layout: new features get their own top-level slice folder named after the business
-capability, inside the module that owns them (`modules/backend` for domain logic,
-`modules/web` for UI/routes).
+capability, inside the module that owns them (`src/backend` for domain logic,
+`src/web` for UI/routes).
 
 ## Documentation
 
