@@ -1,8 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
-from legendarr_backend.subtitle_translation.models import TRANSLATION_PROVIDER_KINDS
+from legendarr_backend.subtitle_translation.models import TranslationProviderKind
 
 
 class TaskSettings(BaseModel):
@@ -38,4 +36,4 @@ class TranslationDefaultsSettings(BaseModel):
     is never a valid choice.
     """
 
-    default_translation_provider: Literal[*TRANSLATION_PROVIDER_KINDS] | None = None
+    default_translation_provider: TranslationProviderKind | None = None

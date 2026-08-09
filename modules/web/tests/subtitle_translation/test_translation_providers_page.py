@@ -281,6 +281,36 @@ def test_set_default_rerenders_grid_with_new_default(stub_backend_client):
     assert "/settings/translation-providers/1/default" in body
 
 
+def test_set_default_rerenders_grid_unchanged_on_backend_error(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and request.url.path == "/settings/translation-defaults":
+            return httpx.Response(500)
+        if request.url.path == "/translation-providers/2":
+            return httpx.Response(200, json=_provider(id=2, kind="libretranslate"))
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": "deepl"})
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="deepl", enabled=True),
+                _provider(id=2, kind="libretranslate", enabled=True),
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/translation-providers/2/default")
+
+    assert response.status_code == 200
+    body = response.text
+    assert "Default" in body
+    assert "/settings/translation-providers/1/default" not in body
+    assert "/settings/translation-providers/2/default" in body
+
+
 def test_set_default_missing_provider_redirects_to_list(stub_backend_client):
     app = create_app()
 

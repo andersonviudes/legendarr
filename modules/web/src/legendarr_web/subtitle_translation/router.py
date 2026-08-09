@@ -128,14 +128,21 @@ async def set_default_translation_provider(
         if exc.response.status_code != 404:
             raise
         return RedirectResponse("/settings/translation-providers/", status_code=303)
-    await service.set_default_translation_provider(client, provider["kind"])
+    try:
+        await service.set_default_translation_provider(client, provider["kind"])
+        default_translation_provider = provider["kind"]
+    except httpx.HTTPStatusError:
+        # Backend refused the change — re-render the grid with whatever the default
+        # actually is now, so the UI doesn't drift out of sync with what's stored.
+        defaults = await service.get_translation_defaults(client)
+        default_translation_provider = defaults["default_translation_provider"]
     providers = await service.list_translation_providers(client)
     return templates.TemplateResponse(
         request,
         "_provider_grid.html",
         {
             "providers": [_with_display(p) for p in providers],
-            "default_translation_provider": provider["kind"],
+            "default_translation_provider": default_translation_provider,
         },
     )
 
