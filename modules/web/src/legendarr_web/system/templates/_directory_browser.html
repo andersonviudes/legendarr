@@ -1,0 +1,42 @@
+{% if error %}
+<p class="dir-browser-error">{{ error }}</p>
+{% else %}
+<nav class="dir-browser-breadcrumb" aria-label="Path">
+  {% for crumb in breadcrumbs %}
+  <button
+    type="button"
+    class="dir-browser-crumb"
+    hx-get="/system/directories/browse"
+    hx-vals='{"path": "{{ crumb.path }}", "target": "{{ target }}"}'
+    hx-target="#dir-browser-content"
+    hx-swap="innerHTML"
+  >{{ crumb.name }}</button>
+  {% if not loop.last %}<span class="dir-browser-crumb-sep">/</span>{% endif %}
+  {% endfor %}
+</nav>
+<ul class="dir-browser-list">
+  {% if not directories %}
+  <li class="dir-browser-empty">No subdirectories.</li>
+  {% endif %}
+  {% for directory in directories %}
+  <li>
+    <button
+      type="button"
+      class="dir-browser-row"
+      hx-get="/system/directories/browse"
+      hx-vals='{"path": "{{ directory.path }}", "target": "{{ target }}"}'
+      hx-target="#dir-browser-content"
+      hx-swap="innerHTML"
+    >{{ icon("folder") }}<span>{{ directory.name }}</span></button>
+  </li>
+  {% endfor %}
+</ul>
+<div class="dir-browser-actions">
+  <button
+    type="button"
+    class="dir-browser-select"
+    data-path="{{ current_path }}"
+    data-target="{{ target }}"
+  >Select this directory</button>
+</div>
+{% endif %}

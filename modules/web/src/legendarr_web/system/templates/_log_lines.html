@@ -1,0 +1,10 @@
+{% from "macros.html" import empty_state %}
+{% if lines %}
+<ul class="log-line-list">
+  {% for line in lines %}
+  <li class="log-line log-line--{{ line.level|lower }}">{{ line.text }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+{{ empty_state("No log lines yet.") }}
+{% endif %}

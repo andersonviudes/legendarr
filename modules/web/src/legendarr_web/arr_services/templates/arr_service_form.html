@@ -70,15 +70,35 @@
     {{ field("remote_path_prefix", "Remote Path Prefix",
              value=((service.remote_path_prefix or "") if service else ""),
              placeholder="/movies") }}
-    {{ field("local_path_prefix", "Local Path Prefix",
-             value=((service.local_path_prefix or "") if service else ""),
-             placeholder="/media/movies") }}
+    <div class="field-with-browse">
+      {{ field("local_path_prefix", "Local Path Prefix",
+               value=((service.local_path_prefix or "") if service else ""),
+               placeholder="/media/movies") }}
+      <button
+        type="button"
+        class="field-browse-btn"
+        data-dir-browser-open
+        hx-get="/system/directories/browse"
+        hx-vals='{"target": "local_path_prefix"}'
+        hx-target="#dir-browser-content"
+        hx-swap="innerHTML"
+      >{{ icon("folder") }}<span>Browse</span></button>
+    </div>
   </fieldset>
 
   <div id="test-result" aria-live="polite"></div>
   <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
 </form>
+
+<dialog id="dir-browser-modal" class="dir-browser-modal">
+  <header class="dir-browser-modal-header">
+    <p>Choose a directory</p>
+    <button type="button" class="dir-browser-close" data-dir-browser-close aria-label="Close">&times;</button>
+  </header>
+  <div id="dir-browser-content"></div>
+</dialog>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/arr-service-form.js" defer></script>
+<script src="/static/js/directory-browser.js" defer></script>
 {% endblock %}

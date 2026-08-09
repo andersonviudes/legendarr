@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Request
+import httpx
+from fastapi import APIRouter, Depends, Request
 
+from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.system import service
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/system")
@@ -7,5 +10,66 @@ templates = get_templates("system")
 
 
 @router.get("/")
-def show_system(request: Request):
-    return templates.TemplateResponse(request, "system.html", {})
+async def show_system(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    lines = await service.get_recent_logs(client)
+    return templates.TemplateResponse(request, "system.html", {"lines": lines})
+
+
+@router.get("/logs")
+async def get_logs(
+    request: Request,
+    level: str = "",
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    lines = await service.get_recent_logs(client, level or None)
+    return templates.TemplateResponse(request, "_log_lines.html", {"lines": lines})
+
+
+@router.get("/directories/browse")
+async def browse_directories(
+    request: Request,
+    target: str,
+    path: str = "/",
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        listing = await service.browse_directory(client, path)
+    except httpx.HTTPStatusError as exc:
+        return templates.TemplateResponse(
+            request,
+            "_directory_browser.html",
+            {
+                "current_path": None,
+                "breadcrumbs": [],
+                "directories": [],
+                "target": target,
+                "error": error_detail(exc),
+            },
+            status_code=exc.response.status_code,
+        )
+    return templates.TemplateResponse(
+        request,
+        "_directory_browser.html",
+        {
+            "current_path": listing["path"],
+            "breadcrumbs": _breadcrumbs(listing["path"]),
+            "directories": _directory_rows(listing["path"], listing["directories"]),
+            "target": target,
+        },
+    )
+
+
+def _breadcrumbs(path: str) -> list[dict[str, str]]:
+    """Turn an absolute path into clickable segments, root first."""
+    segments = [segment for segment in path.split("/") if segment]
+    breadcrumbs = [{"name": "/", "path": "/"}]
+    current = ""
+    for segment in segments:
+        current += f"/{segment}"
+        breadcrumbs.append({"name": segment, "path": current})
+    return breadcrumbs
+
+
+def _directory_rows(base_path: str, names: list[str]) -> list[dict[str, str]]:
+    """Pair each subdirectory name with its full path, for the browser's row links."""
+    return [{"name": name, "path": f"{base_path.rstrip('/')}/{name}"} for name in names]
