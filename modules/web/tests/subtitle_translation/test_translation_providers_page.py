@@ -4,6 +4,8 @@ from legendarr_web.app import create_app
 
 
 def _empty_providers_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/settings/translation-defaults":
+        return httpx.Response(200, json={"default_translation_provider": None})
     return httpx.Response(200, json=[])
 
 
@@ -35,6 +37,8 @@ def test_page_renders_provider_cards(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
         return httpx.Response(
             200,
             json=[
@@ -61,6 +65,8 @@ def test_page_hides_toggle_for_unconfigured_provider(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
         return httpx.Response(200, json=[_provider(id=1, kind="deepl", is_configured=False)])
 
     stub_backend_client(app, handler=handler)
@@ -130,6 +136,8 @@ def test_update_provider_redirects_with_success_toast(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "PATCH" and request.url.path == "/translation-providers/1":
             return httpx.Response(200, json=_provider(id=1, kind="deepl"))
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
         return httpx.Response(200, json=[])
 
     stub_backend_client(app, handler=handler)
@@ -189,12 +197,104 @@ def test_edit_missing_provider_redirects_to_list(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/translation-providers/1":
             return httpx.Response(404, json={"detail": "not found"})
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
         return httpx.Response(200, json=[])
 
     stub_backend_client(app, handler=handler)
 
     with TestClient(app) as client:
         response = client.get("/settings/translation-providers/1/edit")
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/translation-providers/"
+
+
+def test_page_shows_default_badge_and_hides_its_own_set_default_button(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": "deepl"})
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="deepl", enabled=True),
+                _provider(id=2, kind="libretranslate", enabled=False),
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/")
+
+    assert response.status_code == 200
+    body = response.text
+    assert "Default" in body
+    assert "/settings/translation-providers/1/default" not in body
+    assert "/settings/translation-providers/2/default" in body
+
+
+def test_page_hides_set_default_button_for_unconfigured_provider(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
+        return httpx.Response(200, json=[_provider(id=1, kind="deepl", is_configured=False)])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/")
+
+    assert response.status_code == 200
+    assert "Set as default" not in response.text
+
+
+def test_set_default_rerenders_grid_with_new_default(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": "libretranslate"})
+        if request.url.path == "/translation-providers/2":
+            return httpx.Response(200, json=_provider(id=2, kind="libretranslate"))
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="deepl", enabled=True),
+                _provider(id=2, kind="libretranslate", enabled=True),
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/translation-providers/2/default")
+
+    assert response.status_code == 200
+    body = response.text
+    assert "Default" in body
+    assert "/settings/translation-providers/2/default" not in body
+    assert "/settings/translation-providers/1/default" in body
+
+
+def test_set_default_missing_provider_redirects_to_list(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/translation-providers/1":
+            return httpx.Response(404, json={"detail": "not found"})
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/translation-providers/1/default")
 
     assert response.status_code == 200
     assert response.request.url.path == "/settings/translation-providers/"

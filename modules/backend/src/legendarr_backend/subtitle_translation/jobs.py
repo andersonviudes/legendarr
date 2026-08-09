@@ -19,6 +19,7 @@ def enqueue_full_translation_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    default_translation_provider: str | None = None,
 ) -> int:
     """Enqueue a translation run for every known `MediaFile` on the bulk queue.
 
@@ -34,6 +35,7 @@ def enqueue_full_translation_scan(
             JobQueue.TRANSLATE_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
+            default_translation_provider=default_translation_provider,
         )
     return len(media_file_ids)
 
@@ -45,6 +47,7 @@ def enqueue_translation(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    default_translation_provider: str | None = None,
 ) -> None:
     """Enqueue an ad-hoc translation of one `MediaFile` for immediate execution.
 
@@ -66,7 +69,9 @@ def enqueue_translation(
                     media_file_id,
                 )
                 return
-            result = translate_media_file(session, media_file, video_path)
+            result = translate_media_file(
+                session, media_file, video_path, default_translation_provider
+            )
             session.commit()
             logger.info("translation finished for media file %d: %s", media_file_id, result)
 

@@ -166,5 +166,6 @@ def trigger_file_translation(
         JobQueue.TRANSLATE,
         retry_attempts=config.translate_retry_attempts,
         retry_delay_seconds=config.translate_retry_delay_seconds,
+        default_translation_provider=config.default_translation_provider,
     )
     return {"status": "enqueued"}

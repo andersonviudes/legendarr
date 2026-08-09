@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Request
 
 from legendarr_backend.config.settings import get_settings
-from legendarr_backend.settings.manage_settings import get_task_settings, update_task_settings
-from legendarr_backend.settings.schemas import TaskSettings
+from legendarr_backend.settings.manage_settings import (
+    get_task_settings,
+    get_translation_defaults,
+    update_task_settings,
+    update_translation_defaults,
+)
+from legendarr_backend.settings.schemas import TaskSettings, TranslationDefaultsSettings
 
 router = APIRouter(prefix="/settings")
 
@@ -22,3 +27,13 @@ def save_task_settings(update: TaskSettings, request: Request) -> TaskSettings:
     """
     scheduler = getattr(request.app.state, "scheduler", None)
     return update_task_settings(get_settings(), update, scheduler)
+
+
+@router.get("/translation-defaults")
+def read_translation_defaults() -> TranslationDefaultsSettings:
+    return get_translation_defaults(get_settings())
+
+
+@router.put("/translation-defaults")
+def save_translation_defaults(update: TranslationDefaultsSettings) -> TranslationDefaultsSettings:
+    return update_translation_defaults(get_settings(), update)

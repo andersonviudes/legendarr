@@ -37,10 +37,15 @@ async def show_translation_providers(
     request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
     providers = await service.list_translation_providers(client)
+    defaults = await service.get_translation_defaults(client)
     return templates.TemplateResponse(
         request,
         "translation_providers.html",
-        {"providers": [_with_display(p) for p in providers], "active_tab": "translation"},
+        {
+            "providers": [_with_display(p) for p in providers],
+            "default_translation_provider": defaults["default_translation_provider"],
+            "active_tab": "translation",
+        },
     )
 
 
@@ -108,6 +113,30 @@ async def toggle_translation_provider_enabled(
         request,
         "_provider_status.html",
         {"provider": updated, "toggle_url_prefix": "/settings/translation-providers/"},
+    )
+
+
+@router.post("/{provider_id}/default")
+async def set_default_translation_provider(
+    request: Request,
+    provider_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        provider = await service.get_translation_provider(client, provider_id)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
+        return RedirectResponse("/settings/translation-providers/", status_code=303)
+    await service.set_default_translation_provider(client, provider["kind"])
+    providers = await service.list_translation_providers(client)
+    return templates.TemplateResponse(
+        request,
+        "_provider_grid.html",
+        {
+            "providers": [_with_display(p) for p in providers],
+            "default_translation_provider": provider["kind"],
+        },
     )
 
 

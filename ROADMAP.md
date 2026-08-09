@@ -180,9 +180,14 @@ library folders or recent logs, all from a Settings page, no shell access needed
   of the three scheduled tasks (library sync, library scan, history poll) editable from the
   web UI, persisted to `config.yaml` and re-scheduled on the running scheduler — no restart.
   Pulled forward from this milestone to land with the 0.2.0 scan/webhook/poll knobs.
-- [ ] **Settings** — Default translation provider/language editable from the web UI and
-  persisted, on top of the config foundation from 0.1.0. Translation provider
-  credentials are already encrypted at rest, from their 0.3.0 registration screen onward.
+- [x] **Settings** — Default translation provider editable from the web UI and persisted,
+  on top of the config foundation from 0.1.0: a single `default_translation_provider` field
+  in `config.yaml`, a "Set as default" action per card on the Translation Providers page, and
+  `resolve_provider_chain` biasing its fallback order toward it when it's enabled and
+  credentialed. Translation provider credentials are already encrypted at rest, from their
+  0.3.0 registration screen onward. The "default language" half of this bullet turned out to
+  already exist — `LanguageProfile.is_default`, its form checkbox, and the "Default" badge on
+  the list page shipped with the profile UI itself and needed no new work here.
 - [ ] **Settings** — In-app directory browser (to pick library paths without typing them blind)
   and a log viewer, so day-to-day operation doesn't require shelling into the container.
 

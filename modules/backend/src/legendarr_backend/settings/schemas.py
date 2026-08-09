@@ -1,4 +1,8 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+from legendarr_backend.subtitle_translation.models import TRANSLATION_PROVIDER_KINDS
 
 
 class TaskSettings(BaseModel):
@@ -24,3 +28,14 @@ class TaskSettings(BaseModel):
     history_poll_retry_delay_seconds: float = Field(ge=0)
     history_poll_max_instances: int = Field(ge=1)
     history_poll_coalesce: bool
+
+
+class TranslationDefaultsSettings(BaseModel):
+    """The one translation-provider default `resolve_provider_chain` is biased toward.
+
+    `None` means no preference (existing `id`-ascending chain order). A non-`None` value
+    must be one of the fixed `TRANSLATION_PROVIDER_KINDS` — `echo` (dev-only, no DB row)
+    is never a valid choice.
+    """
+
+    default_translation_provider: Literal[*TRANSLATION_PROVIDER_KINDS] | None = None

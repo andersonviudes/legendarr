@@ -48,6 +48,11 @@ class AppConfigFile(BaseModel):
     subtitle_scan_coalesce: bool = True
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = 5.0
+    # `None` means "no preference" — `resolve_provider_chain` falls back to its existing
+    # id-ascending order. Validated against `TRANSLATION_PROVIDER_KINDS` at the Settings
+    # schema boundary (`settings/schemas.py`), not here — this file stays a plain mirror of
+    # what's on disk.
+    default_translation_provider: str | None = None
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -82,6 +87,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "subtitle_scan_coalesce": settings.subtitle_scan_coalesce,
         "translate_retry_attempts": settings.translate_retry_attempts,
         "translate_retry_delay_seconds": settings.translate_retry_delay_seconds,
+        "default_translation_provider": settings.default_translation_provider,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

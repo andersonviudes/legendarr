@@ -136,7 +136,7 @@ def test_translate_media_file_writes_translated_srt_and_reconciles_subtitle_row(
     monkeypatch.setattr(
         translate_media_file_module,
         "resolve_provider_chain",
-        lambda session: [_UppercaseProvider()],
+        lambda session, default_kind=None: [_UppercaseProvider()],
     )
 
     result = translate_media_file(in_memory_session, media_file, video)
@@ -156,7 +156,7 @@ def test_translate_media_file_falls_back_to_next_provider_on_failure(
     monkeypatch.setattr(
         translate_media_file_module,
         "resolve_provider_chain",
-        lambda session: [_FailingProvider(), _UppercaseProvider()],
+        lambda session, default_kind=None: [_FailingProvider(), _UppercaseProvider()],
     )
 
     result = translate_media_file(in_memory_session, media_file, video)
@@ -177,7 +177,7 @@ def test_translate_media_file_skips_target_language_already_translated(
     monkeypatch.setattr(
         translate_media_file_module,
         "resolve_provider_chain",
-        lambda session: [_UppercaseProvider()],
+        lambda session, default_kind=None: [_UppercaseProvider()],
     )
 
     result = translate_media_file(in_memory_session, media_file, video)

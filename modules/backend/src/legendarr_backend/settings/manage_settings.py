@@ -12,7 +12,7 @@ from legendarr_backend.media_library.jobs import (
     register_scan_job,
     register_sync_job,
 )
-from legendarr_backend.settings.schemas import TaskSettings
+from legendarr_backend.settings.schemas import TaskSettings, TranslationDefaultsSettings
 
 logger = logging.getLogger(__name__)
 
@@ -46,3 +46,21 @@ def update_task_settings(
     else:
         logger.info("task settings updated (no running scheduler; applies on next start)")
     return TaskSettings.model_validate(config.model_dump())
+
+
+def get_translation_defaults(settings: Settings) -> TranslationDefaultsSettings:
+    """Read the current translation-provider default from `config.yaml` (fresh from disk)."""
+    config = load_or_create_config_file(settings)
+    return TranslationDefaultsSettings.model_validate(config.model_dump())
+
+
+def update_translation_defaults(
+    settings: Settings, update: TranslationDefaultsSettings
+) -> TranslationDefaultsSettings:
+    """Persist the translation-provider default to `config.yaml`.
+
+    No scheduler involvement (unlike task settings) — `resolve_provider_chain` reads it
+    fresh at each translation run, there's nothing to re-register.
+    """
+    config = update_config_file(settings, update.model_dump())
+    return TranslationDefaultsSettings.model_validate(config.model_dump())

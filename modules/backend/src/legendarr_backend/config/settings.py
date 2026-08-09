@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # needs.
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = Field(default=5.0)
+    default_translation_provider: str | None = Field(default=None)
 
     @property
     def resolved_database_url(self) -> str:
