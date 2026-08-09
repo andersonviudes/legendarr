@@ -65,3 +65,15 @@ class EpisodeRead(BaseModel):
 class SeriesDetailRead(SeriesRead, MediaDetailRead):
     episodes: list[EpisodeRead]
     episodes_unavailable: bool = False
+
+
+class WantedRead(BaseModel):
+    """One movie/series with at least one file still missing a target language —
+    the library-wide `/media/wanted` view and the dashboard's missing-subtitles count."""
+
+    id: int
+    kind: str
+    title: str
+    poster_url: str | None = None
+    missing_languages: list[str]
+    missing_files_count: int

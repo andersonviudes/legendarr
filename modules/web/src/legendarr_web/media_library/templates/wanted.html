@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state, lang_pill_group %}
+{% block title %}legendarr · Wanted{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ icon("search") }} Wanted</h1>
+  <p>{{ wanted|length }} item{{ "s" if wanted|length != 1 else "" }} still missing a target-language subtitle.</p>
+</hgroup>
+
+{% if wanted %}
+<div class="poster-grid">
+  {% for item in wanted %}
+  <a class="poster-card" href="/media/{{ 'movies' if item.kind == 'movie' else 'series' }}/{{ item.id }}">
+    <div class="poster-art">
+      {% if item.poster_url %}
+      <img src="{{ item.poster_url }}" alt="" loading="lazy">
+      {% else %}
+      {{ icon("clapperboard") if item.kind == "movie" else icon("tv") }}
+      {% endif %}
+    </div>
+    <p class="poster-title">{{ item.title }}</p>
+    <p class="poster-meta">{{ lang_pill_group(item.missing_languages|join(",")) }}</p>
+    <p class="poster-meta">
+      {{ item.missing_files_count }} file{{ "s" if item.missing_files_count != 1 else "" }} missing
+    </p>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+{{ empty_state("Nothing wanted — every target language is covered.") }}
+{% endif %}
+{% endblock %}

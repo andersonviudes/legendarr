@@ -27,5 +27,9 @@
     <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
     <p class="stat-label">Sync interval</p>
   </article>
+  <a class="stat-card" href="/media/wanted">
+    <p class="stat-value">{{ missing_subtitles_count }}</p>
+    <p class="stat-label">Missing subtitles</p>
+  </a>
 </div>
 {% endblock %}

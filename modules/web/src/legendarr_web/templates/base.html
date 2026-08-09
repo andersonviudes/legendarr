@@ -36,10 +36,10 @@
           <button
             type="button"
             class="app-nav-toggle"
-            aria-expanded="{{ 'true' if request.url.path.startswith('/media') else 'false' }}"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/media/movies') or request.url.path.startswith('/media/series') else 'false' }}"
             aria-controls="nav-library"
           >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
-          <ul id="nav-library" class="app-nav-submenu" {% if not request.url.path.startswith("/media") %}hidden{% endif %}>
+          <ul id="nav-library" class="app-nav-submenu" {% if not (request.url.path.startswith("/media/movies") or request.url.path.startswith("/media/series")) %}hidden{% endif %}>
             <li>
               <a
                 href="/media/movies"
@@ -50,6 +50,26 @@
               <a
                 href="/media/series"
                 {% if request.url.path.startswith("/media/series") %}aria-current="page"{% endif %}
+              >{{ icon("tv") }}<span>Series</span></a>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/media/wanted') else 'false' }}"
+            aria-controls="nav-wanted"
+          >{{ icon("search") }}<span>Wanted</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-wanted" class="app-nav-submenu" {% if not request.url.path.startswith("/media/wanted") %}hidden{% endif %}>
+            <li>
+              <a
+                href="/media/wanted/movies"
+                {% if request.url.path.startswith("/media/wanted/movies") %}aria-current="page"{% endif %}
+              >{{ icon("clapperboard") }}<span>Movies</span></a>
+            </li>
+            <li>
+              <a
+                href="/media/wanted/series"
+                {% if request.url.path.startswith("/media/wanted/series") %}aria-current="page"{% endif %}
               >{{ icon("tv") }}<span>Series</span></a>
             </li>
           </ul>

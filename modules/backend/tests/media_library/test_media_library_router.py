@@ -98,6 +98,15 @@ def test_get_movie_returns_404_when_missing(isolated_database):
     assert response.status_code == 404
 
 
+def test_get_wanted_returns_empty_list_with_nothing_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        _seed_movie()
+        response = client.get("/media/wanted")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_get_movie_returns_detail_with_files(isolated_database):
     with TestClient(create_api_app()) as client:
         movie = _seed_movie()

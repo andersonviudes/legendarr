@@ -43,7 +43,7 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
         remote_path=movie.remote_path,
         language_profile_name=profile_name,
         target_languages=target_languages,
-        missing_subtitles_count=_missing_subtitles_count(files),
+        missing_subtitles_count=_missing_subtitles_count(files, target_languages),
         files=files,
     )
 
@@ -75,7 +75,7 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
         remote_path=series.remote_path,
         language_profile_name=profile_name,
         target_languages=target_languages,
-        missing_subtitles_count=_missing_subtitles_count(files),
+        missing_subtitles_count=_missing_subtitles_count(files, target_languages),
         episodes=episodes,
         episodes_unavailable=episodes_unavailable,
     )
@@ -143,5 +143,15 @@ def _media_file_reads(session: Session, media_files: list[MediaFile]) -> list[Me
     ]
 
 
-def _missing_subtitles_count(files: list[MediaFileRead]) -> int:
-    return sum(1 for file in files if not file.subtitles)
+def _missing_subtitles_count(files: list[MediaFileRead], target_languages: list[str]) -> int:
+    """Files still missing at least one of the profile's target languages — same
+    lowercase-compare convention `translate_media_file` uses, kept local to the
+    file/profile data this page already fetched instead of re-querying the DB."""
+    return sum(
+        1
+        for file in files
+        if any(
+            language.lower() not in {subtitle.language for subtitle in file.subtitles}
+            for language in target_languages
+        )
+    )
