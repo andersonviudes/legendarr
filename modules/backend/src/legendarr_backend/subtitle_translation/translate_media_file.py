@@ -40,7 +40,10 @@ class TranslationResult:
 
 
 def translate_media_file(
-    session: Session, media_file: MediaFile, video_path: Path
+    session: Session,
+    media_file: MediaFile,
+    video_path: Path,
+    default_translation_provider: str | None = None,
 ) -> TranslationResult:
     """Translate one `MediaFile` into every target language its `LanguageProfile` is
     still missing, from an already-discovered external subtitle in one of its source
@@ -48,6 +51,9 @@ def translate_media_file(
 
     No acquisition fallback: if no external subtitle exists yet in a source language,
     this is a no-op — that lands with real `SubtitleProvider` search/download at 0.6.0+.
+
+    `default_translation_provider` is the Settings-configured default (see
+    `resolve_provider_chain`); passed through unchanged, `None` means no preference.
     """
     profile = _resolve_language_profile(session, media_file)
     if profile is None:
@@ -85,7 +91,7 @@ def translate_media_file(
     if not missing_targets:
         return TranslationResult(translated_languages=[])
 
-    chain = resolve_provider_chain(session)
+    chain = resolve_provider_chain(session, default_translation_provider)
     if not chain:
         logger.info(
             "translation skipped: media file %d has no translation provider configured",

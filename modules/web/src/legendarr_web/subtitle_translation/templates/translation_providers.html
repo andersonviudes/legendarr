@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "macros.html" import service_status %}
 {% block title %}legendarr · Providers{% endblock %}
 {% block content %}
 <h1>{{ icon("captions") }} Providers</h1>
@@ -11,28 +10,5 @@
   source text unchanged) keeps working regardless, for development.
 </p>
 
-<div class="service-grid">
-  {% for provider in providers %}
-  <article class="service-card">
-    <header class="service-card-header">
-      <p class="service-card-name">{{ provider.label }}</p>
-      {% if provider.is_configured %}
-      {{ service_status(provider, "/settings/translation-providers/" ~ provider.id ~ "/enabled", noun="provider") }}
-      {% else %}
-      <span class="service-card-status is-disabled">Not configured</span>
-      {% endif %}
-    </header>
-    <p class="service-card-address">
-      {% if provider.credential_fields %}
-      Requires credentials
-      {% else %}
-      Run "Test connection" to enable
-      {% endif %}
-    </p>
-    <div class="service-card-actions">
-      <a href="/settings/translation-providers/{{ provider.id }}/edit" role="button" class="outline">Edit</a>
-    </div>
-  </article>
-  {% endfor %}
-</div>
+{% include "_provider_grid.html" %}
 {% endblock %}
