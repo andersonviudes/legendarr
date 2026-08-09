@@ -188,7 +188,7 @@ library folders or recent logs, all from a Settings page, no shell access needed
   0.3.0 registration screen onward. The "default language" half of this bullet turned out to
   already exist — `LanguageProfile.is_default`, its form checkbox, and the "Default" badge on
   the list page shipped with the profile UI itself and needed no new work here.
-- [ ] **Settings** — In-app directory browser (to pick library paths without typing them blind)
+- [x] **Settings** — In-app directory browser (to pick library paths without typing them blind)
   and a log viewer, so day-to-day operation doesn't require shelling into the container.
 
 ## 0.6.0 — Embedded text subtitle tracks

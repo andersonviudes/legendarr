@@ -23,3 +23,8 @@ has no client-side required fields to validate first (`subtitle_provider_form.ht
 `translation_provider_form.html`) — the behavior is identical across those pages, so it isn't
 duplicated per-page like `arr-service-form.js`/`subtitle-proxy-form.js` (which additionally run
 `reportValidity()` and so stay separate, one per page).
+
+Exception: `directory-browser.js` wires the shared directory-picker `<dialog>` — currently
+opened only from `arr_service_form.html`, but the widget isn't tied to that page, so any form
+that needs a filesystem-path picker can reuse the same dialog markup and script. It's named
+after the widget rather than a page for that reason.

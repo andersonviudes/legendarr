@@ -2,5 +2,30 @@
 {% block title %}legendarr · System{% endblock %}
 {% block content %}
 <h1>{{ icon("server") }} System</h1>
-<p>Nothing to show yet — system status and logs will appear here.</p>
+
+<section>
+  <div class="log-toolbar">
+    <h2>{{ icon("scroll-text") }} Logs</h2>
+    <label for="log-level-filter">
+      Minimum level
+      <select id="log-level-filter" name="level">
+        <option value="">All</option>
+        <option value="DEBUG">Debug</option>
+        <option value="INFO">Info</option>
+        <option value="WARNING">Warning</option>
+        <option value="ERROR">Error</option>
+      </select>
+    </label>
+  </div>
+  <div
+    id="log-lines"
+    class="log-lines"
+    hx-get="/system/logs"
+    hx-trigger="every 3s, change from:#log-level-filter"
+    hx-include="#log-level-filter"
+    hx-swap="innerHTML"
+  >
+    {% include "_log_lines.html" %}
+  </div>
+</section>
 {% endblock %}
