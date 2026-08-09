@@ -19,6 +19,12 @@ async def list_series(client: httpx.AsyncClient) -> list[dict]:
     return response.json()
 
 
+async def list_wanted(client: httpx.AsyncClient) -> list[dict]:
+    response = await client.get("/media/wanted")
+    response.raise_for_status()
+    return response.json()
+
+
 async def get_movie(client: httpx.AsyncClient, movie_id: int) -> dict:
     response = await client.get(f"/media/movies/{movie_id}")
     response.raise_for_status()

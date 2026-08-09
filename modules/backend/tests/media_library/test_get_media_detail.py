@@ -71,7 +71,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
     assert detail.files[0].relative_path == "Foo.mkv"
     assert detail.files[0].subtitles[0].language == "en"
     assert detail.files[0].subtitles[0].origin == "external"
-    assert detail.missing_subtitles_count == 0
+    assert detail.missing_subtitles_count == 1
 
 
 def test_get_movie_detail_uses_item_override_profile_over_default(in_memory_session):
@@ -104,6 +104,11 @@ def test_get_movie_detail_uses_item_override_profile_over_default(in_memory_sess
 
 def test_get_movie_detail_counts_files_without_subtitles_as_missing(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default", source_languages="en", target_languages="en", is_default=True
+        )
+    )
     movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -118,6 +123,25 @@ def test_get_movie_detail_counts_files_without_subtitles_as_missing(in_memory_se
     detail = get_movie_detail(in_memory_session, movie.id)
 
     assert detail.missing_subtitles_count == 1
+
+
+def test_get_movie_detail_missing_count_is_zero_without_a_language_profile(in_memory_session):
+    arr_service = _seed_arr_service(in_memory_session, "radarr")
+    movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    in_memory_session.refresh(movie)
+    in_memory_session.add(
+        MediaFile(
+            movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+        )
+    )
+    in_memory_session.commit()
+
+    detail = get_movie_detail(in_memory_session, movie.id)
+
+    assert detail.language_profile_name is None
+    assert detail.missing_subtitles_count == 0
 
 
 def test_get_series_detail_returns_none_when_missing(in_memory_session):

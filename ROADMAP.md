@@ -161,9 +161,15 @@ up in 0.2.0.*
 *Use case: a user sees, from the dashboard, what subtitles are still missing for their media
 given their language profiles.*
 
-- [ ] **Dashboard & UI** — Per-media view of discovered subtitles and translation status. Wanted
+- [x] **Dashboard & UI** — Per-media view of discovered subtitles and translation status. Wanted
   view: library-wide list of media still missing a subtitle for one of its profile's target
   languages — the same signal later automation/acquisition will act on, made visible first.
+  `GET /media/wanted` groups by movie/series (one row per item, missing target languages
+  unioned across its files) and is surfaced at `/media/wanted` (new "Wanted" nav entry) plus a
+  "Missing subtitles" stat card on the dashboard. The movie/series detail pages'
+  `missing_subtitles_count` is now language-profile-aware too, instead of "any subtitle at
+  all". Known gap (deferred): no pagination on the wanted list, so a very large library
+  renders the whole thing at once.
 
 ## 0.5.0 — Runtime settings
 

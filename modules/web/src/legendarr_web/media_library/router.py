@@ -22,6 +22,30 @@ async def show_series(request: Request, client: httpx.AsyncClient = Depends(get_
     return templates.TemplateResponse(request, "series.html", {"series": series})
 
 
+@router.get("/wanted")
+async def show_wanted(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    wanted = await service.list_wanted(client)
+    return templates.TemplateResponse(request, "wanted.html", {"wanted": wanted})
+
+
+@router.get("/wanted/movies")
+async def show_wanted_movies(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    wanted = await service.list_wanted(client)
+    movies = [item for item in wanted if item["kind"] == "movie"]
+    return templates.TemplateResponse(request, "wanted.html", {"wanted": movies})
+
+
+@router.get("/wanted/series")
+async def show_wanted_series(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    wanted = await service.list_wanted(client)
+    series = [item for item in wanted if item["kind"] == "series"]
+    return templates.TemplateResponse(request, "wanted.html", {"wanted": series})
+
+
 @router.get("/movies/{movie_id}")
 async def show_movie(
     request: Request, movie_id: int, client: httpx.AsyncClient = Depends(get_backend_client)
