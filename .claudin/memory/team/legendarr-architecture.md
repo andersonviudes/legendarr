@@ -128,7 +128,18 @@ files now live under `arr_clients/`.** `media_library/providers/` no longer exis
 three modules and points to this doc's `docs/architecture/overview.md` for the full slice
 layout — don't re-inline the detailed folder tree there, it drifted out of sync with the
 module split once before (still said "two modules" after `bootstrap` was added). Ruff/env-var
-conventions live in `.claudin/rules/python-conventions.md` (path-scoped to `modules/**/*.py`)
+conventions live in `.claudin/rules/python-conventions.md` (path-scoped to `src/**/*.py`)
 instead of inline in `AGENTS.md`, and the Alembic migration workflow (incl. the `env.py`
 caching gotcha above) is now the `db-migration` skill — update those files, not `AGENTS.md`,
 when this detail changes.
+
+**Update (2026-08-09, PR #30 `refactor/rename-modules-to-src`):** the top-level workspace
+container directory was renamed `modules/` → `src/` (`src/backend`, `src/web`,
+`src/bootstrap`), matching the more common uv-workspace naming convention. Every `modules/`
+path referenced earlier in this memory (workspace members, `pyproject.toml`, Dockerfile,
+Makefile alembic paths, rule/skill `paths:` triggers, tests layout) should be read as `src/`
+now — this was a pure path rename, no code or package layout changed underneath it (each
+package still has its own internal `src/legendarr_<name>/`, so paths look like
+`src/backend/src/legendarr_backend/...`). `uv.lock`'s `editable = "modules/..."` entries were
+hand-edited to `src/...` rather than fully regenerated, specifically to avoid an unrelated
+dependency-version bump sneaking into the rename PR.
