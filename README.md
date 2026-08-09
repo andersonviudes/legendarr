@@ -12,10 +12,10 @@ for what's planned.
 The project is a Python monorepo with two modules, packaged into a single build (one
 Docker image, one `uv.lock`):
 
-- **`modules/backend`** (`legendarr_backend`) — domain: Radarr/Sonarr integration,
+- **`src/backend`** (`legendarr_backend`) — domain: Radarr/Sonarr integration,
   subtitle discovery and extraction, translation, language profiles, and the scheduler
   that runs all of it periodically.
-- **`modules/web`** (`legendarr_web`) — web UI (FastAPI + Jinja2/HTMX), consumes the
+- **`src/web`** (`legendarr_web`) — web UI (FastAPI + Jinja2/HTMX), consumes the
   backend services directly and starts the backend's scheduler in its own process.
 
 Inside each module, the code is organized using **Screaming Architecture + Vertical

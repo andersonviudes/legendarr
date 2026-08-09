@@ -28,21 +28,21 @@ published, not on every push/PR.
 
 ## Architecture
 
-Python monorepo, one `uv` workspace (`pyproject.toml` → `[tool.uv.workspace] members = ["modules/*"]`),
+Python monorepo, one `uv` workspace (`pyproject.toml` → `[tool.uv.workspace] members = ["src/*"]`),
 built into a single Docker image with one shared `uv.lock`. Three modules — full breakdown
 and slice layout in `docs/architecture/overview.md`:
 
-- `modules/backend` (`legendarr_backend`) — domain logic (Radarr/Sonarr clients, subtitle
+- `src/backend` (`legendarr_backend`) — domain logic (Radarr/Sonarr clients, subtitle
   discovery/translation, language profiles, sync scheduler) plus an internal HTTP API.
-- `modules/web` (`legendarr_web`) — FastAPI + Jinja2/HTMX UI; calls the backend's API over
+- `src/web` (`legendarr_web`) — FastAPI + Jinja2/HTMX UI; calls the backend's API over
   loopback HTTP, never imports `legendarr_backend` directly.
-- `modules/bootstrap` (`legendarr_bootstrap`) — entrypoint (`make run` / Docker `CMD`) that
+- `src/bootstrap` (`legendarr_bootstrap`) — entrypoint (`make run` / Docker `CMD`) that
   mounts both apps behind one FastAPI instance and owns the scheduler's `lifespan`.
 
 `backend` and `web` both use **Screaming Architecture + Vertical Slice Architecture**:
 top-level folders are business capabilities, not technical layers — new features get a new
 slice folder in whichever module owns them, not a new generic layer. Tests mirror this:
-`modules/<module>/tests/<slice>/test_*.py`.
+`src/<module>/tests/<slice>/test_*.py`.
 
 ## Conventions
 
@@ -51,10 +51,10 @@ slice folder in whichever module owns them, not a new generic layer. Tests mirro
 - New features go on a feature branch with a PR into `main` — don't push those directly to
   `main`. Bug fixes (`fix:` commits) can be committed and pushed straight to `main`.
 - Python style, Ruff config, and env var conventions: see `.claudin/rules/python-conventions.md`
-  (loads automatically when touching `modules/**/*.py`).
+  (loads automatically when touching `src/**/*.py`).
 - Clean Code / SOLID guidance: see `.claudin/rules/clean-code-solid.md` (same trigger).
 
-Subdirectory `AGENTS.md` files can be added under `modules/backend/`, `modules/web/`, or
-`modules/bootstrap/` for module-specific instructions if any of them grows enough to need them.
+Subdirectory `AGENTS.md` files can be added under `src/backend/`, `src/web/`, or
+`src/bootstrap/` for module-specific instructions if any of them grows enough to need them.
 
 To refine: `/create` (skills, rules, agents), `/agents` (subagents), `/skills` (skills), `/permissions` (viewer for permission rules — edit `settings.json` directly to change them).

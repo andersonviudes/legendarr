@@ -17,10 +17,10 @@ run:
 	uv run --package legendarr-bootstrap python -m legendarr_bootstrap
 
 db-revision:
-	uv run --package legendarr-backend alembic -c modules/backend/alembic.ini revision --autogenerate -m "$(message)"
+	uv run --package legendarr-backend alembic -c src/backend/alembic.ini revision --autogenerate -m "$(message)"
 
 db-upgrade:
-	uv run --package legendarr-backend alembic -c modules/backend/alembic.ini upgrade head
+	uv run --package legendarr-backend alembic -c src/backend/alembic.ini upgrade head
 
 docker-build:
 	docker build -t legendarr:local .

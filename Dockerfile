@@ -6,14 +6,14 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-COPY modules/backend/pyproject.toml modules/backend/pyproject.toml
-COPY modules/web/pyproject.toml modules/web/pyproject.toml
-COPY modules/bootstrap/pyproject.toml modules/bootstrap/pyproject.toml
+COPY src/backend/pyproject.toml src/backend/pyproject.toml
+COPY src/web/pyproject.toml src/web/pyproject.toml
+COPY src/bootstrap/pyproject.toml src/bootstrap/pyproject.toml
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-packages --no-install-project --no-dev
 
-COPY modules ./modules
+COPY src ./src
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-packages --no-dev

@@ -428,7 +428,7 @@ dev = [
 [[package]]
 name = "legendarr-backend"
 version = "0.1.0"
-source = { editable = "modules/backend" }
+source = { editable = "src/backend" }
 dependencies = [
     { name = "alembic" },
     { name = "apscheduler" },
@@ -461,7 +461,7 @@ requires-dist = [
 [[package]]
 name = "legendarr-bootstrap"
 version = "0.1.0"
-source = { editable = "modules/bootstrap" }
+source = { editable = "src/bootstrap" }
 dependencies = [
     { name = "fastapi" },
     { name = "legendarr-backend" },
@@ -472,15 +472,15 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "legendarr-backend", editable = "modules/backend" },
-    { name = "legendarr-web", editable = "modules/web" },
+    { name = "legendarr-backend", editable = "src/backend" },
+    { name = "legendarr-web", editable = "src/web" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
 [[package]]
 name = "legendarr-web"
 version = "0.1.0"
-source = { editable = "modules/web" }
+source = { editable = "src/web" }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },

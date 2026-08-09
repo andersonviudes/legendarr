@@ -1,11 +1,11 @@
 ---
-paths: modules/**/*.py
+paths: src/**/*.py
 ---
 
 # Clean Code & SOLID
 
-Apply these when writing or reviewing any Python code in `modules/backend` or
-`modules/web`, on top of the Screaming Architecture + Vertical Slice layout
+Apply these when writing or reviewing any Python code in `src/backend` or
+`src/web`, on top of the Screaming Architecture + Vertical Slice layout
 described in `AGENTS.md`.
 
 ## Single Responsibility

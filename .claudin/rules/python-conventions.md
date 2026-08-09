@@ -1,5 +1,5 @@
 ---
-paths: modules/**/*.py
+paths: src/**/*.py
 ---
 
 # Python conventions
