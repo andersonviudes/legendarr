@@ -5,7 +5,7 @@ async def get_recent_logs(client: httpx.AsyncClient, level: str | None = None) -
     params = {"level": level} if level else {}
     response = await client.get("/system/logs", params=params)
     response.raise_for_status()
-    return response.json()["lines"]
+    return response.json()
 
 
 async def browse_directory(client: httpx.AsyncClient, path: str) -> dict:

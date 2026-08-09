@@ -35,6 +35,8 @@ async def browse_directories(
     try:
         listing = await service.browse_directory(client, path)
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise
         return templates.TemplateResponse(
             request,
             "_directory_browser.html",

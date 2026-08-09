@@ -1,16 +1,10 @@
 import logging
-from dataclasses import dataclass
 
 from legendarr_backend.logging.setup import get_log_records
+from legendarr_backend.system.schemas import LogLineRead
 
 
-@dataclass(frozen=True)
-class LogLine:
-    text: str
-    level: str
-
-
-def list_recent_logs(min_level: int | None = None, limit: int = 200) -> list[LogLine]:
+def list_recent_logs(min_level: int | None = None, limit: int = 200) -> list[LogLineRead]:
     """Return the most recent log lines, oldest first, each tagged with its level name.
 
     `min_level` filters to records at or above that level (e.g. `logging.WARNING`
@@ -20,6 +14,6 @@ def list_recent_logs(min_level: int | None = None, limit: int = 200) -> list[Log
     if min_level is not None:
         records = [record for record in records if record.levelno >= min_level]
     return [
-        LogLine(text=record.text, level=logging.getLevelName(record.levelno))
+        LogLineRead(text=record.text, level=logging.getLevelName(record.levelno))
         for record in records[-limit:]
     ]

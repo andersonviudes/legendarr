@@ -38,7 +38,7 @@ def test_get_directories_422s_on_file_path(isolated_database, tmp_path):
     assert response.status_code == 422
 
 
-def test_get_logs_returns_recent_lines(isolated_database):
+def test_get_logs_returns_recent_lines(isolated_database, isolated_log_buffer):
     configure_logging()
     logging.getLogger("legendarr_backend.system.test_system_router").error("system test boom")
 
@@ -46,11 +46,11 @@ def test_get_logs_returns_recent_lines(isolated_database):
         response = client.get("/system/logs")
 
     assert response.status_code == 200
-    lines = response.json()["lines"]
+    lines = response.json()
     assert any("system test boom" in line["text"] and line["level"] == "ERROR" for line in lines)
 
 
-def test_get_logs_filters_by_level(isolated_database):
+def test_get_logs_filters_by_level(isolated_database, isolated_log_buffer):
     configure_logging()
     logging.getLogger("legendarr_backend.system.test_system_router").info(
         "info line for level filter test"
@@ -59,7 +59,7 @@ def test_get_logs_filters_by_level(isolated_database):
     with TestClient(create_api_app()) as client:
         response = client.get("/system/logs", params={"level": "ERROR"})
 
-    lines = response.json()["lines"]
+    lines = response.json()
     assert not any("info line for level filter test" in line["text"] for line in lines)
 
 

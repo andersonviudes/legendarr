@@ -30,7 +30,7 @@ def test_configure_logging_attaches_ring_buffer_handler_once():
     assert len(ring_handlers) == 1
 
 
-def test_ring_buffer_handler_records_recent_log_lines():
+def test_ring_buffer_handler_records_recent_log_lines(isolated_log_buffer):
     configure_logging()
     logger = logging.getLogger("legendarr_backend.logging.test_setup")
 

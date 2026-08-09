@@ -1,15 +1,12 @@
-from dataclasses import dataclass
+import logging
 from pathlib import Path
 
+from legendarr_backend.system.schemas import DirectoryListingRead
 
-@dataclass(frozen=True)
-class DirectoryListing:
-    path: str
-    parent: str | None
-    directories: list[str]
+logger = logging.getLogger(__name__)
 
 
-def list_subdirectories(path: str) -> DirectoryListing:
+def list_subdirectories(path: str) -> DirectoryListingRead:
     """List the immediate, non-hidden subdirectories of `path`, sorted by name.
 
     No recursion — the directory browser widget fetches one level deeper per click,
@@ -30,9 +27,10 @@ def list_subdirectories(path: str) -> DirectoryListing:
         try:
             if entry.is_dir():
                 directories.append(entry.name)
-        except OSError:
+        except OSError as exc:
+            logger.warning("skipped %r while listing %s: %s", entry.name, resolved, exc)
             continue
     directories.sort()
 
     parent = str(resolved.parent) if resolved != resolved.parent else None
-    return DirectoryListing(path=str(resolved), parent=parent, directories=directories)
+    return DirectoryListingRead(path=str(resolved), parent=parent, directories=directories)

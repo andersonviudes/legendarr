@@ -10,7 +10,3 @@ class DirectoryListingRead(BaseModel):
 class LogLineRead(BaseModel):
     text: str
     level: str
-
-
-class LogLinesRead(BaseModel):
-    lines: list[LogLineRead]

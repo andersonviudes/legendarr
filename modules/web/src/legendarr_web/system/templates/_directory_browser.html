@@ -7,7 +7,7 @@
     type="button"
     class="dir-browser-crumb"
     hx-get="/system/directories/browse"
-    hx-vals='{"path": "{{ crumb.path }}", "target": "{{ target }}"}'
+    hx-vals='{{ {"path": crumb.path, "target": target} | tojson }}'
     hx-target="#dir-browser-content"
     hx-swap="innerHTML"
   >{{ crumb.name }}</button>
@@ -24,7 +24,7 @@
       type="button"
       class="dir-browser-row"
       hx-get="/system/directories/browse"
-      hx-vals='{"path": "{{ directory.path }}", "target": "{{ target }}"}'
+      hx-vals='{{ {"path": directory.path, "target": target} | tojson }}'
       hx-target="#dir-browser-content"
       hx-swap="innerHTML"
     >{{ icon("folder") }}<span>{{ directory.name }}</span></button>

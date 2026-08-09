@@ -31,6 +31,9 @@ class RingBufferHandler(logging.Handler):
     def records(self) -> list[LogRecordEntry]:
         return list(self._records)
 
+    def clear(self) -> None:
+        self._records.clear()
+
 
 _ring_buffer_handler = RingBufferHandler()
 
@@ -50,3 +53,8 @@ def configure_logging(level: int = logging.INFO) -> None:
 def get_log_records() -> list[LogRecordEntry]:
     """Return the in-memory log history, oldest first."""
     return _ring_buffer_handler.records()
+
+
+def reset_log_records() -> None:
+    """Clear the in-memory log history. For test isolation only."""
+    _ring_buffer_handler.clear()

@@ -12,6 +12,7 @@ from legendarr_backend.config.settings import Settings
 from legendarr_backend.database import engine as database
 from legendarr_backend.database.engine import enable_sqlite_foreign_keys
 from legendarr_backend.language_profiles import models as _language_profiles_models  # noqa: F401
+from legendarr_backend.logging.setup import reset_log_records
 from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
 from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
 from legendarr_backend.subtitle_acquisition import (
@@ -44,6 +45,15 @@ def isolated_database(tmp_path, monkeypatch) -> Settings:
     monkeypatch.setattr(database, "get_settings", lambda: settings)
     monkeypatch.setattr(database, "_engine", None)
     return settings
+
+
+@pytest.fixture
+def isolated_log_buffer():
+    """Reset the in-memory log ring buffer so assertions on recent log lines aren't
+    affected by lines emitted by other tests running in the same process."""
+    reset_log_records()
+    yield
+    reset_log_records()
 
 
 @pytest.fixture

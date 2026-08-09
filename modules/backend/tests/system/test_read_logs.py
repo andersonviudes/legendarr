@@ -4,7 +4,7 @@ from legendarr_backend.logging.setup import configure_logging
 from legendarr_backend.system.read_logs import list_recent_logs
 
 
-def test_list_recent_logs_returns_recent_lines():
+def test_list_recent_logs_returns_recent_lines(isolated_log_buffer):
     configure_logging()
     logger = logging.getLogger("legendarr_backend.system.test_read_logs")
 
@@ -14,7 +14,7 @@ def test_list_recent_logs_returns_recent_lines():
     assert any("read_logs test boom" in line.text and line.level == "ERROR" for line in lines)
 
 
-def test_list_recent_logs_filters_by_min_level():
+def test_list_recent_logs_filters_by_min_level(isolated_log_buffer):
     configure_logging()
     logger = logging.getLogger("legendarr_backend.system.test_read_logs")
 
@@ -24,7 +24,7 @@ def test_list_recent_logs_filters_by_min_level():
     assert not any("read_logs info line" in line.text for line in lines)
 
 
-def test_list_recent_logs_respects_limit():
+def test_list_recent_logs_respects_limit(isolated_log_buffer):
     configure_logging()
     logger = logging.getLogger("legendarr_backend.system.test_read_logs")
     for i in range(5):

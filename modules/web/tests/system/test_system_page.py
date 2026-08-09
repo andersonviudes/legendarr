@@ -6,7 +6,7 @@ from legendarr_web.app import create_app
 def _logs_handler(request: httpx.Request) -> httpx.Response:
     return httpx.Response(
         200,
-        json={"lines": [{"text": "2026-08-09 INFO test line", "level": "INFO"}]},
+        json=[{"text": "2026-08-09 INFO test line", "level": "INFO"}],
     )
 
 
@@ -25,7 +25,7 @@ def test_system_page_shows_empty_state_with_no_logs(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"lines": []})
+        return httpx.Response(200, json=[])
 
     stub_backend_client(app, handler=handler)
 
@@ -42,7 +42,7 @@ def test_get_logs_partial_forwards_level_filter(stub_backend_client):
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured["params"] = dict(request.url.params)
-        return httpx.Response(200, json={"lines": []})
+        return httpx.Response(200, json=[])
 
     stub_backend_client(app, handler=handler)
 
