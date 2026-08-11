@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     subtitle_scan_retry_delay_seconds: float = Field(default=5.0)
     subtitle_scan_max_instances: int = Field(default=1)
     subtitle_scan_coalesce: bool = Field(default=True)
+    # ffprobe/ffmpeg subprocess timeout for embedded subtitle-track probing/extraction
+    # (ROADMAP.md 0.6.0), guarding against a hung/corrupt container.
+    embedded_subtitle_probe_timeout_seconds: float = Field(default=30.0)
     # Manual "translate now" only (0.10.0 unattended scheduling is a future item), so no
     # interval/max_instances/coalesce fields — just the retry policy `enqueue_translation`
     # needs.

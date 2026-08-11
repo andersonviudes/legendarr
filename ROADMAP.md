@@ -196,7 +196,7 @@ library folders or recent logs, all from a Settings page, no shell access needed
 *Use case: a show only has a Japanese subtitle track muxed into the `.mkv` — no external
 file — and legendarr extracts and translates it anyway.*
 
-- [ ] **Subtitle discovery** — Probe video containers (via `ffprobe`, already installed in the
+- [x] **Subtitle discovery** — Probe video containers (via `ffprobe`, already installed in the
   Docker image) for embedded subtitle streams. Extract text-based embedded tracks (SubRip,
   ASS/SSA, `mov_text`) into the same discovery pipeline external files already use. Read the
   forced/HI flags a container track already carries in its metadata, feeding the profile

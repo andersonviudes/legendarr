@@ -27,7 +27,8 @@ shared code lives in its own top-level folder (`config/`, `database/`, `logging/
 
 ## Running locally
 
-Prerequisites: [uv](https://docs.astral.sh/uv/) and Python 3.12+.
+Prerequisites: [uv](https://docs.astral.sh/uv/), Python 3.12+, and `ffmpeg` (provides
+`ffprobe`, used for embedded subtitle track discovery).
 
 ```bash
 make install   # uv sync --all-packages

@@ -14,6 +14,7 @@ from legendarr_backend.subtitle_discovery.jobs import (
     register_subtitle_scan_job,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_media_subtitles import ScanResult
 from sqlmodel import select
 
 
@@ -116,6 +117,61 @@ def test_enqueued_subtitle_scan_job_persists_discovered_subtitle(
     assert len(rows) == 1
     assert rows[0].media_file_id == media_file.id
     assert rows[0].relative_path == "Foo.pt-BR.srt"
+
+
+def test_enqueued_subtitle_scan_job_forwards_probe_timeout_to_the_scan(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    captured = {}
+
+    def _fake_scan(*_args, **kwargs):
+        captured["kwargs"] = kwargs
+        return ScanResult(added=0, removed=0)
+
+    monkeypatch.setattr(jobs_module, "scan_subtitles_for_media_file", _fake_scan)
+    service = create_arr_service(
+        in_memory_session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=42,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").write_bytes(b"x" * 42)
+
+    scheduler = build_scheduler()
+    enqueue_subtitle_scan(
+        scheduler,
+        media_file.id,
+        JobQueue.SCAN_BULK,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        probe_timeout_seconds=5.0,
+    )
+    scheduler.get_job(f"subtitle_scan:{media_file.id}").func()
+
+    assert captured["kwargs"]["probe_timeout_seconds"] == 5.0
 
 
 def test_enqueued_subtitle_scan_job_tolerates_deleted_media_file(in_memory_session, monkeypatch):

@@ -33,6 +33,18 @@ def _isolated_data_dir():
         yield
 
 
+@pytest.fixture(autouse=True)
+def _no_real_embedded_subtitle_probing(monkeypatch):
+    """Never invoke a real `ffprobe` subprocess from a test by default — same isolation
+    principle as never making a real HTTP call in a test. Tests exercising the probe/extract
+    mechanics directly (`subtitle_discovery`'s probe/scan tests) monkeypatch these targets
+    themselves, which simply overrides this default within that test."""
+    monkeypatch.setattr(
+        "legendarr_backend.subtitle_discovery.scan_video_subtitles.probe_embedded_subtitle_tracks",
+        lambda *args, **kwargs: [],
+    )
+
+
 @pytest.fixture
 def isolated_database(tmp_path, monkeypatch) -> Settings:
     """Point `database.engine` at a fresh on-disk SQLite DB under `tmp_path`.
