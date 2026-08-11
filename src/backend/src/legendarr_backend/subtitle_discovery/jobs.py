@@ -10,6 +10,9 @@ from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
+    DEFAULT_PROBE_TIMEOUT_SECONDS,
+)
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
 logger = logging.getLogger(__name__)
@@ -28,6 +31,7 @@ def register_subtitle_scan_job(
                 session,
                 retry_attempts=config.subtitle_scan_retry_attempts,
                 retry_delay_seconds=config.subtitle_scan_retry_delay_seconds,
+                probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
             )
         logger.info("subtitle scan fan-out enqueued: %d media files", enqueued)
 
@@ -51,6 +55,7 @@ def enqueue_full_subtitle_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
 ) -> int:
     """Enqueue a per-file subtitle scan for every known `MediaFile` on the bulk queue.
 
@@ -66,6 +71,7 @@ def enqueue_full_subtitle_scan(
             JobQueue.SCAN_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
+            probe_timeout_seconds=probe_timeout_seconds,
         )
     return len(media_file_ids)
 
@@ -77,6 +83,7 @@ def enqueue_subtitle_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
 ) -> None:
     """Enqueue an ad-hoc subtitle scan of one `MediaFile` for immediate execution.
 
@@ -98,7 +105,9 @@ def enqueue_subtitle_scan(
                     media_file_id,
                 )
                 return
-            result = scan_subtitles_for_media_file(session, media_file, video_path)
+            result = scan_subtitles_for_media_file(
+                session, media_file, video_path, probe_timeout_seconds=probe_timeout_seconds
+            )
             session.commit()
             logger.info("subtitle scan finished for media file %d: %s", media_file_id, result)
 

@@ -6,10 +6,10 @@ from sqlmodel import Session, select
 
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
-    resolve_effective_profile,
+    resolve_media_file_profile,
 )
-from legendarr_backend.media_library.locate import resolve_media_file_owner
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -47,7 +47,8 @@ def translate_media_file(
 ) -> TranslationResult:
     """Translate one `MediaFile` into every target language its `LanguageProfile` is
     still missing, from an already-discovered external subtitle in one of its source
-    languages.
+    languages. A target already satisfied by an extracted embedded track doesn't count as
+    missing either, even though it can't be picked as the source below.
 
     No acquisition fallback: if no external subtitle exists yet in a source language,
     this is a no-op — that lands with real `SubtitleProvider` search/download at 0.6.0+.
@@ -55,7 +56,7 @@ def translate_media_file(
     `default_translation_provider` is the Settings-configured default (see
     `resolve_provider_chain`); passed through unchanged, `None` means no preference.
     """
-    profile = _resolve_language_profile(session, media_file)
+    profile = resolve_media_file_profile(session, media_file)
     if profile is None:
         logger.info("translation skipped: media file %d has no language profile", media_file.id)
         return TranslationResult(translated_languages=[], skipped_reason="no_language_profile")
@@ -83,10 +84,26 @@ def translate_media_file(
         )
         return TranslationResult(translated_languages=[], skipped_reason="no_source_subtitle")
 
+    # An already-extracted embedded track also satisfies a target language, even though it
+    # can't be picked as the *source* above (no acquisition fallback yet, see the
+    # docstring). Compared via `normalize_language_code` rather than exact match — an
+    # embedded track's language is region-blind (ffprobe has no way to tell e.g. Brazilian
+    # from European Portuguese), so this is a best-effort "close enough" check, same as
+    # `scan_video_subtitles`'s own extraction-skip logic.
+    embedded_languages = {
+        normalize_language_code(subtitle.language)
+        for subtitle in session.exec(
+            select(Subtitle).where(
+                Subtitle.media_file_id == media_file.id,
+                Subtitle.origin == SubtitleOrigin.EMBEDDED,
+            )
+        )
+    }
     missing_targets = [
         language
         for language in profile.target_language_list
         if language.lower() not in external_subtitles
+        and normalize_language_code(language) not in embedded_languages
     ]
     if not missing_targets:
         return TranslationResult(translated_languages=[])
@@ -120,13 +137,6 @@ def translate_media_file(
         scan_subtitles_for_media_file(session, media_file, video_path)
 
     return TranslationResult(translated_languages=translated_languages)
-
-
-def _resolve_language_profile(session: Session, media_file: MediaFile) -> LanguageProfile | None:
-    item = resolve_media_file_owner(session, media_file)
-    if item is None:
-        return None
-    return resolve_effective_profile(session, item)
 
 
 def _pick_source_subtitle(

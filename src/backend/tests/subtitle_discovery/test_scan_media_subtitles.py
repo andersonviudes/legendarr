@@ -4,9 +4,12 @@ from pathlib import Path
 import pytest
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_discovery import scan_media_subtitles as scan_media_subtitles_module
+from legendarr_backend.subtitle_discovery import scan_video_subtitles as scan_video_subtitles_module
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import EmbeddedSubtitleTrack
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import (
     scan_subtitles_for_media_file,
 )
@@ -83,6 +86,20 @@ def _series_media_file(session, series: Series, relative: str) -> MediaFile:
 
 def _subtitles(session) -> list[Subtitle]:
     return list(session.exec(select(Subtitle)).all())
+
+
+def _language_profile(session, **overrides) -> LanguageProfile:
+    defaults = {
+        "name": "Default",
+        "source_languages": "en",
+        "target_languages": "pt-BR",
+        "is_default": True,
+    }
+    defaults.update(overrides)
+    profile = LanguageProfile(**defaults)
+    session.add(profile)
+    session.commit()
+    return profile
 
 
 def test_scan_persists_discovered_subtitle(in_memory_session, tmp_path):
@@ -181,7 +198,7 @@ def test_rescan_updates_existing_subtitle_row_fields(in_memory_session, tmp_path
     monkeypatch.setattr(
         scan_media_subtitles_module,
         "scan_video_subtitles",
-        lambda _video_path: [
+        lambda _video_path, **_kwargs: [
             DiscoveredSubtitle(
                 language="pt-br",
                 origin=SubtitleOrigin.EMBEDDED,
@@ -199,6 +216,163 @@ def test_rescan_updates_existing_subtitle_row_fields(in_memory_session, tmp_path
     assert row.language == "pt-br"
     assert row.origin == SubtitleOrigin.EMBEDDED
     assert row.track_index == 2
+
+
+def _capture_scan_video_subtitles_kwargs(monkeypatch, captured: dict) -> None:
+    def _fake_scan_video_subtitles(_video_path, **kwargs):
+        captured["kwargs"] = kwargs
+        return []
+
+    monkeypatch.setattr(
+        scan_media_subtitles_module, "scan_video_subtitles", _fake_scan_video_subtitles
+    )
+
+
+def test_scan_skips_embedded_probing_without_an_effective_profile(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["kwargs"]["extract_embedded"] is False
+
+
+def test_scan_skips_embedded_probing_when_profile_disables_it(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    _language_profile(in_memory_session, extract_embedded_subtitles=False)
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["kwargs"]["extract_embedded"] is False
+
+
+def test_scan_enables_embedded_probing_when_profile_allows_it(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    _language_profile(in_memory_session, extract_embedded_subtitles=True)
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video, probe_timeout_seconds=5.0)
+
+    assert captured["kwargs"]["extract_embedded"] is True
+    assert captured["kwargs"]["probe_timeout_seconds"] == 5.0
+
+
+def test_scan_persists_forced_and_hearing_impaired_flags(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    embedded_srt = tmp_path / "Foo" / "Foo.embedded.2.jpn.srt"
+    embedded_srt.touch()
+    monkeypatch.setattr(
+        scan_media_subtitles_module,
+        "scan_video_subtitles",
+        lambda _video_path, **_kwargs: [
+            DiscoveredSubtitle(
+                language="jpn",
+                origin=SubtitleOrigin.EMBEDDED,
+                source_path=embedded_srt,
+                track_index=2,
+                forced=True,
+                hearing_impaired=True,
+            )
+        ],
+    )
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    row = _subtitles(in_memory_session)[0]
+    assert row.forced is True
+    assert row.hearing_impaired is True
+
+
+def test_rescan_does_not_drop_an_already_extracted_embedded_subtitle_row(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    _language_profile(in_memory_session, extract_embedded_subtitles=True)
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="jpn", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda _video_path, _track, output_path, **_kwargs: output_path.touch(),
+    )
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    assert len(_subtitles(in_memory_session)) == 1
+
+    # A previously-extracted embedded row must not count as "language already covered"
+    # against itself — otherwise it gets skipped, and then deleted as stale, every scan.
+    result = scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    assert result.added == 0
+    assert result.removed == 0
+    assert len(_subtitles(in_memory_session)) == 1
+
+
+def test_scan_skips_embedded_extraction_when_an_external_subtitle_already_covers_the_language(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.pt-BR.srt").touch()
+    _language_profile(in_memory_session, extract_embedded_subtitles=True)
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="por", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not extract")),
+    )
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    rows = _subtitles(in_memory_session)
+    assert len(rows) == 1
+    assert rows[0].origin == SubtitleOrigin.EXTERNAL
 
 
 def test_scan_persists_origin_as_lowercase_enum_value(in_memory_session, tmp_path):

@@ -46,6 +46,7 @@ class AppConfigFile(BaseModel):
     subtitle_scan_retry_delay_seconds: float = 5.0
     subtitle_scan_max_instances: int = 1
     subtitle_scan_coalesce: bool = True
+    embedded_subtitle_probe_timeout_seconds: float = 30.0
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = 5.0
     # `None` means "no preference" — `resolve_provider_chain` falls back to its existing
@@ -85,6 +86,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "subtitle_scan_retry_delay_seconds": settings.subtitle_scan_retry_delay_seconds,
         "subtitle_scan_max_instances": settings.subtitle_scan_max_instances,
         "subtitle_scan_coalesce": settings.subtitle_scan_coalesce,
+        "embedded_subtitle_probe_timeout_seconds": settings.embedded_subtitle_probe_timeout_seconds,
         "translate_retry_attempts": settings.translate_retry_attempts,
         "translate_retry_delay_seconds": settings.translate_retry_delay_seconds,
         "default_translation_provider": settings.default_translation_provider,

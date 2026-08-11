@@ -148,6 +148,7 @@ def _trigger_item_scan(
             JobQueue.SCAN,
             retry_attempts=config.subtitle_scan_retry_attempts,
             retry_delay_seconds=config.subtitle_scan_retry_delay_seconds,
+            probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
         )
     return {"status": "enqueued"}
 

@@ -5,9 +5,18 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
+from legendarr_backend.language_profiles.resolve_effective_profile import (
+    resolve_media_file_profile,
+)
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.subtitle_discovery.models import Subtitle
-from legendarr_backend.subtitle_discovery.scan_video_subtitles import scan_video_subtitles
+from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
+    DEFAULT_PROBE_TIMEOUT_SECONDS,
+)
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import (
+    SubtitleOrigin,
+    scan_video_subtitles,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +29,11 @@ class ScanResult:
 
 
 def scan_subtitles_for_media_file(
-    session: Session, media_file: MediaFile, video_path: Path
+    session: Session,
+    media_file: MediaFile,
+    video_path: Path,
+    *,
+    probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
 ) -> ScanResult:
     """Discover external subtitles next to `video_path` and reconcile `Subtitle` rows.
 
@@ -29,18 +42,37 @@ def scan_subtitles_for_media_file(
     `scan_media_item`'s unmounted-drive guard. `relative_path` is derived from
     `media_file.relative_path`'s directory, same convention as `MediaFile` itself, so
     a subtitle row survives a path-mapping edit.
+
+    Embedded-track probing/extraction is additionally gated by the file's effective
+    `LanguageProfile`: skipped entirely when there's no effective profile, or when
+    `extract_embedded_subtitles` is `False` — external scanning happens regardless, same
+    as before. When it does run, a track whose language already has an external subtitle
+    is skipped instead of extracted (see `scan_video_subtitles`).
     """
     if not video_path.is_file():
         logger.warning("subtitle scan skipped: %s is not a file", video_path)
         return ScanResult(added=0, removed=0, skipped=True)
 
-    discovered = scan_video_subtitles(video_path)
-    video_dir = Path(media_file.relative_path).parent
+    existing_rows = list(
+        session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file.id))
+    )
+    existing = {row.relative_path: row for row in existing_rows}
+    # External only — an already-extracted embedded row must not count as "already have
+    # this language" for itself, or it would get skipped (and then deleted as stale) on
+    # every following scan.
+    known_languages = frozenset(
+        row.language for row in existing_rows if row.origin == SubtitleOrigin.EXTERNAL
+    )
 
-    existing = {
-        row.relative_path: row
-        for row in session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file.id))
-    }
+    profile = resolve_media_file_profile(session, media_file)
+    extract_embedded = profile is not None and profile.extract_embedded_subtitles
+    discovered = scan_video_subtitles(
+        video_path,
+        extract_embedded=extract_embedded,
+        probe_timeout_seconds=probe_timeout_seconds,
+        known_languages=known_languages,
+    )
+    video_dir = Path(media_file.relative_path).parent
 
     now = datetime.now(UTC)
     added = 0
@@ -55,6 +87,8 @@ def scan_subtitles_for_media_file(
                     origin=item.origin,
                     relative_path=relative_path,
                     track_index=item.track_index,
+                    forced=item.forced,
+                    hearing_impaired=item.hearing_impaired,
                     scanned_at=now,
                 )
             )
@@ -63,6 +97,8 @@ def scan_subtitles_for_media_file(
             row.language = item.language
             row.origin = item.origin
             row.track_index = item.track_index
+            row.forced = item.forced
+            row.hearing_impaired = item.hearing_impaired
             row.scanned_at = now
             session.add(row)
 

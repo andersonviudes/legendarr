@@ -11,7 +11,7 @@ It lets you say, for example: "for anime, translate embedded Japanese subs to `p
 | `name` | Unique name for the profile. |
 | `source_languages` | Language(s) legendarr should look for as the source subtitle. |
 | `target_languages` | Comma-separated list of languages to translate into. |
-| `extract_embedded_subtitles` | Whether to extract embedded subtitle tracks when no external subtitle is found. Defaults to `true`. |
+| `extract_embedded_subtitles` | Whether to extract embedded subtitle tracks — per language, not per file: a track is only extracted if its language doesn't already have an external subtitle. Defaults to `true`. |
 | `forced` | Whether this profile only wants forced subtitles. Defaults to `false`. |
 | `hearing_impaired` | Whether this profile only wants hearing-impaired (HI) subtitles. Defaults to `false`. |
 | `is_default` | Whether this is the profile applied when a movie or series has no override. Defaults to `false`. |
