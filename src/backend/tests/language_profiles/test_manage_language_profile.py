@@ -1,3 +1,5 @@
+from typing import Any
+
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.manage_language_profile import (
@@ -13,7 +15,7 @@ from sqlmodel import select
 
 
 def _profile_input(**overrides) -> LanguageProfileInput:
-    data = {
+    data: dict[str, Any] = {
         "name": "anime",
         "source_languages": "ja",
         "target_languages": "pt-BR,en",
@@ -36,6 +38,7 @@ def test_get_language_profile_returns_none_when_missing(in_memory_session):
 
 def test_update_language_profile_replaces_fields(in_memory_session):
     profile = create_language_profile(in_memory_session, _profile_input())
+    assert profile.id is not None
 
     updated = update_language_profile(
         in_memory_session,
@@ -43,6 +46,7 @@ def test_update_language_profile_replaces_fields(in_memory_session):
         _profile_input(target_languages="pt-BR", forced=True, hearing_impaired=True),
     )
 
+    assert updated is not None
     assert updated.target_languages == "pt-BR"
     assert updated.forced is True
     assert updated.hearing_impaired is True
@@ -54,6 +58,7 @@ def test_update_language_profile_returns_none_when_missing(in_memory_session):
 
 def test_delete_language_profile(in_memory_session):
     profile = create_language_profile(in_memory_session, _profile_input())
+    assert profile.id is not None
 
     assert delete_language_profile(in_memory_session, profile.id) is True
     assert list_language_profiles(in_memory_session) == []
@@ -70,7 +75,9 @@ def test_delete_language_profile_clears_override_on_pinned_media(in_memory_sessi
             name="radarr", service_type="radarr", host="radarr", port=7878, api_key="key"
         ),
     )
+    assert arr_service.id is not None
     profile = create_language_profile(in_memory_session, _profile_input())
+    assert profile.id is not None
     in_memory_session.add(
         Movie(
             arr_service_id=arr_service.id,

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
@@ -92,3 +93,5 @@ class MediaFile(SQLModel, table=True):
 
 
 MEDIA_MODEL_BY_TYPE = {"radarr": Movie, "sonarr": Series}
+
+MediaKind = Literal["movie", "series"]

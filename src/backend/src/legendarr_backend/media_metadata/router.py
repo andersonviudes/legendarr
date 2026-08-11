@@ -63,7 +63,9 @@ def update_provider(
     existing = get_metadata_provider(session, provider_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="Metadata provider not found")
-    return update_metadata_provider(session, provider_id, _merge_with_existing(data, existing))
+    provider = update_metadata_provider(session, provider_id, _merge_with_existing(data, existing))
+    assert provider is not None
+    return provider
 
 
 @router.post("/{provider_id}/test")

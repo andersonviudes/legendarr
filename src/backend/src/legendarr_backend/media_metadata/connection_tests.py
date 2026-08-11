@@ -34,6 +34,7 @@ def _require(value: str | None, label: str) -> str | None:
 def _test_tvdb(config: MetadataProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
+    assert config.api_key is not None
     provider = TvdbMetadataProvider(config.api_key)
     try:
         result = provider.fetch(
@@ -51,6 +52,7 @@ def _test_tvdb(config: MetadataProviderConfig) -> ConnectionTestResult:
 def _test_imdb(config: MetadataProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
+    assert config.api_key is not None
     provider = OmdbMetadataProvider(config.api_key)
     try:
         result = provider.fetch(media_type="movie", title="", tvdb_id=None, imdb_id=_IMDB_TEST_ID)

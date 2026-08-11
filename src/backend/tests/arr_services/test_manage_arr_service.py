@@ -39,22 +39,26 @@ def test_get_arr_service_returns_none_when_missing(in_memory_session):
 
 def test_update_arr_service_replaces_fields(in_memory_session):
     service = create_arr_service(in_memory_session, _radarr_input())
+    assert service.id is not None
 
     updated = update_arr_service(
         in_memory_session, service.id, _radarr_input(host="radarr.internal", port=7879)
     )
 
+    assert updated is not None
     assert updated.host == "radarr.internal"
     assert updated.port == 7879
 
 
 def test_update_arr_service_ignores_service_type_change(in_memory_session):
     service = create_arr_service(in_memory_session, _radarr_input())
+    assert service.id is not None
 
     updated = update_arr_service(
         in_memory_session, service.id, _radarr_input(service_type="sonarr")
     )
 
+    assert updated is not None
     assert updated.service_type == "radarr"
 
 
@@ -83,6 +87,7 @@ def test_legacy_plaintext_api_key_is_read_and_reencrypted_on_update(in_memory_se
     in_memory_session.commit()
 
     service = get_arr_service(in_memory_session, 1)
+    assert service is not None
     assert service.api_key == "legacy-key"
 
     update_arr_service(in_memory_session, 1, _radarr_input(api_key="legacy-key"))
@@ -90,16 +95,21 @@ def test_legacy_plaintext_api_key_is_read_and_reencrypted_on_update(in_memory_se
     in_memory_session.expunge_all()
     raw = in_memory_session.execute(text("SELECT api_key FROM arrservice")).scalar()
     assert raw.startswith(ENCRYPTED_PREFIX)
-    assert get_arr_service(in_memory_session, 1).api_key == "legacy-key"
+    refreshed = get_arr_service(in_memory_session, 1)
+    assert refreshed is not None
+    assert refreshed.api_key == "legacy-key"
 
 
 def test_set_arr_service_enabled_flips_flag(in_memory_session):
     service = create_arr_service(in_memory_session, _radarr_input(enabled=True))
+    assert service.id is not None
 
     disabled = set_arr_service_enabled(in_memory_session, service.id, False)
+    assert disabled is not None
     assert disabled.enabled is False
 
     enabled = set_arr_service_enabled(in_memory_session, service.id, True)
+    assert enabled is not None
     assert enabled.enabled is True
 
 
@@ -109,6 +119,7 @@ def test_set_arr_service_enabled_returns_none_when_missing(in_memory_session):
 
 def test_delete_arr_service(in_memory_session):
     service = create_arr_service(in_memory_session, _radarr_input())
+    assert service.id is not None
 
     assert delete_arr_service(in_memory_session, service.id) is True
     assert list_arr_services(in_memory_session) == []
@@ -120,9 +131,11 @@ def test_delete_arr_service_returns_false_when_missing(in_memory_session):
 
 def test_delete_arr_service_removes_its_synced_media_only(in_memory_session):
     doomed = create_arr_service(in_memory_session, _radarr_input())
+    assert doomed.id is not None
     survivor = create_arr_service(
         in_memory_session, _radarr_input(name="other-radarr", host="other-radarr")
     )
+    assert survivor.id is not None
     in_memory_session.add_all(
         [
             Movie(arr_service_id=doomed.id, arr_id=1, title="A", remote_path="/movies/A"),

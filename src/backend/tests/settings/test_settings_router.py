@@ -82,6 +82,7 @@ def test_put_reschedules_running_jobs(tmp_path, monkeypatch):
     try:
         assert response.status_code == 200
         job = scheduler.get_job("media_library_scan_fanout")
+        assert job is not None
         assert job.trigger.interval.total_seconds() == 5 * 60
         # The other two interval jobs are (re-)registered too.
         assert scheduler.get_job("media_library_sync") is not None

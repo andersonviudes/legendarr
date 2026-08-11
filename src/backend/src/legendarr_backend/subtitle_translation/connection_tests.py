@@ -34,6 +34,7 @@ def _require(value: str | None, label: str) -> str | None:
 def _test_deepl(config: TranslationProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
+    assert config.api_key is not None
     # Free-tier keys are suffixed `:fx` and only work against the api-free host, per DeepL's
     # own docs (https://developers.deepl.com/docs/api-reference/usage-and-quota) — a Pro key
     # against api-free.deepl.com (or vice versa) gets rejected outright.
@@ -54,6 +55,7 @@ def _test_deepl(config: TranslationProviderConfig) -> ConnectionTestResult:
 def _test_google(config: TranslationProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
+    assert config.api_key is not None
     client = ProviderHttpClient("Google Translate", "https://translation.googleapis.com")
     try:
         client.get_json(f"/language/translate/v2/languages?key={config.api_key}")
@@ -70,6 +72,7 @@ def _test_google(config: TranslationProviderConfig) -> ConnectionTestResult:
 def _test_libretranslate(config: TranslationProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.endpoint, "An Endpoint URL")) is not None:
         return False, error
+    assert config.endpoint is not None
     # Self-hosted, so the base URL comes from the user, not a fixed host. `/languages` needs
     # no credential on a stock instance — the API Key (when set) is only enforced on
     # `/translate` by instances that opt into it, so this only proves the instance answers.

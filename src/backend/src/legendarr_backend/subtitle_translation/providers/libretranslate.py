@@ -12,6 +12,7 @@ class LibreTranslateTranslationProvider:
     name = "libretranslate"
 
     def __init__(self, config: TranslationProviderConfig) -> None:
+        assert config.endpoint is not None
         self._endpoint = config.endpoint
         self._api_key = config.api_key
 

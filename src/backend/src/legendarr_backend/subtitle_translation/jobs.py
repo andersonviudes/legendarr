@@ -29,6 +29,7 @@ def enqueue_full_translation_scan(
     """
     media_file_ids = session.exec(select(MediaFile.id)).all()
     for media_file_id in media_file_ids:
+        assert media_file_id is not None
         enqueue_translation(
             scheduler,
             media_file_id,

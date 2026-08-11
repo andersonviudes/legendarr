@@ -30,6 +30,7 @@ def _seed_movie(session, arr_service_id: int, **overrides) -> Movie:
 
 def test_resolve_effective_profile_returns_none_when_no_profile_exists(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session)
+    assert arr_service.id is not None
     movie = _seed_movie(in_memory_session, arr_service.id)
 
     assert resolve_effective_profile(in_memory_session, movie) is None
@@ -37,6 +38,7 @@ def test_resolve_effective_profile_returns_none_when_no_profile_exists(in_memory
 
 def test_resolve_effective_profile_falls_back_to_default(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session)
+    assert arr_service.id is not None
     default_profile = LanguageProfile(
         name="Default", source_languages="en", target_languages="pt-BR", is_default=True
     )
@@ -53,6 +55,7 @@ def test_resolve_effective_profile_falls_back_to_default(in_memory_session):
 
 def test_resolve_effective_profile_prefers_item_override_over_default(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session)
+    assert arr_service.id is not None
     default_profile = LanguageProfile(
         name="Default", source_languages="en", target_languages="pt-BR", is_default=True
     )

@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from legendarr_backend.media_library.list_media_library import metadata_by_key, metadata_fields
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
@@ -21,7 +21,7 @@ def list_wanted_media(session: Session) -> list[WantedRead]:
         return []
 
     media_files = session.exec(
-        select(MediaFile).where(MediaFile.id.in_(missing_by_file_id.keys()))
+        select(MediaFile).where(col(MediaFile.id).in_(missing_by_file_id.keys()))
     ).all()
 
     missing_languages_by_movie_id: dict[int, set[str]] = defaultdict(set)
@@ -29,42 +29,47 @@ def list_wanted_media(session: Session) -> list[WantedRead]:
     missing_languages_by_series_id: dict[int, set[str]] = defaultdict(set)
     missing_files_by_series_id: dict[int, int] = defaultdict(int)
     for file in media_files:
+        assert file.id is not None
         missing = missing_by_file_id[file.id]
         if file.movie_id is not None:
             missing_languages_by_movie_id[file.movie_id].update(missing)
             missing_files_by_movie_id[file.movie_id] += 1
         else:
+            assert file.series_id is not None
             missing_languages_by_series_id[file.series_id].update(missing)
             missing_files_by_series_id[file.series_id] += 1
 
     metadata_by_movie_id = metadata_by_key(session, MediaMetadata.movie_id)
     metadata_by_series_id = metadata_by_key(session, MediaMetadata.series_id)
 
-    rows = [
-        WantedRead(
-            id=movie.id,
-            kind="movie",
-            title=movie.title,
-            poster_url=metadata_fields(metadata_by_movie_id.get(movie.id))["poster_url"],
-            missing_languages=sorted(missing_languages_by_movie_id[movie.id]),
-            missing_files_count=missing_files_by_movie_id[movie.id],
+    rows: list[WantedRead] = []
+    for movie in session.exec(
+        select(Movie).where(col(Movie.id).in_(missing_languages_by_movie_id.keys()))
+    ):
+        assert movie.id is not None
+        rows.append(
+            WantedRead(
+                id=movie.id,
+                kind="movie",
+                title=movie.title,
+                poster_url=metadata_fields(metadata_by_movie_id.get(movie.id))["poster_url"],
+                missing_languages=sorted(missing_languages_by_movie_id[movie.id]),
+                missing_files_count=missing_files_by_movie_id[movie.id],
+            )
         )
-        for movie in session.exec(
-            select(Movie).where(Movie.id.in_(missing_languages_by_movie_id.keys()))
+    for series in session.exec(
+        select(Series).where(col(Series.id).in_(missing_languages_by_series_id.keys()))
+    ):
+        assert series.id is not None
+        rows.append(
+            WantedRead(
+                id=series.id,
+                kind="series",
+                title=series.title,
+                poster_url=metadata_fields(metadata_by_series_id.get(series.id))["poster_url"],
+                missing_languages=sorted(missing_languages_by_series_id[series.id]),
+                missing_files_count=missing_files_by_series_id[series.id],
+            )
         )
-    ]
-    rows += [
-        WantedRead(
-            id=series.id,
-            kind="series",
-            title=series.title,
-            poster_url=metadata_fields(metadata_by_series_id.get(series.id))["poster_url"],
-            missing_languages=sorted(missing_languages_by_series_id[series.id]),
-            missing_files_count=missing_files_by_series_id[series.id],
-        )
-        for series in session.exec(
-            select(Series).where(Series.id.in_(missing_languages_by_series_id.keys()))
-        )
-    ]
     rows.sort(key=lambda row: row.title.lower())
     return rows

@@ -1,8 +1,11 @@
 import logging
 from collections import defaultdict
+from collections.abc import Sequence
+from typing import cast
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
+from legendarr_backend.arr_clients.base import SeriesLibraryClient
 from legendarr_backend.arr_services.client_factory import build_client
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.http_client.client import ProviderClientError
@@ -28,6 +31,7 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
     movie = session.get(Movie, movie_id)
     if movie is None:
         return None
+    assert movie.id is not None
     files = _media_file_reads(
         session, session.exec(select(MediaFile).where(MediaFile.movie_id == movie_id)).all()
     )
@@ -52,6 +56,7 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
     series = session.get(Series, series_id)
     if series is None:
         return None
+    assert series.id is not None
     media_files = session.exec(select(MediaFile).where(MediaFile.series_id == series_id)).all()
     files = _media_file_reads(session, media_files)
     files_by_path = {
@@ -95,8 +100,13 @@ def _episode_reads(
     if arr_service is None:
         return [], False
     client = build_client(arr_service)
+    # `series` is only ever synced from a Sonarr connection (see
+    # `sync_media_library.MEDIA_MODEL_BY_TYPE`), so `client` is always a
+    # `SeriesLibraryClient` here even though `build_client`'s declared return type is
+    # the broader `RadarrClient | SonarrClient` union.
+    sonarr_client = cast(SeriesLibraryClient, client)
     try:
-        episodes = client.list_episodes(series.arr_id)
+        episodes = sonarr_client.list_episodes(series.arr_id)
     except ProviderClientError:
         logger.warning(
             "couldn't fetch episodes for series %r (%s) from Sonarr", series.title, series.arr_id
@@ -122,25 +132,31 @@ def _profile_fields(session: Session, item: Movie | Series) -> tuple[str | None,
     return profile.name, profile.target_language_list
 
 
-def _media_file_reads(session: Session, media_files: list[MediaFile]) -> list[MediaFileRead]:
-    media_file_ids = [media_file.id for media_file in media_files]
+def _media_file_reads(session: Session, media_files: Sequence[MediaFile]) -> list[MediaFileRead]:
+    media_file_ids: list[int] = []
+    for media_file in media_files:
+        assert media_file.id is not None
+        media_file_ids.append(media_file.id)
     subtitles_by_file_id: dict[int, list[Subtitle]] = defaultdict(list)
     for subtitle in session.exec(
-        select(Subtitle).where(Subtitle.media_file_id.in_(media_file_ids))
+        select(Subtitle).where(col(Subtitle.media_file_id).in_(media_file_ids))
     ).all():
         subtitles_by_file_id[subtitle.media_file_id].append(subtitle)
-    return [
-        MediaFileRead(
-            id=media_file.id,
-            relative_path=media_file.relative_path,
-            size_bytes=media_file.size_bytes,
-            subtitles=[
-                SubtitleRead(language=subtitle.language, origin=subtitle.origin.value)
-                for subtitle in subtitles_by_file_id.get(media_file.id, [])
-            ],
+    reads = []
+    for media_file in media_files:
+        assert media_file.id is not None
+        reads.append(
+            MediaFileRead(
+                id=media_file.id,
+                relative_path=media_file.relative_path,
+                size_bytes=media_file.size_bytes,
+                subtitles=[
+                    SubtitleRead(language=subtitle.language, origin=subtitle.origin.value)
+                    for subtitle in subtitles_by_file_id.get(media_file.id, [])
+                ],
+            )
         )
-        for media_file in media_files
-    ]
+    return reads
 
 
 def _missing_subtitles_count(files: list[MediaFileRead], target_languages: list[str]) -> int:

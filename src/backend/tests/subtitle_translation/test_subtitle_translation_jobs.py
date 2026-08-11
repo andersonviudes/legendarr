@@ -75,7 +75,9 @@ def test_enqueued_translation_job_tolerates_deleted_media_file(in_memory_session
     )
 
     # Must not raise — the row can be gone by the time the job runs.
-    scheduler.get_job("subtitle_translation:999").func()
+    job = scheduler.get_job("subtitle_translation:999")
+    assert job is not None
+    job.func()
 
 
 def test_enqueued_translation_job_writes_translated_subtitle(
@@ -94,6 +96,7 @@ def test_enqueued_translation_job_writes_translated_subtitle(
     monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.add(
@@ -114,6 +117,7 @@ def test_enqueued_translation_job_writes_translated_subtitle(
     )
     in_memory_session.add(media_file)
     in_memory_session.commit()
+    assert media_file.id is not None
     (tmp_path / "Foo").mkdir()
     (tmp_path / "Foo" / "Foo.mkv").touch()
     (tmp_path / "Foo" / "Foo.en.srt").write_text(
@@ -126,7 +130,9 @@ def test_enqueued_translation_job_writes_translated_subtitle(
     enqueue_translation(
         scheduler, media_file.id, JobQueue.TRANSLATE, retry_attempts=1, retry_delay_seconds=0.0
     )
-    scheduler.get_job(f"subtitle_translation:{media_file.id}").func()
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
 
     output = tmp_path / "Foo" / "Foo.pt-br.srt"
     assert "olá" in output.read_text(encoding="utf-8")
@@ -138,6 +144,7 @@ def test_enqueue_full_translation_scan_enqueues_every_known_media_file(
     in_memory_session, tmp_path, monkeypatch
 ):
     service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()

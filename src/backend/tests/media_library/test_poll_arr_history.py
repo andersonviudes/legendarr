@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
+from legendarr_backend.arr_services.models import ArrServiceType
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library import poll_arr_history as poll_module
 from legendarr_backend.media_library.models import Movie, Series
@@ -47,7 +48,7 @@ def _record(calls: list[tuple[str, int]]):
     return lambda kind, media_id: calls.append((kind, media_id))
 
 
-def _create_service(session, name: str, service_type: str, enabled: bool = True):
+def _create_service(session, name: str, service_type: ArrServiceType, enabled: bool = True):
     return create_arr_service(
         session,
         ArrServiceInput(
@@ -99,6 +100,7 @@ def test_poll_skips_imported_ids_the_sync_has_not_persisted(
 
 def test_poll_maps_series_kind_for_sonarr(in_memory_session, fake_clients, enqueued):
     sonarr = _create_service(in_memory_session, "sonarr", "sonarr")
+    assert sonarr.id is not None
     series = Series(arr_service_id=sonarr.id, arr_id=7, title="S", remote_path="/s")
     in_memory_session.add(series)
     in_memory_session.commit()
@@ -125,6 +127,7 @@ def test_poll_since_window_covers_two_intervals(in_memory_session, fake_clients,
 def test_failing_connection_does_not_block_others(in_memory_session, fake_clients, enqueued):
     broken = _create_service(in_memory_session, "broken", "radarr")
     healthy = _create_service(in_memory_session, "healthy", "sonarr")
+    assert healthy.id is not None
     series = Series(arr_service_id=healthy.id, arr_id=7, title="S", remote_path="/s")
     in_memory_session.add(series)
     in_memory_session.commit()

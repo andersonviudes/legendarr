@@ -35,6 +35,7 @@ def _movie(session, tmp_path: Path) -> Movie:
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     session.add(movie)
     session.commit()
@@ -54,6 +55,7 @@ def _series(session, tmp_path: Path) -> Series:
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     series = Series(arr_service_id=service.id, arr_id=1, title="Bar", remote_path="/remote/Bar")
     session.add(series)
     session.commit()
@@ -145,11 +147,12 @@ def test_rescan_removes_stale_subtitle_rows(in_memory_session, tmp_path):
 def test_scan_with_missing_video_skips_and_keeps_rows(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie, "Gone/Gone.mkv")
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Gone/Gone.en.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -393,11 +396,12 @@ def test_scan_persists_origin_as_lowercase_enum_value(in_memory_session, tmp_pat
 def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -408,7 +412,7 @@ def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tm
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -423,11 +427,12 @@ def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tm
 def test_deleting_media_file_cascades_to_subtitles(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )

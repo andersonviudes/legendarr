@@ -5,6 +5,7 @@ from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.list_wanted_media import list_wanted_media
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
 
 def _seed_arr_service(session, service_type: str) -> ArrService:
@@ -23,6 +24,7 @@ def test_list_wanted_media_returns_empty_list_with_nothing_missing(in_memory_ses
 
 def test_list_wanted_media_includes_movie_missing_a_target_language(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default", source_languages="en", target_languages="pt-BR", is_default=True
@@ -50,6 +52,7 @@ def test_list_wanted_media_includes_movie_missing_a_target_language(in_memory_se
 
 def test_list_wanted_media_excludes_movie_with_every_target_language(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default", source_languages="en", target_languages="en", is_default=True
@@ -64,11 +67,12 @@ def test_list_wanted_media_excludes_movie_with_every_target_language(in_memory_s
     )
     in_memory_session.add(media_file)
     in_memory_session.commit()
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -80,6 +84,7 @@ def test_list_wanted_media_excludes_movie_with_every_target_language(in_memory_s
 
 def test_list_wanted_media_series_counts_only_the_episode_still_missing(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default", source_languages="en", target_languages="pt-BR", is_default=True
@@ -105,11 +110,12 @@ def test_list_wanted_media_series_counts_only_the_episode_still_missing(in_memor
     in_memory_session.add(missing)
     in_memory_session.commit()
     in_memory_session.refresh(covered)
+    assert covered.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=covered.id,
             language="pt-br",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Bar.S01E01.pt-br.srt",
             scanned_at=datetime.now(UTC),
         )

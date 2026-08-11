@@ -126,7 +126,9 @@ def test_enqueued_sync_job_syncs_the_library(in_memory_session, monkeypatch):
 
     scheduler = build_scheduler()
     enqueue_media_sync(scheduler, retry_attempts=1, retry_delay_seconds=0.0)
-    scheduler.get_job("media_library_sync_manual").func()
+    job = scheduler.get_job("media_library_sync_manual")
+    assert job is not None
+    job.func()
 
     series = list(in_memory_session.exec(select(Series)).all())
     assert len(series) == 1
@@ -183,9 +185,11 @@ def test_enqueued_scan_job_scans_the_item(in_memory_session, tmp_path, monkeypat
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()
+    assert movie.id is not None
     video = tmp_path / "Foo" / "Foo.mkv"
     video.parent.mkdir(parents=True)
     video.write_bytes(b"x" * 42)
@@ -199,7 +203,9 @@ def test_enqueued_scan_job_scans_the_item(in_memory_session, tmp_path, monkeypat
         retry_attempts=1,
         retry_delay_seconds=0.0,
     )
-    scheduler.get_job("media_scan:movie:1").func()
+    job = scheduler.get_job("media_scan:movie:1")
+    assert job is not None
+    job.func()
 
     rows = list(in_memory_session.exec(select(MediaFile)).all())
     assert len(rows) == 1
@@ -220,4 +226,6 @@ def test_enqueued_scan_job_tolerates_deleted_item(in_memory_session, monkeypatch
     )
 
     # Must not raise — the row can be gone by the time the job runs.
-    scheduler.get_job("media_scan:movie:999").func()
+    job = scheduler.get_job("media_scan:movie:999")
+    assert job is not None
+    job.func()

@@ -34,6 +34,7 @@ def test_ensure_subtitle_providers_seeded_keeps_existing_credentials(in_memory_s
     provider = next(
         p for p in list_subtitle_providers(in_memory_session) if p.kind == "opensubtitles"
     )
+    assert provider.id is not None
     update_subtitle_provider(
         in_memory_session, provider.id, SubtitleProviderConfigInput(api_key="my-key")
     )
@@ -41,6 +42,7 @@ def test_ensure_subtitle_providers_seeded_keeps_existing_credentials(in_memory_s
     ensure_subtitle_providers_seeded(in_memory_session)
 
     refreshed = get_subtitle_provider(in_memory_session, provider.id)
+    assert refreshed is not None
     assert refreshed.api_key == "my-key"
 
 
@@ -53,16 +55,19 @@ def test_mark_connection_verified_sets_the_flag(in_memory_session):
     provider = next(
         p for p in list_subtitle_providers(in_memory_session) if p.kind == "napiprojekt"
     )
+    assert provider.id is not None
 
     mark_connection_verified(in_memory_session, provider)
 
     refreshed = get_subtitle_provider(in_memory_session, provider.id)
+    assert refreshed is not None
     assert refreshed.connection_verified is True
 
 
 def test_update_subtitle_provider_replaces_fields(in_memory_session):
     ensure_subtitle_providers_seeded(in_memory_session)
     provider = list_subtitle_providers(in_memory_session)[0]
+    assert provider.id is not None
 
     updated = update_subtitle_provider(
         in_memory_session,
@@ -70,6 +75,7 @@ def test_update_subtitle_provider_replaces_fields(in_memory_session):
         SubtitleProviderConfigInput(enabled=False, api_key="secret-key"),
     )
 
+    assert updated is not None
     assert updated.enabled is False
     assert updated.api_key == "secret-key"
 
@@ -81,6 +87,7 @@ def test_update_subtitle_provider_returns_none_when_missing(in_memory_session):
 def test_secrets_are_encrypted_at_rest(in_memory_session):
     ensure_subtitle_providers_seeded(in_memory_session)
     provider = list_subtitle_providers(in_memory_session)[0]
+    assert provider.id is not None
 
     update_subtitle_provider(
         in_memory_session,

@@ -42,6 +42,7 @@ class TvdbMetadataProvider:
         imdb_id: str | None,
     ) -> MetadataResult | None:
         self._ensure_logged_in()
+        assert self._http is not None
         entity = "movies" if media_type == "movie" else "series"
         record_id = tvdb_id or self._search(entity, title)
         if record_id is None:
@@ -75,6 +76,7 @@ class TvdbMetadataProvider:
         )
 
     def _search(self, entity: str, title: str) -> int | None:
+        assert self._http is not None
         entity_type = "movie" if entity == "movies" else "series"
         try:
             body = self._http.get_json(f"/search?query={quote(title)}&type={entity_type}")

@@ -23,6 +23,7 @@ def test_register_job_applies_queue_and_concurrency_policy():
     )
 
     job = scheduler.get_job("test_job")
+    assert job is not None
     assert job.executor == JobQueue.SYNC.value
     assert job.max_instances == 2
     assert job.coalesce is False

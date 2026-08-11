@@ -1,4 +1,6 @@
-from sqlmodel import Session, select
+from collections.abc import Callable
+
+from sqlmodel import Session, col, select
 
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
@@ -8,7 +10,7 @@ from legendarr_backend.subtitle_translation.providers.libretranslate import (
     LibreTranslateTranslationProvider,
 )
 
-_PROVIDER_CLASSES: dict[str, type[TranslationProvider]] = {
+_PROVIDER_CLASSES: dict[str, Callable[[TranslationProviderConfig], TranslationProvider]] = {
     "deepl": DeepLTranslationProvider,
     "google": GoogleTranslationProvider,
     "libretranslate": LibreTranslateTranslationProvider,
@@ -32,7 +34,7 @@ def resolve_provider_chain(
     configs = session.exec(
         select(TranslationProviderConfig)
         .where(TranslationProviderConfig.enabled)
-        .order_by(TranslationProviderConfig.id)
+        .order_by(col(TranslationProviderConfig.id))
     ).all()
     ready = [config for config in configs if config.has_credentials]
     ready.sort(key=lambda config: config.kind != default_kind)
