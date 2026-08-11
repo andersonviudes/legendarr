@@ -1,6 +1,5 @@
 import logging
 from functools import partial
-from typing import Literal
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
@@ -8,7 +7,7 @@ from sqlmodel import Session, select
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.database.engine import get_session
-from legendarr_backend.media_library.models import Movie, Series
+from legendarr_backend.media_library.models import MediaKind, Movie, Series
 from legendarr_backend.media_library.poll_arr_history import poll_arr_history
 from legendarr_backend.media_library.scan_media_files import scan_media_item
 from legendarr_backend.media_library.sync_media_library import sync_media_library
@@ -17,8 +16,6 @@ from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
 
 logger = logging.getLogger(__name__)
-
-MediaKind = Literal["movie", "series"]
 
 
 def register_sync_job(
@@ -125,8 +122,10 @@ def enqueue_full_scan(
     movie_ids = session.exec(select(Movie.id)).all()
     series_ids = session.exec(select(Series.id)).all()
     for movie_id in movie_ids:
+        assert movie_id is not None
         enqueue("movie", movie_id)
     for series_id in series_ids:
+        assert series_id is not None
         enqueue("series", series_id)
     return len(movie_ids), len(series_ids)
 

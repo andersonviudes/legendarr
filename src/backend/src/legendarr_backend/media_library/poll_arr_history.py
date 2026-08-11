@@ -8,13 +8,13 @@ from sqlmodel import Session, select
 from legendarr_backend.arr_services.client_factory import build_client
 from legendarr_backend.arr_services.manage_arr_service import list_enabled_arr_services
 from legendarr_backend.arr_services.models import ArrService
-from legendarr_backend.media_library.models import MEDIA_MODEL_BY_TYPE, Movie
+from legendarr_backend.media_library.models import MEDIA_MODEL_BY_TYPE, MediaKind, Movie
 
 logger = logging.getLogger(__name__)
 
 # (media_kind, media_id) — the concrete enqueue call is injected by the job wiring,
 # keeping this service independent of the scheduler.
-EnqueueScan = Callable[[str, int], None]
+EnqueueScan = Callable[[MediaKind, int], None]
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ def _poll_service(
             model.arr_id.in_(imported_ids),
         )
     ).all()
-    media_kind = "movie" if model is Movie else "series"
+    media_kind: MediaKind = "movie" if model is Movie else "series"
     for row in rows:
         enqueue_scan(media_kind, row.id)
     return len(rows)

@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
@@ -16,7 +16,9 @@ def list_media_files_without_subtitles(session: Session) -> list[MediaFile]:
     dashboard concern, not this function's — see `ROADMAP.md` 0.4.0.
     """
     return list(
-        session.exec(select(MediaFile).where(~MediaFile.id.in_(select(Subtitle.media_file_id))))
+        session.exec(
+            select(MediaFile).where(~col(MediaFile.id).in_(select(Subtitle.media_file_id)))
+        )
     )
 
 
@@ -34,11 +36,11 @@ def list_missing_target_languages_by_media_file(session: Session) -> dict[int, l
     movie_ids = {file.movie_id for file in media_files if file.movie_id is not None}
     series_ids = {file.series_id for file in media_files if file.series_id is not None}
     movies_by_id = {
-        movie.id: movie for movie in session.exec(select(Movie).where(Movie.id.in_(movie_ids)))
+        movie.id: movie for movie in session.exec(select(Movie).where(col(Movie.id).in_(movie_ids)))
     }
     series_by_id = {
         series.id: series
-        for series in session.exec(select(Series).where(Series.id.in_(series_ids)))
+        for series in session.exec(select(Series).where(col(Series.id).in_(series_ids)))
     }
     profile_by_movie_id = {
         movie_id: resolve_effective_profile(session, movie)
@@ -51,12 +53,13 @@ def list_missing_target_languages_by_media_file(session: Session) -> dict[int, l
 
     languages_by_file_id: dict[int, set[str]] = defaultdict(set)
     for subtitle in session.exec(
-        select(Subtitle).where(Subtitle.media_file_id.in_([file.id for file in media_files]))
+        select(Subtitle).where(col(Subtitle.media_file_id).in_([file.id for file in media_files]))
     ):
         languages_by_file_id[subtitle.media_file_id].add(subtitle.language)
 
     missing_by_file_id: dict[int, list[str]] = {}
     for file in media_files:
+        assert file.id is not None
         profile = (
             profile_by_movie_id.get(file.movie_id)
             if file.movie_id is not None

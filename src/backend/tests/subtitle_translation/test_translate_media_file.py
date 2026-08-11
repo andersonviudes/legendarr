@@ -199,6 +199,7 @@ def test_translate_media_file_skips_target_language_already_covered_by_embedded_
     satisfied by a "pt" embedded row."""
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
     _profile(in_memory_session)
     video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
     in_memory_session.add(

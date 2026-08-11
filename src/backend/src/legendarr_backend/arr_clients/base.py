@@ -51,3 +51,17 @@ class EpisodeItem:
     episode_number: int
     title: str
     relative_path: str | None
+
+
+class SeriesLibraryClient(MediaLibraryClient, Protocol):
+    """A `MediaLibraryClient` that also exposes per-series episode listing.
+
+    Only Sonarr connections satisfy this — Radarr movies have no episode equivalent, so
+    `list_episodes` isn't part of the base `MediaLibraryClient` contract (that would force
+    `RadarrClient` to implement a method it has no use for). A `Series` is only ever
+    synced from a Sonarr connection (see `sync_media_library.MEDIA_MODEL_BY_TYPE`), so
+    `build_client(series' arr_service)` always returns one of these at runtime even
+    though its declared return type is the broader `RadarrClient | SonarrClient` union.
+    """
+
+    def list_episodes(self, series_id: int) -> list[EpisodeItem]: ...

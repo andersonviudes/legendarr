@@ -26,6 +26,7 @@ def test_get_movie_detail_returns_none_when_missing(in_memory_session):
 
 def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default",
@@ -45,12 +46,14 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
     in_memory_session.add(movie)
     in_memory_session.commit()
     in_memory_session.refresh(movie)
+    assert movie.id is not None
     media_file = MediaFile(
         movie_id=movie.id, relative_path="Foo.mkv", size_bytes=100, scanned_at=datetime.now(UTC)
     )
     in_memory_session.add(media_file)
     in_memory_session.commit()
     in_memory_session.refresh(media_file)
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
@@ -64,6 +67,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
 
     detail = get_movie_detail(in_memory_session, movie.id)
 
+    assert detail is not None
     assert detail.title == "Foo"
     assert detail.language_profile_name == "Default"
     assert detail.target_languages == ["pt-BR", "fr"]
@@ -76,6 +80,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
 
 def test_get_movie_detail_uses_item_override_profile_over_default(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default", source_languages="en", target_languages="pt-BR", is_default=True
@@ -95,15 +100,18 @@ def test_get_movie_detail_uses_item_override_profile_over_default(in_memory_sess
     in_memory_session.add(movie)
     in_memory_session.commit()
     in_memory_session.refresh(movie)
+    assert movie.id is not None
 
     detail = get_movie_detail(in_memory_session, movie.id)
 
+    assert detail is not None
     assert detail.language_profile_name == "Anime"
     assert detail.target_languages == ["en"]
 
 
 def test_get_movie_detail_counts_files_without_subtitles_as_missing(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         LanguageProfile(
             name="Default", source_languages="en", target_languages="en", is_default=True
@@ -113,6 +121,7 @@ def test_get_movie_detail_counts_files_without_subtitles_as_missing(in_memory_se
     in_memory_session.add(movie)
     in_memory_session.commit()
     in_memory_session.refresh(movie)
+    assert movie.id is not None
     in_memory_session.add(
         MediaFile(
             movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
@@ -122,15 +131,18 @@ def test_get_movie_detail_counts_files_without_subtitles_as_missing(in_memory_se
 
     detail = get_movie_detail(in_memory_session, movie.id)
 
+    assert detail is not None
     assert detail.missing_subtitles_count == 1
 
 
 def test_get_movie_detail_missing_count_is_zero_without_a_language_profile(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
     in_memory_session.add(movie)
     in_memory_session.commit()
     in_memory_session.refresh(movie)
+    assert movie.id is not None
     in_memory_session.add(
         MediaFile(
             movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
@@ -140,6 +152,7 @@ def test_get_movie_detail_missing_count_is_zero_without_a_language_profile(in_me
 
     detail = get_movie_detail(in_memory_session, movie.id)
 
+    assert detail is not None
     assert detail.language_profile_name is None
     assert detail.missing_subtitles_count == 0
 
@@ -150,6 +163,7 @@ def test_get_series_detail_returns_none_when_missing(in_memory_session):
 
 def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, monkeypatch):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
+    assert arr_service.id is not None
     series = Series(
         arr_service_id=arr_service.id,
         arr_id=7,
@@ -163,6 +177,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
     in_memory_session.add(series)
     in_memory_session.commit()
     in_memory_session.refresh(series)
+    assert series.id is not None
     media_file = MediaFile(
         series_id=series.id,
         relative_path="Season 01/Bar.S01E01.mkv",
@@ -172,6 +187,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
     in_memory_session.add(media_file)
     in_memory_session.commit()
     in_memory_session.refresh(media_file)
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
@@ -206,6 +222,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
 
     detail = get_series_detail(in_memory_session, series.id)
 
+    assert detail is not None
     assert len(detail.episodes) == 2
     assert detail.episodes[0].title == "Pilot"
     assert detail.episodes[0].media_file is not None
@@ -217,6 +234,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
 
 def test_get_series_detail_degrades_when_sonarr_is_unreachable(in_memory_session, monkeypatch):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
+    assert arr_service.id is not None
     series = Series(
         arr_service_id=arr_service.id,
         arr_id=7,
@@ -226,6 +244,7 @@ def test_get_series_detail_degrades_when_sonarr_is_unreachable(in_memory_session
     in_memory_session.add(series)
     in_memory_session.commit()
     in_memory_session.refresh(series)
+    assert series.id is not None
 
     class _FailingClient:
         def list_episodes(self, series_id):
@@ -241,5 +260,6 @@ def test_get_series_detail_degrades_when_sonarr_is_unreachable(in_memory_session
 
     detail = get_series_detail(in_memory_session, series.id)
 
+    assert detail is not None
     assert detail.episodes == []
     assert detail.episodes_unavailable is True

@@ -71,6 +71,7 @@ def update_provider(
     provider = update_translation_provider(
         session, provider_id, _merge_with_existing(data, existing)
     )
+    assert provider is not None
     return provider
 
 

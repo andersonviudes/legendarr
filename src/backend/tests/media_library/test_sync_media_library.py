@@ -141,6 +141,7 @@ def test_sync_skips_disabled_connections(in_memory_session, fake_clients):
 
 def test_failing_connection_does_not_block_others(in_memory_session, fake_clients):
     broken = create_arr_service(in_memory_session, _service_input("broken", "radarr"))
+    assert broken.id is not None
     healthy = create_arr_service(in_memory_session, _service_input("healthy", "sonarr"))
     in_memory_session.add(
         Movie(arr_service_id=broken.id, arr_id=9, title="Old", remote_path="/movies/Old")

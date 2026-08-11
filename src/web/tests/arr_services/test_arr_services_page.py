@@ -123,7 +123,7 @@ def test_create_arr_service_redirects_to_list(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -155,7 +155,7 @@ def test_create_arr_service_triggers_library_sync(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -182,7 +182,7 @@ def test_create_arr_service_succeeds_even_when_sync_trigger_fails(stub_backend_c
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -208,7 +208,7 @@ def test_update_arr_service_redirects_with_success_toast(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -238,7 +238,7 @@ def test_create_arr_service_forwards_path_mapping(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
                 "remote_path_prefix": "/movies",
                 "local_path_prefix": "/media/movies",
@@ -268,7 +268,7 @@ def test_create_arr_service_sends_blank_path_mapping_as_null(stub_backend_client
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -294,7 +294,7 @@ def test_create_arr_service_rerenders_form_when_server_unreachable(stub_backend_
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -324,7 +324,7 @@ def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -390,7 +390,7 @@ def test_test_connection_shows_message_on_backend_error(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )
@@ -460,7 +460,7 @@ def test_create_shows_error_on_duplicate_name(stub_backend_client):
                 "service_type": "radarr",
                 "name": "radarr",
                 "host": "radarr",
-                "port": 7878,
+                "port": "7878",
                 "api_key": "api-key",
             },
         )

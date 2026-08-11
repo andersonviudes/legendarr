@@ -7,18 +7,20 @@ from legendarr_backend.media_metadata.models import MediaMetadata
 
 def list_movies(session: Session) -> list[MovieRead]:
     metadata_by_movie_id = metadata_by_key(session, MediaMetadata.movie_id)
-    return [
-        _movie_read(movie, metadata_by_movie_id.get(movie.id))
-        for movie in session.exec(select(Movie)).all()
-    ]
+    movies = []
+    for movie in session.exec(select(Movie)).all():
+        assert movie.id is not None
+        movies.append(_movie_read(movie, metadata_by_movie_id.get(movie.id)))
+    return movies
 
 
 def list_series(session: Session) -> list[SeriesRead]:
     metadata_by_series_id = metadata_by_key(session, MediaMetadata.series_id)
-    return [
-        _series_read(item, metadata_by_series_id.get(item.id))
-        for item in session.exec(select(Series)).all()
-    ]
+    series_list = []
+    for item in session.exec(select(Series)).all():
+        assert item.id is not None
+        series_list.append(_series_read(item, metadata_by_series_id.get(item.id)))
+    return series_list
 
 
 def metadata_by_key(session: Session, key_column) -> dict[int, MediaMetadata]:
@@ -40,6 +42,7 @@ def metadata_fields(metadata: MediaMetadata | None) -> dict:
 
 
 def _movie_read(movie: Movie, metadata: MediaMetadata | None) -> MovieRead:
+    assert movie.id is not None
     return MovieRead(
         id=movie.id,
         title=movie.title,
@@ -51,6 +54,7 @@ def _movie_read(movie: Movie, metadata: MediaMetadata | None) -> MovieRead:
 
 
 def _series_read(series: Series, metadata: MediaMetadata | None) -> SeriesRead:
+    assert series.id is not None
     return SeriesRead(
         id=series.id,
         title=series.title,

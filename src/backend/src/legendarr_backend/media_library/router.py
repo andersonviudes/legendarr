@@ -14,7 +14,7 @@ from legendarr_backend.media_library.jobs import (
 )
 from legendarr_backend.media_library.list_media_library import list_movies, list_series
 from legendarr_backend.media_library.list_wanted_media import list_wanted_media
-from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.media_library.models import MediaFile, MediaKind
 from legendarr_backend.media_library.schemas import (
     MovieDetailRead,
     MovieRead,
@@ -123,7 +123,7 @@ def trigger_series_scan(
 
 
 def _trigger_item_scan(
-    request: Request, session: Session, kind: str, item_id: int
+    request: Request, session: Session, kind: MediaKind, item_id: int
 ) -> dict[str, str]:
     """ "Scan Disk" for one movie/series: rescans the item's files, then rescans
     subtitles for whichever `MediaFile` rows already exist. A file the media scan just
@@ -142,6 +142,7 @@ def _trigger_item_scan(
     filter_column = MediaFile.movie_id if kind == "movie" else MediaFile.series_id
     media_file_ids = session.exec(select(MediaFile.id).where(filter_column == item_id)).all()
     for media_file_id in media_file_ids:
+        assert media_file_id is not None
         enqueue_subtitle_scan(
             scheduler,
             media_file_id,

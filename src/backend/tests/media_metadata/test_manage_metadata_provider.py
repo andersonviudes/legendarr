@@ -34,6 +34,7 @@ def test_ensure_metadata_providers_seeded_is_idempotent(in_memory_session):
 def test_ensure_metadata_providers_seeded_keeps_existing_credentials(in_memory_session):
     ensure_metadata_providers_seeded(in_memory_session)
     provider = next(p for p in list_metadata_providers(in_memory_session) if p.kind == "tvdb")
+    assert provider.id is not None
     update_metadata_provider(
         in_memory_session, provider.id, MetadataProviderConfigInput(api_key="my-key")
     )
@@ -41,6 +42,7 @@ def test_ensure_metadata_providers_seeded_keeps_existing_credentials(in_memory_s
     ensure_metadata_providers_seeded(in_memory_session)
 
     refreshed = get_metadata_provider(in_memory_session, provider.id)
+    assert refreshed is not None
     assert refreshed.api_key == "my-key"
 
 
@@ -51,16 +53,19 @@ def test_get_metadata_provider_returns_none_when_missing(in_memory_session):
 def test_mark_connection_verified_sets_the_flag(in_memory_session):
     ensure_metadata_providers_seeded(in_memory_session)
     provider = list_metadata_providers(in_memory_session)[0]
+    assert provider.id is not None
 
     mark_connection_verified(in_memory_session, provider)
 
     refreshed = get_metadata_provider(in_memory_session, provider.id)
+    assert refreshed is not None
     assert refreshed.connection_verified is True
 
 
 def test_update_metadata_provider_replaces_fields(in_memory_session):
     ensure_metadata_providers_seeded(in_memory_session)
     provider = list_metadata_providers(in_memory_session)[0]
+    assert provider.id is not None
 
     updated = update_metadata_provider(
         in_memory_session,
@@ -68,6 +73,7 @@ def test_update_metadata_provider_replaces_fields(in_memory_session):
         MetadataProviderConfigInput(enabled=False, api_key="secret-key"),
     )
 
+    assert updated is not None
     assert updated.enabled is False
     assert updated.api_key == "secret-key"
 
@@ -79,6 +85,7 @@ def test_update_metadata_provider_returns_none_when_missing(in_memory_session):
 def test_secrets_are_encrypted_at_rest(in_memory_session):
     ensure_metadata_providers_seeded(in_memory_session)
     provider = list_metadata_providers(in_memory_session)[0]
+    assert provider.id is not None
 
     update_metadata_provider(
         in_memory_session, provider.id, MetadataProviderConfigInput(api_key="secret-key")

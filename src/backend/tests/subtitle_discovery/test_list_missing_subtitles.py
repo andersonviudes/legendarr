@@ -10,6 +10,7 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     list_missing_target_languages_by_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
 
 def _movie(session, tmp_path: Path) -> Movie:
@@ -25,6 +26,7 @@ def _movie(session, tmp_path: Path) -> Movie:
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     session.add(movie)
     session.commit()
@@ -47,11 +49,12 @@ def test_returns_only_media_files_without_any_subtitle(in_memory_session, tmp_pa
     movie = _movie(in_memory_session, tmp_path)
     with_subtitle = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
     without_subtitle = _media_file(in_memory_session, movie, "Foo/Bar.mkv")
+    assert with_subtitle.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=with_subtitle.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -75,11 +78,12 @@ def test_missing_target_languages_flags_file_short_one_language(in_memory_sessio
     )
     in_memory_session.commit()
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="pt-br",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.pt-br.srt",
             scanned_at=datetime.now(UTC),
         )
@@ -102,11 +106,12 @@ def test_missing_target_languages_omits_file_with_every_target_language(
     )
     in_memory_session.commit()
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
     in_memory_session.add(
         Subtitle(
             media_file_id=media_file.id,
             language="en",
-            origin="external",
+            origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
             scanned_at=datetime.now(UTC),
         )

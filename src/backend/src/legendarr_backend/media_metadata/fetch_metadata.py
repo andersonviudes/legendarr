@@ -29,6 +29,7 @@ def fetch_metadata_for_new_items(
     if not providers:
         return
     for movie in movies:
+        assert movie.id is not None
         _fetch_and_store(
             session,
             providers,
@@ -40,6 +41,7 @@ def fetch_metadata_for_new_items(
             imdb_id=movie.imdb_id,
         )
     for item in series:
+        assert item.id is not None
         _fetch_and_store(
             session,
             providers,

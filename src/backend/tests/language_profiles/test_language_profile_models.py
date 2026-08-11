@@ -1,8 +1,14 @@
+from typing import Any
+
 from legendarr_backend.language_profiles.models import LanguageProfile
 
 
 def _profile(**overrides) -> LanguageProfile:
-    data = {"name": "default", "source_languages": "en", "target_languages": "pt-BR"}
+    data: dict[str, Any] = {
+        "name": "default",
+        "source_languages": "en",
+        "target_languages": "pt-BR",
+    }
     data.update(overrides)
     return LanguageProfile(**data)
 

@@ -88,6 +88,7 @@ def test_enqueued_subtitle_scan_job_persists_discovered_subtitle(
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -99,6 +100,7 @@ def test_enqueued_subtitle_scan_job_persists_discovered_subtitle(
     )
     in_memory_session.add(media_file)
     in_memory_session.commit()
+    assert media_file.id is not None
     (tmp_path / "Foo").mkdir()
     (tmp_path / "Foo" / "Foo.mkv").write_bytes(b"x" * 42)
     (tmp_path / "Foo" / "Foo.pt-BR.srt").touch()
@@ -111,7 +113,9 @@ def test_enqueued_subtitle_scan_job_persists_discovered_subtitle(
         retry_attempts=1,
         retry_delay_seconds=0.0,
     )
-    scheduler.get_job(f"subtitle_scan:{media_file.id}").func()
+    job = scheduler.get_job(f"subtitle_scan:{media_file.id}")
+    assert job is not None
+    job.func()
 
     rows = list(in_memory_session.exec(select(Subtitle)).all())
     assert len(rows) == 1
@@ -146,6 +150,7 @@ def test_enqueued_subtitle_scan_job_forwards_probe_timeout_to_the_scan(
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -157,6 +162,7 @@ def test_enqueued_subtitle_scan_job_forwards_probe_timeout_to_the_scan(
     )
     in_memory_session.add(media_file)
     in_memory_session.commit()
+    assert media_file.id is not None
     (tmp_path / "Foo").mkdir()
     (tmp_path / "Foo" / "Foo.mkv").write_bytes(b"x" * 42)
 
@@ -169,7 +175,9 @@ def test_enqueued_subtitle_scan_job_forwards_probe_timeout_to_the_scan(
         retry_delay_seconds=0.0,
         probe_timeout_seconds=5.0,
     )
-    scheduler.get_job(f"subtitle_scan:{media_file.id}").func()
+    job = scheduler.get_job(f"subtitle_scan:{media_file.id}")
+    assert job is not None
+    job.func()
 
     assert captured["kwargs"]["probe_timeout_seconds"] == 5.0
 
@@ -187,7 +195,9 @@ def test_enqueued_subtitle_scan_job_tolerates_deleted_media_file(in_memory_sessi
     )
 
     # Must not raise — the row can be gone by the time the job runs.
-    scheduler.get_job("subtitle_scan:999").func()
+    job = scheduler.get_job("subtitle_scan:999")
+    assert job is not None
+    job.func()
 
 
 def test_enqueue_full_subtitle_scan_enqueues_every_known_media_file(
@@ -205,6 +215,7 @@ def test_enqueue_full_subtitle_scan_enqueues_every_known_media_file(
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()

@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -31,7 +32,7 @@ def register_job(
     retry_delay_seconds: float,
     max_instances: int,
     coalesce: bool,
-    **trigger_args: object,
+    **trigger_args: Any,
 ) -> None:
     """Register `func` as a job, applying this project's shared scheduling conventions.
 

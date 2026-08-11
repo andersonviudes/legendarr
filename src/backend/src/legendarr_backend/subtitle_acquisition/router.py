@@ -78,6 +78,7 @@ def update_provider(
     if existing is None:
         raise HTTPException(status_code=404, detail="Subtitle provider not found")
     provider = update_subtitle_provider(session, provider_id, _merge_with_existing(data, existing))
+    assert provider is not None
     return provider
 
 

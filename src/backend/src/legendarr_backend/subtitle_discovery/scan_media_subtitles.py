@@ -52,6 +52,7 @@ def scan_subtitles_for_media_file(
     if not video_path.is_file():
         logger.warning("subtitle scan skipped: %s is not a file", video_path)
         return ScanResult(added=0, removed=0, skipped=True)
+    assert media_file.id is not None
 
     existing_rows = list(
         session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file.id))

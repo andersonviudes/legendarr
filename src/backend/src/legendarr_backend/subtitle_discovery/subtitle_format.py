@@ -16,7 +16,7 @@ def parse_srt(content: str) -> list[SubtitleLine]:
     """Parse an `.srt` file's contents into translatable lines, preserving timing/order."""
     return [
         SubtitleLine(
-            index=subtitle.index,
+            index=int(subtitle.index),
             start_ms=round(subtitle.start.total_seconds() * 1000),
             end_ms=round(subtitle.end.total_seconds() * 1000),
             text=subtitle.content,

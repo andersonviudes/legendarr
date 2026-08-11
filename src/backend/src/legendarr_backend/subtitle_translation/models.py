@@ -1,18 +1,15 @@
-from typing import Literal
+from typing import Literal, get_args
 
 from sqlalchemy import Column
 from sqlmodel import Field, SQLModel
 
 from legendarr_backend.security.encrypted_string import EncryptedString
 
-TRANSLATION_PROVIDER_KINDS = (
-    "deepl",
-    "google",
-    "libretranslate",
-)
+# Single source of truth for every recognized translation provider kind.
+TranslationProviderKind = Literal["deepl", "google", "libretranslate"]
 
-# Derived from the tuple above rather than hand-duplicated, so the two can't drift apart.
-TranslationProviderKind = Literal[*TRANSLATION_PROVIDER_KINDS]
+# Derived from the Literal above rather than hand-duplicated, so the two can't drift apart.
+TRANSLATION_PROVIDER_KINDS: tuple[TranslationProviderKind, ...] = get_args(TranslationProviderKind)
 
 # Which credential(s) each kind needs to be usable — mirrors the `_require()` checks in
 # `connection_tests.py`. Unlike subtitle sources, every translation provider kind needs at

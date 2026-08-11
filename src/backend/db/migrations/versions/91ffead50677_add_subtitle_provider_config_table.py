@@ -9,7 +9,7 @@ Create Date: 2026-07-22 12:24:14.762309
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-import sqlmodel
+import sqlmodel.sql.sqltypes
 from alembic import op
 from legendarr_backend.security.encrypted_string import EncryptedString
 

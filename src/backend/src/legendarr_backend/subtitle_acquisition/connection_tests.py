@@ -37,6 +37,7 @@ def _require(value: str | None, label: str) -> str | None:
 def _test_opensubtitles(config: SubtitleProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
+    assert config.api_key is not None
     client = ProviderHttpClient(
         "OpenSubtitles",
         "https://api.opensubtitles.com",

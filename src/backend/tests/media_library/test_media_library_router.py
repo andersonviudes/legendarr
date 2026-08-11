@@ -17,6 +17,7 @@ def _seed_movie() -> Movie:
         session.add(arr_service)
         session.commit()
         session.refresh(arr_service)
+        assert arr_service.id is not None
         movie = Movie(
             arr_service_id=arr_service.id,
             arr_id=1,
@@ -40,6 +41,7 @@ def _seed_series() -> Series:
         session.add(arr_service)
         session.commit()
         session.refresh(arr_service)
+        assert arr_service.id is not None
         series = Series(
             arr_service_id=arr_service.id,
             arr_id=7,

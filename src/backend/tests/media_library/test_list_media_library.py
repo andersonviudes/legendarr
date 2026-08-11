@@ -22,6 +22,7 @@ def test_list_movies_returns_empty_list_with_nothing_synced(in_memory_session):
 
 def test_list_movies_includes_arr_fields_and_no_metadata(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         Movie(
             arr_service_id=arr_service.id,
@@ -49,6 +50,7 @@ def test_list_movies_includes_arr_fields_and_no_metadata(in_memory_session):
 
 def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
     movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -75,6 +77,7 @@ def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
 
 def test_list_series_includes_episode_counts(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
+    assert arr_service.id is not None
     in_memory_session.add(
         Series(
             arr_service_id=arr_service.id,

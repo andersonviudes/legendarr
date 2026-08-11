@@ -2,14 +2,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
-from legendarr_backend.arr_services.models import ArrService
+from legendarr_backend.arr_services.models import ArrService, ArrServiceType
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.media_library.scan_media_files import delete_media_files, scan_media_item
 from sqlmodel import select
 
 
-def _create_service(session, tmp_path: Path, name: str, service_type: str) -> ArrService:
+def _create_service(session, tmp_path: Path, name: str, service_type: ArrServiceType) -> ArrService:
     return create_arr_service(
         session,
         ArrServiceInput(

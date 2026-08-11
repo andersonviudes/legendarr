@@ -30,11 +30,13 @@ def _seed(arr_id: int = 42, service_type: str = "radarr") -> tuple[int, int]:
         session.add(service)
         session.commit()
         session.refresh(service)
+        assert service.id is not None
         model = Movie if service_type == "radarr" else Series
         item = model(arr_service_id=service.id, arr_id=arr_id, title="Foo", remote_path="/m/Foo")
         session.add(item)
         session.commit()
         session.refresh(item)
+        assert item.id is not None
         return service.id, item.id
 
 
@@ -114,7 +116,9 @@ def test_rename_event_updates_remote_path_and_enqueues(app_with_scheduler):
         )
 
     with get_session() as session:
-        assert session.get(Movie, movie_id).remote_path == "/m/Foo Renamed"
+        renamed = session.get(Movie, movie_id)
+        assert renamed is not None
+        assert renamed.remote_path == "/m/Foo Renamed"
 
 
 def test_series_delete_event_removes_media_files(app_with_scheduler):

@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import cast
 
 from sqlmodel import Session, select
 
@@ -46,10 +47,18 @@ def sync_media_library(session: Session) -> SyncResult:
             )
             continue
         try:
+            # `_sync_service` returns `list[Movie]` for a "radarr" service and
+            # `list[Series]` for a "sonarr" one (see `MEDIA_MODEL_BY_TYPE`) — the cast
+            # just tells the type checker what the `service_type` branch already
+            # guarantees at runtime.
             if arr_service.service_type == "radarr":
-                fetch_metadata_for_new_items(session, movies=new_items, series=[])
+                fetch_metadata_for_new_items(
+                    session, movies=cast(list[Movie], new_items), series=[]
+                )
             else:
-                fetch_metadata_for_new_items(session, movies=[], series=new_items)
+                fetch_metadata_for_new_items(
+                    session, movies=[], series=cast(list[Series], new_items)
+                )
         except Exception:
             # A metadata-source outage never fails the sync itself — the core
             # Radarr/Sonarr data above is already committed either way.
@@ -64,6 +73,7 @@ def sync_media_library(session: Session) -> SyncResult:
 def _sync_service(
     session: Session, arr_service: ArrService
 ) -> tuple[int, list[Movie] | list[Series]]:
+    assert arr_service.id is not None
     client = build_client(arr_service)
     try:
         items = client.list_items()

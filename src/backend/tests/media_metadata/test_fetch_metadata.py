@@ -36,6 +36,7 @@ def _seed_movie(session) -> Movie:
     session.add(arr_service)
     session.commit()
     session.refresh(arr_service)
+    assert arr_service.id is not None
     movie = Movie(
         arr_service_id=arr_service.id,
         arr_id=1,
@@ -52,6 +53,7 @@ def _seed_movie(session) -> Movie:
 def _configure_all_providers(session) -> None:
     ensure_metadata_providers_seeded(session)
     for provider in list_metadata_providers(session):
+        assert provider.id is not None
         update_metadata_provider(session, provider.id, MetadataProviderConfigInput(api_key="key"))
 
 

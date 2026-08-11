@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
@@ -60,6 +60,7 @@ def translate_media_file(
     if profile is None:
         logger.info("translation skipped: media file %d has no language profile", media_file.id)
         return TranslationResult(translated_languages=[], skipped_reason="no_language_profile")
+    assert media_file.id is not None
 
     # Keyed by the lowercase language `scan_video_subtitles._guess_language_from_filename`
     # actually persists, ordered oldest-first so a duplicate language keeps the most
@@ -72,7 +73,7 @@ def translate_media_file(
                 Subtitle.media_file_id == media_file.id,
                 Subtitle.origin == SubtitleOrigin.EXTERNAL,
             )
-            .order_by(Subtitle.scanned_at)
+            .order_by(col(Subtitle.scanned_at))
         )
     }
 

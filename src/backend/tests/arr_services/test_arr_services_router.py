@@ -227,7 +227,9 @@ def test_update_with_blank_api_key_keeps_existing(isolated_database, reachable_s
     from legendarr_backend.database.engine import get_session
 
     with get_session() as session:
-        assert get_arr_service(session, service_id).api_key == "original-key"
+        fetched = get_arr_service(session, service_id)
+        assert fetched is not None
+        assert fetched.api_key == "original-key"
 
 
 def test_update_rejects_wrong_app_type(isolated_database, monkeypatch):

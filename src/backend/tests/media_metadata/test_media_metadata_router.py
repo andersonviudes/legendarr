@@ -68,4 +68,6 @@ def test_update_with_blank_secret_keeps_existing(isolated_database):
 
         assert response.status_code == 200
         with get_session() as session:
-            assert get_metadata_provider(session, provider_id).api_key == "key-1"
+            fetched = get_metadata_provider(session, provider_id)
+            assert fetched is not None
+            assert fetched.api_key == "key-1"

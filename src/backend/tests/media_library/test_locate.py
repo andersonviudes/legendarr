@@ -23,6 +23,7 @@ def test_resolve_media_file_path_applies_path_mapping(in_memory_session, tmp_pat
             local_path_prefix=str(tmp_path),
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -61,6 +62,7 @@ def test_resolve_media_file_owner_returns_movie(in_memory_session):
             api_key="api-key",
         ),
     )
+    assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
     in_memory_session.commit()

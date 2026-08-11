@@ -65,6 +65,7 @@ def enqueue_full_subtitle_scan(
     """
     media_file_ids = session.exec(select(MediaFile.id)).all()
     for media_file_id in media_file_ids:
+        assert media_file_id is not None
         enqueue_subtitle_scan(
             scheduler,
             media_file_id,
