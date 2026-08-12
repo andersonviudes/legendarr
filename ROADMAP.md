@@ -201,7 +201,7 @@ file — and legendarr extracts and translates it anyway.*
   ASS/SSA, `mov_text`) into the same discovery pipeline external files already use. Read the
   forced/HI flags a container track already carries in its metadata, feeding the profile
   attributes from 0.2.0.
-- [ ] Orchestrator falls back to an embedded track when no external file matches the source
+- [x] Orchestrator falls back to an embedded track when no external file matches the source
   language.
 - [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
   `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
