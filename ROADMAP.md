@@ -211,7 +211,7 @@ file — and legendarr extracts and translates it anyway.*
   download wired in against the protocol from 0.3.0. Movies only — no release year or
   season/episode data exists yet to disambiguate a title search or load Addic7ed's per-season
   TV listing; series support is future work once that's tracked.
-- [ ] **Subtitle acquisition** — YIFY Subtitles `SubtitleProvider` implementation: real search
+- [x] **Subtitle acquisition** — YIFY Subtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — Subdl `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
