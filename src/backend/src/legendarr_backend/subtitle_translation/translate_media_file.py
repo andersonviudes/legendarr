@@ -93,7 +93,7 @@ def translate_media_file(
                 Subtitle.media_file_id == media_file.id,
                 Subtitle.origin == SubtitleOrigin.EMBEDDED,
             )
-            .order_by(Subtitle.scanned_at)
+            .order_by(col(Subtitle.scanned_at))
         )
     }
 
