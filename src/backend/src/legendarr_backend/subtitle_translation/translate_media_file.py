@@ -31,8 +31,9 @@ class TranslationResult:
 
     `skipped_reason` is set (and `translated_languages` left empty) whenever a
     precondition isn't met — no language profile, no subtitle (external or embedded) in a
-    source language, or no translation provider configured. None of these are errors;
-    they're expected, common states the job logs and moves past instead of failing.
+    source language, no translation provider configured, or the picked source subtitle's
+    file is missing from disk. None of these are errors; they're expected, common states
+    the job logs and moves past instead of failing.
     """
 
     translated_languages: list[str]
@@ -125,6 +126,15 @@ def translate_media_file(
         return TranslationResult(translated_languages=[], skipped_reason="no_provider_configured")
 
     source_path = video_path.parent / Path(source.relative_path).name
+    if not source_path.is_file():
+        logger.warning(
+            "translation skipped: media file %d's source subtitle row points to a missing file %s",
+            media_file.id,
+            source_path,
+        )
+        return TranslationResult(
+            translated_languages=[], skipped_reason="source_subtitle_missing_on_disk"
+        )
     lines = parse_srt(source_path.read_text(encoding="utf-8"))
 
     translated_languages = []

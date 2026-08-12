@@ -128,6 +128,29 @@ def test_translate_media_file_skips_when_no_provider_configured(in_memory_sessio
     assert result.skipped_reason == "no_provider_configured"
 
 
+def test_translate_media_file_skips_when_source_subtitle_file_missing_on_disk(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """The source subtitle's DB row can outlive its file on disk (e.g. deleted externally
+    between a scan and a translation run) — skip cleanly instead of raising
+    `FileNotFoundError`."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    (tmp_path / "Foo" / "Foo.en.srt").unlink()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == []
+    assert result.skipped_reason == "source_subtitle_missing_on_disk"
+
+
 def test_translate_media_file_writes_translated_srt_and_reconciles_subtitle_row(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -195,6 +218,7 @@ def test_translate_media_file_falls_back_to_embedded_source_when_no_external_mat
     profile's source language does — `_pick_source_subtitle` falls back to it."""
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
     _profile(in_memory_session)
     video = tmp_path / "Foo" / "Foo.mkv"
     video.parent.mkdir(parents=True)
@@ -238,6 +262,7 @@ embedded
 """
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
     _profile(in_memory_session, source_languages="ja,en")
     video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
     (tmp_path / "Foo" / "Foo.embedded.3.jpn.srt").write_text(embedded_srt, encoding="utf-8")
