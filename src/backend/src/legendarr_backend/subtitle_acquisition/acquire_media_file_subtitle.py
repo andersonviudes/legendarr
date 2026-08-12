@@ -79,14 +79,25 @@ def acquire_subtitle_for_media_file(
     imdb_id = owner.imdb_id if isinstance(owner, Movie) else None
     moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
 
-    for language in profile.source_language_list:
-        result = _search_and_download(chain, owner.title, language, imdb_id, moviehash, video_path)
-        if result is None:
-            continue
-        output_path = video_path.with_name(f"{video_path.stem}.{language.lower()}.srt")
-        output_path.write_text(result, encoding="utf-8")
-        scan_subtitles_for_media_file(session, media_file, video_path)
-        return AcquisitionResult(acquired_language=language)
+    try:
+        for language in profile.source_language_list:
+            result = _search_and_download(
+                chain, owner.title, language, imdb_id, moviehash, video_path
+            )
+            if result is None:
+                continue
+            output_path = video_path.with_name(f"{video_path.stem}.{language.lower()}.srt")
+            output_path.write_text(result, encoding="utf-8")
+            scan_subtitles_for_media_file(session, media_file, video_path)
+            return AcquisitionResult(acquired_language=language)
+    finally:
+        # Most providers open/close a client per call; one that instead holds a
+        # session for its whole lifetime (Addic7ed, logged-in cookies) exposes
+        # `close()` for this — nothing else in the chain's lifecycle calls it.
+        for provider in chain:
+            close = getattr(provider, "close", None)
+            if close is not None:
+                close()
 
     logger.info(
         "acquisition failed: media file %d found no above-cutoff match in any source language",

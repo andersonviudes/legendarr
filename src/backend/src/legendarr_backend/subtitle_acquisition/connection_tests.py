@@ -13,6 +13,10 @@ from legendarr_backend.http_client.client import (
     describe_error,
 )
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
+from legendarr_backend.subtitle_acquisition.providers.addic7ed import (
+    ADDIC7ED_BASE_URL,
+    addic7ed_login,
+)
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import (
     OPENSUBTITLES_USER_AGENT,
 )
@@ -116,40 +120,18 @@ def _test_addic7ed(config: SubtitleProviderConfig) -> ConnectionTestResult:
         return False, error
     if (error := _require(config.password, "Password")) is not None:
         return False, error
+    assert config.username is not None
+    assert config.password is not None
     # No official API and no JSON responses — Addic7ed's login is an HTML form that can be
-    # gated behind a reCAPTCHA (see Bazarr's addic7ed.py), which can't be solved here. This
-    # mirrors Bazarr's own login flow instead (`addic7ed.py:151,181-196`): POST to
-    # dologin.php, then read the same success/failure signals Bazarr does — a 302 on that
-    # response means the login was accepted, specific response text means it wasn't.
-    client = ProviderHttpClient("Addic7ed", "https://www.addic7ed.com")
+    # gated behind a reCAPTCHA (see Bazarr's addic7ed.py), which can't be solved here.
+    # `addic7ed_login` is the same login flow the real provider uses once credentials pass.
+    client = ProviderHttpClient("Addic7ed", ADDIC7ED_BASE_URL)
     try:
-        client.request("GET", "/login.php")
-        login_response = client.request(
-            "POST",
-            "/dologin.php",
-            data={
-                "username": config.username,
-                "password": config.password,
-                "Submit": "Log in",
-                "url": "",
-                "remember": "true",
-            },
-        )
+        addic7ed_login(client, config.username, config.password)
     except ProviderClientError as exc:
-        return False, f"Addic7ed request failed: {exc}"
+        return False, str(exc)
     finally:
         client.close()
-    if "recaptcha" in login_response.text.lower():
-        return False, (
-            "Addic7ed is asking for a CAPTCHA — this can't be validated automatically, "
-            "log in at addic7ed.com to confirm your credentials"
-        )
-    if "relax, slow down" in login_response.text:
-        return False, "Addic7ed is rate-limiting login attempts — try again later"
-    if "Wrong password" in login_response.text or "doesn't exist" in login_response.text:
-        return False, "Wrong username or password"
-    if login_response.status_code != 302:
-        return False, "Addic7ed didn't accept the login — check your credentials"
     return True, "Connection successful"
 
 

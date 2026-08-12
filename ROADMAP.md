@@ -207,8 +207,10 @@ file — and legendarr extracts and translates it anyway.*
   `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
   (full per-attribute weighting comes later, at 0.12.0). Moved here from 0.3.0: needs the
   0.2.0 filesystem scan's `MediaFile` rows to search against first.
-- [ ] **Subtitle acquisition** — Addic7ed `SubtitleProvider` implementation: real search and
-  download wired in against the protocol from 0.3.0.
+- [x] **Subtitle acquisition** — Addic7ed `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0. Movies only — no release year or
+  season/episode data exists yet to disambiguate a title search or load Addic7ed's per-season
+  TV listing; series support is future work once that's tracked.
 - [ ] **Subtitle acquisition** — YIFY Subtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — Subdl `SubtitleProvider` implementation: real search and
