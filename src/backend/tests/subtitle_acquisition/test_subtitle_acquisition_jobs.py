@@ -23,7 +23,7 @@ from sqlmodel import select
 class _FakeProvider:
     name = "fake"
 
-    def search(self, title, language, *, imdb_id=None, moviehash=None):
+    def search(self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None):
         return [SubtitleSearchResult(release_name="Foo", download_id="1", language=language)]
 
     def download(self, result):

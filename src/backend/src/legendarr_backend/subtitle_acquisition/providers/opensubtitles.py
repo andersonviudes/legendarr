@@ -33,10 +33,13 @@ class OpenSubtitlesProvider:
         *,
         imdb_id: str | None = None,
         moviehash: str | None = None,
+        season: int | None = None,
+        episode: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is only ever sent when this provider's own `use_hash` config is
         on — the caller always offers it when it has one, this is where that setting
-        actually takes effect."""
+        actually takes effect. `season`/`episode` aren't used by this provider's search
+        yet — ignored, same as every kwarg this provider doesn't read."""
         params = {
             "query": title,
             "languages": language.lower(),

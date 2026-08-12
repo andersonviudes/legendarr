@@ -7,8 +7,11 @@ from sqlmodel import Session, select
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
-from legendarr_backend.media_library.locate import resolve_media_file_owner
-from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.media_library.locate import (
+    resolve_media_file_episode,
+    resolve_media_file_owner,
+)
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_acquisition.match_score import pick_best_match
 from legendarr_backend.subtitle_acquisition.opensubtitles_hash import compute_opensubtitles_hash
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
@@ -42,12 +45,14 @@ def acquire_subtitle_for_media_file(
     above-cutoff match for.
 
     Movies get their search anchored on `Movie.imdb_id` — the precise, single-title
-    lookup OpenSubtitles' API is built around. Series can't: a `MediaFile` doesn't
-    carry its episode's season/episode number (only `Series`-level sync data exists
-    today — see ROADMAP 0.6.0), so a series search is title-only and less precise;
-    `pick_best_match`'s cutoff is what keeps a wrong episode's subtitle from being
-    accepted. `SubtitleProviderConfig.use_hash` (OpenSubtitles' own `moviehash`,
-    computed from `video_path` when reachable) applies to either.
+    lookup OpenSubtitles' API is built around. Series get their episode's season/episode
+    number instead, via `media_library.locate.resolve_media_file_episode` (a live
+    Sonarr lookup, `None` when it can't be resolved) — most providers still ignore it
+    and search title-only, so `pick_best_match`'s cutoff is still what keeps a wrong
+    episode's subtitle from being accepted for those; TVsubtitles is the first
+    provider that actually anchors its search on it.
+    `SubtitleProviderConfig.use_hash` (OpenSubtitles' own `moviehash`, computed from
+    `video_path` when reachable) applies to either media type.
 
     This never runs automatically from `translate_media_file` — that unification is
     0.11.0/0.12.0 roadmap work; this is a standalone, explicitly-triggered step (see
@@ -78,11 +83,21 @@ def acquire_subtitle_for_media_file(
 
     imdb_id = owner.imdb_id if isinstance(owner, Movie) else None
     moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
+    episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
+    season_number = episode.season_number if episode is not None else None
+    episode_number = episode.episode_number if episode is not None else None
 
     try:
         for language in profile.source_language_list:
             result = _search_and_download(
-                chain, owner.title, language, imdb_id, moviehash, video_path
+                chain,
+                owner.title,
+                language,
+                imdb_id,
+                moviehash,
+                season_number,
+                episode_number,
+                video_path,
             )
             if result is None:
                 continue
@@ -121,11 +136,20 @@ def _search_and_download(
     language: str,
     imdb_id: str | None,
     moviehash: str | None,
+    season: int | None,
+    episode: int | None,
     video_path: Path,
 ) -> str | None:
     for provider in chain:
         try:
-            candidates = provider.search(title, language, imdb_id=imdb_id, moviehash=moviehash)
+            candidates = provider.search(
+                title,
+                language,
+                imdb_id=imdb_id,
+                moviehash=moviehash,
+                season=season,
+                episode=episode,
+            )
             best = pick_best_match(candidates, video_path.stem)
             if best is None:
                 continue

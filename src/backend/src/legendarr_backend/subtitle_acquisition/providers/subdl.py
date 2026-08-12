@@ -101,9 +101,12 @@ class SubdlProvider:
         *,
         imdb_id: str | None = None,
         moviehash: str | None = None,
+        season: int | None = None,
+        episode: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own series signal — skipped rather than
-        attempted, same as `YifySubtitlesProvider.search`."""
+        attempted, same as `YifySubtitlesProvider.search`. `season`/`episode` are ignored —
+        not used here."""
         if imdb_id is None:
             logger.debug("subdl search skipped for %r: this provider is movies-only", title)
             return []
