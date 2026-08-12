@@ -125,6 +125,19 @@ gotcha as `35527f37e677`/`3605a01d1781`. As with the provider registration bulle
 routing a provider's HTTP requests through its assigned proxy is still deferred — this is
 registration-only, same increment shape as the rest of 0.3.0.
 
+**2026-08-11 — 0.6.0's last bullet shipped, embedded-track source fallback:** built on
+`feat/embedded-track-source-fallback` (PR #33). `translate_media_file`'s `_pick_source_subtitle`
+(`subtitle_translation/translate_media_file.py`) now takes both `external_subtitles` and
+`embedded_subtitles` dicts and does two passes: all of `profile.source_language_list` against
+external first, then the same list again against embedded — external is preferred *globally*,
+never displaced by an embedded track in a higher-priority source language, confirmed via
+AskUserQuestion rather than assumed. No normalization needed at the translate-call site: an
+embedded `Subtitle.language` is already ISO-639-1-primary at persist time
+(`scan_video_subtitles.py:115` normalizes before `scan_media_subtitles.py:86` copies it in), so
+it reaches `_translate_with_fallback`/provider APIs (DeepL upper-cases it) the same way an
+external one does. No schema change. This was 0.6.0's only remaining unchecked bullet —
+`ROADMAP.md` 0.6.0 is now fully `[x]`.
+
 **2026-08-06 — known gap added to the "Media library" bullet:** while adding a `data-tooltip`
 to the file-row "translate now" button and an "Actions" column header, confirmed the button's
 only visibility condition is `episode.media_file`/`file` existing (`series_detail.html`,
