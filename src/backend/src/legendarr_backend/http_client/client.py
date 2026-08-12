@@ -70,6 +70,7 @@ class ProviderHttpClient:
         method: str,
         path: str,
         data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         follow_redirects: bool = False,
     ) -> httpx.Response:
         """Send a request and return the raw `Response` — for integrations that need
@@ -78,10 +79,12 @@ class ProviderHttpClient:
         helpers, this never raises on a non-2xx status — a 3xx/4xx response here can be
         the *expected* outcome the caller needs to inspect (Addic7ed's login flow reads
         a 302 as success) — only a network-level failure is wrapped as a
-        `ProviderClientError`."""
+        `ProviderClientError`. `headers` are merged on top of the client's own
+        (Addic7ed's download needs a per-result `Referer` the fixed, construction-time
+        headers can't express)."""
         return self._send(
             lambda: self._client.request(
-                method, path, data=data, follow_redirects=follow_redirects
+                method, path, data=data, headers=headers, follow_redirects=follow_redirects
             ),
             check_status=False,
         )

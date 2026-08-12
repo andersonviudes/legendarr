@@ -7,12 +7,16 @@ class SubtitleSearchResult:
     """One candidate subtitle returned by a provider's search, before any scoring/download.
 
     `download_id` is an opaque per-provider handle (URL, file id, whatever that provider's
-    API needs to fetch it) — the protocol itself never interprets it.
+    API needs to fetch it) — the protocol itself never interprets it. `page_link` is the
+    result's source page, when a provider's download needs it as a `Referer` to avoid a
+    hotlink block (Addic7ed); providers with no such requirement (OpenSubtitles) leave it
+    `None`.
     """
 
     release_name: str
     download_id: str
     language: str
+    page_link: str | None = None
 
 
 class SubtitleProvider(Protocol):
