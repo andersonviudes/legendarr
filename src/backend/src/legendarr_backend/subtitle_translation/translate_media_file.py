@@ -30,9 +30,10 @@ class TranslationResult:
     """Outcome of one `translate_media_file` run.
 
     `skipped_reason` is set (and `translated_languages` left empty) whenever a
-    precondition isn't met — no language profile, no external subtitle in a source
-    language, or no translation provider configured. None of these are errors; they're
-    expected, common states the job logs and moves past instead of failing.
+    precondition isn't met — no language profile, no subtitle (external or embedded) in a
+    source language, no translation provider configured, or the picked source subtitle's
+    file is missing from disk. None of these are errors; they're expected, common states
+    the job logs and moves past instead of failing.
     """
 
     translated_languages: list[str]
@@ -46,12 +47,14 @@ def translate_media_file(
     default_translation_provider: str | None = None,
 ) -> TranslationResult:
     """Translate one `MediaFile` into every target language its `LanguageProfile` is
-    still missing, from an already-discovered external subtitle in one of its source
-    languages. A target already satisfied by an extracted embedded track doesn't count as
-    missing either, even though it can't be picked as the source below.
+    still missing, from an already-discovered subtitle in one of its source languages.
+    An external subtitle is preferred; an already-extracted embedded track is only used
+    as the source when no external subtitle matches any configured source language
+    (see `_pick_source_subtitle`).
 
-    No acquisition fallback: if no external subtitle exists yet in a source language,
-    this is a no-op — that lands with real `SubtitleProvider` search/download at 0.6.0+.
+    No acquisition fallback: if no subtitle (external or embedded) exists yet in a source
+    language, this is a no-op — that needs real `SubtitleProvider` search/download,
+    still 0.11.0/0.12.0 work.
 
     `default_translation_provider` is the Settings-configured default (see
     `resolve_provider_chain`); passed through unchanged, `None` means no preference.
@@ -77,29 +80,34 @@ def translate_media_file(
         )
     }
 
-    source = _pick_source_subtitle(profile, external_subtitles)
+    # Keyed by the already-normalized language `scan_video_subtitles` persists for an
+    # embedded row (`language_codes.normalize_language_code`, e.g. ffprobe's "por" ->
+    # "pt") — region-blind, same as the target-satisfaction check below, since ffprobe has
+    # no way to tell e.g. Brazilian from European Portuguese. Same oldest-first ordering as
+    # `external_subtitles`.
+    embedded_subtitles = {
+        subtitle.language: subtitle
+        for subtitle in session.exec(
+            select(Subtitle)
+            .where(
+                Subtitle.media_file_id == media_file.id,
+                Subtitle.origin == SubtitleOrigin.EMBEDDED,
+            )
+            .order_by(col(Subtitle.scanned_at))
+        )
+    }
+
+    source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
     if source is None:
         logger.info(
-            "translation skipped: media file %d has no external subtitle in a source language",
+            "translation skipped: media file %d has no subtitle in a source language",
             media_file.id,
         )
         return TranslationResult(translated_languages=[], skipped_reason="no_source_subtitle")
 
-    # An already-extracted embedded track also satisfies a target language, even though it
-    # can't be picked as the *source* above (no acquisition fallback yet, see the
-    # docstring). Compared via `normalize_language_code` rather than exact match — an
-    # embedded track's language is region-blind (ffprobe has no way to tell e.g. Brazilian
-    # from European Portuguese), so this is a best-effort "close enough" check, same as
-    # `scan_video_subtitles`'s own extraction-skip logic.
-    embedded_languages = {
-        normalize_language_code(subtitle.language)
-        for subtitle in session.exec(
-            select(Subtitle).where(
-                Subtitle.media_file_id == media_file.id,
-                Subtitle.origin == SubtitleOrigin.EMBEDDED,
-            )
-        )
-    }
+    # An already-extracted embedded track also satisfies a target language on its own,
+    # even when a *different* embedded track was picked as the source above.
+    embedded_languages = set(embedded_subtitles)
     missing_targets = [
         language
         for language in profile.target_language_list
@@ -118,6 +126,15 @@ def translate_media_file(
         return TranslationResult(translated_languages=[], skipped_reason="no_provider_configured")
 
     source_path = video_path.parent / Path(source.relative_path).name
+    if not source_path.is_file():
+        logger.warning(
+            "translation skipped: media file %d's source subtitle row points to a missing file %s",
+            media_file.id,
+            source_path,
+        )
+        return TranslationResult(
+            translated_languages=[], skipped_reason="source_subtitle_missing_on_disk"
+        )
     lines = parse_srt(source_path.read_text(encoding="utf-8"))
 
     translated_languages = []
@@ -141,10 +158,22 @@ def translate_media_file(
 
 
 def _pick_source_subtitle(
-    profile: LanguageProfile, external_subtitles: dict[str, Subtitle]
+    profile: LanguageProfile,
+    external_subtitles: dict[str, Subtitle],
+    embedded_subtitles: dict[str, Subtitle],
 ) -> Subtitle | None:
+    """Pick the subtitle to translate from, in `profile.source_language_list` priority
+    order. External is preferred globally over embedded: every source language is tried
+    against `external_subtitles` first, and only once none of them matched at all does a
+    second pass fall back to `embedded_subtitles` — an embedded track never wins over an
+    external one just because it's in a higher-priority source language.
+    """
     for language in profile.source_language_list:
         subtitle = external_subtitles.get(language.lower())
+        if subtitle is not None:
+            return subtitle
+    for language in profile.source_language_list:
+        subtitle = embedded_subtitles.get(normalize_language_code(language))
         if subtitle is not None:
             return subtitle
     return None
