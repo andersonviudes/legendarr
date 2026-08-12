@@ -203,7 +203,7 @@ file — and legendarr extracts and translates it anyway.*
   attributes from 0.2.0.
 - [x] Orchestrator falls back to an embedded track when no external file matches the source
   language.
-- [ ] **Subtitle acquisition** — One real provider's search and download wired in against the
+- [x] **Subtitle acquisition** — One real provider's search and download wired in against the
   `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
   (full per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets
   real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs the

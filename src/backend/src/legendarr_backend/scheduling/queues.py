@@ -21,6 +21,12 @@ class JobQueue(StrEnum):
     TRANSLATE = "translate"
     # Manual bulk fan-out over every `MediaFile`, same reasoning as `SCAN_BULK`.
     TRANSLATE_BULK = "translate_bulk"
+    # Acquisition calls a real subtitle-provider API per media file — its own queue,
+    # same reasoning as `TRANSLATE`, so a slow/rate-limited provider never starves scans
+    # or translations.
+    ACQUIRE = "acquire"
+    # Manual bulk fan-out over every `MediaFile`, same reasoning as `TRANSLATE_BULK`.
+    ACQUIRE_BULK = "acquire_bulk"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
@@ -29,4 +35,6 @@ QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.SCAN_BULK: 1,
     JobQueue.TRANSLATE: 2,
     JobQueue.TRANSLATE_BULK: 1,
+    JobQueue.ACQUIRE: 2,
+    JobQueue.ACQUIRE_BULK: 1,
 }

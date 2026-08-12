@@ -20,6 +20,19 @@ class SubtitleProvider(Protocol):
 
     name: str
 
-    def search(self, title: str, language: str) -> list[SubtitleSearchResult]: ...
+    def search(
+        self,
+        title: str,
+        language: str,
+        *,
+        imdb_id: str | None = None,
+        moviehash: str | None = None,
+    ) -> list[SubtitleSearchResult]:
+        """`imdb_id`/`moviehash` are optional extra precision a provider *may* use to
+        narrow its search (OpenSubtitles does); a provider with no such lookup just
+        ignores them and searches on `title`/`language` alone. Kept on the shared
+        signature rather than a provider-specific override so callers (the acquisition
+        orchestrator) never need to know which concrete provider they're holding."""
+        ...
 
     def download(self, result: SubtitleSearchResult) -> str: ...
