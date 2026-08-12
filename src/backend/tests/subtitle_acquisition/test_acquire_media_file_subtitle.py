@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from legendarr_backend.arr_clients.base import EpisodeItem
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
-from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_acquisition import (
     acquire_media_file_subtitle as acquire_media_file_subtitle_module,
 )
@@ -29,9 +30,16 @@ class _FakeProvider:
         self.text = text
         self.search_calls = []
 
-    def search(self, title, language, *, imdb_id=None, moviehash=None):
+    def search(self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None):
         self.search_calls.append(
-            {"title": title, "language": language, "imdb_id": imdb_id, "moviehash": moviehash}
+            {
+                "title": title,
+                "language": language,
+                "imdb_id": imdb_id,
+                "moviehash": moviehash,
+                "season": season,
+                "episode": episode,
+            }
         )
         return self.results
 
@@ -42,7 +50,7 @@ class _FakeProvider:
 class _FailingProvider:
     name = "failing"
 
-    def search(self, title, language, *, imdb_id=None, moviehash=None):
+    def search(self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None):
         raise RuntimeError("boom")
 
     def download(self, result):
@@ -79,6 +87,44 @@ def _movie(session, tmp_path: Path, **overrides) -> Movie:
 def _media_file(session, movie: Movie) -> MediaFile:
     media_file = MediaFile(
         movie_id=movie.id,
+        relative_path="Foo/Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
+
+
+def _series(session, tmp_path: Path, **overrides) -> Series:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="sonarr",
+            service_type="sonarr",
+            host="sonarr",
+            port=8989,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    data = {
+        "arr_service_id": service.id,
+        "arr_id": 1,
+        "title": "Foo",
+        "remote_path": "/remote/Foo",
+    }
+    data.update(overrides)
+    series = Series(**data)
+    session.add(series)
+    session.commit()
+    return series
+
+
+def _series_media_file(session, series: Series) -> MediaFile:
+    media_file = MediaFile(
+        series_id=series.id,
         relative_path="Foo/Foo.mkv",
         size_bytes=1,
         scanned_at=datetime.now(UTC),
@@ -223,6 +269,51 @@ def test_acquire_subtitle_passes_movie_imdb_id_to_the_provider(
     assert provider.search_calls[0]["title"] == "Foo"
 
 
+def test_acquire_subtitle_passes_series_season_episode_to_the_provider(
+    in_memory_session, tmp_path, monkeypatch
+):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_media_file_episode",
+        lambda session, media_file: EpisodeItem(
+            season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
+        ),
+    )
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert provider.search_calls[0]["season"] == 1
+    assert provider.search_calls[0]["episode"] == 2
+    assert provider.search_calls[0]["imdb_id"] is None
+
+
+def test_acquire_subtitle_passes_none_season_episode_when_resolution_fails(
+    in_memory_session, tmp_path, monkeypatch
+):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_media_file_episode",
+        lambda session, media_file: None,
+    )
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert provider.search_calls[0]["season"] is None
+    assert provider.search_calls[0]["episode"] is None
+
+
 def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -249,7 +340,9 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
     class _LanguageAwareProvider:
         name = "language-aware"
 
-        def search(self, title, language, *, imdb_id=None, moviehash=None):
+        def search(
+            self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None
+        ):
             if language != "ja":
                 return []
             return [SubtitleSearchResult(release_name="Foo", download_id="1", language="ja")]

@@ -26,13 +26,15 @@ feature that reads them.
 
 ## Search and download
 
-OpenSubtitles, Addic7ed, YIFY Subtitles, and Subdl are the provider kinds with a real
-`SubtitleProvider` implementation so far (`subtitle_acquisition/providers/opensubtitles.py`,
-`addic7ed.py`, `yify_subtitles.py`, `subdl.py`) — the rest of the catalog stays
-registration-only until the remaining 0.6.0 bullets land. YIFY Subtitles and Subdl are both
-movies-only and need an `imdb_id` to search (neither has a usable title-search path for this
-app's scope), so — like Addic7ed's series case — a series search returns no results from
-either. `acquire_subtitle_for_media_file`
+OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, and TVsubtitles are the provider kinds with a
+real `SubtitleProvider` implementation so far (`subtitle_acquisition/providers/opensubtitles.py`,
+`addic7ed.py`, `yify_subtitles.py`, `subdl.py`, `tvsubtitles.py`) — the rest of the catalog
+stays registration-only until the remaining 0.6.0 bullets land. YIFY Subtitles and Subdl are
+both movies-only and need an `imdb_id` to search (neither has a usable title-search path for
+this app's scope), so — like Addic7ed's series case — a series search returns no results from
+either. TVsubtitles is the opposite: it has no movie content at all, so it's the first
+provider that needs a real season/episode number to search and is skipped for a movie or an
+unresolved episode instead. `acquire_subtitle_for_media_file`
 (`subtitle_acquisition/acquire_media_file_subtitle.py`) is the entry point: given a
 `MediaFile` that has no subtitle yet in any of its `LanguageProfile`'s source languages, it
 searches each source language in priority order, downloads the best-scoring result, writes it
@@ -46,11 +48,14 @@ automatic, unified strategy is explicitly 0.11.0/0.12.0 roadmap work, not this.
 Search precision differs by media type:
 
 - **Movies** search OpenSubtitles by `imdb_id` — a precise, single-title lookup.
-- **Series** search by title only. A `MediaFile` doesn't carry its episode's season/episode
-  number (only `Series`-level data is synced today), so there's no way to anchor the search to
-  one specific episode. This is a known limitation: title-only results can include subtitles
-  for other episodes of the same show, and the match-score cutoff below is what keeps a
-  clearly-wrong one from being accepted, not a substitute for real per-episode search.
+- **Series** also get a real season/episode number now — resolved via
+  `media_library.locate.resolve_media_file_episode` (a live Sonarr call, matched by
+  `relative_path` against the `MediaFile`), `None` when it can't be resolved. TVsubtitles is
+  the only provider that actually anchors its search on it today; every other provider still
+  ignores it and searches by title only, so title-only results from those can include
+  subtitles for other episodes of the same show, and the match-score cutoff below is what
+  keeps a clearly-wrong one from being accepted for them, not a substitute for real
+  per-episode search.
 - Either kind additionally gets `moviehash` search when `use_hash` is enabled on the provider
   and the local video is at least 64KB — the OpenSubtitles-defined checksum of a file's first
   and last 64KB, the most precise signal available since it doesn't depend on any metadata at
@@ -66,4 +71,4 @@ weighting (release group, resolution, codec, source, edition) instead of one fla
 
 Manual search/browse and upload — letting a user pick a result themselves instead of trusting
 the automatic match — is 0.11.0 work. The remaining real `SubtitleProvider` implementations
-(beyond OpenSubtitles, Addic7ed, YIFY Subtitles, and Subdl) are 0.6.0 work.
+(beyond OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, and TVsubtitles) are 0.6.0 work.
