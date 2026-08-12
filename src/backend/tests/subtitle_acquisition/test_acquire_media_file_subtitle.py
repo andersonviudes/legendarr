@@ -1,0 +1,266 @@
+from datetime import UTC, datetime
+from pathlib import Path
+
+from legendarr_backend.arr_services.manage_arr_service import create_arr_service
+from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.language_profiles.models import LanguageProfile
+from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.subtitle_acquisition import (
+    acquire_media_file_subtitle as acquire_media_file_subtitle_module,
+)
+from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
+    acquire_subtitle_for_media_file,
+)
+from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
+from sqlmodel import select
+
+
+class _FakeProvider:
+    name = "fake"
+
+    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"):
+        self.results = (
+            results
+            if results is not None
+            else [SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
+        )
+        self.text = text
+        self.search_calls = []
+
+    def search(self, title, language, *, imdb_id=None, moviehash=None):
+        self.search_calls.append(
+            {"title": title, "language": language, "imdb_id": imdb_id, "moviehash": moviehash}
+        )
+        return self.results
+
+    def download(self, result):
+        return self.text
+
+
+class _FailingProvider:
+    name = "failing"
+
+    def search(self, title, language, *, imdb_id=None, moviehash=None):
+        raise RuntimeError("boom")
+
+    def download(self, result):
+        raise RuntimeError("boom")
+
+
+def _movie(session, tmp_path: Path, **overrides) -> Movie:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    data = {
+        "arr_service_id": service.id,
+        "arr_id": 1,
+        "title": "Foo",
+        "remote_path": "/remote/Foo",
+        "imdb_id": "tt1234567",
+    }
+    data.update(overrides)
+    movie = Movie(**data)
+    session.add(movie)
+    session.commit()
+    return movie
+
+
+def _media_file(session, movie: Movie) -> MediaFile:
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo/Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
+
+
+def _profile(session, **overrides) -> LanguageProfile:
+    data = {
+        "name": "default",
+        "source_languages": "en",
+        "target_languages": "pt-BR",
+        "is_default": True,
+    }
+    data.update(overrides)
+    profile = LanguageProfile(**data)
+    session.add(profile)
+    session.commit()
+    return profile
+
+
+def _write_video(tmp_path: Path) -> Path:
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True, exist_ok=True)
+    video.touch()
+    return video
+
+
+def _use_chain(monkeypatch, *providers):
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: list(providers),
+    )
+
+
+def test_acquire_subtitle_skips_when_no_language_profile(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_language_profile"
+
+
+def test_acquire_subtitle_is_a_noop_when_a_source_language_subtitle_already_exists(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    assert media_file.id is not None
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo/Foo.en.srt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result == acquire_media_file_subtitle_module.AcquisitionResult()
+    assert provider.search_calls == []
+
+
+def test_acquire_subtitle_skips_when_no_provider_configured(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.skipped_reason == "no_provider_configured"
+
+
+def test_acquire_subtitle_skips_when_nothing_clears_the_match_cutoff(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[
+            SubtitleSearchResult(
+                release_name="Completely.Unrelated.Release", download_id="1", language="en"
+            )
+        ]
+    )
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_match_found"
+
+
+def test_acquire_subtitle_downloads_writes_and_rescans(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    output = tmp_path / "Foo" / "Foo.en.srt"
+    assert "Hi" in output.read_text(encoding="utf-8")
+    rows = in_memory_session.exec(
+        select(Subtitle).where(Subtitle.media_file_id == media_file.id)
+    ).all()
+    assert any(row.language == "en" and row.origin == SubtitleOrigin.EXTERNAL for row in rows)
+
+
+def test_acquire_subtitle_passes_movie_imdb_id_to_the_provider(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path, imdb_id="tt7654321")
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert provider.search_calls[0]["imdb_id"] == "tt7654321"
+    assert provider.search_calls[0]["title"] == "Foo"
+
+
+def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    working = _FakeProvider()
+    _use_chain(monkeypatch, _FailingProvider(), working)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+
+
+def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_match(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, source_languages="en,ja")
+    video = _write_video(tmp_path)
+
+    class _LanguageAwareProvider:
+        name = "language-aware"
+
+        def search(self, title, language, *, imdb_id=None, moviehash=None):
+            if language != "ja":
+                return []
+            return [SubtitleSearchResult(release_name="Foo", download_id="1", language="ja")]
+
+        def download(self, result):
+            return "1\n00:00:00,000 --> 00:00:01,000\nこんにちは\n\n"
+
+    _use_chain(monkeypatch, _LanguageAwareProvider())
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "ja"
+    output = tmp_path / "Foo" / "Foo.ja.srt"
+    assert output.exists()

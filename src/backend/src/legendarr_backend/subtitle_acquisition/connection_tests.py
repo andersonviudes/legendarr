@@ -13,10 +13,11 @@ from legendarr_backend.http_client.client import (
     describe_error,
 )
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
+from legendarr_backend.subtitle_acquisition.providers.opensubtitles import (
+    OPENSUBTITLES_USER_AGENT,
+)
 
 ConnectionTestResult = tuple[bool, str]
-
-_OPENSUBTITLES_USER_AGENT = "legendarr (+https://andersonviudes.github.io/legendarr)"
 
 
 def test_connection(config: SubtitleProviderConfig) -> ConnectionTestResult:
@@ -41,7 +42,7 @@ def _test_opensubtitles(config: SubtitleProviderConfig) -> ConnectionTestResult:
     client = ProviderHttpClient(
         "OpenSubtitles",
         "https://api.opensubtitles.com",
-        headers={"Api-Key": config.api_key, "User-Agent": _OPENSUBTITLES_USER_AGENT},
+        headers={"Api-Key": config.api_key, "User-Agent": OPENSUBTITLES_USER_AGENT},
     )
     try:
         client.get_json("/api/v1/infos/user")
