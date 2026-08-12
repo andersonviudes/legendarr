@@ -205,9 +205,32 @@ file — and legendarr extracts and translates it anyway.*
   language.
 - [x] **Subtitle acquisition** — One real provider's search and download wired in against the
   `SubtitleProvider` protocol from 0.3.0, with a basic match score/cutoff per language profile
-  (full per-attribute weighting comes later, at 0.12.0). The rest of the registered pool gets
-  real search/download incrementally through 0.11.0/0.12.0. Moved here from 0.3.0: needs the
+  (full per-attribute weighting comes later, at 0.12.0). Moved here from 0.3.0: needs the
   0.2.0 filesystem scan's `MediaFile` rows to search against first.
+- [ ] **Subtitle acquisition** — Addic7ed `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — YIFY Subtitles `SubtitleProvider` implementation: real search
+  and download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — Subdl `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — TVsubtitles `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — legendas.net `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — Napiprojekt `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — Subsource `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — Anime Tosho `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — Supersubtitles `SubtitleProvider` implementation: real search
+  and download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — AnimeKalesi `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — GreekSubtitles `SubtitleProvider` implementation: real search
+  and download wired in against the protocol from 0.3.0.
+- [ ] **Subtitle acquisition** — BetaSeries `SubtitleProvider` implementation: real search and
+  download wired in against the protocol from 0.3.0.
 - [x] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
   wired in alongside `echo`, using the credentials registered at 0.3.0. Landed early with
   0.3.0's translation orchestrator instead — all three catalog providers (DeepL, Google,
@@ -258,14 +281,12 @@ just landed.*
   next scheduled pass.
 - [ ] **Language profiles** — Per-profile or per-media opt-out of automated translation.
 
-## 0.11.0 — More providers, and manual control over acquisition
+## 0.11.0 — Manual control over acquisition
 
-*Use case: the first provider wired in doesn't have a subtitle for this movie, so a second or
-third provider backs it up — or a user would rather browse results and pick one themselves, or
-upload their own file, instead of trusting the automatic match.*
+*Use case: a user would rather browse a provider's search results and pick one themselves, or
+upload their own subtitle file for a specific media item, instead of trusting the automatic
+match.*
 
-- [ ] **Subtitle acquisition** — A second and third `SubtitleProvider` implementation, so a miss
-  on one provider doesn't dead-end acquisition.
 - [ ] Manual search and manual upload: let a user browse provider search results and pick one
   themselves, or upload their own subtitle file for a specific media item, bypassing the
   automatic match.
@@ -316,7 +337,7 @@ to translate from.*
 
 - [ ] **Subtitle acquisition** — Local speech-to-text transcription (e.g. Whisper) as the
   last-resort acquisition source, used only when every other tier — external (0.3.0),
-  embedded (0.6.0), and provider download (0.11.0–0.12.0) — comes up empty.
+  embedded (0.6.0), and provider download (0.6.0–0.12.0) — comes up empty.
 
 ## 0.16.0 — Authentication & secrets
 

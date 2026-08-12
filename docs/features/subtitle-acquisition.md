@@ -28,7 +28,7 @@ feature that reads them.
 
 OpenSubtitles is the one provider kind with a real `SubtitleProvider` implementation so far
 (`subtitle_acquisition/providers/opensubtitles.py`) — the rest of the catalog stays
-registration-only until 0.11.0 adds a second and third. `acquire_subtitle_for_media_file`
+registration-only until the remaining 0.6.0 bullets land. `acquire_subtitle_for_media_file`
 (`subtitle_acquisition/acquire_media_file_subtitle.py`) is the entry point: given a
 `MediaFile` that has no subtitle yet in any of its `LanguageProfile`'s source languages, it
 searches each source language in priority order, downloads the best-scoring result, writes it
@@ -61,5 +61,5 @@ weighting (release group, resolution, codec, source, edition) instead of one fla
 ## Known gap (deferred)
 
 Manual search/browse and upload — letting a user pick a result themselves instead of trusting
-the automatic match — is 0.11.0 work. A second and third real `SubtitleProvider`
-implementation (beyond OpenSubtitles) is also 0.11.0.
+the automatic match — is 0.11.0 work. The remaining real `SubtitleProvider` implementations
+(beyond OpenSubtitles) are 0.6.0 work.

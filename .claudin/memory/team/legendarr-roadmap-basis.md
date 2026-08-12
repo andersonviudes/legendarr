@@ -151,3 +151,16 @@ validate profile/provider/source-subtitle availability before enqueuing. When
 success ("Translation queued."), so the UI never surfaces that nothing happened. Recorded as a
 new known gap on the existing 0.3.0 "Media library" bullet — not a new milestone item, since the
 button/endpoint themselves are fully wired to real providers (not a stub).
+
+**2026-08-12 — remaining 12 providers moved from 0.11.0 into 0.6.0:** after PR #34 shipped
+OpenSubtitles as the first real `SubtitleProvider`, the user asked to add the other 12
+registered providers (Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, legendas.net, Napiprojekt,
+Subsource, Anime Tosho, Supersubtitles, AnimeKalesi, GreekSubtitles, BetaSeries) to 0.6.0 too,
+one bullet per provider (confirmed via AskUserQuestion over one combined bullet). This emptied
+0.11.0's "second and third `SubtitleProvider` implementation" bullet, so it was removed and
+0.11.0 was retitled from "More providers, and manual control over acquisition" to "Manual
+control over acquisition" — its only remaining bullet is manual search/browse/upload. 0.6.0 is
+therefore reopened (was previously fully `[x]`) and is no longer a closed milestone until all 12
+new bullets ship. `docs/features/subtitle-acquisition.md`'s "Search and download" and "Known
+gap" sections were updated to match (references to "0.11.0 adds a second and third" now point
+at 0.6.0).
