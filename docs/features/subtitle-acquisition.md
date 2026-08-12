@@ -26,9 +26,12 @@ feature that reads them.
 
 ## Search and download
 
-OpenSubtitles is the one provider kind with a real `SubtitleProvider` implementation so far
-(`subtitle_acquisition/providers/opensubtitles.py`) — the rest of the catalog stays
-registration-only until the remaining 0.6.0 bullets land. `acquire_subtitle_for_media_file`
+OpenSubtitles, Addic7ed, and YIFY Subtitles are the provider kinds with a real
+`SubtitleProvider` implementation so far (`subtitle_acquisition/providers/opensubtitles.py`,
+`addic7ed.py`, `yify_subtitles.py`) — the rest of the catalog stays registration-only until the
+remaining 0.6.0 bullets land. YIFY Subtitles is movies-only and needs an `imdb_id` to search
+(it has no title-search page), so — like Addic7ed's series case — a series search returns no
+results from it. `acquire_subtitle_for_media_file`
 (`subtitle_acquisition/acquire_media_file_subtitle.py`) is the entry point: given a
 `MediaFile` that has no subtitle yet in any of its `LanguageProfile`'s source languages, it
 searches each source language in priority order, downloads the best-scoring result, writes it
@@ -62,4 +65,4 @@ weighting (release group, resolution, codec, source, edition) instead of one fla
 
 Manual search/browse and upload — letting a user pick a result themselves instead of trusting
 the automatic match — is 0.11.0 work. The remaining real `SubtitleProvider` implementations
-(beyond OpenSubtitles) are 0.6.0 work.
+(beyond OpenSubtitles, Addic7ed, and YIFY Subtitles) are 0.6.0 work.
