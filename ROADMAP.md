@@ -213,7 +213,7 @@ file — and legendarr extracts and translates it anyway.*
   TV listing; series support is future work once that's tracked.
 - [x] **Subtitle acquisition** — YIFY Subtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
-- [ ] **Subtitle acquisition** — Subdl `SubtitleProvider` implementation: real search and
+- [x] **Subtitle acquisition** — Subdl `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — TVsubtitles `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
