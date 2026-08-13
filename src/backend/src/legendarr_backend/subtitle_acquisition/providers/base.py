@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 
@@ -33,6 +34,7 @@ class SubtitleProvider(Protocol):
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id`/`moviehash` are optional extra precision a provider *may* use to
         narrow its search (OpenSubtitles does); a provider with no such lookup just
@@ -45,7 +47,12 @@ class SubtitleProvider(Protocol):
         (a live Sonarr lookup) — `None` for a movie search or when that resolution failed.
         TVsubtitles is the first provider that actually needs them (it has no movie
         content and can't search without an episode number); every other provider
-        ignores them the same way it ignores an unused `imdb_id`/`moviehash`."""
+        ignores them the same way it ignores an unused `imdb_id`/`moviehash`.
+
+        `video_path` is the local video file itself, for a provider whose lookup needs
+        to read the raw file rather than search by metadata — Napiprojekt is the first
+        (its hash is a different algorithm than `moviehash`, computed from the file
+        directly); every other provider ignores it."""
         ...
 
     def download(self, result: SubtitleSearchResult) -> str: ...

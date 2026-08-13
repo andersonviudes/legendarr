@@ -1,5 +1,6 @@
 import io
 import logging
+from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 from zipfile import ZipFile, is_zipfile
@@ -57,9 +58,11 @@ class LegendasNetProvider:
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is ignored — not used here. See the class docstring for how
-        `imdb_id`/`season`/`episode` pick a movie search, a TV search, or a skip."""
+        `imdb_id`/`season`/`episode` pick a movie search, a TV search, or a skip.
+        `video_path` is ignored too."""
         if language.strip().lower() != "pt-br":
             return []
         if season is not None and episode is not None:

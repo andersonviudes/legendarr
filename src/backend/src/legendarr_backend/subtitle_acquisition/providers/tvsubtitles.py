@@ -1,6 +1,7 @@
 import io
 import logging
 import re
+from pathlib import Path
 from zipfile import ZipFile, is_zipfile
 
 from bs4 import BeautifulSoup, Tag
@@ -92,10 +93,12 @@ class TVsubtitlesProvider:
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`season`/`episode` unset means either a movie search or a series file the
         orchestrator couldn't resolve an episode for — skipped rather than attempted,
-        since TVsubtitles has no title-only or movie search path at all."""
+        since TVsubtitles has no title-only or movie search path at all. `video_path` is
+        ignored — not used here."""
         if season is None or episode is None:
             logger.debug("tvsubtitles search skipped for %r: no season/episode resolved", title)
             return []
