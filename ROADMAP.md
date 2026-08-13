@@ -227,7 +227,7 @@ file — and legendarr extracts and translates it anyway.*
   only provider anchored on the local video's own hash (a different algorithm than
   `moviehash`), so `search()` gained a `video_path` parameter, threaded through every existing
   provider (ignored by all of them). Polish only.
-- [ ] **Subtitle acquisition** — Subsource `SubtitleProvider` implementation: real search and
+- [x] **Subtitle acquisition** — Subsource `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — Anime Tosho `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.

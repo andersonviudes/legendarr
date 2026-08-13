@@ -24,6 +24,7 @@ from legendarr_backend.subtitle_acquisition.providers.legendas_net import (
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import (
     OPENSUBTITLES_USER_AGENT,
 )
+from legendarr_backend.subtitle_acquisition.providers.subsource import SUBSOURCE_API_BASE_URL
 
 ConnectionTestResult = tuple[bool, str]
 
@@ -81,23 +82,19 @@ def _test_subdl(config: SubtitleProviderConfig) -> ConnectionTestResult:
 def _test_subsource(config: SubtitleProviderConfig) -> ConnectionTestResult:
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
-    # Subsource's docs page (subsource.net/api-docs) is Cloudflare-protected and couldn't be
-    # confirmed during implementation, so this only checks the site is reachable, not that
-    # the API Key itself is valid — narrower than the other API-key providers above.
-    # Lead for whoever revisits this with a real key to test: third-party clients
-    # (github.com/awpetrik/SubDL, github.com/quekky/subsource-dl) reverse-engineered
-    # `https://api.subsource.net` with an `X-API-Key` header, and `POST /api/searchMovie`
-    # returns "API key invalid or expired" on a bad key — but one of those clients hits the
-    # same API with no key at all, so it's unconfirmed whether that endpoint actually
-    # enforces the key. Not wired in here without a real key to verify it against.
-    client = ProviderHttpClient("Subsource", "https://subsource.net")
+    assert config.api_key is not None
+    # Same real API `providers/subsource.py`'s `search()` calls, confirmed against
+    # Bazarr's own working `SubsourceProvider` (see that module's docstring) — a smallest
+    # documented call (`GET /movies/search`) with a fixed query, same shape `_test_subdl`
+    # uses since this API has no dedicated "ping" route either.
+    client = ProviderHttpClient("Subsource", SUBSOURCE_API_BASE_URL)
     try:
-        client.ping("/")
+        client.get_json(f"/movies/search?api_key={config.api_key}&searchType=text&q=test")
     except ProviderClientError as exc:
         return False, describe_error(exc)
     finally:
         client.close()
-    return True, "Site is reachable — the API Key itself isn't validated yet"
+    return True, "Connection successful"
 
 
 def _test_legendas_net(config: SubtitleProviderConfig) -> ConnectionTestResult:
