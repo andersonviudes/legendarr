@@ -52,7 +52,9 @@ def acquire_subtitle_for_media_file(
     episode's subtitle from being accepted for those; TVsubtitles is the first
     provider that actually anchors its search on it.
     `SubtitleProviderConfig.use_hash` (OpenSubtitles' own `moviehash`, computed from
-    `video_path` when reachable) applies to either media type.
+    `video_path` when reachable) applies to either media type. Series also carry
+    `Series.tvdb_id` straight through as `tvdb_id` — every provider but Anime Tosho
+    ignores it the same way most ignore season/episode.
 
     This never runs automatically from `translate_media_file` — that unification is
     0.11.0/0.12.0 roadmap work; this is a standalone, explicitly-triggered step (see
@@ -82,6 +84,7 @@ def acquire_subtitle_for_media_file(
     assert owner is not None
 
     imdb_id = owner.imdb_id if isinstance(owner, Movie) else None
+    tvdb_id = owner.tvdb_id if isinstance(owner, Series) else None
     moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
     episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
     season_number = episode.season_number if episode is not None else None
@@ -98,6 +101,7 @@ def acquire_subtitle_for_media_file(
                 season_number,
                 episode_number,
                 video_path,
+                tvdb_id,
             )
             if result is None:
                 continue
@@ -139,6 +143,7 @@ def _search_and_download(
     season: int | None,
     episode: int | None,
     video_path: Path,
+    tvdb_id: int | None,
 ) -> str | None:
     for provider in chain:
         try:
@@ -150,6 +155,7 @@ def _search_and_download(
                 season=season,
                 episode=episode,
                 video_path=video_path,
+                tvdb_id=tvdb_id,
             )
             best = pick_best_match(candidates, video_path.stem)
             if best is None:

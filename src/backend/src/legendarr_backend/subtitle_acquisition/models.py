@@ -27,7 +27,10 @@ SubtitleProviderKind = Literal[*SUBTITLE_PROVIDER_KINDS]
 # Which credential(s) each kind needs to be usable — mirrors the `_require()` checks in
 # `connection_tests.py`. A kind in neither set needs no credential at all, so it's always
 # considered configured.
-_API_KEY_KINDS = {"opensubtitles", "subdl", "subsource", "betaseries"}
+# "animetosho"'s `api_key` holds an AniDB API client key, not a credential for
+# animetosho.org itself — resolving its subtitle search needs a call to the real AniDB
+# HTTP API, which requires one (see `providers/animetosho.py`).
+_API_KEY_KINDS = {"opensubtitles", "subdl", "subsource", "betaseries", "animetosho"}
 _USERNAME_PASSWORD_KINDS = {"addic7ed", "legendas_net"}
 
 

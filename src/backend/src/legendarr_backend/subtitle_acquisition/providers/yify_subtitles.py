@@ -89,6 +89,7 @@ class YifySubtitlesProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own series signal — skipped rather than
         attempted, since this site has no series content at all to search.

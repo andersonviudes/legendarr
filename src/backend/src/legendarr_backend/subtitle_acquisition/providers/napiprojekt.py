@@ -58,6 +58,7 @@ class NapiprojektProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`title`/`imdb_id`/`season`/`episode` are ignored — the hash is the only
         signal this provider searches on. `moviehash` is ignored too: it's OpenSubtitles'

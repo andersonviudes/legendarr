@@ -266,25 +266,48 @@ def test_addic7ed_reports_captcha(monkeypatch):
     assert "CAPTCHA" in message
 
 
-def test_anime_tosho_is_reachability_only(monkeypatch):
-    monkeypatch.setattr(ProviderHttpClient, "ping", lambda self, path="/": None)
+def test_animetosho_requires_api_key():
+    success, message = check_connection(_config(kind="animetosho", api_key=None))
 
-    success, message = check_connection(_config(kind="animetosho"))
+    assert success is False
+    assert "AniDB API Client Key" in message
+
+
+def test_animetosho_succeeds(monkeypatch):
+    def _request(self, method, path, data=None, json=None, headers=None, follow_redirects=False):
+        return httpx.Response(200, content=b"<animetitles/>", request=httpx.Request(method, path))
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+
+    success, message = check_connection(_config(kind="animetosho", api_key="a-key"))
 
     assert success is True
-    assert "no credential" in message
 
 
-def test_anime_tosho_reports_unreachable(monkeypatch):
-    def _raise(self, path="/"):
-        request = httpx.Request("GET", "https://feed.animetosho.org/")
-        raise ProviderClientError("Anime Tosho request failed") from httpx.ConnectError(
+def test_animetosho_reports_rejected_key(monkeypatch):
+    def _request(self, method, path, data=None, json=None, headers=None, follow_redirects=False):
+        return httpx.Response(
+            200, content=b'<animetitles code="302"/>', request=httpx.Request(method, path)
+        )
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+
+    success, message = check_connection(_config(kind="animetosho", api_key="bad-key"))
+
+    assert success is False
+    assert "AniDB API Client Key" in message
+
+
+def test_animetosho_reports_unreachable(monkeypatch):
+    def _raise(self, method, path, data=None, json=None, headers=None, follow_redirects=False):
+        request = httpx.Request(method, path)
+        raise ProviderClientError("AniDB API request failed") from httpx.ConnectError(
             "refused", request=request
         )
 
-    monkeypatch.setattr(ProviderHttpClient, "ping", _raise)
+    monkeypatch.setattr(ProviderHttpClient, "request", _raise)
 
-    success, message = check_connection(_config(kind="animetosho"))
+    success, message = check_connection(_config(kind="animetosho", api_key="a-key"))
 
     assert success is False
 

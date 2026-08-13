@@ -24,6 +24,10 @@ PROVIDER_CREDENTIAL_FIELDS = {
     "legendas_net": ("username", "password"),
     "subsource": ("api_key",),
     "betaseries": ("api_key",),
+    # Anime Tosho's "api_key" holds an AniDB API client key, not a credential for
+    # animetosho.org itself — see `legendarr_backend.subtitle_acquisition.providers.
+    # animetosho` for why one's needed.
+    "animetosho": ("api_key",),
 }
 
 # Provider-specific search options shown on the edit form, beyond credentials — currently

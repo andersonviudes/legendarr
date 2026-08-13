@@ -37,6 +37,7 @@ class OpenSubtitlesProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is only ever sent when this provider's own `use_hash` config is
         on — the caller always offers it when it has one, this is where that setting

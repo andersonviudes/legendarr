@@ -35,6 +35,7 @@ class SubtitleProvider(Protocol):
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id`/`moviehash` are optional extra precision a provider *may* use to
         narrow its search (OpenSubtitles does); a provider with no such lookup just
@@ -52,7 +53,12 @@ class SubtitleProvider(Protocol):
         `video_path` is the local video file itself, for a provider whose lookup needs
         to read the raw file rather than search by metadata — Napiprojekt is the first
         (its hash is a different algorithm than `moviehash`, computed from the file
-        directly); every other provider ignores it."""
+        directly); every other provider ignores it.
+
+        `tvdb_id` is `Series.tvdb_id` for a series search, `None` for a movie search or
+        when it isn't set — Anime Tosho is the first provider that needs it (resolving
+        an AniDB episode id starts from a TVDB series id); every other provider ignores
+        it the same way it ignores an unused `season`/`episode`."""
         ...
 
     def download(self, result: SubtitleSearchResult) -> str: ...

@@ -7,6 +7,9 @@ official API exists, against Bazarr's own working provider integrations
 (`/home/viudes/projects/bazarr`, read-only reference).
 """
 
+import xml.etree.ElementTree as ET
+from urllib.parse import urlencode
+
 from legendarr_backend.http_client.client import (
     ProviderClientError,
     ProviderHttpClient,
@@ -16,6 +19,11 @@ from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
 from legendarr_backend.subtitle_acquisition.providers.addic7ed import (
     ADDIC7ED_BASE_URL,
     addic7ed_login,
+)
+from legendarr_backend.subtitle_acquisition.providers.animetosho import (
+    ANIDB_API_URL,
+    ANIDB_CLIENT_VERSION,
+    ANIMETOSHO_FEED_BASE_URL,
 )
 from legendarr_backend.subtitle_acquisition.providers.legendas_net import (
     LEGENDAS_NET_API_BASE_URL,
@@ -169,8 +177,34 @@ def _test_napiprojekt(config: SubtitleProviderConfig) -> ConnectionTestResult:
     return _reachability_only("Napiprojekt", "https://www.napiprojekt.pl")
 
 
-def _test_anime_tosho(config: SubtitleProviderConfig) -> ConnectionTestResult:
-    return _reachability_only("Anime Tosho", "https://feed.animetosho.org")
+def _test_animetosho(config: SubtitleProviderConfig) -> ConnectionTestResult:
+    if (error := _require(config.api_key, "An AniDB API Client Key")) is not None:
+        return False, error
+    assert config.api_key is not None
+    # Same real AniDB HTTP API `providers/animetosho.py`'s `_get_anidb_episodes` calls,
+    # confirmed against Bazarr's own working `AniDBClient.get_episodes` (see that
+    # module's docstring) — a fixed, long-registered anime id (AniDB has no dedicated
+    # "ping" route, and every real call costs against the same daily quota either way).
+    params = {
+        "request": "anime",
+        "client": config.api_key,
+        "clientver": ANIDB_CLIENT_VERSION,
+        "protover": 1,
+        "aid": 1,
+    }
+    client = ProviderHttpClient("Anime Tosho", ANIMETOSHO_FEED_BASE_URL)
+    try:
+        response = client.request("GET", f"{ANIDB_API_URL}?{urlencode(params)}")
+    except ProviderClientError as exc:
+        return False, describe_error(exc)
+    finally:
+        client.close()
+    if not response.is_success:
+        return False, f"AniDB API request failed with {response.status_code}"
+    code = ET.fromstring(response.content).attrib.get("code")
+    if code in {"500", "302"}:
+        return False, "The server rejected the AniDB API Client Key — check that it's correct"
+    return True, "Connection successful"
 
 
 def _test_supersubtitles(config: SubtitleProviderConfig) -> ConnectionTestResult:
@@ -208,7 +242,7 @@ _TESTERS = {
     "legendas_net": _test_legendas_net,
     "napiprojekt": _test_napiprojekt,
     "subsource": _test_subsource,
-    "animetosho": _test_anime_tosho,
+    "animetosho": _test_animetosho,
     "supersubtitles": _test_supersubtitles,
     "animekalesi": _test_animekalesi,
     "greeksubtitles": _test_greeksubtitles,

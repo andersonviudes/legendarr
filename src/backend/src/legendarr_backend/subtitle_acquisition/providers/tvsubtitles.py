@@ -94,6 +94,7 @@ class TVsubtitlesProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`season`/`episode` unset means either a movie search or a series file the
         orchestrator couldn't resolve an episode for — skipped rather than attempted,

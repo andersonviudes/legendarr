@@ -96,6 +96,7 @@ class Addic7edProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own movie/series signal
         (`acquire_media_file_subtitle.py:79`) — a series search is skipped with no
