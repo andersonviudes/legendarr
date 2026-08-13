@@ -17,6 +17,10 @@ from legendarr_backend.subtitle_acquisition.providers.addic7ed import (
     ADDIC7ED_BASE_URL,
     addic7ed_login,
 )
+from legendarr_backend.subtitle_acquisition.providers.legendas_net import (
+    LEGENDAS_NET_API_BASE_URL,
+    legendas_net_login,
+)
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import (
     OPENSUBTITLES_USER_AGENT,
 )
@@ -101,17 +105,17 @@ def _test_legendas_net(config: SubtitleProviderConfig) -> ConnectionTestResult:
         return False, error
     if (error := _require(config.password, "Password")) is not None:
         return False, error
-    client = ProviderHttpClient("legendas.net", "https://legendas.net/api")
+    assert config.username is not None
+    assert config.password is not None
+    # `legendas_net_login` is the same login flow the real provider uses once
+    # credentials pass.
+    client = ProviderHttpClient("legendas.net", LEGENDAS_NET_API_BASE_URL)
     try:
-        body = client.post_json(
-            "/v1/login", {"email": config.username, "password": config.password}
-        )
+        legendas_net_login(client, config.username, config.password)
     except ProviderClientError as exc:
-        return False, describe_error(exc)
+        return False, str(exc)
     finally:
         client.close()
-    if not isinstance(body, dict) or not body.get("access_token"):
-        return False, "Login succeeded but no access token was returned"
     return True, "Connection successful"
 
 

@@ -1,6 +1,7 @@
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.addic7ed import Addic7edProvider
+from legendarr_backend.subtitle_acquisition.providers.legendas_net import LegendasNetProvider
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenSubtitlesProvider
 from legendarr_backend.subtitle_acquisition.providers.subdl import SubdlProvider
 from legendarr_backend.subtitle_acquisition.providers.tvsubtitles import TVsubtitlesProvider
@@ -35,7 +36,7 @@ def test_resolve_subtitle_provider_chain_skips_providers_without_credentials(in_
 def test_resolve_subtitle_provider_chain_skips_kinds_with_no_real_implementation(
     in_memory_session,
 ):
-    in_memory_session.add(SubtitleProviderConfig(kind="legendas_net", enabled=True))
+    in_memory_session.add(SubtitleProviderConfig(kind="napiprojekt", enabled=True))
     in_memory_session.commit()
 
     assert resolve_subtitle_provider_chain(in_memory_session) == []
@@ -93,3 +94,17 @@ def test_resolve_subtitle_provider_chain_resolves_tvsubtitles_when_enabled(in_me
 
     assert len(chain) == 1
     assert isinstance(chain[0], TVsubtitlesProvider)
+
+
+def test_resolve_subtitle_provider_chain_resolves_legendas_net_when_credentialed(
+    in_memory_session,
+):
+    in_memory_session.add(
+        SubtitleProviderConfig(kind="legendas_net", enabled=True, username="u", password="p")
+    )
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], LegendasNetProvider)

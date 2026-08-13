@@ -220,7 +220,7 @@ file — and legendarr extracts and translates it anyway.*
   content at all, so this is the first provider anchored on a real season/episode number
   (resolved via a live Sonarr call, matched by `relative_path` against the `MediaFile`)
   instead of the movies-only skip the other providers use.
-- [ ] **Subtitle acquisition** — legendas.net `SubtitleProvider` implementation: real search and
+- [x] **Subtitle acquisition** — legendas.net `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — Napiprojekt `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.

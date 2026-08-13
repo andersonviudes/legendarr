@@ -70,11 +70,13 @@ class ProviderHttpClient:
         method: str,
         path: str,
         data: dict[str, Any] | None = None,
+        json: Any = None,
         headers: dict[str, str] | None = None,
         follow_redirects: bool = False,
     ) -> httpx.Response:
         """Send a request and return the raw `Response` — for integrations that need
-        something get_json/post_json/ping don't expose: a non-JSON form body, or
+        something get_json/post_json/ping don't expose: a non-JSON form body, a JSON body
+        on a non-POST method (legendas.net's search is a GET with a JSON body), or
         inspecting a redirect/cookie-based login flow (Addic7ed). Unlike the other
         helpers, this never raises on a non-2xx status — a 3xx/4xx response here can be
         the *expected* outcome the caller needs to inspect (Addic7ed's login flow reads
@@ -84,7 +86,12 @@ class ProviderHttpClient:
         headers can't express)."""
         return self._send(
             lambda: self._client.request(
-                method, path, data=data, headers=headers, follow_redirects=follow_redirects
+                method,
+                path,
+                data=data,
+                json=json,
+                headers=headers,
+                follow_redirects=follow_redirects,
             ),
             check_status=False,
         )
