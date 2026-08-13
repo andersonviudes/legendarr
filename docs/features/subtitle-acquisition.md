@@ -26,10 +26,10 @@ feature that reads them.
 
 ## Search and download
 
-OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, and legendas.net are the provider
-kinds with a real `SubtitleProvider` implementation so far
+OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, legendas.net, and Napiprojekt are
+the provider kinds with a real `SubtitleProvider` implementation so far
 (`subtitle_acquisition/providers/opensubtitles.py`, `addic7ed.py`, `yify_subtitles.py`,
-`subdl.py`, `tvsubtitles.py`, `legendas_net.py`) — the rest of the catalog stays
+`subdl.py`, `tvsubtitles.py`, `legendas_net.py`, `napiprojekt.py`) — the rest of the catalog stays
 registration-only until the remaining 0.6.0 bullets land. YIFY Subtitles and Subdl are both
 movies-only and need an `imdb_id` to search (neither has a usable title-search path for this
 app's scope), so — like Addic7ed's series case — a series search returns no results from
@@ -37,7 +37,10 @@ either. TVsubtitles is the opposite: it has no movie content at all, so it's the
 provider that needs a real season/episode number to search and is skipped for a movie or an
 unresolved episode instead. legendas.net has both movie and TV content with a real
 season/episode search for the latter, but is Brazilian Portuguese only — a search for any
-other language returns no results. `acquire_subtitle_for_media_file`
+other language returns no results. Napiprojekt is different again: instead of a title search
+it hashes the local video's own first 10MB (`subtitle_acquisition/napiprojekt_hash.py`) and
+asks for an exact match — Polish only, and it applies equally to a movie or a series file
+since nothing but the hash is used. `acquire_subtitle_for_media_file`
 (`subtitle_acquisition/acquire_media_file_subtitle.py`) is the entry point: given a
 `MediaFile` that has no subtitle yet in any of its `LanguageProfile`'s source languages, it
 searches each source language in priority order, downloads the best-scoring result, writes it
@@ -63,6 +66,11 @@ Search precision differs by media type:
   and the local video is at least 64KB — the OpenSubtitles-defined checksum of a file's first
   and last 64KB, the most precise signal available since it doesn't depend on any metadata at
   all (`subtitle_acquisition/opensubtitles_hash.py`).
+- The local video's path is also passed to every provider's `search()` as `video_path` — every
+  provider but Napiprojekt ignores it. Napiprojekt's result sets its `release_name` to the
+  video's own filename, so the match-score cutoff below trivially accepts it: an exact hash
+  match is definitionally the right subtitle for that file, and the API returns no other
+  metadata to score against.
 
 A result is only accepted once it clears a basic match-score cutoff
 (`subtitle_acquisition/match_score.py`): a text-similarity ratio between the candidate's
@@ -74,5 +82,6 @@ weighting (release group, resolution, codec, source, edition) instead of one fla
 
 Manual search/browse and upload — letting a user pick a result themselves instead of trusting
 the automatic match — is 0.11.0 work. The remaining real `SubtitleProvider` implementations
-(beyond OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, and legendas.net) are
+(beyond OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, legendas.net, and
+Napiprojekt) are
 0.6.0 work.

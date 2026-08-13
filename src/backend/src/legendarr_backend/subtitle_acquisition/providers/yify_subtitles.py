@@ -1,6 +1,7 @@
 import io
 import logging
 import re
+from pathlib import Path
 from zipfile import ZipFile, is_zipfile
 
 from bs4 import BeautifulSoup, Tag
@@ -87,10 +88,11 @@ class YifySubtitlesProvider:
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own series signal — skipped rather than
         attempted, since this site has no series content at all to search.
-        `season`/`episode` are ignored — not used here."""
+        `season`/`episode`/`video_path` are ignored — not used here."""
         if imdb_id is None:
             logger.debug(
                 "yify_subtitles search skipped for %r: this provider is movies-only",

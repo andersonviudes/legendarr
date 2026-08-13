@@ -30,7 +30,17 @@ class _FakeProvider:
         self.text = text
         self.search_calls = []
 
-    def search(self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None):
+    def search(
+        self,
+        title,
+        language,
+        *,
+        imdb_id=None,
+        moviehash=None,
+        season=None,
+        episode=None,
+        video_path=None,
+    ):
         self.search_calls.append(
             {
                 "title": title,
@@ -39,6 +49,7 @@ class _FakeProvider:
                 "moviehash": moviehash,
                 "season": season,
                 "episode": episode,
+                "video_path": video_path,
             }
         )
         return self.results
@@ -50,7 +61,17 @@ class _FakeProvider:
 class _FailingProvider:
     name = "failing"
 
-    def search(self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None):
+    def search(
+        self,
+        title,
+        language,
+        *,
+        imdb_id=None,
+        moviehash=None,
+        season=None,
+        episode=None,
+        video_path=None,
+    ):
         raise RuntimeError("boom")
 
     def download(self, result):
@@ -253,6 +274,21 @@ def test_acquire_subtitle_downloads_writes_and_rescans(in_memory_session, tmp_pa
     assert any(row.language == "en" and row.origin == SubtitleOrigin.EXTERNAL for row in rows)
 
 
+def test_acquire_subtitle_passes_video_path_to_the_provider(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert provider.search_calls[0]["video_path"] == video
+
+
 def test_acquire_subtitle_passes_movie_imdb_id_to_the_provider(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -341,7 +377,15 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
         name = "language-aware"
 
         def search(
-            self, title, language, *, imdb_id=None, moviehash=None, season=None, episode=None
+            self,
+            title,
+            language,
+            *,
+            imdb_id=None,
+            moviehash=None,
+            season=None,
+            episode=None,
+            video_path=None,
         ):
             if language != "ja":
                 return []

@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import urlencode
 
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
@@ -35,11 +36,13 @@ class OpenSubtitlesProvider:
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is only ever sent when this provider's own `use_hash` config is
         on — the caller always offers it when it has one, this is where that setting
         actually takes effect. `season`/`episode` aren't used by this provider's search
-        yet — ignored, same as every kwarg this provider doesn't read."""
+        yet — ignored, same as `video_path` and every other kwarg this provider doesn't
+        read."""
         params = {
             "query": title,
             "languages": language.lower(),

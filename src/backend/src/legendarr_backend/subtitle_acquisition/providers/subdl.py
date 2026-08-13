@@ -1,5 +1,6 @@
 import io
 import logging
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urljoin
 from zipfile import ZipFile, is_zipfile
@@ -103,10 +104,11 @@ class SubdlProvider:
         moviehash: str | None = None,
         season: int | None = None,
         episode: int | None = None,
+        video_path: Path | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own series signal — skipped rather than
-        attempted, same as `YifySubtitlesProvider.search`. `season`/`episode` are ignored —
-        not used here."""
+        attempted, same as `YifySubtitlesProvider.search`. `season`/`episode`/`video_path`
+        are ignored — not used here."""
         if imdb_id is None:
             logger.debug("subdl search skipped for %r: this provider is movies-only", title)
             return []

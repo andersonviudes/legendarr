@@ -149,6 +149,7 @@ def _search_and_download(
                 moviehash=moviehash,
                 season=season,
                 episode=episode,
+                video_path=video_path,
             )
             best = pick_best_match(candidates, video_path.stem)
             if best is None:
