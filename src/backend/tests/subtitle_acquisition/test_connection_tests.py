@@ -83,13 +83,29 @@ def test_subdl_reports_rejected_key(monkeypatch):
     assert message == "Invalid API Key"
 
 
-def test_subsource_is_reachability_only(monkeypatch):
-    monkeypatch.setattr(ProviderHttpClient, "ping", lambda self, path="/": None)
+def test_subsource_succeeds(monkeypatch):
+    monkeypatch.setattr(
+        ProviderHttpClient, "get_json", lambda self, path: {"success": True, "data": []}
+    )
 
     success, message = check_connection(_config(kind="subsource", api_key="a-key"))
 
     assert success is True
-    assert "isn't validated" in message
+
+
+def test_subsource_reports_rejected_key(monkeypatch):
+    def _raise(self, path):
+        request = httpx.Request("GET", "https://api.subsource.net/api/v1/movies/search")
+        response = httpx.Response(401, request=request)
+        cause = httpx.HTTPStatusError("Unauthorized", request=request, response=response)
+        raise ProviderClientError("failed with 401") from cause
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _raise)
+
+    success, message = check_connection(_config(kind="subsource", api_key="bad-key"))
+
+    assert success is False
+    assert "API Key" in message
 
 
 def test_subsource_requires_api_key():
