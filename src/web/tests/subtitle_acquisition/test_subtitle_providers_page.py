@@ -161,6 +161,25 @@ def test_edit_form_shows_credential_fields_for_kind_that_needs_them(stub_backend
     assert "data-test-connection" in response.text
 
 
+def test_edit_form_shows_credential_fields_for_animetosho(stub_backend_client):
+    """Anime Tosho's `api_key` holds an AniDB API client key, not its own credential —
+    still shown as the generic "API Key" field, same as every other API-key kind."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=_provider(id=1, kind="animetosho"))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="api_key"' in response.text
+
+
 def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend_client):
     app = create_app()
 

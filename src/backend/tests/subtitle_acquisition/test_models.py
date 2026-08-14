@@ -13,6 +13,8 @@ from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
         ("yify_subtitles", None, None, None, True),
         ("tvsubtitles", None, None, None, True),
         ("napiprojekt", None, None, None, True),
+        ("animetosho", None, None, None, False),
+        ("animetosho", "key", None, None, True),
     ],
 )
 def test_has_credentials(kind, api_key, username, password, expected):

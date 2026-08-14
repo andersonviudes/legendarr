@@ -33,6 +33,7 @@ class _FakeProvider:
         season=None,
         episode=None,
         video_path=None,
+        tvdb_id=None,
     ):
         return [SubtitleSearchResult(release_name="Foo", download_id="1", language=language)]
 

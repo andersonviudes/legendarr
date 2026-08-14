@@ -59,6 +59,7 @@ class LegendasNetProvider:
         season: int | None = None,
         episode: int | None = None,
         video_path: Path | None = None,
+        tvdb_id: int | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is ignored — not used here. See the class docstring for how
         `imdb_id`/`season`/`episode` pick a movie search, a TV search, or a skip.

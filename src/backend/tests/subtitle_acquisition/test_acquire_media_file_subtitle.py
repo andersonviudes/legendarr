@@ -40,6 +40,7 @@ class _FakeProvider:
         season=None,
         episode=None,
         video_path=None,
+        tvdb_id=None,
     ):
         self.search_calls.append(
             {
@@ -50,6 +51,7 @@ class _FakeProvider:
                 "season": season,
                 "episode": episode,
                 "video_path": video_path,
+                "tvdb_id": tvdb_id,
             }
         )
         return self.results
@@ -71,6 +73,7 @@ class _FailingProvider:
         season=None,
         episode=None,
         video_path=None,
+        tvdb_id=None,
     ):
         raise RuntimeError("boom")
 
@@ -308,7 +311,7 @@ def test_acquire_subtitle_passes_movie_imdb_id_to_the_provider(
 def test_acquire_subtitle_passes_series_season_episode_to_the_provider(
     in_memory_session, tmp_path, monkeypatch
 ):
-    series = _series(in_memory_session, tmp_path)
+    series = _series(in_memory_session, tmp_path, tvdb_id=389597)
     media_file = _series_media_file(in_memory_session, series)
     _profile(in_memory_session)
     video = _write_video(tmp_path)
@@ -327,6 +330,7 @@ def test_acquire_subtitle_passes_series_season_episode_to_the_provider(
     assert provider.search_calls[0]["season"] == 1
     assert provider.search_calls[0]["episode"] == 2
     assert provider.search_calls[0]["imdb_id"] is None
+    assert provider.search_calls[0]["tvdb_id"] == 389597
 
 
 def test_acquire_subtitle_passes_none_season_episode_when_resolution_fails(
@@ -386,6 +390,7 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
             season=None,
             episode=None,
             video_path=None,
+            tvdb_id=None,
         ):
             if language != "ja":
                 return []
