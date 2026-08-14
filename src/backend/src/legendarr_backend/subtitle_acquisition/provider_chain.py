@@ -11,6 +11,9 @@ from legendarr_backend.subtitle_acquisition.providers.napiprojekt import Napipro
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenSubtitlesProvider
 from legendarr_backend.subtitle_acquisition.providers.subdl import SubdlProvider
 from legendarr_backend.subtitle_acquisition.providers.subsource import SubsourceProvider
+from legendarr_backend.subtitle_acquisition.providers.supersubtitles import (
+    SupersubtitlesProvider,
+)
 from legendarr_backend.subtitle_acquisition.providers.tvsubtitles import TVsubtitlesProvider
 from legendarr_backend.subtitle_acquisition.providers.yify_subtitles import YifySubtitlesProvider
 
@@ -24,6 +27,7 @@ _PROVIDER_CLASSES: dict[str, Callable[[SubtitleProviderConfig], SubtitleProvider
     "napiprojekt": NapiprojektProvider,
     "subsource": SubsourceProvider,
     "animetosho": AnimeToshoProvider,
+    "supersubtitles": SupersubtitlesProvider,
 }
 
 
@@ -31,8 +35,8 @@ def resolve_subtitle_provider_chain(session: Session) -> list[SubtitleProvider]:
     """Ordered, ready-to-call subtitle providers: enabled + credentialed
     `SubtitleProviderConfig` rows among the kinds with a real `SubtitleProvider`
     implementation (today: `opensubtitles`, `addic7ed`, `yify_subtitles`, `subdl`,
-    `tvsubtitles`, `legendas_net`, `napiprojekt`, `subsource`, `animetosho`), `id`
-    ascending.
+    `tvsubtitles`, `legendas_net`, `napiprojekt`, `subsource`, `animetosho`,
+    `supersubtitles`), `id` ascending.
     An empty list means nothing usable is configured — callers log and skip, this is never treated
     as an error. Same shape as `subtitle_translation.provider_chain.resolve_provider_chain`,
     ready for the next `SubtitleProvider` implementation to extend `_PROVIDER_CLASSES`

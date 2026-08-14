@@ -7,6 +7,9 @@ from legendarr_backend.subtitle_acquisition.providers.napiprojekt import Napipro
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenSubtitlesProvider
 from legendarr_backend.subtitle_acquisition.providers.subdl import SubdlProvider
 from legendarr_backend.subtitle_acquisition.providers.subsource import SubsourceProvider
+from legendarr_backend.subtitle_acquisition.providers.supersubtitles import (
+    SupersubtitlesProvider,
+)
 from legendarr_backend.subtitle_acquisition.providers.tvsubtitles import TVsubtitlesProvider
 from legendarr_backend.subtitle_acquisition.providers.yify_subtitles import YifySubtitlesProvider
 
@@ -39,7 +42,7 @@ def test_resolve_subtitle_provider_chain_skips_providers_without_credentials(in_
 def test_resolve_subtitle_provider_chain_skips_kinds_with_no_real_implementation(
     in_memory_session,
 ):
-    in_memory_session.add(SubtitleProviderConfig(kind="supersubtitles", enabled=True))
+    in_memory_session.add(SubtitleProviderConfig(kind="animekalesi", enabled=True))
     in_memory_session.commit()
 
     assert resolve_subtitle_provider_chain(in_memory_session) == []
@@ -141,3 +144,13 @@ def test_resolve_subtitle_provider_chain_resolves_animetosho_when_credentialed(i
 
     assert len(chain) == 1
     assert isinstance(chain[0], AnimeToshoProvider)
+
+
+def test_resolve_subtitle_provider_chain_resolves_supersubtitles_when_enabled(in_memory_session):
+    in_memory_session.add(SubtitleProviderConfig(kind="supersubtitles", enabled=True))
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], SupersubtitlesProvider)

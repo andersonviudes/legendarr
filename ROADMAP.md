@@ -231,7 +231,7 @@ file — and legendarr extracts and translates it anyway.*
   download wired in against the protocol from 0.3.0.
 - [x] **Subtitle acquisition** — Anime Tosho `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
-- [ ] **Subtitle acquisition** — Supersubtitles `SubtitleProvider` implementation: real search
+- [x] **Subtitle acquisition** — Supersubtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — AnimeKalesi `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
