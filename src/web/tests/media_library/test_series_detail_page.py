@@ -31,7 +31,7 @@ def _series_detail_handler(request: httpx.Request) -> httpx.Response:
                         "id": 5,
                         "relative_path": "Season 01/Bar.S01E01.mkv",
                         "size_bytes": 100,
-                        "subtitles": [{"language": "pt-BR", "origin": "external"}],
+                        "subtitles": [{"id": 12, "language": "pt-BR", "origin": "external"}],
                     },
                 },
                 {
@@ -72,6 +72,7 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "Pilot" in response.text
     assert "pt-BR" in response.text
     assert response.text.count("/media/files/5/translate") == 1
+    assert "/media/subtitles/12/sync-timing" in response.text
     assert "TBA" in response.text
 
 

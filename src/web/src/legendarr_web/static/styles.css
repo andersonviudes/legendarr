@@ -418,6 +418,24 @@ body {
   justify-content: flex-end;
 }
 
+/* One row per subtitle (language pill + its own "Sync timing" button), replacing the
+   plain language-pill badges wherever a subtitle needs an individually addressable
+   action — see subtitle_sync_list() in macros.html. */
+.subtitle-sync-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.subtitle-sync-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .badge-empty {
   color: var(--pico-muted-color);
 }

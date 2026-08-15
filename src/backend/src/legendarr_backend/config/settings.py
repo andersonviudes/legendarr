@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = Field(default=5.0)
     default_translation_provider: str | None = Field(default=None)
+    # Manual "sync timing" only (ROADMAP.md 0.7.0), same posture as translate_retry_attempts
+    # — no interval/max_instances/coalesce fields, just the retry policy
+    # `enqueue_timing_sync` needs. `ffsubsync` decodes the whole audio track, so its timeout
+    # defaults higher than `embedded_subtitle_probe_timeout_seconds`.
+    timing_sync_retry_attempts: int = Field(default=3, ge=1)
+    timing_sync_retry_delay_seconds: float = Field(default=5.0)
+    timing_sync_timeout_seconds: float = Field(default=120.0)
 
     @property
     def resolved_database_url(self) -> str:

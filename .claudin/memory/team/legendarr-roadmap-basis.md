@@ -164,3 +164,22 @@ therefore reopened (was previously fully `[x]`) and is no longer a closed milest
 new bullets ship. `docs/features/subtitle-acquisition.md`'s "Search and download" and "Known
 gap" sections were updated to match (references to "0.11.0 adds a second and third" now point
 at 0.6.0).
+
+**2026-08-15 — 0.6.0 fully closed, PR #45:** GreekSubtitles and BetaSeries were the last two
+unchecked bullets; both landed on `feat/greeksubtitles-betaseries-providers` (planned via
+`EnterPlanMode`, ported from Bazarr's `greeksubtitles.py`/`betaseries.py` the same way as every
+prior provider, no live site verification — network access to unfamiliar hosts was denied,
+same situation every earlier scraped provider was already built under). GreekSubtitles handles
+movies and series with one search path (no code-path ambiguity to skip on, unlike
+Supersubtitles/legendas.net — deliberately never skips for missing season/episode, only for an
+unsupported language) and fetches only its first results page. BetaSeries is series-only,
+anchored on `tvdb_id`+`season`+`episode` all being set (same shape as `AnimeToshoProvider`),
+since legendarr only ever has the *series*-level tvdb id, never a per-episode one. Every kind
+in `SUBTITLE_PROVIDER_KINDS` now has a real implementation — `provider_chain.py`'s
+"skips kinds with no real implementation" test had to swap its example from `"greeksubtitles"`
+to a synthetic `"not_a_real_provider"` kind, since there's no longer a real
+registered-but-unimplemented kind to point at. `docs/features/subtitle-acquisition.md`'s
+"Search and download" section was also stale from PRs #40-44 (Subsource/Anime
+Tosho/Supersubtitles/AnimeKalesi landing without a doc update) — brought fully current in the
+same PR, not just patched for the two new providers. ROADMAP 0.6.0 is fully `[x]` again; the
+roadmap's next open milestone is 0.7.0 (subtitle timing sync).

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_badges %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_sync_list %}
 {% block title %}legendarr · {{ movie.title }}{% endblock %}
 {% block content %}
 {{ media_detail_toolbar("/media/movies/" ~ movie.id ~ "/scan") }}
@@ -48,7 +48,7 @@
     {% for file in movie.files %}
     <tr>
       <td>{{ file.relative_path }}</td>
-      <td>{{ subtitle_badges(file.subtitles) }}</td>
+      <td>{{ subtitle_sync_list(file.subtitles) }}</td>
       <td>
         <div class="file-row-actions">
           <button

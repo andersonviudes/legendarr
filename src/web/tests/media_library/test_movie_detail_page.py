@@ -25,7 +25,7 @@ def _movie_detail_handler(request: httpx.Request) -> httpx.Response:
                     "id": 5,
                     "relative_path": "Foo.mkv",
                     "size_bytes": 100,
-                    "subtitles": [{"language": "en", "origin": "external"}],
+                    "subtitles": [{"id": 9, "language": "en", "origin": "external"}],
                 }
             ],
         },
@@ -51,6 +51,7 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "en" in response.text
     assert "1 missing subtitles" in response.text
     assert "/media/files/5/translate" in response.text
+    assert "/media/subtitles/9/sync-timing" in response.text
 
 
 def test_movie_detail_page_redirects_when_missing(stub_backend_client):

@@ -163,12 +163,30 @@
 {% endmacro %}
 
 {#
-  Language-pill badges for the subtitles already discovered on one `MediaFile` — reused
-  by the movie and series detail pages' file/episode rows.
+  One row per subtitle already discovered on one `MediaFile` — language/origin pill plus
+  its own "Sync timing" action (ROADMAP.md 0.7.0). Reused by the movie and series detail
+  pages' file/episode rows.
 #}
-{% macro subtitle_badges(subtitles) %}
+{% macro subtitle_sync_list(subtitles) %}
 {% if subtitles %}
-{% for subtitle in subtitles %}<span class="lang-pill" data-tooltip="{{ subtitle.origin }}">{{ subtitle.language }}</span>{% endfor %}
+<ul class="subtitle-sync-list">
+  {% for subtitle in subtitles %}
+  <li class="subtitle-sync-row">
+    <span class="lang-pill" data-tooltip="{{ subtitle.origin }}">{{ subtitle.language }}</span>
+    <button
+      type="button"
+      class="app-icon-btn"
+      aria-label="Sync timing"
+      data-tooltip="Sync timing"
+      hx-post="/media/subtitles/{{ subtitle.id }}/sync-timing"
+      hx-target="#sync-result-{{ subtitle.id }}"
+      hx-swap="innerHTML"
+      hx-disabled-elt="this"
+    >{{ icon("refresh-cw") }}</button>
+    <span id="sync-result-{{ subtitle.id }}"></span>
+  </li>
+  {% endfor %}
+</ul>
 {% else %}
 <span class="badge-empty">—</span>
 {% endif %}

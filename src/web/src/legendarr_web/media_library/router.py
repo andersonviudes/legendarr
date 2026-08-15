@@ -118,3 +118,17 @@ async def trigger_file_translation(
     except httpx.HTTPStatusError:
         result = {"success": False, "message": "Couldn't queue the translation."}
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
+@router.post("/subtitles/{subtitle_id}/sync-timing")
+async def trigger_subtitle_timing_sync(
+    request: Request,
+    subtitle_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        await service.trigger_subtitle_timing_sync(client, subtitle_id)
+        result = {"success": True, "message": "Timing sync queued."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't queue the timing sync."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})

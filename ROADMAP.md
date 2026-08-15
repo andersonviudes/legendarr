@@ -246,12 +246,15 @@ file — and legendarr extracts and translates it anyway.*
 
 ## 0.7.0 — Subtitle timing sync
 
-*Use case: a translated or downloaded subtitle drifts out of sync with the audio; legendarr
-shifts its timing to match before handing it back to the user.*
+*Use case: any subtitle already on disk — discovered externally, extracted from an embedded
+track, or produced by translation — has drifted out of sync with the audio; the user triggers
+a manual re-align from the media detail page instead of re-timing it by hand.*
 
-- [ ] **Subtitle discovery** — Timing-correction pass (in the style of `ffsubsync`) that aligns a
-  subtitle's cues against the video's audio track, using the `ffmpeg` toolchain already
-  wired up at 0.6.0. Runs automatically after translation, replacing the drifted file.
+- [x] **Subtitle timing sync** — Manual, per-subtitle timing-correction pass (via `ffsubsync`)
+  that aligns a subtitle's cues against the video's audio track, using the `ffmpeg` toolchain
+  already wired up at 0.6.0. Available on every discovered `Subtitle` — external,
+  embedded-extracted, or translated — from a "Sync timing" button on the media detail page.
+  Always overwrites the target `.srt` in place; no backup is kept.
 
 ## 0.8.0 — Multiple providers, multiple target languages
 
