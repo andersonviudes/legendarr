@@ -23,14 +23,18 @@ hello
 class _UppercaseProvider:
     name = "uppercase"
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
-        return text.upper()
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        return [text.upper() for text in texts]
 
 
 class _FailingProvider:
     name = "failing"
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
         raise RuntimeError("boom")
 
 

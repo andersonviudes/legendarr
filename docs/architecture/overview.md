@@ -52,6 +52,7 @@ src/web/src/legendarr_web/
 ├── subtitle_acquisition/    # /settings/subtitle-providers/ routes (enable, credentials, test)
 ├── media_metadata/          # /settings/metadata-source/ routes (enable, credentials, test)
 ├── language_profiles/       # /settings/ route
+├── subtitle_translation/    # /settings/translation-providers/ routes (enable, credentials, test, default)
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route
 ├── system/                  # /system/ route

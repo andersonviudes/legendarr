@@ -259,12 +259,16 @@ a manual re-align from the media detail page instead of re-timing it by hand.*
 ## 0.8.0 — Multiple providers, multiple target languages
 
 *Use case: one profile translates a source subtitle into `pt-BR` and `en` in a single pass,
-using whichever engine (DeepL, Google Translate, or an LLM) the profile is configured for.*
+using whichever engine (DeepL, Google Translate, LibreTranslate, or an LLM) is enabled and
+set as the default translation provider — every subtitle line goes out in one request per
+target language instead of one request per line.*
 
-- [ ] **Subtitle translation** — More `TranslationProvider` backends behind the existing
-  protocol: DeepL, Google Translate, and an LLM-backed option. Translate into multiple
-  target languages from one profile in a single operation, instead of one target language
-  per action. Batch multiple subtitle lines per request where a provider supports it.
+- [x] **Subtitle translation** — `TranslationProvider` backends behind the existing protocol:
+  DeepL, Google Translate, LibreTranslate, and a generic OpenAI-compatible LLM-backed option
+  (covers OpenAI itself and any compatible self-hosted/third-party endpoint). Translate into
+  multiple target languages from one profile in a single job run, instead of one target
+  language per action. Every provider batches all of a subtitle's lines into one request per
+  target language instead of one request per line.
 
 ## 0.9.0 — Pluggable translation engines
 

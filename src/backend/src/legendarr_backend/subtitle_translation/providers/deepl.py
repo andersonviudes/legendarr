@@ -16,7 +16,9 @@ class DeepLTranslationProvider:
         is_free_key = (config.api_key or "").endswith(":fx")
         self._host = "https://api-free.deepl.com" if is_free_key else "https://api.deepl.com"
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
         client = ProviderHttpClient(
             "DeepL", self._host, headers={"Authorization": f"DeepL-Auth-Key {self._api_key}"}
         )
@@ -24,11 +26,11 @@ class DeepLTranslationProvider:
             response = client.post_json(
                 "/v2/translate",
                 {
-                    "text": [text],
+                    "text": texts,
                     "source_lang": source_language.upper(),
                     "target_lang": target_language.upper(),
                 },
             )
         finally:
             client.close()
-        return response["translations"][0]["text"]
+        return [translation["text"] for translation in response["translations"]]

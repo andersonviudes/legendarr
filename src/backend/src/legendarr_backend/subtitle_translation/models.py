@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel
 from legendarr_backend.security.encrypted_string import EncryptedString
 
 # Single source of truth for every recognized translation provider kind.
-TranslationProviderKind = Literal["deepl", "google", "libretranslate"]
+TranslationProviderKind = Literal["deepl", "google", "libretranslate", "llm"]
 
 # Derived from the Literal above rather than hand-duplicated, so the two can't drift apart.
 TRANSLATION_PROVIDER_KINDS: tuple[TranslationProviderKind, ...] = get_args(TranslationProviderKind)
@@ -14,7 +14,7 @@ TRANSLATION_PROVIDER_KINDS: tuple[TranslationProviderKind, ...] = get_args(Trans
 # Which credential(s) each kind needs to be usable — mirrors the `_require()` checks in
 # `connection_tests.py`. Unlike subtitle sources, every translation provider kind needs at
 # least one of these today, so there's no "no credential concept" branch (yet).
-_API_KEY_KINDS = {"deepl", "google"}
+_API_KEY_KINDS = {"deepl", "google", "llm"}
 _ENDPOINT_KINDS = {"libretranslate"}
 
 
@@ -34,6 +34,10 @@ class TranslationProviderConfig(SQLModel, table=True):
     # kind, same way `SubtitleProviderConfig`'s OpenSubtitles-only search options are ignored
     # for every kind but opensubtitles.
     endpoint: str | None = Field(default=None)
+    # The LLM's model name (e.g. "gpt-4o-mini"). Ignored for every other kind, same shape as
+    # `endpoint` above — optional, `LLMTranslationProvider` falls back to a sensible default
+    # when blank rather than requiring the user to type one.
+    model: str | None = Field(default=None)
     connection_verified: bool = Field(default=False)
 
     @property

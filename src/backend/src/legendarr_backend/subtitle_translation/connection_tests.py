@@ -12,6 +12,7 @@ from legendarr_backend.http_client.client import (
     describe_error,
 )
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
+from legendarr_backend.subtitle_translation.providers.llm import DEFAULT_LLM_ENDPOINT
 
 ConnectionTestResult = tuple[bool, str]
 
@@ -86,8 +87,25 @@ def _test_libretranslate(config: TranslationProviderConfig) -> ConnectionTestRes
     return True, "Connection successful"
 
 
+def _test_llm(config: TranslationProviderConfig) -> ConnectionTestResult:
+    if (error := _require(config.api_key, "An API Key")) is not None:
+        return False, error
+    endpoint = config.endpoint or DEFAULT_LLM_ENDPOINT
+    client = ProviderHttpClient(
+        "LLM", endpoint, headers={"Authorization": f"Bearer {config.api_key}"}
+    )
+    try:
+        client.get_json("/models")
+    except ProviderClientError as exc:
+        return False, describe_error(exc)
+    finally:
+        client.close()
+    return True, "Connection successful"
+
+
 _TESTERS = {
     "deepl": _test_deepl,
     "google": _test_google,
     "libretranslate": _test_libretranslate,
+    "llm": _test_llm,
 }

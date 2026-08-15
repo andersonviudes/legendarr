@@ -28,8 +28,9 @@ async def _credential_form(
     kind: str = Form(...),
     api_key: str = Form(""),
     endpoint: str = Form(""),
+    model: str = Form(""),
 ) -> dict:
-    return {"kind": kind, "api_key": api_key, "endpoint": endpoint}
+    return {"kind": kind, "api_key": api_key, "endpoint": endpoint, "model": model}
 
 
 @router.get("/")

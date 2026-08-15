@@ -9,12 +9,15 @@ def translate_subtitle(
     target_language: str,
 ) -> list[SubtitleLine]:
     """Translate every line of a subtitle, preserving timing."""
+    translated_texts = provider.translate_batch(
+        [line.text for line in lines], source_language, target_language
+    )
     return [
         SubtitleLine(
             index=line.index,
             start_ms=line.start_ms,
             end_ms=line.end_ms,
-            text=provider.translate(line.text, source_language, target_language),
+            text=translated_text,
         )
-        for line in lines
+        for line, translated_text in zip(lines, translated_texts, strict=True)
     ]

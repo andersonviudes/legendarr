@@ -5,9 +5,9 @@
 {% include "_provider_tabs.html" %}
 <p class="field-hint">
   Enable the translation engines you want legendarr to use, and configure credentials where
-  an engine needs them. Sending text off to translate isn't wired up to these yet — this only
-  registers which ones are available and confirms they're reachable. `echo` (returns the
-  source text unchanged) keeps working regardless, for development.
+  an engine needs them. Translation jobs try the default provider first, falling back through
+  every other enabled, credentialed engine in order if it fails. `echo` (returns the source
+  text unchanged) is always available too, for development.
 </p>
 
 {% include "_provider_grid.html" %}
