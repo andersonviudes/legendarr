@@ -16,10 +16,12 @@ class LibreTranslateTranslationProvider:
         self._endpoint = config.endpoint
         self._api_key = config.api_key
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
         client = ProviderHttpClient("LibreTranslate", self._endpoint)
         payload = {
-            "q": text,
+            "q": texts,
             "source": source_language,
             "target": target_language,
             "format": "text",

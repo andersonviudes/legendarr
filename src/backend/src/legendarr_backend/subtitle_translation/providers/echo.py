@@ -7,5 +7,7 @@ class EchoTranslationProvider:
 
     name = "echo"
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
-        return text
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        return list(texts)

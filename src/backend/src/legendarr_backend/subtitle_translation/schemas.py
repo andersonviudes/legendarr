@@ -5,6 +5,7 @@ class TranslationProviderConfigInput(BaseModel):
     enabled: bool = True
     api_key: str | None = None
     endpoint: str | None = None
+    model: str | None = None
 
 
 class TranslationProviderConfigRead(BaseModel):
@@ -19,4 +20,5 @@ class TranslationProviderConfigRead(BaseModel):
     kind: str
     enabled: bool
     endpoint: str | None
+    model: str | None
     is_configured: bool

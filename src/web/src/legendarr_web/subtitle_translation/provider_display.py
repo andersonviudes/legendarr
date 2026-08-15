@@ -2,6 +2,7 @@ PROVIDER_LABELS = {
     "deepl": "DeepL",
     "google": "Google Translate",
     "libretranslate": "LibreTranslate",
+    "llm": "LLM (OpenAI-compatible)",
 }
 
 # Which credential fields the edit form shows for each provider kind — matches the auth
@@ -10,6 +11,7 @@ PROVIDER_CREDENTIAL_FIELDS = {
     "deepl": ("api_key",),
     "google": ("api_key",),
     "libretranslate": ("endpoint", "api_key"),
+    "llm": ("endpoint", "api_key", "model"),
 }
 
 

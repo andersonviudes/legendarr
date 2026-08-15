@@ -12,13 +12,15 @@ class GoogleTranslationProvider:
     def __init__(self, config: TranslationProviderConfig) -> None:
         self._api_key = config.api_key
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str:
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
         client = ProviderHttpClient("Google Translate", "https://translation.googleapis.com")
         try:
             response = client.post_json(
                 f"/language/translate/v2?key={self._api_key}",
                 {
-                    "q": text,
+                    "q": texts,
                     "source": source_language,
                     "target": target_language,
                     "format": "text",
@@ -26,4 +28,4 @@ class GoogleTranslationProvider:
             )
         finally:
             client.close()
-        return response["data"]["translations"][0]["translatedText"]
+        return [translation["translatedText"] for translation in response["data"]["translations"]]

@@ -40,6 +40,7 @@ def _merge_with_existing(
             "enabled": data.enabled if "enabled" in provided else existing.enabled,
             "api_key": data.api_key or existing.api_key,
             "endpoint": data.endpoint if "endpoint" in provided else existing.endpoint,
+            "model": data.model if "model" in provided else existing.model,
         }
     )
 

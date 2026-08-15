@@ -116,6 +116,28 @@ def test_edit_form_shows_endpoint_and_api_key_for_libretranslate(stub_backend_cl
     assert 'name="api_key"' in response.text
 
 
+def test_edit_form_shows_endpoint_api_key_and_model_for_llm(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=_provider(id=1, kind="llm", endpoint="http://localhost:11434/v1", model="llama3"),
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="endpoint"' in response.text
+    assert 'value="http://localhost:11434/v1"' in response.text
+    assert 'name="api_key"' in response.text
+    assert 'name="model"' in response.text
+    assert 'value="llama3"' in response.text
+
+
 def test_edit_form_does_not_prefill_api_key(stub_backend_client):
     app = create_app()
 

@@ -41,13 +41,21 @@
 
   {% if "endpoint" in provider.credential_fields %}
   {{ field("endpoint", "Endpoint URL", value=(provider.endpoint or ""),
-           placeholder="http://localhost:5000") }}
+           placeholder=("https://api.openai.com/v1" if provider.kind == "llm" else "http://localhost:5000")) }}
   {% endif %}
 
   {% if "api_key" in provider.credential_fields %}
   {# Never re-display the stored secret. A blank field on save means "keep the current one". #}
   {{ field("api_key", "API Key", type="password", autocomplete="off",
            placeholder="Leave blank to keep the current key") }}
+  {% endif %}
+
+  {% if "model" in provider.credential_fields %}
+  {{ field("model", "Model", value=(provider.model or ""), placeholder="gpt-4o-mini") }}
+  <p class="field-hint">
+    Leave Endpoint and Model blank to use OpenAI's API with gpt-4o-mini — set them to point
+    at a self-hosted or third-party OpenAI-compatible endpoint instead.
+  </p>
   {% endif %}
 
   <div id="test-result" aria-live="polite"></div>

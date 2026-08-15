@@ -106,6 +106,22 @@ def test_update_without_endpoint_keeps_existing_endpoint(isolated_database):
         assert response.json()["endpoint"] == "http://localhost:5000"
 
 
+def test_update_without_model_keeps_existing_model(isolated_database):
+    """A PATCH that never mentions `model` (the enable/disable toggle only sends
+    `enabled`) must not null out a stored model."""
+    with TestClient(create_api_app()) as client:
+        _seed()
+        provider_id = next(
+            p["id"] for p in client.get("/translation-providers/").json() if p["kind"] == "llm"
+        )
+        client.patch(f"/translation-providers/{provider_id}", json={"model": "gpt-4o"})
+
+        response = client.patch(f"/translation-providers/{provider_id}", json={"enabled": False})
+
+        assert response.status_code == 200
+        assert response.json()["model"] == "gpt-4o"
+
+
 def test_is_configured_reflects_whether_the_required_credential_is_set(isolated_database):
     with TestClient(create_api_app()) as client:
         _seed()

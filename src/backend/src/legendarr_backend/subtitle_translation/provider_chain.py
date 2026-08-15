@@ -9,11 +9,13 @@ from legendarr_backend.subtitle_translation.providers.google import GoogleTransl
 from legendarr_backend.subtitle_translation.providers.libretranslate import (
     LibreTranslateTranslationProvider,
 )
+from legendarr_backend.subtitle_translation.providers.llm import LLMTranslationProvider
 
 _PROVIDER_CLASSES: dict[str, Callable[[TranslationProviderConfig], TranslationProvider]] = {
     "deepl": DeepLTranslationProvider,
     "google": GoogleTranslationProvider,
     "libretranslate": LibreTranslateTranslationProvider,
+    "llm": LLMTranslationProvider,
 }
 
 

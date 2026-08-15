@@ -149,6 +149,32 @@ def test_libretranslate_reports_unreachable(monkeypatch):
     assert success is False
 
 
+def test_llm_requires_api_key():
+    success, message = check_connection(_config(kind="llm", api_key=None))
+
+    assert success is False
+    assert "API Key" in message
+
+
+def test_llm_succeeds(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
+
+    success, message = check_connection(_config(kind="llm", api_key="a-key"))
+
+    assert success is True
+
+
+def test_llm_reports_unreachable(monkeypatch):
+    def _raise(self, path):
+        raise ProviderClientError("LLM request failed: connection refused")
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _raise)
+
+    success, message = check_connection(_config(kind="llm", api_key="a-key"))
+
+    assert success is False
+
+
 def test_credential_kinds_match_what_connection_tests_actually_requires():
     """`models._API_KEY_KINDS`/`_ENDPOINT_KINDS` (used for `has_credentials`/`is_configured`
     gating) and each `_test_*` function's own `_require()` calls encode the same fact in two

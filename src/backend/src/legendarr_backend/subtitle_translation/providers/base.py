@@ -6,4 +6,6 @@ class TranslationProvider(Protocol):
 
     name: str
 
-    def translate(self, text: str, source_language: str, target_language: str) -> str: ...
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]: ...

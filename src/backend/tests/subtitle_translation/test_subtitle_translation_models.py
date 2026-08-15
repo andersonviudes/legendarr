@@ -11,6 +11,8 @@ from legendarr_backend.subtitle_translation.models import TranslationProviderCon
         ("google", "key", None, True),
         ("libretranslate", None, None, False),
         ("libretranslate", None, "http://localhost:5000", True),
+        ("llm", None, None, False),
+        ("llm", "key", None, True),
     ],
 )
 def test_has_credentials(kind, api_key, endpoint, expected):
@@ -25,6 +27,7 @@ def test_has_credentials(kind, api_key, endpoint, expected):
         ("deepl", "key", None),
         ("google", "key", None),
         ("libretranslate", None, "http://localhost:5000"),
+        ("llm", "key", None),
     ],
 )
 def test_is_configured_mirrors_has_credentials(kind, api_key, endpoint):
