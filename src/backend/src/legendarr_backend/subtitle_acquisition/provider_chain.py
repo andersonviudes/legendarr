@@ -7,6 +7,10 @@ from legendarr_backend.subtitle_acquisition.providers.addic7ed import Addic7edPr
 from legendarr_backend.subtitle_acquisition.providers.animekalesi import AnimeKalesiProvider
 from legendarr_backend.subtitle_acquisition.providers.animetosho import AnimeToshoProvider
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
+from legendarr_backend.subtitle_acquisition.providers.betaseries import BetaSeriesProvider
+from legendarr_backend.subtitle_acquisition.providers.greeksubtitles import (
+    GreekSubtitlesProvider,
+)
 from legendarr_backend.subtitle_acquisition.providers.legendas_net import LegendasNetProvider
 from legendarr_backend.subtitle_acquisition.providers.napiprojekt import NapiprojektProvider
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenSubtitlesProvider
@@ -30,15 +34,18 @@ _PROVIDER_CLASSES: dict[str, Callable[[SubtitleProviderConfig], SubtitleProvider
     "animetosho": AnimeToshoProvider,
     "supersubtitles": SupersubtitlesProvider,
     "animekalesi": AnimeKalesiProvider,
+    "greeksubtitles": GreekSubtitlesProvider,
+    "betaseries": BetaSeriesProvider,
 }
 
 
 def resolve_subtitle_provider_chain(session: Session) -> list[SubtitleProvider]:
     """Ordered, ready-to-call subtitle providers: enabled + credentialed
     `SubtitleProviderConfig` rows among the kinds with a real `SubtitleProvider`
-    implementation (today: `opensubtitles`, `addic7ed`, `yify_subtitles`, `subdl`,
-    `tvsubtitles`, `legendas_net`, `napiprojekt`, `subsource`, `animetosho`,
-    `supersubtitles`, `animekalesi`), `id` ascending.
+    implementation — every kind in `SUBTITLE_PROVIDER_KINDS` as of 0.6.0
+    (`opensubtitles`, `addic7ed`, `yify_subtitles`, `subdl`, `tvsubtitles`,
+    `legendas_net`, `napiprojekt`, `subsource`, `animetosho`, `supersubtitles`,
+    `animekalesi`, `greeksubtitles`, `betaseries`), `id` ascending.
     An empty list means nothing usable is configured — callers log and skip, this is never treated
     as an error. Same shape as `subtitle_translation.provider_chain.resolve_provider_chain`,
     ready for the next `SubtitleProvider` implementation to extend `_PROVIDER_CLASSES`
