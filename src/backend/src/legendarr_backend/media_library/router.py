@@ -24,6 +24,8 @@ from legendarr_backend.media_library.schemas import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
+from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
 
 router = APIRouter(prefix="/media")
@@ -169,5 +171,24 @@ def trigger_file_translation(
         retry_attempts=config.translate_retry_attempts,
         retry_delay_seconds=config.translate_retry_delay_seconds,
         default_translation_provider=config.default_translation_provider,
+    )
+    return {"status": "enqueued"}
+
+
+@router.post("/subtitles/{subtitle_id}/sync-timing", status_code=202)
+def trigger_subtitle_timing_sync(
+    subtitle_id: int, request: Request, session: Session = Depends(_get_session)
+) -> dict[str, str]:
+    if session.get(Subtitle, subtitle_id) is None:
+        raise HTTPException(status_code=404, detail="Subtitle not found")
+    scheduler = _get_scheduler(request)
+    config = load_or_create_config_file(get_settings())
+    enqueue_timing_sync(
+        scheduler,
+        subtitle_id,
+        JobQueue.TIMING_SYNC,
+        retry_attempts=config.timing_sync_retry_attempts,
+        retry_delay_seconds=config.timing_sync_retry_delay_seconds,
+        timeout_seconds=config.timing_sync_timeout_seconds,
     )
     return {"status": "enqueued"}

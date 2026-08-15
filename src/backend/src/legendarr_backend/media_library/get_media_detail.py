@@ -145,15 +145,20 @@ def _media_file_reads(session: Session, media_files: Sequence[MediaFile]) -> lis
     reads = []
     for media_file in media_files:
         assert media_file.id is not None
+        subtitle_reads = []
+        for subtitle in subtitles_by_file_id.get(media_file.id, []):
+            assert subtitle.id is not None
+            subtitle_reads.append(
+                SubtitleRead(
+                    id=subtitle.id, language=subtitle.language, origin=subtitle.origin.value
+                )
+            )
         reads.append(
             MediaFileRead(
                 id=media_file.id,
                 relative_path=media_file.relative_path,
                 size_bytes=media_file.size_bytes,
-                subtitles=[
-                    SubtitleRead(language=subtitle.language, origin=subtitle.origin.value)
-                    for subtitle in subtitles_by_file_id.get(media_file.id, [])
-                ],
+                subtitles=subtitle_reads,
             )
         )
     return reads

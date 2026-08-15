@@ -27,6 +27,10 @@ class JobQueue(StrEnum):
     ACQUIRE = "acquire"
     # Manual bulk fan-out over every `MediaFile`, same reasoning as `TRANSLATE_BULK`.
     ACQUIRE_BULK = "acquire_bulk"
+    # Timing sync shells out to `ffsubsync`, which decodes audio and can run for a while —
+    # its own queue, same reasoning as `TRANSLATE`/`ACQUIRE`. Manual-only (one subtitle at a
+    # time, triggered from the UI), so no `_BULK` variant.
+    TIMING_SYNC = "timing_sync"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
@@ -37,4 +41,5 @@ QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.TRANSLATE_BULK: 1,
     JobQueue.ACQUIRE: 2,
     JobQueue.ACQUIRE_BULK: 1,
+    JobQueue.TIMING_SYNC: 2,
 }

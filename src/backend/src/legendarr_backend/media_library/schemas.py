@@ -27,8 +27,10 @@ class SeriesRead(MediaRead):
 
 
 class SubtitleRead(BaseModel):
-    """One discovered subtitle, badge-sized: just what a language pill needs."""
+    """One discovered subtitle. `id` addresses it for the per-subtitle "sync timing"
+    action; `language`/`origin` are what the badge/row display needs."""
 
+    id: int
     language: str
     origin: str
 

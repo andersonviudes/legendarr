@@ -90,6 +90,7 @@ nav:
     - Subtitle Discovery: features/subtitle-discovery.md
     - Subtitle Acquisition: features/subtitle-acquisition.md
     - Subtitle Translation: features/subtitle-translation.md
+    - Subtitle Timing Sync: features/subtitle-timing-sync.md
   - Architecture:
     - Overview: architecture/overview.md
   - Contributing: contributing.md

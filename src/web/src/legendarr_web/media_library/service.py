@@ -53,3 +53,9 @@ async def trigger_file_translation(client: httpx.AsyncClient, media_file_id: int
     response = await client.post(f"/media/files/{media_file_id}/translate")
     response.raise_for_status()
     return response.json()
+
+
+async def trigger_subtitle_timing_sync(client: httpx.AsyncClient, subtitle_id: int) -> dict:
+    response = await client.post(f"/media/subtitles/{subtitle_id}/sync-timing")
+    response.raise_for_status()
+    return response.json()

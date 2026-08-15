@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_badges %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_sync_list %}
 {% block title %}legendarr · {{ series.title }}{% endblock %}
 {% block content %}
 {{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan") }}
@@ -55,7 +55,7 @@
         <td>{{ episode.title }}</td>
         <td>
           {% if episode.media_file %}
-          {{ subtitle_badges(episode.media_file.subtitles) }}
+          {{ subtitle_sync_list(episode.media_file.subtitles) }}
           {% else %}
           <span class="badge-empty">—</span>
           {% endif %}

@@ -36,6 +36,7 @@ src/backend/src/legendarr_backend/
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
+├── subtitle_timing_sync/    # manual, per-subtitle ffsubsync timing-correction pass
 ├── arr_clients/             # shared Radarr/Sonarr API clients (sync + connection test)
 ├── config/                  # env Settings + on-disk config.yaml
 ├── database/                # SQLModel engine/session + Alembic migration trigger
