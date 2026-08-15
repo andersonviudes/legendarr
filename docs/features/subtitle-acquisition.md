@@ -26,21 +26,29 @@ feature that reads them.
 
 ## Search and download
 
-OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, legendas.net, and Napiprojekt are
-the provider kinds with a real `SubtitleProvider` implementation so far
+Every one of the thirteen catalog kinds now has a real `SubtitleProvider` implementation
 (`subtitle_acquisition/providers/opensubtitles.py`, `addic7ed.py`, `yify_subtitles.py`,
-`subdl.py`, `tvsubtitles.py`, `legendas_net.py`, `napiprojekt.py`) — the rest of the catalog stays
-registration-only until the remaining 0.6.0 bullets land. YIFY Subtitles and Subdl are both
-movies-only and need an `imdb_id` to search (neither has a usable title-search path for this
-app's scope), so — like Addic7ed's series case — a series search returns no results from
-either. TVsubtitles is the opposite: it has no movie content at all, so it's the first
-provider that needs a real season/episode number to search and is skipped for a movie or an
-unresolved episode instead. legendas.net has both movie and TV content with a real
-season/episode search for the latter, but is Brazilian Portuguese only — a search for any
-other language returns no results. Napiprojekt is different again: instead of a title search
-it hashes the local video's own first 10MB (`subtitle_acquisition/napiprojekt_hash.py`) and
-asks for an exact match — Polish only, and it applies equally to a movie or a series file
-since nothing but the hash is used. `acquire_subtitle_for_media_file`
+`subdl.py`, `tvsubtitles.py`, `legendas_net.py`, `napiprojekt.py`, `subsource.py`,
+`animetosho.py`, `supersubtitles.py`, `animekalesi.py`, `greeksubtitles.py`, `betaseries.py`) —
+0.6.0 is fully shipped. YIFY Subtitles and Subdl are both movies-only and need an `imdb_id` to
+search (neither has a usable title-search path for this app's scope), so — like Addic7ed's
+series case — a series search returns no results from either. TVsubtitles, AnimeKalesi, Anime
+Tosho, and BetaSeries are the opposite: none has movie content, so each is skipped for a movie
+or an unresolved episode and instead needs a real season/episode number to search — Anime
+Tosho and BetaSeries additionally require `Series.tvdb_id` to resolve their own per-episode id
+(an AniDB episode id and a BetaSeries episode id, respectively), while AnimeKalesi (Turkish
+only) resolves the episode from its own scraped season/episode listing instead. legendas.net,
+Subsource, and Supersubtitles all have real movie and TV content, searching by `imdb_id` for
+a movie and by
+season/episode for a series (neither means the search is skipped, same shape as
+`LegendasNetProvider`); legendas.net is Brazilian Portuguese only, Supersubtitles is
+Hungarian/English only. GreekSubtitles also has both movie and TV content, but with a single
+search path (a season/episode suffix is just appended to the title query when both are
+resolved) — Greek/English only, and only its first results page is fetched (no "Next"-page
+pagination). Napiprojekt is different again: instead of a title search it hashes the local
+video's own first 10MB (`subtitle_acquisition/napiprojekt_hash.py`) and asks for an exact
+match — Polish only, and it applies equally to a movie or a series file since nothing but the
+hash is used. `acquire_subtitle_for_media_file`
 (`subtitle_acquisition/acquire_media_file_subtitle.py`) is the entry point: given a
 `MediaFile` that has no subtitle yet in any of its `LanguageProfile`'s source languages, it
 searches each source language in priority order, downloads the best-scoring result, writes it
@@ -56,12 +64,12 @@ Search precision differs by media type:
 - **Movies** search OpenSubtitles by `imdb_id` — a precise, single-title lookup.
 - **Series** also get a real season/episode number now — resolved via
   `media_library.locate.resolve_media_file_episode` (a live Sonarr call, matched by
-  `relative_path` against the `MediaFile`), `None` when it can't be resolved. TVsubtitles is
-  the only provider that actually anchors its search on it today; every other provider still
-  ignores it and searches by title only, so title-only results from those can include
-  subtitles for other episodes of the same show, and the match-score cutoff below is what
-  keeps a clearly-wrong one from being accepted for them, not a substitute for real
-  per-episode search.
+  `relative_path` against the `MediaFile`), `None` when it can't be resolved. TVsubtitles,
+  legendas.net, Subsource, Supersubtitles, AnimeKalesi, GreekSubtitles, Anime Tosho, and
+  BetaSeries all anchor their series search on it; the remaining providers still ignore it
+  and search by title only, so title-only results from those can include subtitles for other
+  episodes of the same show, and the match-score cutoff below is what keeps a clearly-wrong
+  one from being accepted for them, not a substitute for real per-episode search.
 - Either kind additionally gets `moviehash` search when `use_hash` is enabled on the provider
   and the local video is at least 64KB — the OpenSubtitles-defined checksum of a file's first
   and last 64KB, the most precise signal available since it doesn't depend on any metadata at
@@ -81,7 +89,4 @@ weighting (release group, resolution, codec, source, edition) instead of one fla
 ## Known gap (deferred)
 
 Manual search/browse and upload — letting a user pick a result themselves instead of trusting
-the automatic match — is 0.11.0 work. The remaining real `SubtitleProvider` implementations
-(beyond OpenSubtitles, Addic7ed, YIFY Subtitles, Subdl, TVsubtitles, legendas.net, and
-Napiprojekt) are
-0.6.0 work.
+the automatic match — is 0.11.0 work.

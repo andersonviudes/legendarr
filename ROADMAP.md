@@ -235,9 +235,9 @@ file — and legendarr extracts and translates it anyway.*
   and download wired in against the protocol from 0.3.0.
 - [x] **Subtitle acquisition** — AnimeKalesi `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
-- [ ] **Subtitle acquisition** — GreekSubtitles `SubtitleProvider` implementation: real search
+- [x] **Subtitle acquisition** — GreekSubtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
-- [ ] **Subtitle acquisition** — BetaSeries `SubtitleProvider` implementation: real search and
+- [x] **Subtitle acquisition** — BetaSeries `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
 - [x] **Subtitle translation** — One real `TranslationProvider` (e.g. LibreTranslate or DeepL)
   wired in alongside `echo`, using the credentials registered at 0.3.0. Landed early with

@@ -3,6 +3,10 @@ from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtit
 from legendarr_backend.subtitle_acquisition.providers.addic7ed import Addic7edProvider
 from legendarr_backend.subtitle_acquisition.providers.animekalesi import AnimeKalesiProvider
 from legendarr_backend.subtitle_acquisition.providers.animetosho import AnimeToshoProvider
+from legendarr_backend.subtitle_acquisition.providers.betaseries import BetaSeriesProvider
+from legendarr_backend.subtitle_acquisition.providers.greeksubtitles import (
+    GreekSubtitlesProvider,
+)
 from legendarr_backend.subtitle_acquisition.providers.legendas_net import LegendasNetProvider
 from legendarr_backend.subtitle_acquisition.providers.napiprojekt import NapiprojektProvider
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenSubtitlesProvider
@@ -43,7 +47,10 @@ def test_resolve_subtitle_provider_chain_skips_providers_without_credentials(in_
 def test_resolve_subtitle_provider_chain_skips_kinds_with_no_real_implementation(
     in_memory_session,
 ):
-    in_memory_session.add(SubtitleProviderConfig(kind="greeksubtitles", enabled=True))
+    # A synthetic kind deliberately outside `SUBTITLE_PROVIDER_KINDS` — every real kind
+    # has a `SubtitleProvider` implementation as of 0.6.0, so there's no longer a
+    # registered-but-unimplemented example to reuse here.
+    in_memory_session.add(SubtitleProviderConfig(kind="not_a_real_provider", enabled=True))
     in_memory_session.commit()
 
     assert resolve_subtitle_provider_chain(in_memory_session) == []
@@ -165,3 +172,25 @@ def test_resolve_subtitle_provider_chain_resolves_animekalesi_when_enabled(in_me
 
     assert len(chain) == 1
     assert isinstance(chain[0], AnimeKalesiProvider)
+
+
+def test_resolve_subtitle_provider_chain_resolves_greeksubtitles_when_enabled(in_memory_session):
+    in_memory_session.add(SubtitleProviderConfig(kind="greeksubtitles", enabled=True))
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], GreekSubtitlesProvider)
+
+
+def test_resolve_subtitle_provider_chain_resolves_betaseries_when_credentialed(in_memory_session):
+    in_memory_session.add(
+        SubtitleProviderConfig(kind="betaseries", enabled=True, api_key="a-token")
+    )
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], BetaSeriesProvider)
