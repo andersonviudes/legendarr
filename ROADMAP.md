@@ -233,7 +233,7 @@ file — and legendarr extracts and translates it anyway.*
   download wired in against the protocol from 0.3.0.
 - [x] **Subtitle acquisition** — Supersubtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.
-- [ ] **Subtitle acquisition** — AnimeKalesi `SubtitleProvider` implementation: real search and
+- [x] **Subtitle acquisition** — AnimeKalesi `SubtitleProvider` implementation: real search and
   download wired in against the protocol from 0.3.0.
 - [ ] **Subtitle acquisition** — GreekSubtitles `SubtitleProvider` implementation: real search
   and download wired in against the protocol from 0.3.0.

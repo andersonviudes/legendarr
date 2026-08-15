@@ -1,6 +1,7 @@
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.addic7ed import Addic7edProvider
+from legendarr_backend.subtitle_acquisition.providers.animekalesi import AnimeKalesiProvider
 from legendarr_backend.subtitle_acquisition.providers.animetosho import AnimeToshoProvider
 from legendarr_backend.subtitle_acquisition.providers.legendas_net import LegendasNetProvider
 from legendarr_backend.subtitle_acquisition.providers.napiprojekt import NapiprojektProvider
@@ -42,7 +43,7 @@ def test_resolve_subtitle_provider_chain_skips_providers_without_credentials(in_
 def test_resolve_subtitle_provider_chain_skips_kinds_with_no_real_implementation(
     in_memory_session,
 ):
-    in_memory_session.add(SubtitleProviderConfig(kind="animekalesi", enabled=True))
+    in_memory_session.add(SubtitleProviderConfig(kind="greeksubtitles", enabled=True))
     in_memory_session.commit()
 
     assert resolve_subtitle_provider_chain(in_memory_session) == []
@@ -154,3 +155,13 @@ def test_resolve_subtitle_provider_chain_resolves_supersubtitles_when_enabled(in
 
     assert len(chain) == 1
     assert isinstance(chain[0], SupersubtitlesProvider)
+
+
+def test_resolve_subtitle_provider_chain_resolves_animekalesi_when_enabled(in_memory_session):
+    in_memory_session.add(SubtitleProviderConfig(kind="animekalesi", enabled=True))
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], AnimeKalesiProvider)
