@@ -34,6 +34,10 @@ class LLMTranslationProvider:
         self._api_key = config.api_key
         self._endpoint = config.endpoint or DEFAULT_LLM_ENDPOINT
         self._model = config.model or DEFAULT_LLM_MODEL
+        # ROADMAP.md 0.9.0 — user-editable system prompt. Blank falls back to
+        # `_SYSTEM_PROMPT`, validated (via a dummy `.format()`) at save time in
+        # `router.py`, not here.
+        self._prompt_template = config.prompt_template or _SYSTEM_PROMPT
 
     def translate_batch(
         self, texts: list[str], source_language: str, target_language: str
@@ -49,7 +53,7 @@ class LLMTranslationProvider:
                     "messages": [
                         {
                             "role": "system",
-                            "content": _SYSTEM_PROMPT.format(
+                            "content": self._prompt_template.format(
                                 source=source_language, target=target_language, count=len(texts)
                             ),
                         },

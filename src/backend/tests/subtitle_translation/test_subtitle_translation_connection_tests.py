@@ -1,5 +1,8 @@
 import httpx
+import pytest
+from legendarr_backend.config.settings import Settings
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
+from legendarr_backend.subtitle_translation import plugins
 from legendarr_backend.subtitle_translation.connection_tests import (
     test_connection as check_connection,
 )
@@ -9,6 +12,38 @@ from legendarr_backend.subtitle_translation.models import (
     TRANSLATION_PROVIDER_KINDS,
     TranslationProviderConfig,
 )
+
+
+class _PluginWithoutConnectionTest:
+    kind = "fixture-plugin"
+    label = "Fixture Plugin"
+    name = "fixture-plugin"
+    credential_fields = ("api_key",)
+    required_credential_fields = ("api_key",)
+    plugin_api_version = plugins.SUPPORTED_PLUGIN_API_VERSION
+
+    def __init__(self, config: TranslationProviderConfig) -> None:
+        self._config = config
+
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        return texts
+
+
+class _PluginWithConnectionTest(_PluginWithoutConnectionTest):
+    kind = "fixture-plugin-with-test"
+
+    @staticmethod
+    def test_connection(config: TranslationProviderConfig):
+        return False, "custom failure"
+
+
+@pytest.fixture(autouse=True)
+def _clear_plugin_cache():
+    plugins.load_plugin_providers.cache_clear()
+    yield
+    plugins.load_plugin_providers.cache_clear()
 
 
 def _config(**overrides) -> TranslationProviderConfig:
@@ -173,6 +208,32 @@ def test_llm_reports_unreachable(monkeypatch):
     success, message = check_connection(_config(kind="llm", api_key="a-key"))
 
     assert success is False
+
+
+def test_plugin_without_a_connection_test_gets_a_generic_success(monkeypatch):
+    monkeypatch.setattr(
+        plugins,
+        "get_settings",
+        lambda: Settings(translation_plugin_packages=f"{__name__}:_PluginWithoutConnectionTest"),
+    )
+
+    success, message = check_connection(_config(kind="fixture-plugin", api_key="a-key"))
+
+    assert success is True
+    assert "No connection test available" in message
+
+
+def test_plugin_with_a_connection_test_uses_it(monkeypatch):
+    monkeypatch.setattr(
+        plugins,
+        "get_settings",
+        lambda: Settings(translation_plugin_packages=f"{__name__}:_PluginWithConnectionTest"),
+    )
+
+    success, message = check_connection(_config(kind="fixture-plugin-with-test", api_key="a-key"))
+
+    assert success is False
+    assert message == "custom failure"
 
 
 def test_credential_kinds_match_what_connection_tests_actually_requires():

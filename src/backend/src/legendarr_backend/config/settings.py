@@ -53,6 +53,17 @@ class Settings(BaseSettings):
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = Field(default=5.0)
     timing_sync_timeout_seconds: float = Field(default=120.0)
+    # ROADMAP.md 0.9.0 — comma-separated `module.path:ClassName` entries, each imported
+    # at startup by `subtitle_translation.plugins`. Env-var-only by design (not part of
+    # `AppConfigFile`/`config.yaml`, not editable from the web Settings UI): this is a
+    # code-import path, a different trust boundary than every other runtime value here.
+    translation_plugin_packages: str = Field(default="")
+
+    @property
+    def translation_plugin_package_list(self) -> list[str]:
+        return [
+            entry.strip() for entry in self.translation_plugin_packages.split(",") if entry.strip()
+        ]
 
     @property
     def resolved_database_url(self) -> str:

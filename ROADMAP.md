@@ -276,10 +276,10 @@ target language instead of one request per line.*
 endpoint, a niche API — and adds it without waiting for a legendarr release, or tunes the
 prompt an LLM-backed provider uses for their content.*
 
-- [ ] **Subtitle translation** — Dynamic plugin loading for `TranslationProvider` implementations
+- [x] **Subtitle translation** — Dynamic plugin loading for `TranslationProvider` implementations
   (load a third-party package at runtime, version-gated), so new engines don't require
   recompiling or redeploying legendarr itself.
-- [ ] **Subtitle translation** — Customizable request templates per LLM-backed provider
+- [x] **Subtitle translation** — Customizable request templates per LLM-backed provider
   (user-editable prompt/payload), instead of one fixed prompt baked into the provider.
 
 ## 0.10.0 — Unattended scheduling

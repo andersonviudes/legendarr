@@ -168,3 +168,66 @@ def test_test_connection_returns_404_when_missing(isolated_database):
         response = client.post("/translation-providers/1/test", json={})
 
     assert response.status_code == 404
+
+
+def test_update_provider_sets_prompt_template(isolated_database):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        provider_id = next(
+            p["id"] for p in client.get("/translation-providers/").json() if p["kind"] == "llm"
+        )
+
+        response = client.patch(
+            f"/translation-providers/{provider_id}",
+            json={"prompt_template": "Translate {source} to {target}, {count} lines."},
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.json()["prompt_template"] == "Translate {source} to {target}, {count} lines."
+        )
+
+
+def test_update_provider_rejects_a_prompt_template_with_an_unknown_placeholder(
+    isolated_database,
+):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        provider_id = next(
+            p["id"] for p in client.get("/translation-providers/").json() if p["kind"] == "llm"
+        )
+
+        response = client.patch(
+            f"/translation-providers/{provider_id}",
+            json={"prompt_template": "Translate {oops}"},
+        )
+
+        assert response.status_code == 422
+        assert "Invalid prompt template" in response.json()["detail"]
+
+
+def test_update_provider_accepts_a_blank_prompt_template(isolated_database):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        provider_id = next(
+            p["id"] for p in client.get("/translation-providers/").json() if p["kind"] == "llm"
+        )
+
+        response = client.patch(
+            f"/translation-providers/{provider_id}", json={"prompt_template": ""}
+        )
+
+        assert response.status_code == 200
+
+
+def test_list_and_get_include_label_and_credential_fields(isolated_database):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        providers = client.get("/translation-providers/").json()
+        llm = next(p for p in providers if p["kind"] == "llm")
+
+        assert llm["label"] == "LLM (OpenAI-compatible)"
+        assert llm["credential_fields"] == ["endpoint", "api_key", "model", "prompt_template"]
+
+        get_response = client.get(f"/translation-providers/{llm['id']}")
+        assert get_response.json()["label"] == "LLM (OpenAI-compatible)"

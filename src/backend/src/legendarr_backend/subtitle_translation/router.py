@@ -41,8 +41,24 @@ def _merge_with_existing(
             "api_key": data.api_key or existing.api_key,
             "endpoint": data.endpoint if "endpoint" in provided else existing.endpoint,
             "model": data.model if "model" in provided else existing.model,
+            "prompt_template": (
+                data.prompt_template if "prompt_template" in provided else existing.prompt_template
+            ),
         }
     )
+
+
+def _validate_prompt_template(prompt_template: str | None) -> None:
+    """A blank template means "use the provider's default" and needs no validation.
+    A non-blank one must round-trip the same `.format(source=..., target=..., count=...)`
+    call `LLMTranslationProvider.translate_batch` makes — catch a bad placeholder here
+    instead of failing silently at translate time (ROADMAP.md 0.9.0)."""
+    if not prompt_template:
+        return
+    try:
+        prompt_template.format(source="en", target="pt-BR", count=1)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid prompt template: {exc}") from exc
 
 
 @router.get("/", response_model=list[TranslationProviderConfigRead])
@@ -69,9 +85,9 @@ def update_provider(
     existing = get_translation_provider(session, provider_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="Translation provider not found")
-    provider = update_translation_provider(
-        session, provider_id, _merge_with_existing(data, existing)
-    )
+    merged = _merge_with_existing(data, existing)
+    _validate_prompt_template(merged.prompt_template)
+    provider = update_translation_provider(session, provider_id, merged)
     assert provider is not None
     return provider
 

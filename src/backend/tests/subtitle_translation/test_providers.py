@@ -174,6 +174,46 @@ def test_llm_translate_batch_defaults_endpoint_and_model_when_blank(monkeypatch)
     assert seen_models == [DEFAULT_LLM_MODEL]
 
 
+def test_llm_translate_batch_uses_default_prompt_when_blank(monkeypatch):
+    seen_prompts = []
+
+    def _post_json(self, path, json):
+        seen_prompts.append(json["messages"][0]["content"])
+        return {"choices": [{"message": {"content": '{"translations": ["oi"]}'}}]}
+
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = LLMTranslationProvider(_config(kind="llm", api_key="a-key"))
+    provider.translate_batch(["hi"], "en", "pt")
+
+    assert "en" in seen_prompts[0]
+    assert "pt" in seen_prompts[0]
+    assert "JSON" in seen_prompts[0]
+
+
+def test_llm_translate_batch_uses_custom_prompt_template_when_set(monkeypatch):
+    seen_prompts = []
+
+    def _post_json(self, path, json):
+        seen_prompts.append(json["messages"][0]["content"])
+        return {"choices": [{"message": {"content": '{"translations": ["oi", "lá"]}'}}]}
+
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = LLMTranslationProvider(
+        _config(
+            kind="llm",
+            api_key="a-key",
+            prompt_template="Custom: {source} -> {target} ({count} lines)",
+        )
+    )
+    provider.translate_batch(["hi", "there"], "en", "pt")
+
+    assert seen_prompts[0] == "Custom: en -> pt (2 lines)"
+
+
 def test_llm_translate_batch_raises_on_line_count_mismatch(monkeypatch):
     monkeypatch.setattr(
         ProviderHttpClient,

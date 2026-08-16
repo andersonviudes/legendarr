@@ -6,6 +6,7 @@ class TranslationProviderConfigInput(BaseModel):
     api_key: str | None = None
     endpoint: str | None = None
     model: str | None = None
+    prompt_template: str | None = None
 
 
 class TranslationProviderConfigRead(BaseModel):
@@ -21,4 +22,10 @@ class TranslationProviderConfigRead(BaseModel):
     enabled: bool
     endpoint: str | None
     model: str | None
+    prompt_template: str | None
     is_configured: bool
+    # Display metadata (ROADMAP.md 0.9.0) — computed backend-side (built-in or
+    # plugin-supplied, see `provider_catalog.py`) so the web layer never needs its own
+    # copy of this table to render a plugin-provided kind.
+    label: str
+    credential_fields: tuple[str, ...]

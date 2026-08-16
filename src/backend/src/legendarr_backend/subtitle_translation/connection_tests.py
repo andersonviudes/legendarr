@@ -12,6 +12,7 @@ from legendarr_backend.http_client.client import (
     describe_error,
 )
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
+from legendarr_backend.subtitle_translation.plugins import plugin_provider_classes
 from legendarr_backend.subtitle_translation.providers.llm import DEFAULT_LLM_ENDPOINT
 
 ConnectionTestResult = tuple[bool, str]
@@ -19,11 +20,23 @@ ConnectionTestResult = tuple[bool, str]
 
 def test_connection(config: TranslationProviderConfig) -> ConnectionTestResult:
     """Dispatch to the connection check for `config.kind`. Returns `(success, message)`,
-    the same shape as `subtitle_acquisition/connection_tests.py`'s `test_connection`."""
+    the same shape as `subtitle_acquisition/connection_tests.py`'s `test_connection`.
+
+    A dynamically-loaded plugin (ROADMAP.md 0.9.0) may define its own `test_connection`
+    static/classmethod with this same signature; one that doesn't gets a generic
+    "configuration saved" result instead of "Unknown provider kind" — the plugin loaded
+    and is usable, it just has nothing to probe.
+    """
     tester = _TESTERS.get(config.kind)
-    if tester is None:
+    if tester is not None:
+        return tester(config)
+    plugin_class = plugin_provider_classes().get(config.kind)
+    if plugin_class is None:
         return False, f"Unknown provider kind: {config.kind}"
-    return tester(config)
+    plugin_tester = getattr(plugin_class, "test_connection", None)
+    if plugin_tester is None:
+        return True, "No connection test available for this provider — configuration saved."
+    return plugin_tester(config)
 
 
 def _require(value: str | None, label: str) -> str | None:
