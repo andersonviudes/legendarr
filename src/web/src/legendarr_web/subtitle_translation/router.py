@@ -19,8 +19,8 @@ templates = get_templates("subtitle_translation")
 def _with_display(provider: dict) -> dict:
     return {
         **provider,
-        "label": provider_label(provider["kind"]),
-        "credential_fields": provider_credential_fields(provider["kind"]),
+        "label": provider_label(provider),
+        "credential_fields": provider_credential_fields(provider),
     }
 
 
@@ -29,8 +29,15 @@ async def _credential_form(
     api_key: str = Form(""),
     endpoint: str = Form(""),
     model: str = Form(""),
+    prompt_template: str = Form(""),
 ) -> dict:
-    return {"kind": kind, "api_key": api_key, "endpoint": endpoint, "model": model}
+    return {
+        "kind": kind,
+        "api_key": api_key,
+        "endpoint": endpoint,
+        "model": model,
+        "prompt_template": prompt_template,
+    }
 
 
 @router.get("/")
@@ -81,18 +88,20 @@ async def update_translation_provider(
             return RedirectResponse("/settings/translation-providers/", status_code=303)
         if exc.response.status_code >= 500:
             raise
+        # `data` (the resubmitted form) has no `label`/`credential_fields` of its own —
+        # `kind` didn't change on a failed edit, so the existing row's metadata is still
+        # accurate for re-rendering the form.
+        existing = await service.get_translation_provider(client, provider_id)
         return templates.TemplateResponse(
             request,
             "translation_provider_form.html",
             {
-                "provider": _with_display({**data, "id": provider_id}),
+                "provider": _with_display({**existing, **data, "id": provider_id}),
                 "error": error_detail(exc),
             },
             status_code=exc.response.status_code,
         )
-    toast = urlencode(
-        {"toast": f"{provider_label(updated['kind'])} updated.", "toast_type": "success"}
-    )
+    toast = urlencode({"toast": f"{provider_label(updated)} updated.", "toast_type": "success"})
     return RedirectResponse(f"/settings/translation-providers/?{toast}", status_code=303)
 
 

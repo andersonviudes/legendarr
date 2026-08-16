@@ -79,6 +79,16 @@
 >
 {% endmacro %}
 
+{% macro textarea_field(name, label, value="", placeholder="", hint="") %}
+<label for="{{ name }}">{{ label }}</label>
+<textarea id="{{ name }}" name="{{ name }}" rows="4"
+  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+>{{ value }}</textarea>
+{% if hint %}
+<p class="field-hint">{{ hint }}</p>
+{% endif %}
+{% endmacro %}
+
 {% macro checkbox_field(name, label, checked=false) %}
 <label>
   <input type="checkbox" name="{{ name }}" {% if checked %}checked{% endif %}>

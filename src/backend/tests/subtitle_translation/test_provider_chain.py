@@ -1,3 +1,6 @@
+import pytest
+from legendarr_backend.config.settings import Settings
+from legendarr_backend.subtitle_translation import plugins
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
 from legendarr_backend.subtitle_translation.provider_chain import resolve_provider_chain
 from legendarr_backend.subtitle_translation.providers.deepl import DeepLTranslationProvider
@@ -6,6 +9,30 @@ from legendarr_backend.subtitle_translation.providers.libretranslate import (
     LibreTranslateTranslationProvider,
 )
 from legendarr_backend.subtitle_translation.providers.llm import LLMTranslationProvider
+
+
+class _FixturePlugin:
+    kind = "fixture-plugin"
+    label = "Fixture Plugin"
+    name = "fixture-plugin"
+    credential_fields = ("api_key",)
+    required_credential_fields = ("api_key",)
+    plugin_api_version = plugins.SUPPORTED_PLUGIN_API_VERSION
+
+    def __init__(self, config: TranslationProviderConfig) -> None:
+        self._config = config
+
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        return texts
+
+
+@pytest.fixture(autouse=True)
+def _clear_plugin_cache():
+    plugins.load_plugin_providers.cache_clear()
+    yield
+    plugins.load_plugin_providers.cache_clear()
 
 
 def test_resolve_provider_chain_orders_enabled_credentialed_providers_by_id(in_memory_session):
@@ -74,3 +101,37 @@ def test_resolve_provider_chain_includes_llm_when_configured(in_memory_session):
     chain = resolve_provider_chain(in_memory_session)
 
     assert [type(provider) for provider in chain] == [LLMTranslationProvider]
+
+
+def test_resolve_provider_chain_includes_a_loaded_plugin(in_memory_session, monkeypatch):
+    monkeypatch.setattr(
+        plugins,
+        "get_settings",
+        lambda: Settings(translation_plugin_packages=f"{__name__}:_FixturePlugin"),
+    )
+    in_memory_session.add(TranslationProviderConfig(kind="deepl", enabled=True, api_key="a-key"))
+    in_memory_session.add(
+        TranslationProviderConfig(kind="fixture-plugin", enabled=True, api_key="a-key")
+    )
+    in_memory_session.commit()
+
+    chain = resolve_provider_chain(in_memory_session)
+
+    assert [type(provider) for provider in chain] == [DeepLTranslationProvider, _FixturePlugin]
+
+
+def test_resolve_provider_chain_promotes_a_plugin_set_as_default(in_memory_session, monkeypatch):
+    monkeypatch.setattr(
+        plugins,
+        "get_settings",
+        lambda: Settings(translation_plugin_packages=f"{__name__}:_FixturePlugin"),
+    )
+    in_memory_session.add(TranslationProviderConfig(kind="deepl", enabled=True, api_key="a-key"))
+    in_memory_session.add(
+        TranslationProviderConfig(kind="fixture-plugin", enabled=True, api_key="a-key")
+    )
+    in_memory_session.commit()
+
+    chain = resolve_provider_chain(in_memory_session, default_kind="fixture-plugin")
+
+    assert [type(provider) for provider in chain] == [_FixturePlugin, DeepLTranslationProvider]

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import field %}
+{% from "macros.html" import field, textarea_field %}
 {% block title %}legendarr · {{ provider.label }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
@@ -56,6 +56,13 @@
     Leave Endpoint and Model blank to use OpenAI's API with gpt-4o-mini — set them to point
     at a self-hosted or third-party OpenAI-compatible endpoint instead.
   </p>
+  {% endif %}
+
+  {% if "prompt_template" in provider.credential_fields %}
+  {{ textarea_field("prompt_template", "Prompt Template", value=(provider.prompt_template or ""),
+                     placeholder="Leave blank to use the default prompt",
+                     hint="Uses {source}, {target}, and {count} as placeholders. Write a
+                     literal curly brace twice in a row so it isn't read as one.") }}
   {% endif %}
 
   <div id="test-result" aria-live="polite"></div>

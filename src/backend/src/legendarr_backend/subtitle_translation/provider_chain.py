@@ -3,6 +3,7 @@ from collections.abc import Callable
 from sqlmodel import Session, col, select
 
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
+from legendarr_backend.subtitle_translation.plugins import plugin_provider_classes
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
 from legendarr_backend.subtitle_translation.providers.deepl import DeepLTranslationProvider
 from legendarr_backend.subtitle_translation.providers.google import GoogleTranslationProvider
@@ -11,12 +12,21 @@ from legendarr_backend.subtitle_translation.providers.libretranslate import (
 )
 from legendarr_backend.subtitle_translation.providers.llm import LLMTranslationProvider
 
-_PROVIDER_CLASSES: dict[str, Callable[[TranslationProviderConfig], TranslationProvider]] = {
+_ProviderFactory = Callable[[TranslationProviderConfig], TranslationProvider]
+
+_PROVIDER_CLASSES: dict[str, _ProviderFactory] = {
     "deepl": DeepLTranslationProvider,
     "google": GoogleTranslationProvider,
     "libretranslate": LibreTranslateTranslationProvider,
     "llm": LLMTranslationProvider,
 }
+
+
+def _all_provider_classes() -> dict[str, _ProviderFactory]:
+    # Dynamically-loaded plugins (ROADMAP.md 0.9.0) merged in on top of the built-ins —
+    # a plugin `kind` can never collide with a built-in one, `plugins.load_plugin_providers`
+    # already rejects that case at load time.
+    return {**_PROVIDER_CLASSES, **plugin_provider_classes()}
 
 
 def resolve_provider_chain(
@@ -40,4 +50,5 @@ def resolve_provider_chain(
     ).all()
     ready = [config for config in configs if config.has_credentials]
     ready.sort(key=lambda config: config.kind != default_kind)
-    return [_PROVIDER_CLASSES[config.kind](config) for config in ready]
+    provider_classes = _all_provider_classes()
+    return [provider_classes[config.kind](config) for config in ready]

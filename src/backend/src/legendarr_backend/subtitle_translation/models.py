@@ -38,6 +38,11 @@ class TranslationProviderConfig(SQLModel, table=True):
     # `endpoint` above — optional, `LLMTranslationProvider` falls back to a sensible default
     # when blank rather than requiring the user to type one.
     model: str | None = Field(default=None)
+    # Custom system-prompt template for an LLM-backed provider (built-in `llm`, or a
+    # plugin that opts into it — ROADMAP.md 0.9.0). Blank falls back to the provider's
+    # own hardcoded default. Ignored for any kind that doesn't declare
+    # `"prompt_template"` in its `credential_fields`.
+    prompt_template: str | None = Field(default=None)
     connection_verified: bool = Field(default=False)
 
     @property
@@ -49,6 +54,16 @@ class TranslationProviderConfig(SQLModel, table=True):
             return bool(self.api_key)
         if self.kind in _ENDPOINT_KINDS:
             return bool(self.endpoint)
+        # Not a built-in kind — a dynamically-loaded plugin (ROADMAP.md 0.9.0). Deferred
+        # import: `plugins.py` imports this module for `TRANSLATION_PROVIDER_KINDS`, so
+        # importing it back at module level here would be circular.
+        from legendarr_backend.subtitle_translation.plugins import (
+            plugin_required_credential_fields,
+        )
+
+        required = plugin_required_credential_fields(self.kind)
+        if required:
+            return all(getattr(self, field, None) for field in required)
         return True
 
     @property
@@ -57,3 +72,21 @@ class TranslationProviderConfig(SQLModel, table=True):
         needs a credential, so this mirrors `has_credentials` — there's no reachability-only
         kind yet (unlike `SubtitleProviderConfig`)."""
         return self.has_credentials
+
+    @property
+    def label(self) -> str:
+        """Display name for this row's `kind` — built-in or plugin-supplied
+        (ROADMAP.md 0.9.0). Deferred import, same reason as `has_credentials`'s."""
+        from legendarr_backend.subtitle_translation.provider_catalog import provider_label
+
+        return provider_label(self.kind)
+
+    @property
+    def credential_fields(self) -> tuple[str, ...]:
+        """Which config field(s) this row's `kind` edit form should render — built-in or
+        plugin-supplied. Deferred import, same reason as `has_credentials`'s."""
+        from legendarr_backend.subtitle_translation.provider_catalog import (
+            provider_credential_fields,
+        )
+
+        return provider_credential_fields(self.kind)

@@ -9,13 +9,35 @@ def _empty_providers_handler(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, json=[])
 
 
+# Mirrors `legendarr_backend.subtitle_translation.provider_catalog`'s built-in dicts —
+# the web layer no longer computes these itself (ROADMAP.md 0.9.0), so the stubbed
+# backend response has to supply them, same as the real backend now does.
+_LABELS = {
+    "deepl": "DeepL",
+    "google": "Google Translate",
+    "libretranslate": "LibreTranslate",
+    "llm": "LLM (OpenAI-compatible)",
+}
+_CREDENTIAL_FIELDS = {
+    "deepl": ["api_key"],
+    "google": ["api_key"],
+    "libretranslate": ["endpoint", "api_key"],
+    "llm": ["endpoint", "api_key", "model", "prompt_template"],
+}
+
+
 def _provider(**overrides) -> dict:
+    kind = overrides.get("kind", "deepl")
     data = {
         "id": 1,
-        "kind": "deepl",
+        "kind": kind,
         "enabled": True,
         "endpoint": None,
+        "model": None,
+        "prompt_template": None,
         "is_configured": True,
+        "label": _LABELS.get(kind, kind),
+        "credential_fields": _CREDENTIAL_FIELDS.get(kind, []),
     }
     data.update(overrides)
     return data
@@ -181,6 +203,8 @@ def test_update_provider_rerenders_form_on_validation_error(stub_backend_client)
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "PATCH" and request.url.path == "/translation-providers/1":
             return httpx.Response(422, json={"detail": "api_key is required"})
+        if request.url.path == "/translation-providers/1":
+            return httpx.Response(200, json=_provider(id=1, kind="deepl"))
         return httpx.Response(200, json=[])
 
     stub_backend_client(app, handler=handler)
@@ -193,6 +217,52 @@ def test_update_provider_rerenders_form_on_validation_error(stub_backend_client)
     assert response.status_code == 422
     assert "api_key is required" in response.text
     assert 'name="api_key"' in response.text  # the form is shown again, not a redirect
+
+
+def test_edit_form_renders_plugin_kind_from_backend_metadata(stub_backend_client):
+    """A dynamically-loaded plugin kind (ROADMAP.md 0.9.0) has no entry in any local
+    web-side table — the form must render purely from what the backend response says."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=_provider(
+                id=1,
+                kind="my-plugin",
+                label="My Plugin",
+                credential_fields=["api_key"],
+            ),
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/1/edit")
+
+    assert response.status_code == 200
+    assert "My Plugin" in response.text
+    assert 'name="api_key"' in response.text
+    assert 'name="endpoint"' not in response.text
+
+
+def test_edit_form_shows_and_saves_prompt_template_for_llm(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=_provider(id=1, kind="llm", prompt_template="Translate {source} to {target}."),
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="prompt_template"' in response.text
+    assert "Translate {source} to {target}." in response.text
 
 
 def test_toggle_enabled_reverts_switch_on_backend_error(stub_backend_client):

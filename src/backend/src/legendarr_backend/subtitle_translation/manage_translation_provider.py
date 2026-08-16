@@ -5,18 +5,20 @@ from legendarr_backend.subtitle_translation.models import (
     TRANSLATION_PROVIDER_KINDS,
     TranslationProviderConfig,
 )
+from legendarr_backend.subtitle_translation.plugins import plugin_kinds
 from legendarr_backend.subtitle_translation.schemas import TranslationProviderConfigInput
 
 
 def ensure_translation_providers_seeded(session: Session) -> None:
     """Insert a row for any provider kind not yet in the table, so the catalog always has
-    exactly one row per `TRANSLATION_PROVIDER_KINDS` entry. Safe to call on every startup —
-    existing rows (and their credentials) are left untouched. New rows seed `enabled=False`
-    — nothing has credentials or a confirmed "Test connection" yet, so nothing should be on
-    by default; the user opts in per provider from the web UI.
+    exactly one row per built-in kind plus every successfully-loaded plugin kind
+    (ROADMAP.md 0.9.0). Safe to call on every startup — existing rows (and their
+    credentials) are left untouched. New rows seed `enabled=False` — nothing has
+    credentials or a confirmed "Test connection" yet, so nothing should be on by default;
+    the user opts in per provider from the web UI.
     """
     existing_kinds = set(session.exec(select(TranslationProviderConfig.kind)).all())
-    for kind in TRANSLATION_PROVIDER_KINDS:
+    for kind in TRANSLATION_PROVIDER_KINDS + plugin_kinds():
         if kind not in existing_kinds:
             session.add(TranslationProviderConfig(kind=kind, enabled=False))
     session.commit()

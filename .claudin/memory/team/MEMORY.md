@@ -13,3 +13,4 @@
 - [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — RESOLVED 2026-08-01 by PR #25; kept as history only
 - [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/IMDb(OMDb) provider registration + fetch-on-sync, PR #24, merge policy and Radarr-has-no-tvdbId gap
 - [legendarr type-checking rule](legendarr-type-checking-rule.md) — pyright wired up via pyrightconfig.json, run alongside make lint/make test, not yet in CI
+- [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — env.py's fileConfig() disables pre-existing loggers, breaks caplog in the full suite
