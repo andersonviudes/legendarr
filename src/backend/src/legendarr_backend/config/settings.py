@@ -40,12 +40,23 @@ class Settings(BaseSettings):
     # ffprobe/ffmpeg subprocess timeout for embedded subtitle-track probing/extraction
     # (ROADMAP.md 0.6.0), guarding against a hung/corrupt container.
     embedded_subtitle_probe_timeout_seconds: float = Field(default=30.0)
-    # Manual "translate now" only (0.10.0 unattended scheduling is a future item), so no
-    # interval/max_instances/coalesce fields — just the retry policy `enqueue_translation`
-    # needs.
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = Field(default=5.0)
+    # ROADMAP.md 0.10.0 — periodic translation fan-out, same posture as
+    # `subtitle_scan_interval_minutes`: config/env-only, not yet in the runtime-editable
+    # Settings UI.
+    translate_interval_minutes: int = Field(default=60)
+    translate_max_instances: int = Field(default=1)
+    translate_coalesce: bool = Field(default=True)
     default_translation_provider: str | None = Field(default=None)
+    # ROADMAP.md 0.10.0 — periodic acquisition fan-out, same posture as
+    # `translate_interval_minutes` above; acquisition previously took retry policy only as
+    # ad-hoc function args (no scheduled job existed yet to need config-driven defaults).
+    acquisition_retry_attempts: int = Field(default=3, ge=1)
+    acquisition_retry_delay_seconds: float = Field(default=5.0)
+    acquisition_interval_minutes: int = Field(default=60)
+    acquisition_max_instances: int = Field(default=1)
+    acquisition_coalesce: bool = Field(default=True)
     # Manual "sync timing" only (ROADMAP.md 0.7.0), same posture as translate_retry_attempts
     # — no interval/max_instances/coalesce fields, just the retry policy
     # `enqueue_timing_sync` needs. `ffsubsync` decodes the whole audio track, so its timeout

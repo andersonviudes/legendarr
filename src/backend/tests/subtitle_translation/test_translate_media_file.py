@@ -12,6 +12,7 @@ from legendarr_backend.subtitle_translation import (
     translate_media_file as translate_media_file_module,
 )
 from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
+from sqlmodel import select
 
 SAMPLE_SRT = """1
 00:00:00,000 --> 00:00:01,000
@@ -215,6 +216,73 @@ def test_translate_media_file_skips_target_language_already_translated(
     assert result.skipped_reason is None
 
 
+def test_translate_media_file_skips_retranslation_when_source_unchanged(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """The second run reuses the `content_hash` stamp from the first — no need to touch
+    the provider chain again for an unchanged source."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+    first = translate_media_file(in_memory_session, media_file, video)
+    assert first.translated_languages == ["pt-BR"]
+
+    second = translate_media_file(in_memory_session, media_file, video)
+
+    assert second.translated_languages == []
+    assert second.skipped_reason is None
+
+
+def test_translate_media_file_retranslates_when_source_content_changes(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A target subtitle stamped with a stale `translated_from_hash` (the source `.srt`
+    was replaced/edited since) counts as missing again, unlike a target that was never
+    produced by translation in the first place."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+    first = translate_media_file(in_memory_session, media_file, video)
+    assert first.translated_languages == ["pt-BR"]
+    translated_row = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "pt-br",
+        )
+    ).one()
+    source_row = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "en",
+        )
+    ).one()
+    assert translated_row.translated_from_hash == source_row.content_hash
+
+    (tmp_path / "Foo" / "Foo.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\ngoodbye\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    second = translate_media_file(in_memory_session, media_file, video)
+
+    assert second.translated_languages == ["pt-BR"]
+    output = tmp_path / "Foo" / "Foo.pt-br.srt"
+    assert "GOODBYE" in output.read_text(encoding="utf-8")
+
+
 def test_translate_media_file_falls_back_to_embedded_source_when_no_external_matches(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -235,6 +303,7 @@ def test_translate_media_file_falls_back_to_embedded_source_when_no_external_mat
             origin=SubtitleOrigin.EMBEDDED,
             relative_path="Foo/Foo.embedded.3.eng.srt",
             track_index=3,
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -277,6 +346,7 @@ embedded
             origin=SubtitleOrigin.EMBEDDED,
             relative_path="Foo/Foo.embedded.3.jpn.srt",
             track_index=3,
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -316,6 +386,7 @@ def test_translate_media_file_skips_target_language_already_covered_by_embedded_
             origin=SubtitleOrigin.EMBEDDED,
             relative_path="Foo/Foo.embedded.3.por.srt",
             track_index=3,
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )

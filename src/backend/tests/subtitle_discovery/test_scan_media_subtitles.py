@@ -154,6 +154,7 @@ def test_scan_with_missing_video_skips_and_keeps_rows(in_memory_session, tmp_pat
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Gone/Gone.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -403,6 +404,7 @@ def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tm
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -414,6 +416,7 @@ def test_unique_constraint_rejects_duplicate_relative_path(in_memory_session, tm
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -434,6 +437,7 @@ def test_deleting_media_file_cascades_to_subtitles(in_memory_session, tmp_path):
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )

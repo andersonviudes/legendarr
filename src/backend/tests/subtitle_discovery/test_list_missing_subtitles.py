@@ -56,6 +56,7 @@ def test_returns_only_media_files_without_any_subtitle(in_memory_session, tmp_pa
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -85,6 +86,7 @@ def test_missing_target_languages_flags_file_short_one_language(in_memory_sessio
             language="pt-br",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.pt-br.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -113,6 +115,7 @@ def test_missing_target_languages_omits_file_with_every_target_language(
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )

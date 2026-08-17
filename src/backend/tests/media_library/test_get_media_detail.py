@@ -60,6 +60,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -194,6 +195,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
             language="pt-BR",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Season 01/Bar.S01E01.pt-BR.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )

@@ -130,6 +130,7 @@ def test_enqueued_timing_sync_job_calls_sync_subtitle_timing_with_resolved_paths
         language="en",
         origin=SubtitleOrigin.EXTERNAL,
         relative_path="Foo.en.srt",
+        content_hash="test-hash",
         scanned_at=datetime.now(UTC),
     )
     in_memory_session.add(subtitle)

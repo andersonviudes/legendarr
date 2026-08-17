@@ -108,12 +108,7 @@ def translate_media_file(
     # An already-extracted embedded track also satisfies a target language on its own,
     # even when a *different* embedded track was picked as the source above.
     embedded_languages = set(embedded_subtitles)
-    missing_targets = [
-        language
-        for language in profile.target_language_list
-        if language.lower() not in external_subtitles
-        and normalize_language_code(language) not in embedded_languages
-    ]
+    missing_targets = _missing_targets(profile, external_subtitles, embedded_languages, source)
     if not missing_targets:
         return TranslationResult(translated_languages=[])
 
@@ -153,8 +148,62 @@ def translate_media_file(
 
     if translated_languages:
         scan_subtitles_for_media_file(session, media_file, video_path)
+        _stamp_translated_from_hash(session, media_file, translated_languages, source.content_hash)
 
     return TranslationResult(translated_languages=translated_languages)
+
+
+def _missing_targets(
+    profile: LanguageProfile,
+    external_subtitles: dict[str, Subtitle],
+    embedded_languages: set[str],
+    source: Subtitle,
+) -> list[str]:
+    """Target languages that still need a translation run.
+
+    A target already covered by an embedded track is always satisfied — embedded tracks
+    are never produced by translation, so there's no staleness to check. A target already
+    covered by an external subtitle is satisfied unless it was itself produced by a
+    previous translation (`translated_from_hash` set) whose source has since changed
+    (`translated_from_hash != source.content_hash`) — a subtitle we never translated (a
+    user-provided or acquired one already in the target language) is left alone either
+    way, matching the pre-existing behavior.
+    """
+    missing = []
+    for language in profile.target_language_list:
+        existing = external_subtitles.get(language.lower())
+        if existing is not None:
+            if existing.translated_from_hash is not None and (
+                existing.translated_from_hash != source.content_hash
+            ):
+                missing.append(language)
+            continue
+        if normalize_language_code(language) not in embedded_languages:
+            missing.append(language)
+    return missing
+
+
+def _stamp_translated_from_hash(
+    session: Session,
+    media_file: MediaFile,
+    translated_languages: list[str],
+    source_content_hash: str,
+) -> None:
+    """Record the source hash each just-translated target was produced from, on the
+    `Subtitle` row `scan_subtitles_for_media_file` just wrote/updated for it — read back
+    on the next run by `_missing_targets` to tell an unchanged source from a stale one.
+    """
+    for target_language in translated_languages:
+        row = session.exec(
+            select(Subtitle).where(
+                Subtitle.media_file_id == media_file.id,
+                Subtitle.origin == SubtitleOrigin.EXTERNAL,
+                Subtitle.language == target_language.lower(),
+            )
+        ).first()
+        if row is not None:
+            row.translated_from_hash = source_content_hash
+            session.add(row)
 
 
 def _pick_source_subtitle(

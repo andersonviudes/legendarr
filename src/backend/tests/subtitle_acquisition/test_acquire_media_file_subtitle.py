@@ -212,6 +212,7 @@ def test_acquire_subtitle_is_a_noop_when_a_source_language_subtitle_already_exis
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )

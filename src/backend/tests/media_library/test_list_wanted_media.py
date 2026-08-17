@@ -74,6 +74,7 @@ def test_list_wanted_media_excludes_movie_with_every_target_language(in_memory_s
             language="en",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Foo.en.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -117,6 +118,7 @@ def test_list_wanted_media_series_counts_only_the_episode_still_missing(in_memor
             language="pt-br",
             origin=SubtitleOrigin.EXTERNAL,
             relative_path="Bar.S01E01.pt-br.srt",
+            content_hash="test-hash",
             scanned_at=datetime.now(UTC),
         )
     )
