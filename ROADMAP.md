@@ -294,17 +294,21 @@ just landed.*
 - [x] **Media providers** — Webhook endpoint Radarr/Sonarr can call on "file imported",
   triggering discovery and translation for that item immediately instead of waiting for the
   next scheduled pass.
-- [ ] **Language profiles** — Per-profile or per-media opt-out of automated translation.
 
 ## 0.11.0 — Manual control over acquisition
 
 *Use case: a user would rather browse a provider's search results and pick one themselves, or
 upload their own subtitle file for a specific media item, instead of trusting the automatic
-match.*
+match — or, when several subtitles are already discovered for a media item, pick which one to
+translate instead of trusting automatic source selection.*
 
 - [ ] Manual search and manual upload: let a user browse provider search results and pick one
   themselves, or upload their own subtitle file for a specific media item, bypassing the
   automatic match.
+- [ ] **Subtitle translation** — Manual translation source pick: list every subtitle candidate
+  discovered for a media item (external and embedded) and let the user pick which one to
+  translate, as an alternative to the automatic source selection (`_pick_source_subtitle`) that
+  the scheduled/webhook-triggered automation keeps using.
 
 ## 0.12.0 — Unified acquisition strategy
 

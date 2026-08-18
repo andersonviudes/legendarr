@@ -200,6 +200,18 @@ subtitle; the file-row display changed from plain language pills (`subtitle_badg
 per-subtitle mini-list with its own action (`subtitle_sync_list` in `macros.html`) — confirmed
 via `AskUserQuestion` with an ASCII mockup preview rather than assumed.
 
+**2026-08-18 — 0.10.0's opt-out bullet discarded, moved to a new 0.11.0 manual-pick bullet:**
+the user decided (confirmed via `AskUserQuestion`, two forks) that "Language profiles —
+Per-profile or per-media opt-out of automated translation" isn't worth building as its own
+toggle. Both forks confirmed: (1) the already-shipped 0.10.0 automation (scheduled job +
+webhook-triggered translation, both `[x]`) stays exactly as-is — this is an *additional* path,
+not a reversal; (2) the replacement isn't "no new roadmap item", it's a new `[ ]` bullet inside
+0.11.0 (Manual control over acquisition), not just a note. That bullet: list every subtitle
+candidate discovered for a media item (external + embedded) and let the user pick which one to
+translate manually, instead of `translate_media_file.py`'s `_pick_source_subtitle` always
+deciding. 0.10.0 is now fully `[x]`. Not yet built — this is a roadmap-scope edit only, no code
+changed.
+
 Real-binary gotcha found only by actually running `ffsubsync` against a synthetic `ffmpeg`
 video (mocked subprocess tests didn't catch it): its `-o` writer picks the output format from
 the file extension, and silently no-ops — logging an internal error but still **exiting 0** —
