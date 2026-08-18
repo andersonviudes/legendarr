@@ -37,3 +37,10 @@ class TranslationDefaultsSettings(BaseModel):
     """
 
     default_translation_provider: TranslationProviderKind | None = None
+
+
+class WebhookSettings(BaseModel):
+    """The externally-reachable base URL used to build the Radarr/Sonarr webhook URL
+    shown on the Arr Services settings page. Empty means "not configured yet"."""
+
+    public_url: str = ""

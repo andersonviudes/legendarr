@@ -291,7 +291,7 @@ just landed.*
 - [x] **Automation & scheduling** — Wire the orchestrator into a scheduled job, registered
   through the scheduler convention from 0.1.0. Content hash per subtitle so unchanged files
   are skipped on re-runs instead of re-translated every cycle.
-- [ ] **Media providers** — Webhook endpoint Radarr/Sonarr can call on "file imported",
+- [x] **Media providers** — Webhook endpoint Radarr/Sonarr can call on "file imported",
   triggering discovery and translation for that item immediately instead of waiting for the
   next scheduled pass.
 - [ ] **Language profiles** — Per-profile or per-media opt-out of automated translation.

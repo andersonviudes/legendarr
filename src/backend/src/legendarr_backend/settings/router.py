@@ -4,10 +4,16 @@ from legendarr_backend.config.settings import get_settings
 from legendarr_backend.settings.manage_settings import (
     get_task_settings,
     get_translation_defaults,
+    get_webhook_settings,
     update_task_settings,
     update_translation_defaults,
+    update_webhook_settings,
 )
-from legendarr_backend.settings.schemas import TaskSettings, TranslationDefaultsSettings
+from legendarr_backend.settings.schemas import (
+    TaskSettings,
+    TranslationDefaultsSettings,
+    WebhookSettings,
+)
 
 router = APIRouter(prefix="/settings")
 
@@ -37,3 +43,13 @@ def read_translation_defaults() -> TranslationDefaultsSettings:
 @router.put("/translation-defaults")
 def save_translation_defaults(update: TranslationDefaultsSettings) -> TranslationDefaultsSettings:
     return update_translation_defaults(get_settings(), update)
+
+
+@router.get("/webhooks")
+def read_webhook_settings() -> WebhookSettings:
+    return get_webhook_settings(get_settings())
+
+
+@router.put("/webhooks")
+def save_webhook_settings(update: WebhookSettings) -> WebhookSettings:
+    return update_webhook_settings(get_settings(), update)

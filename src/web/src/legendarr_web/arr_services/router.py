@@ -47,14 +47,27 @@ async def show_arr_services(
     request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
     services = await service.list_arr_services(client)
+    webhook_settings = await service.get_webhook_settings(client)
     return templates.TemplateResponse(
         request,
         "arr_services.html",
         {
             "radarr_services": [s for s in services if s["service_type"] == "radarr"],
             "sonarr_services": [s for s in services if s["service_type"] == "sonarr"],
+            "public_url": webhook_settings["public_url"],
         },
     )
+
+
+@router.post("/webhook-url")
+async def save_webhook_url(
+    request: Request,
+    public_url: str = Form(""),
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    await service.update_webhook_settings(client, {"public_url": public_url})
+    toast = urlencode({"toast": "Legendarr URL saved.", "toast_type": "success"})
+    return RedirectResponse(f"/settings/arr-services/?{toast}", status_code=303)
 
 
 @router.get("/count")

@@ -171,6 +171,130 @@ def test_enqueued_acquisition_job_downloads_and_persists_subtitle(
     assert "Hi" in output.read_text(encoding="utf-8")
     rows = list(in_memory_session.exec(select(Subtitle)).all())
     assert any(row.language == "en" for row in rows)
+    # cascade defaults to False — every existing caller (periodic fan-out, manual
+    # full-item scan) keeps this exact behavior.
+    assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is None
+
+
+def test_enqueued_acquisition_job_cascades_to_translation_when_requested(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler,
+        media_file.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is not None
+
+
+def test_enqueue_acquisition_does_not_downgrade_a_pending_cascade(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """Same race as `subtitle_discovery`'s equivalent test, one stage further down the
+    pipeline."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler,
+        media_file.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+    enqueue_acquisition(
+        scheduler,
+        media_file.id,
+        JobQueue.ACQUIRE_BULK,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+    )
+
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is not None
 
 
 def test_enqueue_full_acquisition_scan_enqueues_every_known_media_file(

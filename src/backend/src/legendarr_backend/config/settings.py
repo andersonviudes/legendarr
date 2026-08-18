@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     radarr_api_key: str = Field(default="")
     sonarr_url: str = Field(default="")
     sonarr_api_key: str = Field(default="")
+    # The externally-reachable address of this legendarr instance, e.g.
+    # "https://legendarr.example.com" — used to build the Radarr/Sonarr webhook URL
+    # shown on the Arr Services settings page. Empty means "not configured yet"; the
+    # page then shows the relative webhook path with a hint instead.
+    public_url: str = Field(default="")
     sync_interval_minutes: int = Field(default=15)
     sync_retry_attempts: int = Field(default=3, ge=1)
     sync_retry_delay_seconds: float = Field(default=5.0)

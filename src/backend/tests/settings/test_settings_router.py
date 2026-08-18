@@ -112,3 +112,25 @@ def test_put_with_invalid_values_returns_422_and_leaves_file_untouched(api_clien
 
     assert response.status_code == 422
     assert (tmp_path / "config.yaml").read_text() == before
+
+
+def test_get_webhook_settings_returns_default(api_client):
+    response = api_client.get("/settings/webhooks")
+
+    assert response.status_code == 200
+    assert response.json() == {"public_url": ""}
+
+
+def test_put_webhook_settings_persists_and_round_trips(api_client, tmp_path):
+    response = api_client.put(
+        "/settings/webhooks", json={"public_url": "https://legendarr.example.com"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"public_url": "https://legendarr.example.com"}
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["public_url"] == "https://legendarr.example.com"
+    # A later GET reads the file back — the value survives a restart.
+    assert api_client.get("/settings/webhooks").json() == {
+        "public_url": "https://legendarr.example.com"
+    }

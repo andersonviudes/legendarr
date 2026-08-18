@@ -5,13 +5,17 @@ from fastapi.testclient import TestClient
 from legendarr_web.app import create_app
 
 
-def _empty_services_handler(request: httpx.Request) -> httpx.Response:
+def _default_response(request: httpx.Request) -> httpx.Response:
+    """Fallback for any request a test's handler doesn't care about — matches what
+    `show_arr_services` needs by default: no services, no webhook URL configured yet."""
+    if request.url.path == "/settings/webhooks":
+        return httpx.Response(200, json={"public_url": ""})
     return httpx.Response(200, json=[])
 
 
 def test_arr_services_page_lists_no_servers_by_default(stub_backend_client):
     app = create_app()
-    stub_backend_client(app, handler=_empty_services_handler)
+    stub_backend_client(app, handler=_default_response)
 
     with TestClient(app) as client:
         response = client.get("/settings/arr-services/")
@@ -25,6 +29,8 @@ def test_page_renders_registered_service_cards(stub_backend_client):
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/webhooks":
+            return httpx.Response(200, json={"public_url": "https://legendarr.example.com"})
         return httpx.Response(
             200,
             json=[
@@ -66,6 +72,9 @@ def test_page_renders_registered_service_cards(stub_backend_client):
     assert "Enabled" in body
     assert "Disabled" in body
     assert "/settings/arr-services/7/edit" in body
+    # webhook URL block: built from public_url + the connection's id
+    assert "https://legendarr.example.com/api/webhooks/arr/7" in body
+    assert "https://legendarr.example.com/api/webhooks/arr/9" in body
 
 
 def test_count_badge_reflects_registered_services(stub_backend_client):
@@ -85,7 +94,7 @@ def test_count_badge_reflects_registered_services(stub_backend_client):
 
 def test_count_badge_hidden_when_no_services(stub_backend_client):
     app = create_app()
-    stub_backend_client(app, handler=_empty_services_handler)
+    stub_backend_client(app, handler=_default_response)
 
     with TestClient(app) as client:
         response = client.get("/settings/arr-services/count")
@@ -97,7 +106,7 @@ def test_count_badge_hidden_when_no_services(stub_backend_client):
 
 def test_new_arr_service_form_prefills_default_port(stub_backend_client):
     app = create_app()
-    stub_backend_client(app, handler=_empty_services_handler)
+    stub_backend_client(app, handler=_default_response)
 
     with TestClient(app) as client:
         response = client.get("/settings/arr-services/new", params={"service_type": "sonarr"})
@@ -112,7 +121,7 @@ def test_create_arr_service_redirects_to_list(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/arr-services/":
             return httpx.Response(201, json={"id": 1})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -144,7 +153,7 @@ def test_create_arr_service_triggers_library_sync(stub_backend_client):
         if request.method == "POST" and request.url.path == "/media/sync":
             sync_calls.append(request)
             return httpx.Response(202, json={"status": "enqueued"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -171,7 +180,7 @@ def test_create_arr_service_succeeds_even_when_sync_trigger_fails(stub_backend_c
             return httpx.Response(201, json={"id": 1})
         if request.method == "POST" and request.url.path == "/media/sync":
             return httpx.Response(503, json={"detail": "Scheduler is not running"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -197,7 +206,7 @@ def test_update_arr_service_redirects_with_success_toast(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/arr-services/1":
             return httpx.Response(200, json={"id": 1})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -227,7 +236,7 @@ def test_create_arr_service_forwards_path_mapping(stub_backend_client):
         if request.method == "POST" and request.url.path == "/arr-services/":
             captured.update(json.loads(request.content))
             return httpx.Response(201, json={"id": 1})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -257,7 +266,7 @@ def test_create_arr_service_sends_blank_path_mapping_as_null(stub_backend_client
         if request.method == "POST" and request.url.path == "/arr-services/":
             captured.update(json.loads(request.content))
             return httpx.Response(201, json={"id": 1})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -283,7 +292,7 @@ def test_create_arr_service_rerenders_form_when_server_unreachable(stub_backend_
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/arr-services/":
             return httpx.Response(422, json={"detail": "Could not connect to the radarr server"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -313,7 +322,7 @@ def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path == "/arr-services/test":
             return httpx.Response(200, json={"success": True, "message": "Connection successful"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -338,7 +347,7 @@ def test_test_arr_service_route_is_not_shadowed_by_service_id_route(stub_backend
 def _missing_service_handler(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/arr-services/1":
         return httpx.Response(404, json={"detail": "Arr service not found"})
-    return httpx.Response(200, json=[])
+    return _default_response(request)
 
 
 def test_edit_form_does_not_prefill_api_key(stub_backend_client):
@@ -361,7 +370,7 @@ def test_edit_form_does_not_prefill_api_key(stub_backend_client):
                     "api_key": "super-secret-key",
                 },
             )
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -379,7 +388,7 @@ def test_test_connection_shows_message_on_backend_error(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/arr-services/test":
             return httpx.Response(500, json={"detail": "boom"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -406,7 +415,7 @@ def test_toggle_enabled_reverts_switch_on_backend_error(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/arr-services/1/enabled":
             return httpx.Response(500, json={"detail": "boom"})
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -449,7 +458,7 @@ def test_create_shows_error_on_duplicate_name(stub_backend_client):
             return httpx.Response(
                 409, json={"detail": "An arr service with this name already exists"}
             )
-        return httpx.Response(200, json=[])
+        return _default_response(request)
 
     stub_backend_client(app, handler=handler)
 
@@ -468,3 +477,61 @@ def test_create_shows_error_on_duplicate_name(stub_backend_client):
     assert response.status_code == 409
     assert "already exists" in response.text
     assert 'data-toast-type="error"' in response.text
+
+
+def test_service_card_shows_relative_webhook_path_when_public_url_unset(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/webhooks":
+            return httpx.Response(200, json={"public_url": ""})
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "id": 7,
+                    "name": "main-radarr",
+                    "service_type": "radarr",
+                    "enabled": True,
+                    "host": "radarr.local",
+                    "port": 7878,
+                    "use_ssl": False,
+                }
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/arr-services/")
+
+    assert response.status_code == 200
+    body = response.text
+    assert "/api/webhooks/arr/7" in body
+    assert "set your Legendarr" in body
+    assert "to see the full link" in body
+    assert "data-copy" not in body
+
+
+def test_save_webhook_url_redirects_with_success_toast(stub_backend_client):
+    app = create_app()
+    saved: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and request.url.path == "/settings/webhooks":
+            saved.update(json.loads(request.content))
+            return httpx.Response(200, json=saved)
+        return _default_response(request)
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/arr-services/webhook-url",
+            data={"public_url": "https://legendarr.example.com"},
+        )
+
+    assert response.status_code == 200
+    assert response.request.url.path == "/settings/arr-services/"
+    assert "toast=Legendarr+URL+saved." in str(response.request.url)
+    assert saved == {"public_url": "https://legendarr.example.com"}

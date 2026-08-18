@@ -121,6 +121,125 @@ def test_enqueued_subtitle_scan_job_persists_discovered_subtitle(
     assert len(rows) == 1
     assert rows[0].media_file_id == media_file.id
     assert rows[0].relative_path == "Foo.pt-BR.srt"
+    # cascade defaults to False — every existing caller (periodic fan-out, manual
+    # full-item scan) keeps this exact behavior.
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file.id}") is None
+
+
+def test_enqueued_subtitle_scan_job_cascades_to_acquisition_when_requested(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    service = create_arr_service(
+        in_memory_session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=42,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").write_bytes(b"x" * 42)
+
+    scheduler = build_scheduler()
+    enqueue_subtitle_scan(
+        scheduler,
+        media_file.id,
+        JobQueue.SCAN,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+    job = scheduler.get_job(f"subtitle_scan:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file.id}") is not None
+
+
+def test_enqueue_subtitle_scan_does_not_downgrade_a_pending_cascade(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """Same race as `media_library`'s equivalent test, one stage down the pipeline: the
+    periodic bulk fan-out (cascade=False) must not silently drop a still-pending
+    cascade=True subtitle scan for the same file (queued by a scan's own cascade)."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    service = create_arr_service(
+        in_memory_session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=42,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").write_bytes(b"x" * 42)
+
+    scheduler = build_scheduler()
+    enqueue_subtitle_scan(
+        scheduler,
+        media_file.id,
+        JobQueue.SCAN,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+    enqueue_subtitle_scan(
+        scheduler,
+        media_file.id,
+        JobQueue.SCAN_BULK,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+    )
+
+    job = scheduler.get_job(f"subtitle_scan:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file.id}") is not None
 
 
 def test_enqueued_subtitle_scan_job_forwards_probe_timeout_to_the_scan(
