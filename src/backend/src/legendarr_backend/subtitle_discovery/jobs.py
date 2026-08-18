@@ -3,13 +3,15 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
-from legendarr_backend.config.config_file import AppConfigFile
+from legendarr_backend.config.config_file import AppConfigFile, load_or_create_config_file
+from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.subtitle_acquisition.jobs import enqueue_acquisition
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
 )
@@ -85,13 +87,26 @@ def enqueue_subtitle_scan(
     retry_attempts: int,
     retry_delay_seconds: float,
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
+    cascade: bool = False,
 ) -> None:
     """Enqueue an ad-hoc subtitle scan of one `MediaFile` for immediate execution.
 
     Same `add_job` shape as `media_library.jobs.enqueue_media_scan`: a "date" trigger
     with `misfire_grace_time=None` and `replace_existing=True` dedupes a pending
     rescan of the same file.
+
+    Same sticky-cascade merge as `enqueue_media_scan` too — a later, non-cascading
+    enqueue (the bulk fan-out) must not silently swap out a still-pending cascade=True
+    job (a scan's own cascade) racing the same file; the wrapped job function's own
+    `cascade` attribute is read back via `scheduler.get_job` before scheduling.
+
+    `cascade=True` chains into an acquisition run for the same file once this scan
+    commits — opt-in, same reasoning as `enqueue_media_scan`'s `cascade`.
     """
+    job_id = f"subtitle_scan:{media_file_id}"
+    pending = scheduler.get_job(job_id)
+    if pending is not None and getattr(pending.func, "cascade", False):
+        cascade = True
 
     def run_scan() -> None:
         with get_session() as session:
@@ -111,12 +126,24 @@ def enqueue_subtitle_scan(
             )
             session.commit()
             logger.info("subtitle scan finished for media file %d: %s", media_file_id, result)
+            if cascade:
+                config = load_or_create_config_file(get_settings())
+                enqueue_acquisition(
+                    scheduler,
+                    media_file_id,
+                    JobQueue.ACQUIRE,
+                    retry_attempts=config.acquisition_retry_attempts,
+                    retry_delay_seconds=config.acquisition_retry_delay_seconds,
+                    cascade=True,
+                )
 
+    wrapped = with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds)
+    setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
     scheduler.add_job(
-        with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
+        wrapped,
         "date",
-        id=f"subtitle_scan:{media_file_id}",
-        name=f"subtitle_scan:{media_file_id}",
+        id=job_id,
+        name=job_id,
         executor=queue.value,
         max_instances=1,
         replace_existing=True,

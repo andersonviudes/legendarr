@@ -1,9 +1,26 @@
 {% extends "base.html" %}
-{% from "macros.html" import service_section %}
+{% from "macros.html" import service_section, field %}
 {% block title %}legendarr · Arr Services{% endblock %}
 {% block content %}
 <h1>{{ icon("server") }} Arr Services</h1>
 
-{{ service_section("Radarr", "clapperboard", "radarr", radarr_services) }}
-{{ service_section("Sonarr", "tv", "sonarr", sonarr_services) }}
+<section>
+  <h2>{{ icon("server") }} Legendarr URL</h2>
+  <p class="field-hint">
+    The address Radarr/Sonarr can reach this legendarr instance at — used to build the
+    webhook URL shown below on each connection, so imports trigger translation
+    immediately instead of waiting for the next scheduled pass.
+  </p>
+  <form class="service-form" method="post" action="/settings/arr-services/webhook-url">
+    {{ field("public_url", "Legendarr URL", placeholder="https://legendarr.example.com",
+             value=public_url, autocomplete="off") }}
+    <button type="submit">{{ icon("save") }} <span>Save</span></button>
+  </form>
+</section>
+
+{{ service_section("Radarr", "clapperboard", "radarr", radarr_services, public_url) }}
+{{ service_section("Sonarr", "tv", "sonarr", sonarr_services, public_url) }}
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/arr-services.js" defer></script>
 {% endblock %}

@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
@@ -23,7 +23,6 @@ from legendarr_backend.media_library.schemas import (
     WantedRead,
 )
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
@@ -41,6 +40,13 @@ def _get_scheduler(request: Request):
     if scheduler is None:
         raise HTTPException(status_code=503, detail="Scheduler is not running")
     return scheduler
+
+
+def _get_on_cascade(request: Request):
+    on_cascade = getattr(request.app.state, "cascade_subtitle_scan", None)
+    if on_cascade is None:
+        raise HTTPException(status_code=503, detail="Scheduler is not running")
+    return on_cascade
 
 
 @router.get("/movies", response_model=list[MovieRead])
@@ -111,27 +117,22 @@ def trigger_media_scan(
 
 
 @router.post("/movies/{movie_id}/scan", status_code=202)
-def trigger_movie_scan(
-    movie_id: int, request: Request, session: Session = Depends(_get_session)
-) -> dict[str, str]:
-    return _trigger_item_scan(request, session, "movie", movie_id)
+def trigger_movie_scan(movie_id: int, request: Request) -> dict[str, str]:
+    return _trigger_item_scan(request, "movie", movie_id)
 
 
 @router.post("/series/{series_id}/scan", status_code=202)
-def trigger_series_scan(
-    series_id: int, request: Request, session: Session = Depends(_get_session)
-) -> dict[str, str]:
-    return _trigger_item_scan(request, session, "series", series_id)
+def trigger_series_scan(series_id: int, request: Request) -> dict[str, str]:
+    return _trigger_item_scan(request, "series", series_id)
 
 
-def _trigger_item_scan(
-    request: Request, session: Session, kind: MediaKind, item_id: int
-) -> dict[str, str]:
-    """ "Scan Disk" for one movie/series: rescans the item's files, then rescans
-    subtitles for whichever `MediaFile` rows already exist. A file the media scan just
-    discovered isn't included — it waits for the next periodic subtitle-scan fan-out.
+def _trigger_item_scan(request: Request, kind: MediaKind, item_id: int) -> dict[str, str]:
+    """ "Scan Disk" for one movie/series: rescans the item's files, then cascades into
+    subtitle discovery, acquisition, and translation for every `MediaFile` the item has
+    afterward — including a file the scan just discovered on disk.
     """
     scheduler = _get_scheduler(request)
+    on_cascade = _get_on_cascade(request)
     config = load_or_create_config_file(get_settings())
     enqueue_media_scan(
         scheduler,
@@ -140,19 +141,9 @@ def _trigger_item_scan(
         JobQueue.SCAN,
         retry_attempts=config.scan_retry_attempts,
         retry_delay_seconds=config.scan_retry_delay_seconds,
+        cascade=True,
+        on_cascade=on_cascade,
     )
-    filter_column = MediaFile.movie_id if kind == "movie" else MediaFile.series_id
-    media_file_ids = session.exec(select(MediaFile.id).where(filter_column == item_id)).all()
-    for media_file_id in media_file_ids:
-        assert media_file_id is not None
-        enqueue_subtitle_scan(
-            scheduler,
-            media_file_id,
-            JobQueue.SCAN,
-            retry_attempts=config.subtitle_scan_retry_attempts,
-            retry_delay_seconds=config.subtitle_scan_retry_delay_seconds,
-            probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
-        )
     return {"status": "enqueued"}
 
 

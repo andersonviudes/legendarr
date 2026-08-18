@@ -41,9 +41,14 @@ def receive_arr_webhook(
     per-connection URL is the whole contract — the usual convention for LAN media
     tools. Events that don't change files on disk (Grab, Test, ...) are acknowledged
     and ignored, so Arr's "Test" button and future event types never error.
+
+    `Download`/`Rename` cascade all the way through subtitle discovery, acquisition,
+    and translation for the item — not just a rescan — so a freshly imported file gets
+    translated immediately instead of waiting for the next periodic fan-out.
     """
     scheduler = getattr(request.app.state, "scheduler", None)
-    if scheduler is None:
+    on_cascade = getattr(request.app.state, "cascade_subtitle_scan", None)
+    if scheduler is None or on_cascade is None:
         raise HTTPException(status_code=503, detail="Scheduler is not running")
 
     arr_service = session.get(ArrService, arr_service_id)
@@ -100,4 +105,6 @@ def receive_arr_webhook(
         JobQueue.SCAN,
         retry_attempts=config.scan_retry_attempts,
         retry_delay_seconds=config.scan_retry_delay_seconds,
+        cascade=True,
+        on_cascade=on_cascade,
     )

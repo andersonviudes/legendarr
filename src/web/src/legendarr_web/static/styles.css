@@ -540,6 +540,29 @@ body {
   color: var(--pico-muted-color);
 }
 
+.service-card-webhook {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Pico's own `input:not([type=checkbox],[type=radio],[type=range],...)` selector
+   out-specifies a lone class (same gotcha as .lang-multiselect-search above), so the
+   ancestor-scoped selector is needed for the input to share the row with the copy
+   button instead of filling it (Pico's rule sets width:100%). */
+.service-card-webhook .webhook-url-input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+}
+
+.service-card-webhook .field-hint {
+  margin: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+}
+
 /* Read-only counterpart to .lang-multiselect-tag: same pill, no remove button, used on
    the language-profile card's source/target language row. */
 .service-card-languages {

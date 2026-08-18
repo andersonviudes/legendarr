@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from functools import partial
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -7,7 +8,7 @@ from sqlmodel import Session, select
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.database.engine import get_session
-from legendarr_backend.media_library.models import MediaKind, Movie, Series
+from legendarr_backend.media_library.models import MediaFile, MediaKind, Movie, Series
 from legendarr_backend.media_library.poll_arr_history import poll_arr_history
 from legendarr_backend.media_library.scan_media_files import scan_media_item
 from legendarr_backend.media_library.sync_media_library import sync_media_library
@@ -16,6 +17,13 @@ from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
 
 logger = logging.getLogger(__name__)
+
+# (media_file_id,) — the concrete subtitle-scan enqueue is injected by the caller (the
+# webhook route and the manual "Scan Disk" endpoint, both wired via `app.state` from
+# `legendarr_bootstrap`) instead of imported here: `subtitle_discovery` already depends on
+# media_library's own models/locate helpers, so importing it back from here would make the
+# two slices depend on each other — same reasoning as `poll_arr_history`'s `EnqueueScan`.
+OnCascade = Callable[[int], None]
 
 
 def register_sync_job(
@@ -174,6 +182,8 @@ def enqueue_media_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    cascade: bool = False,
+    on_cascade: OnCascade | None = None,
 ) -> None:
     """Enqueue an ad-hoc scan of one media item for immediate execution.
 
@@ -183,7 +193,24 @@ def enqueue_media_scan(
     database and the retry policy resolves a commit conflict. Uses `add_job` directly
     instead of `register_job` because of the date trigger with `misfire_grace_time=None`
     — the 1s default could silently drop event-triggered scans under load.
+
+    The job id above doesn't encode `cascade`, so on its own `replace_existing` would let
+    a later, non-cascading enqueue (periodic fan-out, history poll) silently swap out a
+    still-pending cascade=True job (an Arr webhook) racing the same item — the wrapped job
+    function stashes its own `cascade` as a plain attribute, read back via `scheduler.get_job`
+    before scheduling, so a pending cascade is OR'd in rather than overwritten.
+
+    `cascade=True` chains into a subtitle scan for every `MediaFile` the item now has —
+    queried fresh after this scan's own commit, so a file the scan just discovered on
+    disk is included too, not just the ones that already existed. Opt-in: the periodic
+    fan-out, history poll, and full-library manual scan all keep the old behavior and
+    never pass `cascade=True`, so `on_cascade` — the concrete subtitle-scan enqueue,
+    injected by the caller — is only required when `cascade=True` actually fires.
     """
+    job_id = f"media_scan:{media_kind}:{media_id}"
+    pending = scheduler.get_job(job_id)
+    if pending is not None and getattr(pending.func, "cascade", False):
+        cascade = True
 
     def run_scan() -> None:
         with get_session() as session:
@@ -203,12 +230,30 @@ def enqueue_media_scan(
             result = scan_media_item(session, item, arr_service)
             session.commit()
             logger.info("media scan finished for %r: %s", item.title, result)
+            if cascade:
+                if on_cascade is None:
+                    logger.warning(
+                        "media scan cascade requested for %s %d but no on_cascade"
+                        " callback was wired",
+                        media_kind,
+                        media_id,
+                    )
+                    return
+                filter_column = MediaFile.movie_id if media_kind == "movie" else MediaFile.series_id
+                media_file_ids = session.exec(
+                    select(MediaFile.id).where(filter_column == media_id)
+                ).all()
+                for media_file_id in media_file_ids:
+                    assert media_file_id is not None
+                    on_cascade(media_file_id)
 
+    wrapped = with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds)
+    setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
     scheduler.add_job(
-        with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
+        wrapped,
         "date",
-        id=f"media_scan:{media_kind}:{media_id}",
-        name=f"media_scan:{media_kind}:{media_id}",
+        id=job_id,
+        name=job_id,
         executor=queue.value,
         max_instances=1,
         replace_existing=True,

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from functools import partial
 
 from fastapi.testclient import TestClient
 from legendarr_backend.api import create_api_app
@@ -6,9 +7,12 @@ from legendarr_backend.arr_clients.sonarr_client import SonarrClient
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
+from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
+from sqlmodel import select
 
 
 def _seed_movie() -> Movie:
@@ -143,10 +147,18 @@ def test_get_series_item_returns_detail_with_episodes(isolated_database, monkeyp
     assert body["episodes"] == []
 
 
-def test_trigger_movie_scan_enqueues_media_and_subtitle_scan(isolated_database):
+def test_trigger_movie_scan_enqueues_media_scan(isolated_database):
     app = create_api_app()
     scheduler = build_scheduler()
     app.state.scheduler = scheduler
+    app.state.cascade_subtitle_scan = partial(
+        enqueue_subtitle_scan,
+        scheduler,
+        queue=JobQueue.SCAN,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
 
     with TestClient(app) as client:
         movie = _seed_movie()
@@ -166,8 +178,75 @@ def test_trigger_movie_scan_enqueues_media_and_subtitle_scan(isolated_database):
     assert scheduler.get_job(f"media_scan:movie:{movie.id}") is not None
 
 
+def test_trigger_movie_scan_cascades_to_subtitle_scan_for_new_file(isolated_database, tmp_path):
+    """ "Scan Disk" now closes its own documented gap: a file the scan itself just
+    discovered on disk is picked up too, not just files that already existed."""
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+    app.state.cascade_subtitle_scan = partial(
+        enqueue_subtitle_scan,
+        scheduler,
+        queue=JobQueue.SCAN,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+
+    with TestClient(app) as client:
+        with get_session() as session:
+            arr_service = ArrService(
+                name="radarr",
+                service_type="radarr",
+                host="h",
+                port=1,
+                api_key="k",
+                remote_path_prefix="/remote",
+                local_path_prefix=str(tmp_path),
+            )
+            session.add(arr_service)
+            session.commit()
+            session.refresh(arr_service)
+            assert arr_service.id is not None
+            movie = Movie(
+                arr_service_id=arr_service.id,
+                arr_id=1,
+                title="Foo",
+                remote_path="/remote/Foo",
+            )
+            session.add(movie)
+            session.commit()
+            session.refresh(movie)
+            movie_id = movie.id
+        video = tmp_path / "Foo" / "Foo.mkv"
+        video.parent.mkdir(parents=True)
+        video.write_bytes(b"x" * 42)
+
+        response = client.post(f"/media/movies/{movie_id}/scan")
+        assert response.status_code == 202
+        job = scheduler.get_job(f"media_scan:movie:{movie_id}")
+        assert job is not None
+        job.func()
+
+    with get_session() as session:
+        media_files = list(session.exec(select(MediaFile)).all())
+    assert len(media_files) == 1
+    assert scheduler.get_job(f"subtitle_scan:{media_files[0].id}") is not None
+
+
 def test_trigger_movie_scan_without_scheduler_returns_503(isolated_database):
     with TestClient(create_api_app()) as client:
+        movie = _seed_movie()
+        response = client.post(f"/media/movies/{movie.id}/scan")
+
+    assert response.status_code == 503
+
+
+def test_trigger_movie_scan_without_cascade_callback_returns_503(isolated_database):
+    app = create_api_app()
+    app.state.scheduler = build_scheduler()
+
+    with TestClient(app) as client:
         movie = _seed_movie()
         response = client.post(f"/media/movies/{movie.id}/scan")
 

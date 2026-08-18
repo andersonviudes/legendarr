@@ -12,7 +12,11 @@ from legendarr_backend.media_library.jobs import (
     register_scan_job,
     register_sync_job,
 )
-from legendarr_backend.settings.schemas import TaskSettings, TranslationDefaultsSettings
+from legendarr_backend.settings.schemas import (
+    TaskSettings,
+    TranslationDefaultsSettings,
+    WebhookSettings,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,3 +68,19 @@ def update_translation_defaults(
     """
     config = update_config_file(settings, update.model_dump())
     return TranslationDefaultsSettings.model_validate(config.model_dump())
+
+
+def get_webhook_settings(settings: Settings) -> WebhookSettings:
+    """Read the current webhook base URL from `config.yaml` (fresh from disk)."""
+    config = load_or_create_config_file(settings)
+    return WebhookSettings.model_validate(config.model_dump())
+
+
+def update_webhook_settings(settings: Settings, update: WebhookSettings) -> WebhookSettings:
+    """Persist the webhook base URL to `config.yaml`.
+
+    No scheduler involvement (unlike task settings) — the Arr Services page reads it
+    fresh at render time, there's nothing to re-register.
+    """
+    config = update_config_file(settings, update.model_dump())
+    return WebhookSettings.model_validate(config.model_dump())

@@ -45,7 +45,8 @@
     <h2>{{ icon("folder-search") }} Library scan</h2>
     <p class="field-hint">
       Walks every synced item's local folder to locate the video files on disk. Imports
-      also trigger immediate per-item scans via webhook or history poll.
+      also trigger an immediate per-item scan via webhook or history poll — the webhook
+      cascades all the way through subtitle discovery, acquisition, and translation.
     </p>
     {{ field("scan_interval_minutes", "Interval (minutes)", type="number",
              value=settings.scan_interval_minutes, required=true) }}

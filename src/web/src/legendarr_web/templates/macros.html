@@ -154,7 +154,7 @@
 </label>
 {% endmacro %}
 
-{% macro service_card(arr_service) %}
+{% macro service_card(arr_service, public_url="") %}
 <article class="service-card">
   <header class="service-card-header">
     <p class="service-card-name">{{ arr_service.name }}</p>
@@ -163,6 +163,25 @@
   <p class="service-card-address">
     {{ "https" if arr_service.use_ssl else "http" }}://{{ arr_service.host }}:{{ arr_service.port }}
   </p>
+  <div class="service-card-webhook">
+    {% if public_url %}
+    {% set webhook_url = public_url.rstrip("/") ~ "/api/webhooks/arr/" ~ arr_service.id %}
+    <input type="text" readonly value="{{ webhook_url }}" aria-label="Webhook URL"
+           class="webhook-url-input">
+    <button
+      type="button"
+      class="app-icon-btn"
+      aria-label="Copy webhook URL"
+      data-tooltip="Copy webhook URL"
+      data-copy="{{ webhook_url }}"
+    >{{ icon("copy") }}</button>
+    {% else %}
+    <p class="field-hint">
+      Webhook: <code>/api/webhooks/arr/{{ arr_service.id }}</code> — set your Legendarr
+      URL above to see the full link.
+    </p>
+    {% endif %}
+  </div>
   <div class="service-card-actions">
     <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">Edit</a>
     <form method="post" action="/settings/arr-services/{{ arr_service.id }}/delete">
@@ -236,7 +255,7 @@
   One Radarr/Sonarr section: heading, empty-state, the registered cards, and the add-card.
   Both arr sections are identical bar the label/icon/type, so they share this macro.
 #}
-{% macro service_section(label, icon_name, service_type, services) %}
+{% macro service_section(label, icon_name, service_type, services, public_url="") %}
 <section>
   <h2>{{ icon(icon_name) }} {{ label }}</h2>
   {% if not services %}
@@ -244,7 +263,7 @@
   {% endif %}
   <div class="service-grid">
     {% for arr_service in services %}
-    {{ service_card(arr_service) }}
+    {{ service_card(arr_service, public_url) }}
     {% endfor %}
     <a href="/settings/arr-services/new?service_type={{ service_type }}" class="service-add-card">
       {{ icon(icon_name) }}

@@ -26,6 +26,7 @@ class AppConfigFile(BaseModel):
     radarr_api_key: str = ""
     sonarr_url: str = ""
     sonarr_api_key: str = ""
+    public_url: str = ""
     sync_interval_minutes: int = 15
     sync_retry_attempts: int = Field(default=3, ge=1)
     sync_retry_delay_seconds: float = 5.0
@@ -77,6 +78,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "radarr_api_key": settings.radarr_api_key,
         "sonarr_url": settings.sonarr_url,
         "sonarr_api_key": settings.sonarr_api_key,
+        "public_url": settings.public_url,
         "sync_interval_minutes": settings.sync_interval_minutes,
         "sync_retry_attempts": settings.sync_retry_attempts,
         "sync_retry_delay_seconds": settings.sync_retry_delay_seconds,
