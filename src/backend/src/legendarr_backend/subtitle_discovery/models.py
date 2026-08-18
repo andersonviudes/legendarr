@@ -33,4 +33,13 @@ class Subtitle(SQLModel, table=True):
     track_index: int | None = None
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
+    # sha256 of the subtitle file's bytes, recomputed on every scan (`scan_media_subtitles`) —
+    # lets `translate_media_file` tell an unchanged source from one whose content changed
+    # since the last translation.
+    content_hash: str
+    # Set by `translate_media_file` after it writes and rescans a translated output: the
+    # source subtitle's `content_hash` at translation time. `None` for a subtitle that was
+    # never produced by translation. A mismatch against the current source's `content_hash`
+    # means the source changed and this target is stale.
+    translated_from_hash: str | None = Field(default=None)
     scanned_at: datetime

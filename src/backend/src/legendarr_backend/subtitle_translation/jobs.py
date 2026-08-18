@@ -3,14 +3,47 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
+from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
 
 logger = logging.getLogger(__name__)
+
+
+def register_translation_job(
+    scheduler: BackgroundScheduler,
+    config: AppConfigFile,
+) -> None:
+    """Register the periodic translation fan-out on the shared scheduler."""
+
+    def fan_out() -> None:
+        with get_session() as session:
+            enqueued = enqueue_full_translation_scan(
+                scheduler,
+                session,
+                retry_attempts=config.translate_retry_attempts,
+                retry_delay_seconds=config.translate_retry_delay_seconds,
+                default_translation_provider=config.default_translation_provider,
+            )
+        logger.info("translation fan-out enqueued: %d media files", enqueued)
+
+    register_job(
+        scheduler,
+        fan_out,
+        queue=JobQueue.SYNC,
+        job_id="subtitle_translation_fanout",
+        trigger="interval",
+        minutes=config.translate_interval_minutes,
+        retry_attempts=config.translate_retry_attempts,
+        retry_delay_seconds=config.translate_retry_delay_seconds,
+        max_instances=config.translate_max_instances,
+        coalesce=config.translate_coalesce,
+    )
 
 
 def enqueue_full_translation_scan(
@@ -23,9 +56,9 @@ def enqueue_full_translation_scan(
 ) -> int:
     """Enqueue a translation run for every known `MediaFile` on the bulk queue.
 
-    On-demand only — unlike `subtitle_discovery`'s scan fan-out, nothing calls this on
-    an interval; per `ROADMAP.md` 0.3.0, unattended scheduling is 0.10.0. Callable from a
-    future CLI command or "translate now" UI action without duplicating the fan-out logic.
+    Shared by the periodic fan-out job (`register_translation_job`) and the manual
+    bulk/"translate now" path — same reasoning as `subtitle_discovery.jobs`'s
+    `enqueue_full_subtitle_scan`.
     """
     media_file_ids = session.exec(select(MediaFile.id)).all()
     for media_file_id in media_file_ids:

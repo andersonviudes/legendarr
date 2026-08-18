@@ -49,11 +49,19 @@ class AppConfigFile(BaseModel):
     embedded_subtitle_probe_timeout_seconds: float = 30.0
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = 5.0
+    translate_interval_minutes: int = 60
+    translate_max_instances: int = 1
+    translate_coalesce: bool = True
     # `None` means "no preference" — `resolve_provider_chain` falls back to its existing
     # id-ascending order. Validated against `TRANSLATION_PROVIDER_KINDS` at the Settings
     # schema boundary (`settings/schemas.py`), not here — this file stays a plain mirror of
     # what's on disk.
     default_translation_provider: str | None = None
+    acquisition_retry_attempts: int = Field(default=3, ge=1)
+    acquisition_retry_delay_seconds: float = 5.0
+    acquisition_interval_minutes: int = 60
+    acquisition_max_instances: int = 1
+    acquisition_coalesce: bool = True
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = 5.0
     timing_sync_timeout_seconds: float = 120.0
@@ -92,7 +100,15 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "embedded_subtitle_probe_timeout_seconds": settings.embedded_subtitle_probe_timeout_seconds,
         "translate_retry_attempts": settings.translate_retry_attempts,
         "translate_retry_delay_seconds": settings.translate_retry_delay_seconds,
+        "translate_interval_minutes": settings.translate_interval_minutes,
+        "translate_max_instances": settings.translate_max_instances,
+        "translate_coalesce": settings.translate_coalesce,
         "default_translation_provider": settings.default_translation_provider,
+        "acquisition_retry_attempts": settings.acquisition_retry_attempts,
+        "acquisition_retry_delay_seconds": settings.acquisition_retry_delay_seconds,
+        "acquisition_interval_minutes": settings.acquisition_interval_minutes,
+        "acquisition_max_instances": settings.acquisition_max_instances,
+        "acquisition_coalesce": settings.acquisition_coalesce,
         "timing_sync_retry_attempts": settings.timing_sync_retry_attempts,
         "timing_sync_retry_delay_seconds": settings.timing_sync_retry_delay_seconds,
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,

@@ -232,6 +232,7 @@ def test_trigger_subtitle_timing_sync_enqueues_sync(isolated_database):
                 language="en",
                 origin=SubtitleOrigin.EXTERNAL,
                 relative_path="Foo.en.srt",
+                content_hash="test-hash",
                 scanned_at=datetime.now(UTC),
             )
             session.add(subtitle)

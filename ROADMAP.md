@@ -288,7 +288,7 @@ prompt an LLM-backed provider uses for their content.*
 gets discovered and translated on a schedule, or immediately when Radarr/Sonarr says a file
 just landed.*
 
-- [ ] **Automation & scheduling** — Wire the orchestrator into a scheduled job, registered
+- [x] **Automation & scheduling** — Wire the orchestrator into a scheduled job, registered
   through the scheduler convention from 0.1.0. Content hash per subtitle so unchanged files
   are skipped on re-runs instead of re-translated every cycle.
 - [ ] **Media providers** — Webhook endpoint Radarr/Sonarr can call on "file imported",

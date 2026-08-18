@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -79,6 +80,7 @@ def scan_subtitles_for_media_file(
     added = 0
     for item in discovered:
         relative_path = (video_dir / item.source_path.name).as_posix()
+        content_hash = hashlib.sha256(item.source_path.read_bytes()).hexdigest()
         row = existing.pop(relative_path, None)
         if row is None:
             session.add(
@@ -90,6 +92,7 @@ def scan_subtitles_for_media_file(
                     track_index=item.track_index,
                     forced=item.forced,
                     hearing_impaired=item.hearing_impaired,
+                    content_hash=content_hash,
                     scanned_at=now,
                 )
             )
@@ -100,6 +103,11 @@ def scan_subtitles_for_media_file(
             row.track_index = item.track_index
             row.forced = item.forced
             row.hearing_impaired = item.hearing_impaired
+            # A source that changed since the last translation invalidates the stamp
+            # `translate_media_file` left — an unchanged rescan (the common case) keeps it.
+            if row.content_hash != content_hash:
+                row.translated_from_hash = None
+            row.content_hash = content_hash
             row.scanned_at = now
             session.add(row)
 

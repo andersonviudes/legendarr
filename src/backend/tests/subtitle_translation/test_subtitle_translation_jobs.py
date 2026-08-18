@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
+from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.http_client.client import ProviderHttpClient
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie
@@ -14,6 +15,7 @@ from legendarr_backend.subtitle_translation import jobs as jobs_module
 from legendarr_backend.subtitle_translation.jobs import (
     enqueue_full_translation_scan,
     enqueue_translation,
+    register_translation_job,
 )
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
 from sqlmodel import select
@@ -32,6 +34,24 @@ def _arr_service(session, tmp_path):
             local_path_prefix=str(tmp_path),
         ),
     )
+
+
+def test_register_translation_job_wires_config_derived_policy():
+    scheduler = build_scheduler()
+    config = AppConfigFile(
+        translate_interval_minutes=45,
+        translate_max_instances=2,
+        translate_coalesce=False,
+    )
+
+    register_translation_job(scheduler, config)
+
+    job = scheduler.get_job("subtitle_translation_fanout")
+    assert job is not None
+    assert job.executor == JobQueue.SYNC.value
+    assert job.max_instances == 2
+    assert job.coalesce is False
+    assert job.trigger.interval.total_seconds() == 45 * 60
 
 
 def test_enqueue_translation_adds_adhoc_job_with_event_safe_policy(monkeypatch):
