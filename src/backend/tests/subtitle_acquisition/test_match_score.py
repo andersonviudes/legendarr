@@ -1,4 +1,4 @@
-from legendarr_backend.subtitle_acquisition.match_score import pick_best_match
+from legendarr_backend.subtitle_acquisition.match_score import pick_best_match, score_candidate
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 
 
@@ -42,3 +42,13 @@ def test_pick_best_match_respects_a_custom_cutoff():
 
     assert pick_best_match(candidates, "Movie.Name.2024.mkv", cutoff=0.9) is None
     assert pick_best_match(candidates, "Movie.Name.2024.mkv", cutoff=0.3) is not None
+
+
+def test_score_candidate_scores_an_exact_match_as_one():
+    assert score_candidate(_result("Movie.Name.2024.WEB-DL"), "Movie.Name.2024.WEB-DL") == 1.0
+
+
+def test_score_candidate_scores_an_unrelated_release_low():
+    score = score_candidate(_result("Completely.Unrelated.Release"), "Movie.Name.2024.WEB-DL.mkv")
+
+    assert score < 0.4

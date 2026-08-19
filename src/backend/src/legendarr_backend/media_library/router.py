@@ -1,7 +1,9 @@
 from collections.abc import Iterator
+from dataclasses import asdict
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from sqlmodel import Session, select
 
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
@@ -14,15 +16,30 @@ from legendarr_backend.media_library.jobs import (
 )
 from legendarr_backend.media_library.list_media_library import list_movies, list_series
 from legendarr_backend.media_library.list_wanted_media import list_wanted_media
+from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile, MediaKind
 from legendarr_backend.media_library.schemas import (
     MovieDetailRead,
     MovieRead,
     SeriesDetailRead,
     SeriesRead,
+    SubtitleAcquisitionResult,
+    SubtitleCandidateDownloadInput,
+    SubtitleCandidateRead,
+    SubtitleRead,
     WantedRead,
 )
 from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
+    download_subtitle_candidate,
+)
+from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
+    SubtitleCandidate,
+    search_media_file_subtitle_candidates,
+)
+from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
+    upload_subtitle_for_media_file,
+)
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
@@ -183,3 +200,80 @@ def trigger_subtitle_timing_sync(
         timeout_seconds=config.timing_sync_timeout_seconds,
     )
     return {"status": "enqueued"}
+
+
+def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:
+    media_file = session.get(MediaFile, media_file_id)
+    if media_file is None:
+        raise HTTPException(status_code=404, detail="Media file not found")
+    video_path = resolve_media_file_path(session, media_file)
+    if video_path is None:
+        raise HTTPException(status_code=404, detail="Media file's video is no longer available")
+    return media_file, video_path
+
+
+def _acquisition_result(
+    session: Session, media_file_id: int, success: bool, message: str
+) -> SubtitleAcquisitionResult:
+    rows = session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file_id)).all()
+    subtitle_reads = []
+    for row in rows:
+        assert row.id is not None
+        subtitle_reads.append(
+            SubtitleRead(id=row.id, language=row.language, origin=row.origin.value)
+        )
+    return SubtitleAcquisitionResult(
+        success=success,
+        message=message,
+        subtitles=subtitle_reads,
+    )
+
+
+@router.get(
+    "/files/{media_file_id}/subtitle-candidates", response_model=list[SubtitleCandidateRead]
+)
+def search_subtitle_candidates(
+    media_file_id: int, language: str, session: Session = Depends(_get_session)
+) -> list[SubtitleCandidateRead]:
+    media_file, video_path = _get_media_file_and_video_path(session, media_file_id)
+    candidates = search_media_file_subtitle_candidates(session, media_file, video_path, language)
+    return [SubtitleCandidateRead(**asdict(candidate)) for candidate in candidates]
+
+
+@router.post(
+    "/files/{media_file_id}/subtitle-candidates/download", response_model=SubtitleAcquisitionResult
+)
+def download_subtitle_candidate_route(
+    media_file_id: int,
+    data: SubtitleCandidateDownloadInput,
+    session: Session = Depends(_get_session),
+) -> SubtitleAcquisitionResult:
+    media_file, video_path = _get_media_file_and_video_path(session, media_file_id)
+    candidate = SubtitleCandidate(
+        provider=data.provider,
+        release_name=data.release_name,
+        download_id=data.download_id,
+        language=data.language,
+        page_link=data.page_link,
+    )
+    success, message = download_subtitle_candidate(
+        session, media_file, video_path, candidate, data.target_language
+    )
+    session.commit()
+    return _acquisition_result(session, media_file_id, success, message)
+
+
+@router.post("/files/{media_file_id}/subtitle-upload", response_model=SubtitleAcquisitionResult)
+async def upload_subtitle(
+    media_file_id: int,
+    language: str = Form(...),
+    file: UploadFile = File(...),  # noqa: B008 — FastAPI's own multipart dependency idiom
+    session: Session = Depends(_get_session),
+) -> SubtitleAcquisitionResult:
+    media_file, video_path = _get_media_file_and_video_path(session, media_file_id)
+    content = await file.read()
+    success, message = upload_subtitle_for_media_file(
+        session, media_file, video_path, language, file.filename or "", content
+    )
+    session.commit()
+    return _acquisition_result(session, media_file_id, success, message)

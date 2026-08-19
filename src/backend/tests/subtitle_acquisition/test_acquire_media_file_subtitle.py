@@ -9,6 +9,7 @@ from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_acquisition import (
     acquire_media_file_subtitle as acquire_media_file_subtitle_module,
 )
+from legendarr_backend.subtitle_acquisition import search_context as search_context_module
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
@@ -319,7 +320,7 @@ def test_acquire_subtitle_passes_series_season_episode_to_the_provider(
     provider = _FakeProvider()
     _use_chain(monkeypatch, provider)
     monkeypatch.setattr(
-        acquire_media_file_subtitle_module,
+        search_context_module,
         "resolve_media_file_episode",
         lambda session, media_file: EpisodeItem(
             season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
@@ -344,7 +345,7 @@ def test_acquire_subtitle_passes_none_season_episode_when_resolution_fails(
     provider = _FakeProvider()
     _use_chain(monkeypatch, provider)
     monkeypatch.setattr(
-        acquire_media_file_subtitle_module,
+        search_context_module,
         "resolve_media_file_episode",
         lambda session, media_file: None,
     )

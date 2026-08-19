@@ -1168,6 +1168,110 @@ button.outline.contrast:is(:hover, :focus) {
   justify-content: flex-end;
 }
 
+/* === Subtitle search/upload <dialog> (movie/series detail pages) === */
+.subtitle-acquire-modal {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  color: var(--pico-color);
+}
+
+.subtitle-acquire-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.subtitle-acquire-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+}
+
+.subtitle-acquire-modal-header p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.subtitle-acquire-close {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--pico-muted-color);
+}
+
+.subtitle-acquire-close:hover {
+  background-color: var(--lg-neutral-hover-background-color);
+  color: var(--pico-color);
+}
+
+#subtitle-acquire-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.subtitle-acquire-result--success {
+  color: var(--pico-ins-color);
+}
+
+.subtitle-acquire-result--error {
+  color: var(--pico-del-color);
+}
+
+.subtitle-candidate-list {
+  max-height: 20rem;
+  overflow-y: auto;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--lg-neutral-dim-background-color);
+  border-radius: 0.5rem;
+}
+
+.subtitle-candidate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+}
+
+.subtitle-candidate-row:last-child {
+  border-bottom: none;
+}
+
+.subtitle-candidate-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.subtitle-candidate-release {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle-candidate-provider {
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+}
+
+.subtitle-candidate-score {
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+  white-space: nowrap;
+}
+
 /* === System page: log viewer === */
 .log-toolbar {
   display: flex;

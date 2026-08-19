@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
     "python-dotenv>=1.0",
+    "python-multipart>=0.0.9",
     "sqlmodel>=0.0.22",
     "apscheduler>=3.10",
     "alembic>=1.13",

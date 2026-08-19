@@ -79,3 +79,40 @@ class WantedRead(BaseModel):
     poster_url: str | None = None
     missing_languages: list[str]
     missing_files_count: int
+
+
+class SubtitleCandidateRead(BaseModel):
+    """One manual-search result — everything the UI needs to display it and, on
+    download, everything `SubtitleCandidateDownloadInput` needs to re-locate it."""
+
+    provider: str
+    release_name: str
+    download_id: str
+    language: str
+    page_link: str | None = None
+    score: float
+
+
+class SubtitleCandidateDownloadInput(BaseModel):
+    """The candidate fields needed to reconstruct a `SubtitleSearchResult` and pick its
+    provider back out of the chain — same fields as `SubtitleCandidateRead` minus
+    `score`, which only ever mattered for display/ranking. `target_language` is the
+    language the manual search ran in: the sidecar is persisted under it, while
+    `language` stays what the provider itself reported (which may format a region
+    subtag differently) so providers that locate the download by language still can."""
+
+    provider: str
+    release_name: str
+    download_id: str
+    language: str
+    target_language: str
+    page_link: str | None = None
+
+
+class SubtitleAcquisitionResult(BaseModel):
+    """Outcome of a manual download/upload — `subtitles` is the media file's fresh
+    list, so the web layer can refresh the file row's badges without a second call."""
+
+    success: bool
+    message: str
+    subtitles: list[SubtitleRead]

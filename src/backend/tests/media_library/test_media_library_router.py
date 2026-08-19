@@ -4,11 +4,20 @@ from functools import partial
 from fastapi.testclient import TestClient
 from legendarr_backend.api import create_api_app
 from legendarr_backend.arr_clients.sonarr_client import SonarrClient
+from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.models import ArrService
+from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
+from legendarr_backend.subtitle_acquisition import (
+    download_media_file_subtitle as download_media_file_subtitle_module,
+)
+from legendarr_backend.subtitle_acquisition import (
+    search_media_file_subtitle as search_media_file_subtitle_module,
+)
+from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -331,5 +340,181 @@ def test_trigger_subtitle_timing_sync_returns_404_when_missing(isolated_database
 
     with TestClient(app) as client:
         response = client.post("/media/subtitles/1/sync-timing")
+
+    assert response.status_code == 404
+
+
+class _FakeProvider:
+    name = "fake"
+
+    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"):
+        self.results = (
+            results
+            if results is not None
+            else [SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
+        )
+        self.text = text
+
+    def search(self, *args, **kwargs):
+        return self.results
+
+    def download(self, result):
+        return self.text
+
+
+def _seed_movie_with_video(tmp_path) -> int:
+    with get_session() as session:
+        service = create_arr_service(
+            session,
+            ArrServiceInput(
+                name="radarr",
+                service_type="radarr",
+                host="h",
+                port=1,
+                api_key="k",
+                remote_path_prefix="/remote",
+                local_path_prefix=str(tmp_path),
+            ),
+        )
+        assert service.id is not None
+        movie = Movie(
+            arr_service_id=service.id,
+            arr_id=1,
+            title="Foo",
+            remote_path="/remote/Foo",
+            imdb_id="tt1234567",
+        )
+        session.add(movie)
+        session.commit()
+        session.refresh(movie)
+        assert movie.id is not None
+        media_file = MediaFile(
+            movie_id=movie.id,
+            relative_path="Foo.mkv",
+            size_bytes=1,
+            scanned_at=datetime.now(UTC),
+        )
+        session.add(media_file)
+        session.commit()
+        session.refresh(media_file)
+        assert media_file.id is not None
+        media_file_id = media_file.id
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True, exist_ok=True)
+    video.touch()
+    return media_file_id
+
+
+def test_search_subtitle_candidates_returns_candidates_from_the_provider_chain(
+    isolated_database, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        search_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        response = client.get(
+            f"/media/files/{media_file_id}/subtitle-candidates", params={"language": "en"}
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["provider"] == "fake"
+    assert body[0]["download_id"] == "1"
+
+
+def test_search_subtitle_candidates_returns_404_when_media_file_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.get("/media/files/1/subtitle-candidates", params={"language": "en"})
+
+    assert response.status_code == 404
+
+
+def test_download_subtitle_candidate_writes_the_file(isolated_database, tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        download_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        response = client.post(
+            f"/media/files/{media_file_id}/subtitle-candidates/download",
+            json={
+                "provider": "fake",
+                "release_name": "Foo",
+                "download_id": "1",
+                "language": "pt",
+                "target_language": "pt-BR",
+                "page_link": None,
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    # The sidecar is named after the searched language, not the provider-reported one.
+    output = tmp_path / "Foo" / "Foo.pt-br.srt"
+    assert "Hi" in output.read_text(encoding="utf-8")
+    # The route owns the commit — a fresh session must see the scanned Subtitle row.
+    with get_session() as session:
+        persisted = session.exec(
+            select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+        ).all()
+    assert any(subtitle.language == "pt-br" for subtitle in persisted)
+
+
+def test_download_subtitle_candidate_returns_404_when_media_file_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post(
+            "/media/files/1/subtitle-candidates/download",
+            json={
+                "provider": "fake",
+                "release_name": "Foo",
+                "download_id": "1",
+                "language": "en",
+                "target_language": "en",
+                "page_link": None,
+            },
+        )
+
+    assert response.status_code == 404
+
+
+def test_upload_subtitle_writes_the_file(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        response = client.post(
+            f"/media/files/{media_file_id}/subtitle-upload",
+            data={"language": "en"},
+            files={"file": ("uploaded.srt", b"content", "text/plain")},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert any(subtitle["language"] == "en" for subtitle in body["subtitles"])
+    output = tmp_path / "Foo" / "Foo.en.srt"
+    assert output.read_bytes() == b"content"
+    # The route owns the commit — a fresh session must see the scanned Subtitle row.
+    with get_session() as session:
+        persisted = session.exec(
+            select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+        ).all()
+    assert any(subtitle.language == "en" for subtitle in persisted)
+
+
+def test_upload_subtitle_returns_404_when_media_file_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post(
+            "/media/files/1/subtitle-upload",
+            data={"language": "en"},
+            files={"file": ("uploaded.srt", b"content", "text/plain")},
+        )
 
     assert response.status_code == 404
