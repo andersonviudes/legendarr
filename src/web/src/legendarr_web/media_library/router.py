@@ -135,6 +135,20 @@ async def trigger_subtitle_timing_sync(
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
 
 
+@router.post("/subtitles/{subtitle_id}/translate")
+async def trigger_subtitle_source_translation(
+    request: Request,
+    subtitle_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        await service.trigger_subtitle_translation(client, subtitle_id)
+        result = {"success": True, "message": "Translation queued."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't queue the translation."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
 @router.get("/files/{media_file_id}/subtitle-search")
 async def show_subtitle_search(request: Request, media_file_id: int):
     return templates.TemplateResponse(

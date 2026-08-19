@@ -32,7 +32,8 @@ class TranslationResult:
     `skipped_reason` is set (and `translated_languages` left empty) whenever a
     precondition isn't met — no language profile, no subtitle (external or embedded) in a
     source language, no translation provider configured, or the picked source subtitle's
-    file is missing from disk. None of these are errors; they're expected, common states
+    file is missing from disk — or, for a manually-picked `source_subtitle_id`, that id not
+    belonging to this media file. None of these are errors; they're expected, common states
     the job logs and moves past instead of failing.
     """
 
@@ -45,6 +46,7 @@ def translate_media_file(
     media_file: MediaFile,
     video_path: Path,
     default_translation_provider: str | None = None,
+    source_subtitle_id: int | None = None,
 ) -> TranslationResult:
     """Translate one `MediaFile` into every target language its `LanguageProfile` is
     still missing, from an already-discovered subtitle in one of its source languages.
@@ -58,6 +60,13 @@ def translate_media_file(
 
     `default_translation_provider` is the Settings-configured default (see
     `resolve_provider_chain`); passed through unchanged, `None` means no preference.
+
+    `source_subtitle_id`, when given, bypasses `_pick_source_subtitle` entirely and uses that
+    `Subtitle` row as the source instead — manual override for ROADMAP.md 0.11.0's "pick which
+    one to translate". Unrestricted by `profile.source_language_list`: any subtitle already
+    discovered for this media file, external or embedded, in any language, is a valid manual
+    source. Everything past the source pick (missing-target check, provider chain, writing
+    output) behaves identically either way.
     """
     profile = resolve_media_file_profile(session, media_file)
     if profile is None:
@@ -97,13 +106,25 @@ def translate_media_file(
         )
     }
 
-    source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
-    if source is None:
-        logger.info(
-            "translation skipped: media file %d has no subtitle in a source language",
-            media_file.id,
-        )
-        return TranslationResult(translated_languages=[], skipped_reason="no_source_subtitle")
+    if source_subtitle_id is None:
+        source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
+        if source is None:
+            logger.info(
+                "translation skipped: media file %d has no subtitle in a source language",
+                media_file.id,
+            )
+            return TranslationResult(translated_languages=[], skipped_reason="no_source_subtitle")
+    else:
+        source = session.get(Subtitle, source_subtitle_id)
+        if source is None or source.media_file_id != media_file.id:
+            logger.info(
+                "translation skipped: media file %d's requested source subtitle %s not found",
+                media_file.id,
+                source_subtitle_id,
+            )
+            return TranslationResult(
+                translated_languages=[], skipped_reason="source_subtitle_not_found"
+            )
 
     # An already-extracted embedded track also satisfies a target language on its own,
     # even when a *different* embedded track was picked as the source above.

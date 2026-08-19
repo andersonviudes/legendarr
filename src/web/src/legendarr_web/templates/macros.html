@@ -213,6 +213,17 @@
       hx-disabled-elt="this"
     >{{ icon("refresh-cw") }}</button>
     <span id="sync-result-{{ subtitle.id }}"></span>
+    <button
+      type="button"
+      class="app-icon-btn"
+      aria-label="Translate from this"
+      data-tooltip="Translate from this"
+      hx-post="/media/subtitles/{{ subtitle.id }}/translate"
+      hx-target="#translate-from-result-{{ subtitle.id }}"
+      hx-swap="innerHTML"
+      hx-disabled-elt="this"
+    >{{ icon("languages") }}</button>
+    <span id="translate-from-result-{{ subtitle.id }}"></span>
   </li>
   {% endfor %}
 </ul>

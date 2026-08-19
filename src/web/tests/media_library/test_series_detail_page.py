@@ -73,6 +73,7 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "pt-BR" in response.text
     assert response.text.count("/media/files/5/translate") == 1
     assert "/media/subtitles/12/sync-timing" in response.text
+    assert "/media/subtitles/12/translate" in response.text
     assert "TBA" in response.text
 
 
