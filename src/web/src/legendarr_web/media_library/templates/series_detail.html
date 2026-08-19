@@ -53,7 +53,7 @@
       <tr>
         <td>{{ episode.episode_number }}</td>
         <td>{{ episode.title }}</td>
-        <td>
+        <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
           {{ subtitle_sync_list(episode.media_file.subtitles) }}
           {% else %}
@@ -74,6 +74,26 @@
               hx-disabled-elt="this"
             >{{ icon("send") }}</button>
             <span id="translate-result-{{ episode.media_file.id }}"></span>
+            <button
+              type="button"
+              class="app-icon-btn"
+              aria-label="Manual search"
+              data-tooltip="Manual search"
+              data-subtitle-acquire-open
+              hx-get="/media/files/{{ episode.media_file.id }}/subtitle-search"
+              hx-target="#subtitle-acquire-content"
+              hx-swap="innerHTML"
+            >{{ icon("search") }}</button>
+            <button
+              type="button"
+              class="app-icon-btn"
+              aria-label="Upload subtitle"
+              data-tooltip="Upload subtitle"
+              data-subtitle-acquire-open
+              hx-get="/media/files/{{ episode.media_file.id }}/subtitle-upload"
+              hx-target="#subtitle-acquire-content"
+              hx-swap="innerHTML"
+            >{{ icon("upload") }}</button>
           </div>
           {% endif %}
         </td>
@@ -88,4 +108,15 @@
 {% else %}
 {{ empty_state("No episodes found for this series yet.") }}
 {% endif %}
+
+<dialog id="subtitle-acquire-modal" class="subtitle-acquire-modal">
+  <header class="subtitle-acquire-modal-header">
+    <p>Subtitle</p>
+    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="Close">&times;</button>
+  </header>
+  <div id="subtitle-acquire-content"></div>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/subtitle-acquire.js" defer></script>
 {% endblock %}

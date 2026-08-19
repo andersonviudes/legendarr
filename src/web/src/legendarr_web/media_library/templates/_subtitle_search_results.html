@@ -1,0 +1,34 @@
+{# Rendered into #subtitle-search-results by the search panel's "Search" button. #}
+{% from "macros.html" import empty_state %}
+{% if candidates %}
+<ul class="subtitle-candidate-list">
+  {% for candidate in candidates %}
+  <li class="subtitle-candidate-row">
+    <div class="subtitle-candidate-info">
+      <span class="subtitle-candidate-release">
+        {% if candidate.page_link %}
+        <a href="{{ candidate.page_link }}" target="_blank" rel="noopener">{{ candidate.release_name }}</a>
+        {% else %}
+        {{ candidate.release_name }}
+        {% endif %}
+      </span>
+      <span class="subtitle-candidate-provider">{{ candidate.provider }} · {{ candidate.language }}</span>
+    </div>
+    <span class="subtitle-candidate-score">{{ (candidate.score * 100) | round | int }}%</span>
+    <button
+      type="button"
+      class="app-icon-btn"
+      aria-label="Download this subtitle"
+      data-tooltip="Download"
+      hx-post="/media/files/{{ media_file_id }}/subtitle-candidates/download"
+      hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": language, "page_link": candidate.page_link or ""} | tojson }}'
+      hx-target="#subtitle-acquire-content"
+      hx-swap="innerHTML"
+      hx-disabled-elt="this"
+    >{{ icon("download") }}</button>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+{{ empty_state("No subtitles found for this language.") }}
+{% endif %}

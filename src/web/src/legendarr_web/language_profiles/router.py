@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.language_profiles import service
-from legendarr_web.language_profiles.languages import SUPPORTED_LANGUAGES
+from legendarr_web.languages import SUPPORTED_LANGUAGES
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings")

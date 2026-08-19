@@ -1,0 +1,10 @@
+{# Shared by the download-candidate and upload-subtitle routes: an inline result message
+   (the dialog stays open until the user closes it) plus the toast and an out-of-band
+   swap of the file row's subtitle badges, so the page reflects the result without a
+   reload. #}
+{% from "macros.html" import subtitle_sync_list %}
+<p class="subtitle-acquire-result subtitle-acquire-result--{{ 'success' if result.success else 'error' }}">{{ result.message }}</p>
+<div hidden data-toast-message="{{ result.message }}" data-toast-type="{{ 'success' if result.success else 'error' }}"></div>
+{% if result.success %}
+<td id="subtitles-cell-{{ media_file_id }}" hx-swap-oob="true">{{ subtitle_sync_list(result.subtitles) }}</td>
+{% endif %}

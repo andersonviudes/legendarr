@@ -86,7 +86,47 @@ release name and the local video's filename. This is deliberately simple — ful
 weighting (release group, resolution, codec, source, edition) instead of one flat cutoff is
 0.12.0 work.
 
+## Manual search and upload
+
+Every movie/series detail page's file row also has "Manual search" and "Upload subtitle"
+buttons — a user-driven alternative to `acquire_subtitle_for_media_file` above, for when the
+automatic match isn't trusted or a provider hasn't found anything. Both bypass the automatic
+path entirely: neither is gated on a `LanguageProfile`, and the language searched for or
+uploaded is a free choice (any of `legendarr_web/languages.py`'s `SUPPORTED_LANGUAGES`), not
+restricted to the item's configured source languages — a user might already have (or find) a
+correct target-language subtitle and want to skip translation altogether.
+
+"Manual search" (`GET /media/files/{id}/subtitle-candidates`, backed by
+`subtitle_acquisition/search_media_file_subtitle.py`) searches every provider in the resolved
+chain for the chosen language — unlike the automatic path, it never stops at the first
+above-cutoff match; it collects every candidate from every provider, tags each with the
+provider's name and `match_score.py`'s `score_candidate()`, and returns them sorted
+best-first so the user can compare and pick. Downloading a chosen candidate
+(`POST /media/files/{id}/subtitle-candidates/download`,
+`subtitle_acquisition/download_media_file_subtitle.py`) re-resolves the provider by name,
+downloads it, writes it next to the video, and re-scans — same `{video}.{language}.srt`
+convention as the automatic path, and same tolerance for a provider error (returns a
+`(False, message)` result instead of raising, mirroring "Test connection"). The request
+carries the language twice on purpose: `language` is what the provider reported (kept so
+providers that locate the download by language still can) and `target_language` is the
+language the search ran in, which is what the sidecar is named after — the two can differ
+when a provider formats a region subtag differently (e.g. `pt` vs `pt-BR`).
+
+"Upload subtitle" (`POST /media/files/{id}/subtitle-upload`,
+`subtitle_acquisition/upload_media_file_subtitle.py`) accepts a user-supplied file directly,
+skipping providers altogether. It's written next to the video as
+`{video}.{language}.{ext}`, `ext` being whichever of `.srt`/`.ass`/`.ssa`/`.vtt` was uploaded
+— the same four extensions `subtitle_discovery`'s external scan already recognizes as a
+sidecar. A manually uploaded `.ass`/`.ssa`/`.vtt` inherits an existing, pre-existing gap:
+`translate_media_file` only knows how to parse `.srt`, so it won't translate correctly from a
+non-`.srt` source yet — true of any hand-placed non-`.srt` external subtitle today, not
+something this feature introduces.
+
+Both actions re-scan on success, so the result shows up immediately in the file row's
+subtitle badges without a page reload.
+
 ## Known gap (deferred)
 
-Manual search/browse and upload — letting a user pick a result themselves instead of trusting
-the automatic match — is 0.11.0 work.
+Manually picking which already-discovered subtitle to translate from, instead of
+`translate_media_file._pick_source_subtitle`'s automatic source selection, is separate
+0.11.0 work, not yet done.

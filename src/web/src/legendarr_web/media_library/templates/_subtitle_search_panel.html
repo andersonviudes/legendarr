@@ -1,0 +1,19 @@
+{# Loaded into #subtitle-acquire-content by the "Manual search" file-row button. #}
+{% from "macros.html" import select_field %}
+<h3>Search providers</h3>
+{{ select_field("language", "Language", languages) }}
+<button
+  type="button"
+  class="page-toolbar-btn"
+  hx-get="/media/files/{{ media_file_id }}/subtitle-search/results"
+  hx-include="#language"
+  hx-target="#subtitle-search-results"
+  hx-swap="innerHTML"
+  hx-indicator="#subtitle-search-indicator"
+  hx-disabled-elt="this"
+>
+  {{ icon("search") }}
+  <span>Search</span>
+</button>
+<p id="subtitle-search-indicator" class="test-indicator test-result" role="status">Searching…</p>
+<div id="subtitle-search-results"></div>

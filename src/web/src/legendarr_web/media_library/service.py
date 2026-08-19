@@ -59,3 +59,39 @@ async def trigger_subtitle_timing_sync(client: httpx.AsyncClient, subtitle_id: i
     response = await client.post(f"/media/subtitles/{subtitle_id}/sync-timing")
     response.raise_for_status()
     return response.json()
+
+
+async def search_subtitle_candidates(
+    client: httpx.AsyncClient, media_file_id: int, language: str
+) -> list[dict]:
+    response = await client.get(
+        f"/media/files/{media_file_id}/subtitle-candidates", params={"language": language}
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def download_subtitle_candidate(
+    client: httpx.AsyncClient, media_file_id: int, candidate: dict
+) -> dict:
+    response = await client.post(
+        f"/media/files/{media_file_id}/subtitle-candidates/download", json=candidate
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def upload_subtitle(
+    client: httpx.AsyncClient,
+    media_file_id: int,
+    language: str,
+    filename: str,
+    content: bytes,
+) -> dict:
+    response = await client.post(
+        f"/media/files/{media_file_id}/subtitle-upload",
+        data={"language": language},
+        files={"file": (filename, content)},
+    )
+    response.raise_for_status()
+    return response.json()

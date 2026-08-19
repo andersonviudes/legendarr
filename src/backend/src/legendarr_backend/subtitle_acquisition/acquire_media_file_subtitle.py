@@ -7,15 +7,11 @@ from sqlmodel import Session, select
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
-from legendarr_backend.media_library.locate import (
-    resolve_media_file_episode,
-    resolve_media_file_owner,
-)
-from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.subtitle_acquisition.match_score import pick_best_match
-from legendarr_backend.subtitle_acquisition.opensubtitles_hash import compute_opensubtitles_hash
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
+from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
@@ -77,31 +73,20 @@ def acquire_subtitle_for_media_file(
         )
         return AcquisitionResult(skipped_reason="no_provider_configured")
 
-    owner = resolve_media_file_owner(session, media_file)
-    # Guaranteed non-None here: `resolve_media_file_profile` above already resolved the
-    # same owner to get this far, so this is a second read of a row known to exist, not
-    # a real possible-None branch.
-    assert owner is not None
-
-    imdb_id = owner.imdb_id if isinstance(owner, Movie) else None
-    tvdb_id = owner.tvdb_id if isinstance(owner, Series) else None
-    moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
-    episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
-    season_number = episode.season_number if episode is not None else None
-    episode_number = episode.episode_number if episode is not None else None
+    context = resolve_subtitle_search_context(session, media_file, video_path)
 
     try:
         for language in profile.source_language_list:
             result = _search_and_download(
                 chain,
-                owner.title,
+                context.title,
                 language,
-                imdb_id,
-                moviehash,
-                season_number,
-                episode_number,
+                context.imdb_id,
+                context.moviehash,
+                context.season_number,
+                context.episode_number,
                 video_path,
-                tvdb_id,
+                context.tvdb_id,
             )
             if result is None:
                 continue

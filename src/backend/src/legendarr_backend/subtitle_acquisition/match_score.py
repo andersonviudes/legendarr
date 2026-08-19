@@ -25,15 +25,24 @@ def pick_best_match(
     """
     if not candidates:
         return None
-    reference = _normalize(reference_filename)
     best_candidate = None
     best_score = cutoff
     for candidate in candidates:
-        score = SequenceMatcher(None, reference, _normalize(candidate.release_name)).ratio()
+        score = score_candidate(candidate, reference_filename)
         if score >= best_score:
             best_candidate = candidate
             best_score = score
     return best_candidate
+
+
+def score_candidate(candidate: SubtitleSearchResult, reference_filename: str) -> float:
+    """The same textual-closeness score `pick_best_match` ranks candidates by, exposed
+    standalone so a caller that wants every candidate's score (not just the best one
+    above cutoff) — manual search's results list — doesn't reimplement it.
+    """
+    return SequenceMatcher(
+        None, _normalize(reference_filename), _normalize(candidate.release_name)
+    ).ratio()
 
 
 def _normalize(value: str) -> str:

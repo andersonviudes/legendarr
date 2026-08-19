@@ -48,7 +48,7 @@
     {% for file in movie.files %}
     <tr>
       <td>{{ file.relative_path }}</td>
-      <td>{{ subtitle_sync_list(file.subtitles) }}</td>
+      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_sync_list(file.subtitles) }}</td>
       <td>
         <div class="file-row-actions">
           <button
@@ -62,6 +62,26 @@
             hx-disabled-elt="this"
           >{{ icon("send") }}</button>
           <span id="translate-result-{{ file.id }}"></span>
+          <button
+            type="button"
+            class="app-icon-btn"
+            aria-label="Manual search"
+            data-tooltip="Manual search"
+            data-subtitle-acquire-open
+            hx-get="/media/files/{{ file.id }}/subtitle-search"
+            hx-target="#subtitle-acquire-content"
+            hx-swap="innerHTML"
+          >{{ icon("search") }}</button>
+          <button
+            type="button"
+            class="app-icon-btn"
+            aria-label="Upload subtitle"
+            data-tooltip="Upload subtitle"
+            data-subtitle-acquire-open
+            hx-get="/media/files/{{ file.id }}/subtitle-upload"
+            hx-target="#subtitle-acquire-content"
+            hx-swap="innerHTML"
+          >{{ icon("upload") }}</button>
         </div>
       </td>
     </tr>
@@ -71,4 +91,15 @@
 {% else %}
 {{ empty_state("No files found on disk for this movie yet.") }}
 {% endif %}
+
+<dialog id="subtitle-acquire-modal" class="subtitle-acquire-modal">
+  <header class="subtitle-acquire-modal-header">
+    <p>Subtitle</p>
+    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="Close">&times;</button>
+  </header>
+  <div id="subtitle-acquire-content"></div>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/subtitle-acquire.js" defer></script>
 {% endblock %}

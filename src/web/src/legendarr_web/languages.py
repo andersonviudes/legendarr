@@ -1,7 +1,7 @@
-# Language-profile form's multi-select — codes are what actually get stored (comma-joined)
-# on `source_languages`/`target_languages`, names are display-only. Curated to the ~30
-# languages that ship by default as subtitle/audio options on major video streaming
-# platforms (Netflix, Prime Video, Disney+), not an exhaustive ISO list.
+# Language codes shared by every slice that needs to offer a language picker — currently
+# language_profiles (source/target languages) and media_library (manual subtitle
+# search/upload). Lives at the top level, same pattern as config/ and backend_client/, so
+# no slice has to reach into another slice's package for it.
 SUPPORTED_LANGUAGES: list[tuple[str, str]] = [
     ("en", "English"),
     ("es", "Spanish"),
