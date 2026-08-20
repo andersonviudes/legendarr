@@ -202,6 +202,30 @@ def trigger_subtitle_timing_sync(
     return {"status": "enqueued"}
 
 
+@router.post("/subtitles/{subtitle_id}/translate", status_code=202)
+def trigger_subtitle_source_translation(
+    subtitle_id: int, request: Request, session: Session = Depends(_get_session)
+) -> dict[str, str]:
+    """Translate this media file using `subtitle_id` as the source, bypassing the automatic
+    `_pick_source_subtitle` pick — the manual-override sibling of `trigger_file_translation`,
+    same request shape as `trigger_subtitle_timing_sync` above."""
+    subtitle = session.get(Subtitle, subtitle_id)
+    if subtitle is None:
+        raise HTTPException(status_code=404, detail="Subtitle not found")
+    scheduler = _get_scheduler(request)
+    config = load_or_create_config_file(get_settings())
+    enqueue_translation(
+        scheduler,
+        subtitle.media_file_id,
+        JobQueue.TRANSLATE,
+        retry_attempts=config.translate_retry_attempts,
+        retry_delay_seconds=config.translate_retry_delay_seconds,
+        default_translation_provider=config.default_translation_provider,
+        source_subtitle_id=subtitle_id,
+    )
+    return {"status": "enqueued"}
+
+
 def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:
     media_file = session.get(MediaFile, media_file_id)
     if media_file is None:

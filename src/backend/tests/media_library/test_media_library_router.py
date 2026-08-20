@@ -344,6 +344,54 @@ def test_trigger_subtitle_timing_sync_returns_404_when_missing(isolated_database
     assert response.status_code == 404
 
 
+def test_trigger_subtitle_source_translation_enqueues_translation(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            assert media_file.id is not None
+            subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            subtitle_id = subtitle.id
+            media_file_id = media_file.id
+        response = client.post(f"/media/subtitles/{subtitle_id}/translate")
+
+    assert response.status_code == 202
+    assert scheduler.get_job(f"subtitle_translation:{media_file_id}") is not None
+
+
+def test_trigger_subtitle_source_translation_returns_404_when_missing(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        response = client.post("/media/subtitles/1/translate")
+
+    assert response.status_code == 404
+
+
 class _FakeProvider:
     name = "fake"
 

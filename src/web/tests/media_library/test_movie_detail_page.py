@@ -52,6 +52,7 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "1 missing subtitles" in response.text
     assert "/media/files/5/translate" in response.text
     assert "/media/subtitles/9/sync-timing" in response.text
+    assert "/media/subtitles/9/translate" in response.text
 
 
 def test_movie_detail_page_redirects_when_missing(stub_backend_client):

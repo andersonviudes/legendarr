@@ -305,7 +305,7 @@ translate instead of trusting automatic source selection.*
 - [x] Manual search and manual upload: let a user browse provider search results and pick one
   themselves, or upload their own subtitle file for a specific media item, bypassing the
   automatic match.
-- [ ] **Subtitle translation** — Manual translation source pick: list every subtitle candidate
+- [x] **Subtitle translation** — Manual translation source pick: list every subtitle candidate
   discovered for a media item (external and embedded) and let the user pick which one to
   translate, as an alternative to the automatic source selection (`_pick_source_subtitle`) that
   the scheduled/webhook-triggered automation keeps using.

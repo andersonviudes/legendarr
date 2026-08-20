@@ -160,6 +160,82 @@ def test_enqueued_translation_job_writes_translated_subtitle(
     assert any(row.language == "pt-br" for row in rows)
 
 
+def test_enqueued_translation_job_honors_manually_picked_source_subtitle(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """`source_subtitle_id` passed to `enqueue_translation` reaches `translate_media_file`
+    through the job closure — here picking an `fr` subtitle the profile's `source_languages`
+    ("en") wouldn't otherwise consider, to prove the override actually took effect."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "post_json",
+        lambda self, path, json: {"translations": [{"text": "bonjour traduit"}]},
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.add(TranslationProviderConfig(kind="deepl", enabled=True, api_key="a-key"))
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    (tmp_path / "Foo" / "Foo.fr.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nbonjour\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, tmp_path / "Foo" / "Foo.mkv")
+    in_memory_session.commit()
+    fr_subtitle = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "fr",
+        )
+    ).one()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler,
+        media_file.id,
+        JobQueue.TRANSLATE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        source_subtitle_id=fr_subtitle.id,
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    output = tmp_path / "Foo" / "Foo.pt-br.srt"
+    assert "bonjour traduit" in output.read_text(encoding="utf-8")
+
+
 def test_enqueue_full_translation_scan_enqueues_every_known_media_file(
     in_memory_session, tmp_path, monkeypatch
 ):

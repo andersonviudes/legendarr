@@ -82,12 +82,19 @@ def enqueue_translation(
     retry_attempts: int,
     retry_delay_seconds: float,
     default_translation_provider: str | None = None,
+    source_subtitle_id: int | None = None,
 ) -> None:
     """Enqueue an ad-hoc translation of one `MediaFile` for immediate execution.
 
     Same `add_job` shape as `subtitle_discovery.jobs.enqueue_subtitle_scan`: a "date"
     trigger with `misfire_grace_time=None` and `replace_existing=True` dedupes a pending
     re-run of the same file.
+
+    `source_subtitle_id`, when given, is passed straight through to `translate_media_file` to
+    bypass its automatic source pick — the per-subtitle "Translate from this" manual-override
+    trigger. Not job-id-encoded, same as every other per-file job option here: a later,
+    non-overriding enqueue for the same file replaces a still-pending overriding one, and
+    vice versa — last enqueue wins, same as everywhere else in this module.
     """
 
     def run_translation() -> None:
@@ -104,7 +111,11 @@ def enqueue_translation(
                 )
                 return
             result = translate_media_file(
-                session, media_file, video_path, default_translation_provider
+                session,
+                media_file,
+                video_path,
+                default_translation_provider,
+                source_subtitle_id=source_subtitle_id,
             )
             session.commit()
             logger.info("translation finished for media file %d: %s", media_file_id, result)

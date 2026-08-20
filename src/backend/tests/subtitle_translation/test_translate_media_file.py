@@ -216,6 +216,169 @@ def test_translate_media_file_skips_target_language_already_translated(
     assert result.skipped_reason is None
 
 
+def test_translate_media_file_uses_manually_picked_external_source(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A manual `source_subtitle_id` overrides `_pick_source_subtitle` outright — here for
+    a subtitle in a language ("fr") that isn't even in the profile's `source_languages`
+    ("en"), which the automatic pick would never consider."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    (tmp_path / "Foo" / "Foo.fr.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nbonjour\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    fr_subtitle = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "fr",
+        )
+    ).one()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, source_subtitle_id=fr_subtitle.id
+    )
+
+    assert result.translated_languages == ["pt-BR"]
+    output = (tmp_path / "Foo" / "Foo.pt-br.srt").read_text(encoding="utf-8")
+    assert "BONJOUR" in output
+    assert "HELLO" not in output
+
+
+def test_translate_media_file_uses_manually_picked_embedded_source(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A manual pick can even override the automatic path's external-over-embedded
+    preference: an external `en` subtitle exists (what `_pick_source_subtitle` would
+    normally choose), but `source_subtitle_id` explicitly names the embedded track
+    instead, and that's what gets used."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    (tmp_path / "Foo" / "Foo.embedded.3.deu.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nembedded\n\n", encoding="utf-8"
+    )
+    embedded_subtitle = Subtitle(
+        media_file_id=media_file.id,
+        language="de",
+        origin=SubtitleOrigin.EMBEDDED,
+        relative_path="Foo/Foo.embedded.3.deu.srt",
+        track_index=3,
+        content_hash="test-hash",
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(embedded_subtitle)
+    in_memory_session.commit()
+    in_memory_session.refresh(embedded_subtitle)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, source_subtitle_id=embedded_subtitle.id
+    )
+
+    assert result.translated_languages == ["pt-BR"]
+    output = (tmp_path / "Foo" / "Foo.pt-br.srt").read_text(encoding="utf-8")
+    assert "EMBEDDED" in output
+    assert "HELLO" not in output
+
+
+def test_translate_media_file_skips_when_source_subtitle_id_not_found(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+
+    result = translate_media_file(in_memory_session, media_file, video, source_subtitle_id=999999)
+
+    assert result.translated_languages == []
+    assert result.skipped_reason == "source_subtitle_not_found"
+
+
+def test_translate_media_file_skips_when_source_subtitle_id_belongs_to_another_media_file(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+
+    # A second file on the *same* movie — the point is only that its subtitle's
+    # `media_file_id` differs from `media_file.id`.
+    other_media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo/Foo2.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(other_media_file)
+    in_memory_session.commit()
+    other_video = tmp_path / "Foo" / "Foo2.mkv"
+    other_video.touch()
+    (tmp_path / "Foo" / "Foo2.en.srt").write_text(SAMPLE_SRT, encoding="utf-8")
+    scan_subtitles_for_media_file(in_memory_session, other_media_file, other_video)
+    in_memory_session.commit()
+    other_source = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == other_media_file.id,
+            Subtitle.language == "en",
+        )
+    ).one()
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, source_subtitle_id=other_source.id
+    )
+
+    assert result.translated_languages == []
+    assert result.skipped_reason == "source_subtitle_not_found"
+
+
+def test_translate_media_file_manual_source_still_skips_already_translated_target(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A manually-picked source doesn't bypass `_missing_targets`'s staleness check — a
+    target already covered by a non-stale external subtitle is still left alone, same as
+    the automatic path."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    (tmp_path / "Foo" / "Foo.pt-BR.srt").write_text(SAMPLE_SRT, encoding="utf-8")
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    source_subtitle = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "en",
+        )
+    ).one()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, source_subtitle_id=source_subtitle.id
+    )
+
+    assert result.translated_languages == []
+    assert result.skipped_reason is None
+
+
 def test_translate_media_file_skips_retranslation_when_source_unchanged(
     in_memory_session, tmp_path, monkeypatch
 ):
