@@ -95,8 +95,13 @@ def enqueue_acquisition(
     still-pending cascade=True job racing the same file.
 
     `cascade=True` chains into a translation run for the same file once this
-    acquisition commits — opt-in, same reasoning as `enqueue_media_scan`'s `cascade`.
-    Terminal: `enqueue_translation` itself takes no `cascade` of its own.
+    acquisition commits, but only when it actually found something
+    (`result.acquired_language is not None`) — opt-in, same reasoning as
+    `enqueue_media_scan`'s `cascade`. Not terminal: `enqueue_translation`'s own
+    `run_translation` cascades back into an acquisition run (also opt-in, via a plain
+    `no_source_subtitle` skip reason rather than a `cascade` flag) when translation
+    itself finds no source subtitle — gating this cascade on an actual find is what
+    keeps that a single extra hop instead of an infinite back-and-forth.
     """
     job_id = f"subtitle_acquisition:{media_file_id}"
     pending = scheduler.get_job(job_id)
@@ -119,7 +124,10 @@ def enqueue_acquisition(
             result = acquire_subtitle_for_media_file(session, media_file, video_path)
             session.commit()
             logger.info("acquisition finished for media file %d: %s", media_file_id, result)
-            if cascade:
+            # Only cascade forward on an actual find — an unconditional cascade here would
+            # oscillate forever against `subtitle_translation.jobs.run_translation`'s own
+            # cascade back into acquisition on a missing source subtitle.
+            if cascade and result.acquired_language is not None:
                 config = load_or_create_config_file(get_settings())
                 enqueue_translation(
                     scheduler,

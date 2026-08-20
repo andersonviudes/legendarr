@@ -3,7 +3,8 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
-from legendarr_backend.config.config_file import AppConfigFile
+from legendarr_backend.config.config_file import AppConfigFile, load_or_create_config_file
+from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
@@ -119,6 +120,20 @@ def enqueue_translation(
             )
             session.commit()
             logger.info("translation finished for media file %d: %s", media_file_id, result)
+            if result.skipped_reason == "no_source_subtitle":
+                # Local import: subtitle_acquisition.jobs imports enqueue_translation from
+                # this module, so a module-level import here would be circular.
+                from legendarr_backend.subtitle_acquisition.jobs import enqueue_acquisition
+
+                config = load_or_create_config_file(get_settings())
+                enqueue_acquisition(
+                    scheduler,
+                    media_file_id,
+                    JobQueue.ACQUIRE,
+                    retry_attempts=config.acquisition_retry_attempts,
+                    retry_delay_seconds=config.acquisition_retry_delay_seconds,
+                    cascade=True,
+                )
 
     scheduler.add_job(
         with_retry(run_translation, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
