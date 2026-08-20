@@ -9,3 +9,5 @@ class LanguageProfileInput(BaseModel):
     forced: bool = False
     hearing_impaired: bool = False
     is_default: bool = False
+    release_name_must_contain: str = ""
+    release_name_must_not_contain: str = ""

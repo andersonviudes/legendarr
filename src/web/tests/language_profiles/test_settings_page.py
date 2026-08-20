@@ -139,6 +139,8 @@ def test_create_language_profile_forwards_fields(stub_backend_client):
                 "forced": "on",
                 "hearing_impaired": "on",
                 "is_default": "on",
+                "release_name_must_contain": "PROPER, REPACK",
+                "release_name_must_not_contain": "CAM,TS",
             },
         )
 
@@ -146,6 +148,38 @@ def test_create_language_profile_forwards_fields(stub_backend_client):
     assert captured["hearing_impaired"] is True
     assert captured["is_default"] is True
     assert captured["extract_embedded_subtitles"] is False
+    assert captured["release_name_must_contain"] == "PROPER, REPACK"
+    assert captured["release_name_must_not_contain"] == "CAM,TS"
+
+
+def test_edit_language_profile_form_prefills_release_name_filters(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": 3,
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+                "extract_embedded_subtitles": True,
+                "forced": False,
+                "hearing_impaired": False,
+                "is_default": False,
+                "release_name_must_contain": "PROPER",
+                "release_name_must_not_contain": "CAM",
+            },
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/3/edit")
+
+    assert response.status_code == 200
+    assert 'value="PROPER"' in response.text
+    assert 'value="CAM"' in response.text
 
 
 def test_create_shows_error_on_duplicate_name(stub_backend_client):

@@ -85,11 +85,21 @@ Search precision differs by media type:
   match is definitionally the right subtitle for that file, and the API returns no other
   metadata to score against.
 
-A result is only accepted once it clears a basic match-score cutoff
-(`subtitle_acquisition/match_score.py`): a text-similarity ratio between the candidate's
-release name and the local video's filename. This is deliberately simple — full per-attribute
-weighting (release group, resolution, codec, source, edition) instead of one flat cutoff is
-0.12.0 work.
+Before scoring, every candidate is checked against the profile's `must_contain`/
+`must_not_contain` release-name filters (`subtitle_acquisition/release_filters.py`):
+`must_contain` rejects a candidate unless its release name contains at least one of the
+listed terms, `must_not_contain` rejects it if it contains any of them — same OR/OR
+semantics as a Radarr/Sonarr Release Profile's term lists, both configured per
+`LanguageProfile`. Whatever's left is only accepted once it clears a match-score cutoff
+(`subtitle_acquisition/match_score.py`): a `SequenceMatcher` title-similarity ratio between
+the candidate's release name and the local video's filename (both with any recognized
+resolution/source/codec/release-group/edition tokens stripped out first, via
+`subtitle_acquisition/release_attributes.py`), plus a weighted bonus for each of those five
+attributes the candidate shares with the reference filename — only counted when the
+reference filename actually has a detectable value for that attribute. Title similarity is
+weighted well above the combined attribute bonus specifically so a wrong-title candidate can
+never out-score a right-title one purely by sharing resolution/source/codec tags; attributes
+only fine-tune the ranking once the title itself is a real match.
 
 ## Manual search and upload
 

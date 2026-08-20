@@ -11,6 +11,7 @@ from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.subtitle_acquisition.match_score import pick_best_match
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
+from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
@@ -38,7 +39,10 @@ def acquire_subtitle_for_media_file(
     """Search and download a source-language subtitle for `media_file` when it has
     none yet (external or embedded), in its `LanguageProfile`'s source-language
     priority order, stopping at the first language a configured provider finds an
-    above-cutoff match for.
+    above-cutoff match for. Every candidate is first filtered against the profile's
+    `must_contain_terms`/`must_not_contain_terms` (`release_filters.py`) before
+    scoring — manual search skips both the filter and the cutoff entirely, see
+    `search_media_file_subtitle.py`.
 
     Movies get their search anchored on `Movie.imdb_id` — the precise, single-title
     lookup OpenSubtitles' API is built around. Series get their episode's season/episode
@@ -87,6 +91,8 @@ def acquire_subtitle_for_media_file(
                 context.episode_number,
                 video_path,
                 context.tvdb_id,
+                profile.must_contain_terms,
+                profile.must_not_contain_terms,
             )
             if result is None:
                 continue
@@ -129,6 +135,8 @@ def _search_and_download(
     episode: int | None,
     video_path: Path,
     tvdb_id: int | None,
+    must_contain: list[str],
+    must_not_contain: list[str],
 ) -> str | None:
     for provider in chain:
         try:
@@ -142,6 +150,13 @@ def _search_and_download(
                 video_path=video_path,
                 tvdb_id=tvdb_id,
             )
+            candidates = [
+                candidate
+                for candidate in candidates
+                if passes_release_name_filters(
+                    candidate.release_name, must_contain, must_not_contain
+                )
+            ]
             best = pick_best_match(candidates, video_path.stem)
             if best is None:
                 continue

@@ -52,6 +52,23 @@ def test_update_language_profile_replaces_fields(in_memory_session):
     assert updated.hearing_impaired is True
 
 
+def test_update_language_profile_replaces_release_name_filters(in_memory_session):
+    profile = create_language_profile(in_memory_session, _profile_input())
+    assert profile.id is not None
+
+    updated = update_language_profile(
+        in_memory_session,
+        profile.id,
+        _profile_input(
+            release_name_must_contain="PROPER,REPACK", release_name_must_not_contain="CAM,TS"
+        ),
+    )
+
+    assert updated is not None
+    assert updated.must_contain_terms == ["PROPER", "REPACK"]
+    assert updated.must_not_contain_terms == ["CAM", "TS"]
+
+
 def test_update_language_profile_returns_none_when_missing(in_memory_session):
     assert update_language_profile(in_memory_session, 1, _profile_input()) is None
 

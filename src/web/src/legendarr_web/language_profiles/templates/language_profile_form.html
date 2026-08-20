@@ -35,6 +35,13 @@
   {{ checkbox_field("hearing_impaired", "Hearing-impaired (HI)",
                      checked=(profile and profile.hearing_impaired)) }}
   {{ checkbox_field("is_default", "Default profile", checked=(profile and profile.is_default)) }}
+
+  {{ field("release_name_must_contain", "Must Contain",
+           value=(profile.release_name_must_contain if profile else ""),
+           placeholder="e.g. PROPER, REPACK") }}
+  {{ field("release_name_must_not_contain", "Must Not Contain",
+           value=(profile.release_name_must_not_contain if profile else ""),
+           placeholder="e.g. CAM, TS") }}
 </form>
 {% endblock %}
 {% block scripts %}
