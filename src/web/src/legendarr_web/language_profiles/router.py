@@ -21,6 +21,8 @@ async def _language_profile_form(
     forced: bool = Form(False),
     hearing_impaired: bool = Form(False),
     is_default: bool = Form(False),
+    release_name_must_contain: str = Form(""),
+    release_name_must_not_contain: str = Form(""),
 ) -> dict:
     return {
         "name": name,
@@ -30,6 +32,8 @@ async def _language_profile_form(
         "forced": forced,
         "hearing_impaired": hearing_impaired,
         "is_default": is_default,
+        "release_name_must_contain": release_name_must_contain,
+        "release_name_must_not_contain": release_name_must_not_contain,
     }
 
 

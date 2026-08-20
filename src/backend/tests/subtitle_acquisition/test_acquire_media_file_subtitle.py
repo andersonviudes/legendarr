@@ -356,6 +356,59 @@ def test_acquire_subtitle_passes_none_season_episode_when_resolution_fails(
     assert provider.search_calls[0]["episode"] is None
 
 
+def test_acquire_subtitle_rejects_a_candidate_that_fails_must_not_contain(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, release_name_must_not_contain="CAM")
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo.CAM", download_id="1", language="en")]
+    )
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    # "Foo.CAM" would otherwise clear the match cutoff against "Foo" — must_not_contain
+    # rejects it before scoring even runs.
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_match_found"
+
+
+def test_acquire_subtitle_rejects_a_candidate_missing_every_must_contain_term(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, release_name_must_contain="PROPER,REPACK")
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()  # release_name="Foo", no PROPER/REPACK
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_match_found"
+
+
+def test_acquire_subtitle_downloads_a_candidate_that_satisfies_must_contain(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, release_name_must_contain="PROPER,REPACK")
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo.PROPER", download_id="1", language="en")]
+    )
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+
+
 def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
     in_memory_session, tmp_path, monkeypatch
 ):

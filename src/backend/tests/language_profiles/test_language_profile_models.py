@@ -29,3 +29,22 @@ def test_language_lists_drop_empty_entries():
     profile = _profile(source_languages="en,,")
 
     assert profile.source_language_list == ["en"]
+
+
+def test_must_contain_terms_splits_and_preserves_order():
+    profile = _profile(release_name_must_contain="PROPER, REPACK")
+
+    assert profile.must_contain_terms == ["PROPER", "REPACK"]
+
+
+def test_must_not_contain_terms_splits_and_preserves_order():
+    profile = _profile(release_name_must_not_contain="CAM,TS")
+
+    assert profile.must_not_contain_terms == ["CAM", "TS"]
+
+
+def test_must_contain_and_must_not_contain_terms_default_to_empty():
+    profile = _profile()
+
+    assert profile.must_contain_terms == []
+    assert profile.must_not_contain_terms == []

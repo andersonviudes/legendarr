@@ -16,6 +16,8 @@ class LanguageProfile(SQLModel, table=True):
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
     is_default: bool = Field(default=False)
+    release_name_must_contain: str = Field(default="")
+    release_name_must_not_contain: str = Field(default="")
 
     @property
     def source_language_list(self) -> list[str]:
@@ -30,4 +32,19 @@ class LanguageProfile(SQLModel, table=True):
         """`target_languages` split into codes, comma order preserved."""
         return [
             language.strip() for language in self.target_languages.split(",") if language.strip()
+        ]
+
+    @property
+    def must_contain_terms(self) -> list[str]:
+        """`release_name_must_contain` split into terms, comma order preserved — a
+        subtitle-acquisition candidate's release name must contain at least one of
+        these (OR), same semantics as a Radarr/Sonarr Release Profile."""
+        return [term.strip() for term in self.release_name_must_contain.split(",") if term.strip()]
+
+    @property
+    def must_not_contain_terms(self) -> list[str]:
+        """`release_name_must_not_contain` split into terms, comma order preserved — a
+        candidate is rejected if its release name contains any of these (OR)."""
+        return [
+            term.strip() for term in self.release_name_must_not_contain.split(",") if term.strip()
         ]
