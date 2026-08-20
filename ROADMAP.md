@@ -317,13 +317,16 @@ downloaded subtitle's release attributes rather than a single cutoff score to av
 match, can be pointed at several provider sites at once, doesn't keep re-fetching a subtitle
 it already knows is wrong, and can explain why it picked what it picked.*
 
-- [ ] **Subtitle acquisition** — One ordered strategy per profile: external file → embedded
-  track → provider download. Expand the provider list; add must-contain/must-not-contain
-  release-name filters, plus per-attribute score weighting (release group, resolution,
-  codec, source, edition) instead of a single flat cutoff. Upgrade/replace logic: re-fetch
-  when a better-scoring subtitle becomes available later. Blacklist: mark a specific
-  downloaded (or translated) subtitle as bad so it's never reused or re-fetched for that
-  media item again.
+- [x] **Subtitle acquisition** — One ordered strategy per profile: external file → embedded
+  track → provider download. The periodic/on-demand translation path now falls back into
+  acquisition automatically on a missing source subtitle, closing the gap where only the
+  webhook/import path had this ordering.
+- [ ] **Subtitle acquisition** — Per-attribute score weighting (release group, resolution,
+  codec, source, edition) instead of a single flat cutoff, plus must-contain/must-not-contain
+  release-name filters per profile.
+- [ ] **Subtitle acquisition** — Upgrade/replace logic: re-fetch when a better-scoring
+  subtitle becomes available later. Blacklist: mark a specific downloaded (or translated)
+  subtitle as bad so it's never reused or re-fetched for that media item again.
 - [ ] **Subtitle acquisition** — Structured audit trail: record which release attributes matched
   or didn't for each acquisition attempt, and link an upgraded subtitle back to the one it
   replaced.

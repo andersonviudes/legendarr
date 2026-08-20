@@ -100,6 +100,111 @@ def test_enqueued_translation_job_tolerates_deleted_media_file(in_memory_session
     job.func()
 
 
+def test_enqueued_translation_job_falls_back_to_acquisition_on_no_source_subtitle(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """ROADMAP 0.12.0: a translation run that finds no source-language subtitle yet
+    cascades into an acquisition run instead of just no-op'ing, closing the gap where
+    only the webhook/import path had this ordering."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler, media_file.id, JobQueue.TRANSLATE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    acquisition_job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert acquisition_job is not None
+    assert getattr(acquisition_job.func, "cascade", False) is True
+
+
+def test_enqueued_translation_job_does_not_fall_back_on_missing_manual_source(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A manually-picked `source_subtitle_id` that no longer exists is
+    `skipped_reason="source_subtitle_not_found"`, not `"no_source_subtitle"` — an explicit
+    user override acquisition can't resolve, so it must not trigger the fallback."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler,
+        media_file.id,
+        JobQueue.TRANSLATE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        source_subtitle_id=999999,
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file.id}") is None
+
+
 def test_enqueued_translation_job_writes_translated_subtitle(
     in_memory_session, tmp_path, monkeypatch
 ):

@@ -54,9 +54,15 @@ def translate_media_file(
     as the source when no external subtitle matches any configured source language
     (see `_pick_source_subtitle`).
 
-    No acquisition fallback: if no subtitle (external or embedded) exists yet in a source
-    language, this is a no-op — that needs real `SubtitleProvider` search/download,
-    still 0.11.0/0.12.0 work.
+    No acquisition fallback of its own: if no subtitle (external or embedded) exists yet in
+    a source language, this is a no-op (`skipped_reason="no_source_subtitle"`) — triggering
+    a `SubtitleProvider` search/download is orchestration, not translation, so it stays out
+    of this function. `subtitle_translation.jobs.run_translation` is the caller that acts on
+    that skip reason, cascading into `subtitle_acquisition.jobs.enqueue_acquisition` and
+    retrying translation once acquisition finds something (ROADMAP.md 0.12.0's unified
+    ordered strategy). A manually-picked `source_subtitle_id` that isn't found has no such
+    fallback — `skipped_reason="source_subtitle_not_found"` instead, left as-is since that's
+    an explicit user override, not a missing-subtitle case acquisition could resolve.
 
     `default_translation_provider` is the Settings-configured default (see
     `resolve_provider_chain`); passed through unchanged, `None` means no preference.

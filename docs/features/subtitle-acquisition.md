@@ -55,9 +55,14 @@ searches each source language in priority order, downloads the best-scoring resu
 next to the video (`{video}.{language}.srt`), and re-scans so it shows up as a normal external
 subtitle. It's callable ad-hoc via `subtitle_acquisition/jobs.py`
 (`enqueue_acquisition`/`enqueue_full_acquisition_scan`, same shape as
-`subtitle_translation/jobs.py`) — nothing schedules it automatically yet (0.10.0), and
-`translate_media_file` still doesn't fall back to it on a missing source subtitle: that
-automatic, unified strategy is explicitly 0.11.0/0.12.0 roadmap work, not this.
+`subtitle_translation/jobs.py`), and also runs on its own periodic schedule
+(`register_acquisition_job`, 0.10.0). `translate_media_file` itself still doesn't call it
+directly on a missing source subtitle — but the translation job now does: when
+`translate_media_file` reports `no_source_subtitle`, `subtitle_translation/jobs.py`'s
+`run_translation` cascades into an acquisition run and retries translation once it finds
+something, so the periodic/on-demand translation path gets the same
+external-file → embedded-track → provider-download ordering the webhook/import path
+already had (ROADMAP.md 0.12.0).
 
 Search precision differs by media type:
 
@@ -124,9 +129,3 @@ something this feature introduces.
 
 Both actions re-scan on success, so the result shows up immediately in the file row's
 subtitle badges without a page reload.
-
-## Known gap (deferred)
-
-Manually picking which already-discovered subtitle to translate from, instead of
-`translate_media_file._pick_source_subtitle`'s automatic source selection, is separate
-0.11.0 work, not yet done.
