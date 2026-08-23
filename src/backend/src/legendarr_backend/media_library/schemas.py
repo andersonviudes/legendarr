@@ -116,3 +116,12 @@ class SubtitleAcquisitionResult(BaseModel):
     success: bool
     message: str
     subtitles: list[SubtitleRead]
+
+
+class SubtitleBlacklistResult(SubtitleAcquisitionResult):
+    """Same shape as `SubtitleAcquisitionResult`, plus `media_file_id` — the blacklist
+    route is addressed by `subtitle_id` (like sync-timing/translate), not
+    `media_file_id` (like download/upload), so the web layer needs it back to target
+    the file row's oob swap."""
+
+    media_file_id: int

@@ -8,7 +8,13 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
-from legendarr_backend.subtitle_acquisition.match_score import pick_best_match
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
+)
+from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
+from legendarr_backend.subtitle_acquisition.match_score import pick_best_match, score_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
 from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
@@ -31,6 +37,18 @@ class AcquisitionResult:
 
     acquired_language: str | None = None
     skipped_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class _AcquiredCandidate:
+    """The winning candidate `_search_and_download` found, plus everything
+    `record_acquired_subtitle` needs to save its provenance for a later upgrade check."""
+
+    content: str
+    provider: str
+    release_name: str
+    download_id: str
+    score: float
 
 
 def acquire_subtitle_for_media_file(
@@ -82,6 +100,8 @@ def acquire_subtitle_for_media_file(
     try:
         for language in profile.source_language_list:
             result = _search_and_download(
+                session,
+                media_file.id,
                 chain,
                 context.title,
                 language,
@@ -97,8 +117,17 @@ def acquire_subtitle_for_media_file(
             if result is None:
                 continue
             output_path = video_path.with_name(f"{video_path.stem}.{language.lower()}.srt")
-            output_path.write_text(result, encoding="utf-8")
+            output_path.write_text(result.content, encoding="utf-8")
             scan_subtitles_for_media_file(session, media_file, video_path)
+            record_acquired_subtitle(
+                session,
+                media_file.id,
+                language,
+                provider=result.provider,
+                release_name=result.release_name,
+                download_id=result.download_id,
+                score=result.score,
+            )
             return AcquisitionResult(acquired_language=language)
     finally:
         # Most providers open/close a client per call; one that instead holds a
@@ -126,6 +155,8 @@ def _has_source_language_subtitle(
 
 
 def _search_and_download(
+    session: Session,
+    media_file_id: int,
     chain: list[SubtitleProvider],
     title: str,
     language: str,
@@ -137,7 +168,8 @@ def _search_and_download(
     tvdb_id: int | None,
     must_contain: list[str],
     must_not_contain: list[str],
-) -> str | None:
+) -> _AcquiredCandidate | None:
+    blacklisted = list_blacklisted_download_ids(session, media_file_id, language)
     for provider in chain:
         try:
             candidates = provider.search(
@@ -156,11 +188,19 @@ def _search_and_download(
                 if passes_release_name_filters(
                     candidate.release_name, must_contain, must_not_contain
                 )
+                and (provider.name, candidate.download_id) not in blacklisted
             ]
             best = pick_best_match(candidates, video_path.stem)
             if best is None:
                 continue
-            return provider.download(best)
+            content = provider.download(best)
+            return _AcquiredCandidate(
+                content=content,
+                provider=provider.name,
+                release_name=best.release_name,
+                download_id=best.download_id,
+                score=score_candidate(best, video_path.stem),
+            )
         except Exception:
             logger.warning(
                 "subtitle provider %r failed searching %r (%s), trying next",

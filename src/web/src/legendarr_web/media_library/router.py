@@ -149,6 +149,23 @@ async def trigger_subtitle_source_translation(
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
 
 
+@router.post("/subtitles/{subtitle_id}/blacklist")
+async def trigger_subtitle_blacklist(
+    request: Request,
+    subtitle_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        result = await service.blacklist_subtitle(client, subtitle_id)
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't blacklist the subtitle."}
+    return templates.TemplateResponse(
+        request,
+        "_subtitle_blacklist_result.html",
+        {"media_file_id": result.get("media_file_id"), "result": result},
+    )
+
+
 @router.get("/files/{media_file_id}/subtitle-search")
 async def show_subtitle_search(request: Request, media_file_id: int):
     return templates.TemplateResponse(

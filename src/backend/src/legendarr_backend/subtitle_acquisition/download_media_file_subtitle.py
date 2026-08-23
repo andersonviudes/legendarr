@@ -4,6 +4,10 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
+)
+from legendarr_backend.subtitle_acquisition.match_score import score_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import SubtitleCandidate
@@ -30,6 +34,7 @@ def download_subtitle_candidate(
     the same way `connection_tests.test_connection` tolerates a flaky provider — the
     caller (the web UI) shows it inline instead of a 500.
     """
+    assert media_file.id is not None
     chain = resolve_subtitle_provider_chain(session)
     try:
         provider = next((item for item in chain if item.name == candidate.provider), None)
@@ -63,4 +68,18 @@ def download_subtitle_candidate(
     output_path = video_path.with_name(f"{video_path.stem}.{language.lower()}.srt")
     output_path.write_text(content, encoding="utf-8")
     scan_subtitles_for_media_file(session, media_file, video_path)
+    # Re-scored against `video_path` rather than trusting `candidate.score` — the
+    # candidate came from a search possibly run against a different reference filename
+    # (or, for a re-download request, wasn't scored at all — see
+    # `SubtitleCandidateDownloadInput`), so this keeps `AcquiredSubtitle.score` directly
+    # comparable to what `upgrade_subtitle_for_media_file` recomputes on a later pass.
+    record_acquired_subtitle(
+        session,
+        media_file.id,
+        language,
+        provider=candidate.provider,
+        release_name=candidate.release_name,
+        download_id=candidate.download_id,
+        score=score_candidate(result, video_path.stem),
+    )
     return True, f"Downloaded {language} subtitle from {candidate.provider}"
