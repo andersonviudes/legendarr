@@ -5,6 +5,7 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import add_blacklist_entry
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -564,3 +565,65 @@ def test_translate_media_file_skips_target_language_already_covered_by_embedded_
 
     assert result.translated_languages == []
     assert result.skipped_reason is None
+
+
+def test_translate_media_file_skips_a_blacklisted_target_language_automatically(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    add_blacklist_entry(
+        in_memory_session, media_file_id=media_file.id, language="pt-BR", origin="translated"
+    )
+    in_memory_session.commit()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == []
+    assert result.skipped_reason is None
+    assert not (tmp_path / "Foo" / "Foo.pt-br.srt").exists()
+
+
+def test_translate_media_file_manual_retry_clears_the_blacklist(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """An explicit manual "Translate from this" is exempt from the automatic block, and
+    clears it for whichever target language it actually retranslates — so a later
+    periodic run isn't blocked by a now-stale blacklist entry."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    add_blacklist_entry(
+        in_memory_session, media_file_id=media_file.id, language="pt-BR", origin="translated"
+    )
+    in_memory_session.commit()
+    source = in_memory_session.exec(
+        select(Subtitle).where(Subtitle.media_file_id == media_file.id, Subtitle.language == "en")
+    ).one()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, source_subtitle_id=source.id
+    )
+    assert result.translated_languages == ["pt-BR"]
+
+    # The blacklist is now cleared — a later automatic run no longer skips it.
+    (tmp_path / "Foo" / "Foo.pt-br.srt").unlink()
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    second_result = translate_media_file(in_memory_session, media_file, video)
+    assert second_result.translated_languages == ["pt-BR"]

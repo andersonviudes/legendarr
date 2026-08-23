@@ -12,13 +12,20 @@ from legendarr_backend.subtitle_acquisition import (
     acquire_media_file_subtitle as acquire_media_file_subtitle_module,
 )
 from legendarr_backend.subtitle_acquisition import jobs as jobs_module
+from legendarr_backend.subtitle_acquisition import (
+    upgrade_media_file_subtitle as upgrade_media_file_subtitle_module,
+)
 from legendarr_backend.subtitle_acquisition.jobs import (
     enqueue_acquisition,
     enqueue_full_acquisition_scan,
     register_acquisition_job,
 )
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
+)
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select
 
 
@@ -310,6 +317,84 @@ def test_enqueued_acquisition_job_does_not_cascade_on_no_match(
     job.func()
 
     assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is None
+
+
+def test_enqueued_acquisition_job_upgrades_an_existing_source_subtitle(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """When acquisition is a pure no-op (a source-language subtitle already exists),
+    the job falls through to `upgrade_subtitle_for_media_file` — ROADMAP 0.12.0's
+    upgrade/replace pass, checked here at the job level since `acquire_media_file_subtitle`
+    and `upgrade_media_file_subtitle` each have their own dedicated unit tests."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        upgrade_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text("old", encoding="utf-8")
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo.en.srt",
+            content_hash="old-hash",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    record_acquired_subtitle(
+        in_memory_session,
+        media_file.id,
+        "en",
+        provider="old-provider",
+        release_name="Foo.OLD",
+        download_id="old-1",
+        score=0.1,
+    )
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler, media_file.id, JobQueue.ACQUIRE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    output = tmp_path / "Foo" / "Foo.en.srt"
+    assert "Hi" in output.read_text(encoding="utf-8")
 
 
 def test_enqueue_acquisition_does_not_downgrade_a_pending_cascade(

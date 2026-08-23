@@ -17,6 +17,9 @@ from legendarr_backend.subtitle_acquisition import (
 from legendarr_backend.subtitle_acquisition import (
     search_media_file_subtitle as search_media_file_subtitle_module,
 )
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
+)
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -530,6 +533,57 @@ def test_download_subtitle_candidate_returns_404_when_media_file_missing(isolate
                 "page_link": None,
             },
         )
+
+    assert response.status_code == 404
+
+
+def test_blacklist_subtitle_deletes_it_and_refreshes_the_row(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        sidecar = tmp_path / "Foo" / "Foo.en.srt"
+        sidecar.write_text("1\n00:00:00,000 --> 00:00:01,000\nHi\n\n", encoding="utf-8")
+        with get_session() as session:
+            subtitle = Subtitle(
+                media_file_id=media_file_id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            subtitle_id = subtitle.id
+            record_acquired_subtitle(
+                session,
+                media_file_id,
+                "en",
+                provider="fake",
+                release_name="Foo.BAD",
+                download_id="bad-1",
+                score=0.9,
+            )
+            session.commit()
+
+        response = client.post(f"/media/subtitles/{subtitle_id}/blacklist")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["success"] is True
+        assert body["media_file_id"] == media_file_id
+        assert body["subtitles"] == []
+        assert not sidecar.exists()
+        with get_session() as session:
+            persisted = session.exec(
+                select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+            ).all()
+        assert persisted == []
+
+
+def test_blacklist_subtitle_returns_404_when_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/media/subtitles/1/blacklist")
 
     assert response.status_code == 404
 

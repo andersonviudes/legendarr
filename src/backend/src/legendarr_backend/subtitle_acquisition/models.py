@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from sqlalchemy import Column
@@ -102,3 +103,51 @@ class SubtitleProxy(SQLModel, table=True):
     name: str = Field(index=True, unique=True)
     host: str
     enabled: bool = Field(default=True)
+
+
+class AcquiredSubtitle(SQLModel, table=True):
+    """Acquisition provenance for a `Subtitle` row that came from a provider download —
+    written by `acquire_subtitle_for_media_file` (automatic) and
+    `download_subtitle_candidate` (manual search), never for an embedded, manually
+    uploaded, or translated subtitle. One-to-one with `Subtitle`: `subtitle_id` stays
+    the same across an in-place content rewrite at the same external sidecar path
+    (see `scan_media_subtitles.py`), so `upgrade_subtitle_for_media_file` updates this
+    row in place rather than inserting a second one.
+
+    `score` is the `match_score.score_candidate` result at acquisition/upgrade time —
+    what a later upgrade pass compares a fresh candidate's score against.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    subtitle_id: int = Field(foreign_key="subtitle.id", unique=True, index=True, ondelete="CASCADE")
+    provider: str
+    release_name: str
+    download_id: str
+    score: float
+    acquired_at: datetime
+
+
+class SubtitleBlacklistEntry(SQLModel, table=True):
+    """A subtitle a user has flagged as bad for one `MediaFile`/language, so it's never
+    reused or re-fetched for that media item again.
+
+    `origin` is `"acquired"` (a provider download — `provider`/`release_name`/
+    `download_id` identify the exact release to exclude from future search results,
+    same fields `AcquiredSubtitle` records) or `"translated"` (a translation output —
+    the three provider fields stay `None`, since there's no candidate list to filter;
+    instead its mere presence blocks the periodic translation job from regenerating
+    that target language, see `subtitle_translation/translate_media_file.py`).
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    media_file_id: int = Field(foreign_key="mediafile.id", index=True, ondelete="CASCADE")
+    language: str
+    # Plain `str`, not a `Literal["acquired", "translated"]` — same reasoning as
+    # `SubtitleProviderConfig.kind` above: SQLModel maps the table column from the
+    # annotation's bare type, so callers (`manage_subtitle_blacklist.py`) validate the
+    # two accepted values in Python rather than the schema itself.
+    origin: str
+    provider: str | None = Field(default=None)
+    release_name: str | None = Field(default=None)
+    download_id: str | None = Field(default=None)
+    blacklisted_at: datetime

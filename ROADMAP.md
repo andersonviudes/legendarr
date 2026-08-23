@@ -324,7 +324,7 @@ it already knows is wrong, and can explain why it picked what it picked.*
 - [x] **Subtitle acquisition** — Per-attribute score weighting (release group, resolution,
   codec, source, edition) instead of a single flat cutoff, plus must-contain/must-not-contain
   release-name filters per profile.
-- [ ] **Subtitle acquisition** — Upgrade/replace logic: re-fetch when a better-scoring
+- [x] **Subtitle acquisition** — Upgrade/replace logic: re-fetch when a better-scoring
   subtitle becomes available later. Blacklist: mark a specific downloaded (or translated)
   subtitle as bad so it's never reused or re-fetched for that media item again.
 - [ ] **Subtitle acquisition** — Structured audit trail: record which release attributes matched

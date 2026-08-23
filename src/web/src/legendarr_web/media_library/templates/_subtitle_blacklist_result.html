@@ -1,0 +1,8 @@
+{# Same toast-only shape as `_test_result.html` (sync-timing/translate-from-this share
+   this row) plus, on success, an out-of-band swap of the file row's subtitle badges —
+   blacklisting removes the row's subtitle entirely, unlike those two actions. #}
+{% from "macros.html" import subtitle_sync_list %}
+<div hidden data-toast-message="{{ result.message }}" data-toast-type="{{ 'success' if result.success else 'error' }}"></div>
+{% if result.success %}
+<td id="subtitles-cell-{{ media_file_id }}" hx-swap-oob="true">{{ subtitle_sync_list(result.subtitles) }}</td>
+{% endif %}

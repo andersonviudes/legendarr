@@ -24,12 +24,14 @@ from legendarr_backend.media_library.schemas import (
     SeriesDetailRead,
     SeriesRead,
     SubtitleAcquisitionResult,
+    SubtitleBlacklistResult,
     SubtitleCandidateDownloadInput,
     SubtitleCandidateRead,
     SubtitleRead,
     WantedRead,
 )
 from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.subtitle_acquisition.blacklist_subtitle import blacklist_subtitle
 from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
     download_subtitle_candidate,
 )
@@ -224,6 +226,25 @@ def trigger_subtitle_source_translation(
         source_subtitle_id=subtitle_id,
     )
     return {"status": "enqueued"}
+
+
+@router.post("/subtitles/{subtitle_id}/blacklist", response_model=SubtitleBlacklistResult)
+def blacklist_subtitle_route(
+    subtitle_id: int, session: Session = Depends(_get_session)
+) -> SubtitleBlacklistResult:
+    """Mark this subtitle as bad — ROADMAP.md 0.12.0's blacklist action. Synchronous,
+    same shape as the download/upload routes below (not enqueued, unlike sync-timing/
+    translate above): deleting a file and rescanning is local work, no external
+    provider/translation call to wait on.
+    """
+    subtitle = session.get(Subtitle, subtitle_id)
+    if subtitle is None:
+        raise HTTPException(status_code=404, detail="Subtitle not found")
+    media_file, video_path = _get_media_file_and_video_path(session, subtitle.media_file_id)
+    success, message = blacklist_subtitle(session, media_file, video_path, subtitle)
+    session.commit()
+    result = _acquisition_result(session, subtitle.media_file_id, success, message)
+    return SubtitleBlacklistResult(media_file_id=subtitle.media_file_id, **result.model_dump())
 
 
 def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:

@@ -67,6 +67,12 @@ async def trigger_subtitle_translation(client: httpx.AsyncClient, subtitle_id: i
     return response.json()
 
 
+async def blacklist_subtitle(client: httpx.AsyncClient, subtitle_id: int) -> dict:
+    response = await client.post(f"/media/subtitles/{subtitle_id}/blacklist")
+    response.raise_for_status()
+    return response.json()
+
+
 async def search_subtitle_candidates(
     client: httpx.AsyncClient, media_file_id: int, language: str
 ) -> list[dict]:

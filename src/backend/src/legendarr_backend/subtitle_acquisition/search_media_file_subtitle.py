@@ -5,6 +5,9 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
 from legendarr_backend.subtitle_acquisition.match_score import score_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
@@ -39,8 +42,10 @@ def search_media_file_subtitle_candidates(
     browse and choose from, so every provider is tried and every candidate is kept,
     regardless of score.
     """
+    assert media_file.id is not None
     context = resolve_subtitle_search_context(session, media_file, video_path)
     chain = resolve_subtitle_provider_chain(session)
+    blacklisted = list_blacklisted_download_ids(session, media_file.id, language)
     candidates: list[SubtitleCandidate] = []
     try:
         for provider in chain:
@@ -73,6 +78,7 @@ def search_media_file_subtitle_candidates(
                     score=score_candidate(result, video_path.stem),
                 )
                 for result in results
+                if (provider.name, result.download_id) not in blacklisted
             )
     finally:
         # Same close-what-needs-closing shape as `acquire_subtitle_for_media_file` —

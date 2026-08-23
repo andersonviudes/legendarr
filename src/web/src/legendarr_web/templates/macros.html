@@ -194,7 +194,8 @@
 {#
   One row per subtitle already discovered on one `MediaFile` — language/origin pill plus
   its own "Sync timing" action (ROADMAP.md 0.7.0). Reused by the movie and series detail
-  pages' file/episode rows.
+  pages' file/episode rows. "Blacklist" (ROADMAP.md 0.12.0) is external-only — an embedded
+  track can't be deleted/re-fetched, so there's nothing for it to do there.
 #}
 {% macro subtitle_sync_list(subtitles) %}
 {% if subtitles %}
@@ -224,6 +225,19 @@
       hx-disabled-elt="this"
     >{{ icon("languages") }}</button>
     <span id="translate-from-result-{{ subtitle.id }}"></span>
+    {% if subtitle.origin == "external" %}
+    <button
+      type="button"
+      class="app-icon-btn"
+      aria-label="Blacklist"
+      data-tooltip="Blacklist"
+      hx-post="/media/subtitles/{{ subtitle.id }}/blacklist"
+      hx-target="#blacklist-result-{{ subtitle.id }}"
+      hx-swap="innerHTML"
+      hx-disabled-elt="this"
+    >{{ icon("ban") }}</button>
+    <span id="blacklist-result-{{ subtitle.id }}"></span>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>
