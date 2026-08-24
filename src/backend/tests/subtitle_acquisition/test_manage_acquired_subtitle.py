@@ -7,8 +7,13 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
 )
+from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
+
+
+def _evaluation(score: float) -> CandidateEvaluation:
+    return CandidateEvaluation(score=score, title_similarity=score, attribute_matches={})
 
 
 def _media_file(session, tmp_path) -> MediaFile:
@@ -49,7 +54,7 @@ def test_record_acquired_subtitle_is_a_noop_when_the_subtitle_row_is_missing(
         provider="fake",
         release_name="Foo",
         download_id="1",
-        score=0.5,
+        evaluation=_evaluation(0.5),
     )
 
     # No row to find — nothing raised, nothing persisted.
@@ -78,7 +83,7 @@ def test_record_acquired_subtitle_creates_then_upserts_in_place(in_memory_sessio
         provider="first",
         release_name="Foo.First",
         download_id="1",
-        score=0.5,
+        evaluation=_evaluation(0.5),
     )
     in_memory_session.commit()
     first = get_acquired_subtitle(in_memory_session, subtitle.id)
@@ -93,7 +98,7 @@ def test_record_acquired_subtitle_creates_then_upserts_in_place(in_memory_sessio
         provider="second",
         release_name="Foo.Second",
         download_id="2",
-        score=0.9,
+        evaluation=_evaluation(0.9),
     )
     in_memory_session.commit()
     second = get_acquired_subtitle(in_memory_session, subtitle.id)

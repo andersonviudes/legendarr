@@ -14,7 +14,11 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
-from legendarr_backend.subtitle_acquisition.match_score import pick_best_match, score_candidate
+from legendarr_backend.subtitle_acquisition.match_score import (
+    CandidateEvaluation,
+    evaluate_candidate,
+    pick_best_match,
+)
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
 from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
@@ -48,7 +52,7 @@ class _AcquiredCandidate:
     provider: str
     release_name: str
     download_id: str
-    score: float
+    evaluation: CandidateEvaluation
 
 
 def acquire_subtitle_for_media_file(
@@ -126,7 +130,7 @@ def acquire_subtitle_for_media_file(
                 provider=result.provider,
                 release_name=result.release_name,
                 download_id=result.download_id,
-                score=result.score,
+                evaluation=result.evaluation,
             )
             return AcquisitionResult(acquired_language=language)
     finally:
@@ -199,7 +203,7 @@ def _search_and_download(
                 provider=provider.name,
                 release_name=best.release_name,
                 download_id=best.download_id,
-                score=score_candidate(best, video_path.stem),
+                evaluation=evaluate_candidate(best, video_path.stem),
             )
         except Exception:
             logger.warning(

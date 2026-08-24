@@ -127,6 +127,41 @@ class AcquiredSubtitle(SQLModel, table=True):
     acquired_at: datetime
 
 
+class AcquisitionAttempt(SQLModel, table=True):
+    """Append-only audit trail entry for one winning acquisition/upgrade/manual-download
+    pick — ROADMAP.md 0.12.0's structured audit trail. Unlike `AcquiredSubtitle` (the
+    current-state row, upserted in place), a new row is inserted here every time
+    `record_acquired_subtitle` runs, so a subtitle's full acquisition history survives
+    an upgrade instead of being overwritten.
+
+    `*_matched` is `None` when the reference filename had no detectable value for that
+    attribute (nothing to compare, excluded from `score`/`title_similarity` the same
+    way `match_score.evaluate_candidate` excludes it), `True`/`False` otherwise —
+    mirrors `match_score.ATTRIBUTE_WEIGHTS`'s five attributes.
+
+    `replaced_attempt_id` points at the previous attempt for the same `subtitle_id`
+    (`None` on a subtitle's first-ever acquisition) — the link from an upgraded
+    subtitle back to the one it replaced.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    subtitle_id: int = Field(foreign_key="subtitle.id", index=True, ondelete="CASCADE")
+    provider: str
+    release_name: str
+    download_id: str
+    score: float
+    title_similarity: float
+    resolution_matched: bool | None = Field(default=None)
+    source_matched: bool | None = Field(default=None)
+    codec_matched: bool | None = Field(default=None)
+    release_group_matched: bool | None = Field(default=None)
+    edition_matched: bool | None = Field(default=None)
+    replaced_attempt_id: int | None = Field(
+        default=None, foreign_key="acquisitionattempt.id", ondelete="SET NULL"
+    )
+    attempted_at: datetime
+
+
 class SubtitleBlacklistEntry(SQLModel, table=True):
     """A subtitle a user has flagged as bad for one `MediaFile`/language, so it's never
     reused or re-fetched for that media item again.
