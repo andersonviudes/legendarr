@@ -6,6 +6,7 @@ class LanguageProfileInput(BaseModel):
     source_languages: str = Field(min_length=1)
     target_languages: str = Field(min_length=1)
     extract_embedded_subtitles: bool = True
+    ocr_embedded_subtitles: bool = False
     forced: bool = False
     hearing_impaired: bool = False
     is_default: bool = False

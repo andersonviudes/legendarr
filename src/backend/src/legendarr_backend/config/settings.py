@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # ffprobe/ffmpeg subprocess timeout for embedded subtitle-track probing/extraction
     # (ROADMAP.md 0.6.0), guarding against a hung/corrupt container.
     embedded_subtitle_probe_timeout_seconds: float = Field(default=30.0)
+    # Per-cue Tesseract OCR timeout for a PGS embedded track (ROADMAP.md 0.14.0), passed
+    # as `pytesseract`'s own `timeout=` — a differently-shaped subprocess call than
+    # `embedded_subtitle_probe_timeout_seconds`'s single ffprobe/ffmpeg run, so it gets its
+    # own setting, same posture as `timing_sync_timeout_seconds` below.
+    ocr_cue_timeout_seconds: float = Field(default=10.0)
     translate_retry_attempts: int = Field(default=3, ge=1)
     translate_retry_delay_seconds: float = Field(default=5.0)
     # ROADMAP.md 0.10.0 — periodic translation fan-out, same posture as

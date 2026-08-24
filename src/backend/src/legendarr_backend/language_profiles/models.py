@@ -13,6 +13,10 @@ class LanguageProfile(SQLModel, table=True):
     source_languages: str
     target_languages: str
     extract_embedded_subtitles: bool = Field(default=True)
+    # OCR support for bitmap-based embedded tracks (PGS) — ROADMAP.md 0.14.0. Separate from
+    # `extract_embedded_subtitles` since OCR is far heavier/slower than a direct ffmpeg
+    # text-track copy and can produce lower-quality text; opt-in independently.
+    ocr_embedded_subtitles: bool = Field(default=False)
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
     is_default: bool = Field(default=False)
