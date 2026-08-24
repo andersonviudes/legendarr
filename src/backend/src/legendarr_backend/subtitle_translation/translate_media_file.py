@@ -13,6 +13,7 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     clear_translation_blacklist,
     is_translation_blacklisted,
 )
+from legendarr_backend.subtitle_discovery.clean_subtitle_text import clean_subtitle_lines
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
@@ -172,6 +173,9 @@ def translate_media_file(
             translated_languages=[], skipped_reason="source_subtitle_missing_on_disk"
         )
     lines = parse_srt(source_path.read_text(encoding="utf-8"))
+    # ROADMAP 0.13.0's text cleanup pass — only the in-memory copy fed to translation is
+    # cleaned, the source `.srt` on disk is never rewritten.
+    lines = clean_subtitle_lines(lines)
 
     translated_languages = []
     for target_language in missing_targets:

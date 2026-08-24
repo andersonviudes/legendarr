@@ -22,7 +22,7 @@ from sqlmodel import select
 class _FakeProvider:
     name = "fake"
 
-    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"):
+    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:15,000\nHi\n\n"):
         self.results = (
             results
             if results is not None
@@ -424,6 +424,22 @@ def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
     assert result.acquired_language == "en"
 
 
+def test_acquire_subtitle_falls_back_to_the_next_provider_on_quality_gate_failure(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    broken = _FakeProvider(text="too short to be a real subtitle")
+    working = _FakeProvider()
+    _use_chain(monkeypatch, broken, working)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+
+
 def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_match(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -452,7 +468,7 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
             return [SubtitleSearchResult(release_name="Foo", download_id="1", language="ja")]
 
         def download(self, result):
-            return "1\n00:00:00,000 --> 00:00:01,000\nこんにちは\n\n"
+            return "1\n00:00:00,000 --> 00:00:15,000\nこんにちは\n\n"
 
     _use_chain(monkeypatch, _LanguageAwareProvider())
 

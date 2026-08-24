@@ -21,6 +21,7 @@ from legendarr_backend.subtitle_acquisition.match_score import (
 )
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
+from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
 from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -198,6 +199,13 @@ def _search_and_download(
             if best is None:
                 continue
             content = provider.download(best)
+            if not passes_quality_gate(content):
+                logger.warning(
+                    "subtitle from %r failed quality-gate checks (%r), trying next",
+                    provider.name,
+                    best.release_name,
+                )
+                continue
             return _AcquiredCandidate(
                 content=content,
                 provider=provider.name,

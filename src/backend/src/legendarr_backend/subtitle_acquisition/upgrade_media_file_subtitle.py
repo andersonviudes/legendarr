@@ -25,6 +25,7 @@ from legendarr_backend.subtitle_acquisition.providers.base import (
     SubtitleProvider,
     SubtitleSearchResult,
 )
+from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
 from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -125,6 +126,14 @@ def upgrade_subtitle_for_media_file(
         assert best_evaluation is not None
 
         content = best_provider.download(best)
+        if not passes_quality_gate(content):
+            logger.warning(
+                "upgrade candidate from %r (%r) failed quality-gate checks for media file %d",
+                best_provider.name,
+                best.release_name,
+                media_file.id,
+            )
+            return UpgradeResult(skipped_reason="upgrade_failed_quality_gate")
     finally:
         for provider in chain:
             close = getattr(provider, "close", None)
