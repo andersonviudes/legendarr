@@ -12,6 +12,7 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     is_translation_blacklisted,
     list_blacklisted_download_ids,
 )
+from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select
@@ -115,7 +116,7 @@ def test_blacklist_an_acquired_subtitle_deletes_it_and_records_the_release(
         provider="fake",
         release_name="Foo.BAD",
         download_id="bad-1",
-        score=0.9,
+        evaluation=CandidateEvaluation(score=0.9, title_similarity=0.9, attribute_matches={}),
     )
     in_memory_session.commit()
 

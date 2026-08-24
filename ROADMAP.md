@@ -327,7 +327,7 @@ it already knows is wrong, and can explain why it picked what it picked.*
 - [x] **Subtitle acquisition** — Upgrade/replace logic: re-fetch when a better-scoring
   subtitle becomes available later. Blacklist: mark a specific downloaded (or translated)
   subtitle as bad so it's never reused or re-fetched for that media item again.
-- [ ] **Subtitle acquisition** — Structured audit trail: record which release attributes matched
+- [x] **Subtitle acquisition** — Structured audit trail: record which release attributes matched
   or didn't for each acquisition attempt, and link an upgraded subtitle back to the one it
   replaced.
 

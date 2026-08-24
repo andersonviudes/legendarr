@@ -7,7 +7,7 @@ from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import score_candidate
+from legendarr_backend.subtitle_acquisition.match_score import evaluate_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import SubtitleCandidate
@@ -80,6 +80,6 @@ def download_subtitle_candidate(
         provider=candidate.provider,
         release_name=candidate.release_name,
         download_id=candidate.download_id,
-        score=score_candidate(result, video_path.stem),
+        evaluation=evaluate_candidate(result, video_path.stem),
     )
     return True, f"Downloaded {language} subtitle from {candidate.provider}"

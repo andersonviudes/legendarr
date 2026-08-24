@@ -15,7 +15,10 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
-from legendarr_backend.subtitle_acquisition.match_score import score_candidate
+from legendarr_backend.subtitle_acquisition.match_score import (
+    CandidateEvaluation,
+    evaluate_candidate,
+)
 from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import (
@@ -80,6 +83,7 @@ def upgrade_subtitle_for_media_file(
 
     best: SubtitleSearchResult | None = None
     best_provider: SubtitleProvider | None = None
+    best_evaluation: CandidateEvaluation | None = None
     best_score = metadata.score
     try:
         for provider in chain:
@@ -111,12 +115,14 @@ def upgrade_subtitle_for_media_file(
                     continue
                 if (provider.name, candidate.download_id) in blacklisted:
                     continue
-                score = score_candidate(candidate, video_path.stem)
-                if score > best_score:
-                    best, best_provider, best_score = candidate, provider, score
+                evaluation = evaluate_candidate(candidate, video_path.stem)
+                if evaluation.score > best_score:
+                    best, best_provider, best_score = candidate, provider, evaluation.score
+                    best_evaluation = evaluation
 
         if best is None or best_provider is None:
             return UpgradeResult(skipped_reason="no_upgrade_found")
+        assert best_evaluation is not None
 
         content = best_provider.download(best)
     finally:
@@ -135,7 +141,7 @@ def upgrade_subtitle_for_media_file(
         provider=best_provider.name,
         release_name=best.release_name,
         download_id=best.download_id,
-        score=best_score,
+        evaluation=best_evaluation,
     )
     return UpgradeResult(upgraded_language=subtitle.language)
 

@@ -23,6 +23,7 @@ from legendarr_backend.subtitle_acquisition.jobs import (
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
+from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -381,7 +382,7 @@ def test_enqueued_acquisition_job_upgrades_an_existing_source_subtitle(
         provider="old-provider",
         release_name="Foo.OLD",
         download_id="old-1",
-        score=0.1,
+        evaluation=CandidateEvaluation(score=0.1, title_similarity=0.1, attribute_matches={}),
     )
     in_memory_session.commit()
 

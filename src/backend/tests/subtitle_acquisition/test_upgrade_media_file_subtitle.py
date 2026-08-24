@@ -13,6 +13,7 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import add_blacklist_entry
+from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
     upgrade_subtitle_for_media_file,
@@ -127,7 +128,7 @@ def _acquired_subtitle(session, media_file: MediaFile, *, language="en", score: 
         provider="old-provider",
         release_name="Foo.OLD",
         download_id="old-1",
-        score=score,
+        evaluation=CandidateEvaluation(score=score, title_similarity=score, attribute_matches={}),
     )
     session.commit()
     return subtitle

@@ -20,6 +20,7 @@ from legendarr_backend.subtitle_acquisition import (
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
+from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -562,7 +563,9 @@ def test_blacklist_subtitle_deletes_it_and_refreshes_the_row(isolated_database, 
                 provider="fake",
                 release_name="Foo.BAD",
                 download_id="bad-1",
-                score=0.9,
+                evaluation=CandidateEvaluation(
+                    score=0.9, title_similarity=0.9, attribute_matches={}
+                ),
             )
             session.commit()
 
