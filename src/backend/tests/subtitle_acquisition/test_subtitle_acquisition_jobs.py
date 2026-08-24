@@ -48,7 +48,7 @@ class _FakeProvider:
         return [SubtitleSearchResult(release_name="Foo", download_id="1", language=language)]
 
     def download(self, result):
-        return "1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"
+        return "1\n00:00:00,000 --> 00:00:15,000\nHi\n\n"
 
 
 class _NoMatchProvider:

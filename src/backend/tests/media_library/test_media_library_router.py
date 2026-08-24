@@ -399,7 +399,7 @@ def test_trigger_subtitle_source_translation_returns_404_when_missing(isolated_d
 class _FakeProvider:
     name = "fake"
 
-    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"):
+    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:15,000\nHi\n\n"):
         self.results = (
             results
             if results is not None

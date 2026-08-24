@@ -25,7 +25,7 @@ from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOr
 class _FakeProvider:
     name = "fake"
 
-    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:01,000\nBetter\n\n"):
+    def __init__(self, results=None, text="1\n00:00:00,000 --> 00:00:15,000\nBetter\n\n"):
         self.results = results if results is not None else []
         self.text = text
         self.download_calls = []
@@ -236,6 +236,30 @@ def test_upgrade_replaces_when_a_better_candidate_is_found(
     assert metadata.provider == "fake"
     assert metadata.download_id == "new-1"
     assert metadata.score > 0.1
+
+
+def test_upgrade_skips_when_the_best_candidate_fails_the_quality_gate(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    subtitle = _acquired_subtitle(in_memory_session, media_file, score=0.1)
+    provider = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo", download_id="new-1", language="en")],
+        text="too short to be a real subtitle",
+    )
+    _use_chain(monkeypatch, provider)
+
+    result = upgrade_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.skipped_reason == "upgrade_failed_quality_gate"
+    assert not (tmp_path / "Foo" / "Foo.en.srt").exists()
+    assert subtitle.id is not None
+    metadata = get_acquired_subtitle(in_memory_session, subtitle.id)
+    assert metadata is not None
+    assert metadata.download_id == "old-1"
 
 
 def test_upgrade_excludes_a_blacklisted_candidate(in_memory_session, tmp_path, monkeypatch):

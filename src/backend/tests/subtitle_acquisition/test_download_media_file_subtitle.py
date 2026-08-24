@@ -16,7 +16,7 @@ from sqlmodel import select
 
 
 class _FakeProvider:
-    def __init__(self, name: str, text: str = "1\n00:00:00,000 --> 00:00:01,000\nHi\n\n"):
+    def __init__(self, name: str, text: str = "1\n00:00:00,000 --> 00:00:15,000\nHi\n\n"):
         self.name = name
         self.text = text
 
@@ -143,6 +143,22 @@ def test_download_returns_false_on_a_provider_exception(in_memory_session, tmp_p
 
     success, message = download_subtitle_candidate(
         in_memory_session, media_file, video, _candidate(provider="failing"), "en"
+    )
+
+    assert success is False
+    assert not (tmp_path / "Foo" / "Foo.en.srt").exists()
+
+
+def test_download_returns_false_when_the_content_fails_the_quality_gate(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FakeProvider("provider", text="too short to be a real subtitle"))
+
+    success, message = download_subtitle_candidate(
+        in_memory_session, media_file, video, _candidate(), "en"
     )
 
     assert success is False

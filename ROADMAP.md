@@ -337,9 +337,9 @@ it already knows is wrong, and can explain why it picked what it picked.*
 stray formatting — gets caught or cleaned up instead of silently becoming someone's
 translation source.*
 
-- [ ] **Subtitle acquisition** — Quality-gate validation before accepting an acquired subtitle:
+- [x] **Subtitle acquisition** — Quality-gate validation before accepting an acquired subtitle:
   file size and cue-count/duration bounds sanity-checked, obviously broken results rejected.
-- [ ] **Subtitle discovery** — Text cleanup pass (regex-based fixes for common punctuation/OCR
+- [x] **Subtitle discovery** — Text cleanup pass (regex-based fixes for common punctuation/OCR
   artifacts, stray color/formatting tags) applied to a subtitle's text before it's handed to
   translation.
 

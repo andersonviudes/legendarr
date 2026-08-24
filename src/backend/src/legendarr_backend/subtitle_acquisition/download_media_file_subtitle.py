@@ -10,6 +10,7 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 from legendarr_backend.subtitle_acquisition.match_score import evaluate_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import SubtitleCandidate
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
@@ -56,6 +57,13 @@ def download_subtitle_candidate(
                 candidate.release_name,
             )
             return False, f"Download from {candidate.provider} failed"
+        if not passes_quality_gate(content):
+            logger.warning(
+                "subtitle from %r (%r) failed quality-gate checks",
+                candidate.provider,
+                candidate.release_name,
+            )
+            return False, f"Downloaded subtitle from {candidate.provider} failed quality checks"
     finally:
         # Same close-what-needs-closing shape as `acquire_subtitle_for_media_file` —
         # every provider `resolve_subtitle_provider_chain` instantiated gets closed,

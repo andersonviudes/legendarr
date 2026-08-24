@@ -40,6 +40,19 @@ class _FailingProvider:
         raise RuntimeError("boom")
 
 
+class _RecordingProvider:
+    name = "recording"
+
+    def __init__(self):
+        self.received_texts: list[str] = []
+
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        self.received_texts.extend(texts)
+        return texts
+
+
 def _movie(session, tmp_path: Path, **overrides) -> Movie:
     service = create_arr_service(
         session,
@@ -175,6 +188,34 @@ def test_translate_media_file_writes_translated_srt_and_reconciles_subtitle_row(
     assert result.translated_languages == ["pt-BR"]
     output = tmp_path / "Foo" / "Foo.pt-br.srt"
     assert "HELLO" in output.read_text(encoding="utf-8")
+
+
+def test_translate_media_file_cleans_source_text_before_translating(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True, exist_ok=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text(
+        '1\n00:00:00,000 --> 00:00:01,000\n<font color="yellow">hello   world</font>\n\n',
+        encoding="utf-8",
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    provider = _RecordingProvider()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [provider],
+    )
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == ["pt-BR"]
+    assert provider.received_texts == ["hello world"]
 
 
 def test_translate_media_file_falls_back_to_next_provider_on_failure(
