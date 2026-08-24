@@ -35,6 +35,7 @@ def scan_subtitles_for_media_file(
     video_path: Path,
     *,
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
+    ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
 ) -> ScanResult:
     """Discover external subtitles next to `video_path` and reconcile `Subtitle` rows.
 
@@ -49,6 +50,10 @@ def scan_subtitles_for_media_file(
     `extract_embedded_subtitles` is `False` — external scanning happens regardless, same
     as before. When it does run, a track whose language already has an external subtitle
     is skipped instead of extracted (see `scan_video_subtitles`).
+
+    OCR of bitmap-based (PGS) tracks is gated the same way, separately, by
+    `LanguageProfile.ocr_embedded_subtitles` — a profile can enable either flag
+    independently of the other.
     """
     if not video_path.is_file():
         logger.warning("subtitle scan skipped: %s is not a file", video_path)
@@ -68,10 +73,13 @@ def scan_subtitles_for_media_file(
 
     profile = resolve_media_file_profile(session, media_file)
     extract_embedded = profile is not None and profile.extract_embedded_subtitles
+    ocr_embedded = profile is not None and profile.ocr_embedded_subtitles
     discovered = scan_video_subtitles(
         video_path,
         extract_embedded=extract_embedded,
+        ocr_embedded=ocr_embedded,
         probe_timeout_seconds=probe_timeout_seconds,
+        ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
         known_languages=known_languages,
     )
     video_dir = Path(media_file.relative_path).parent

@@ -348,8 +348,10 @@ translation source.*
 *Use case: a Blu-ray rip's embedded PGS/VobSub track — bitmap images, not text — gets OCR'd
 into text and translated like any other track.*
 
-- [ ] **Subtitle discovery** — OCR pipeline (e.g. Tesseract) for bitmap-based embedded subtitle
-  formats.
+- [x] **Subtitle discovery** — OCR pipeline (Tesseract) for PGS (Blu-ray) embedded subtitle
+  tracks: a hand-rolled `.sup` parser plus per-cue OCR, gated behind its own opt-in language
+  profile toggle. VobSub isn't covered — no maintained OCR library exists for it, and it would
+  need its own from-scratch bitmap parser; left as a future item.
 
 ## 0.15.0 — Speech-to-text fallback
 

@@ -43,13 +43,19 @@ def test_update_language_profile_replaces_fields(in_memory_session):
     updated = update_language_profile(
         in_memory_session,
         profile.id,
-        _profile_input(target_languages="pt-BR", forced=True, hearing_impaired=True),
+        _profile_input(
+            target_languages="pt-BR",
+            forced=True,
+            hearing_impaired=True,
+            ocr_embedded_subtitles=True,
+        ),
     )
 
     assert updated is not None
     assert updated.target_languages == "pt-BR"
     assert updated.forced is True
     assert updated.hearing_impaired is True
+    assert updated.ocr_embedded_subtitles is True
 
 
 def test_update_language_profile_replaces_release_name_filters(in_memory_session):

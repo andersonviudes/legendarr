@@ -4,8 +4,10 @@ from enum import StrEnum
 from pathlib import Path
 
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
+from legendarr_backend.subtitle_discovery.ocr_embedded_subtitles import ocr_pgs_track
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
+    IMAGE_BASED_SUBTITLE_CODECS,
     extract_embedded_subtitle_track,
     probe_embedded_subtitle_tracks,
 )
@@ -32,7 +34,9 @@ def scan_video_subtitles(
     video_path: Path,
     *,
     extract_embedded: bool = False,
+    ocr_embedded: bool = False,
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
+    ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     known_languages: frozenset[str] = frozenset(),
 ) -> list[DiscoveredSubtitle]:
     """Discover subtitle tracks for a video file.
@@ -51,14 +55,26 @@ def scan_video_subtitles(
     deleted as stale — on every following scan. A persisted embedded track's `language`
     is normalized (`language_codes.normalize_language_code`), so it's stored in the same
     ISO 639-1-ish form as external subtitles instead of ffprobe's raw ISO 639-2 tag.
+
+    Bitmap-based embedded tracks (PGS) are OCR'd into the same kind of `.srt` sibling
+    instead, gated separately on `ocr_embedded` (`LanguageProfile.ocr_embedded_subtitles`)
+    — OCR is much heavier than a text-track's direct ffmpeg copy, so a profile can extract
+    text tracks without paying for OCR, or vice versa.
     """
     external = _scan_external_subtitles(video_path)
     subtitles: list[DiscoveredSubtitle] = list(external)
-    if extract_embedded:
+    if extract_embedded or ocr_embedded:
         already_covered = {normalize_language_code(language) for language in known_languages} | {
             normalize_language_code(item.language) for item in external
         }
-        subtitles += _scan_embedded_subtitles(video_path, probe_timeout_seconds, already_covered)
+        subtitles += _scan_embedded_subtitles(
+            video_path,
+            probe_timeout_seconds,
+            already_covered,
+            extract_embedded=extract_embedded,
+            ocr_embedded=ocr_embedded,
+            ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
+        )
     return subtitles
 
 
@@ -83,10 +99,21 @@ def _scan_external_subtitles(video_path: Path) -> list[DiscoveredSubtitle]:
 
 
 def _scan_embedded_subtitles(
-    video_path: Path, probe_timeout_seconds: float, already_covered_languages: set[str]
+    video_path: Path,
+    probe_timeout_seconds: float,
+    already_covered_languages: set[str],
+    *,
+    extract_embedded: bool,
+    ocr_embedded: bool,
+    ocr_cue_timeout_seconds: float,
 ) -> list[DiscoveredSubtitle]:
     subtitles: list[DiscoveredSubtitle] = []
     for track in probe_embedded_subtitle_tracks(video_path, timeout_seconds=probe_timeout_seconds):
+        is_image_track = track.codec_name in IMAGE_BASED_SUBTITLE_CODECS
+        if is_image_track and not ocr_embedded:
+            continue
+        if not is_image_track and not extract_embedded:
+            continue
         if normalize_language_code(track.language) in already_covered_languages:
             logger.debug(
                 "embedded track %d (%s) skipped for %s: %s is already covered by another subtitle",
@@ -102,13 +129,22 @@ def _scan_embedded_subtitles(
         # The track's content doesn't change without a resync, so a previously extracted
         # file is reused instead of re-running ffmpeg on every scan.
         if not output_path.exists():
-            extract_embedded_subtitle_track(
-                video_path, track, output_path, timeout_seconds=probe_timeout_seconds
-            )
+            if is_image_track:
+                ocr_pgs_track(
+                    video_path,
+                    track,
+                    output_path,
+                    timeout_seconds=probe_timeout_seconds,
+                    ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
+                )
+            else:
+                extract_embedded_subtitle_track(
+                    video_path, track, output_path, timeout_seconds=probe_timeout_seconds
+                )
         if not output_path.exists():
-            # A missing `ffmpeg` binary makes extraction a no-op instead of raising (see
-            # `extract_embedded_subtitle_track`) — nothing was written, so there's nothing
-            # to report for this track.
+            # A missing `ffmpeg` binary, or an OCR pass that produced no usable text, makes
+            # extraction a no-op instead of raising (see `extract_embedded_subtitle_track`/
+            # `ocr_pgs_track`) — nothing was written, so there's nothing to report.
             continue
         subtitles.append(
             DiscoveredSubtitle(

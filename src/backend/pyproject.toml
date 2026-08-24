@@ -18,6 +18,8 @@ dependencies = [
     "pyyaml>=6.0",
     "srt>=3.5",
     "ffsubsync>=0.5.1",
+    "pytesseract>=0.3.10",
+    "pillow>=10.0",
 ]
 
 [build-system]

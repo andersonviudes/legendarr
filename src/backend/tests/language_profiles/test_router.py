@@ -8,6 +8,7 @@ def _payload(**overrides) -> dict:
         "source_languages": "ja",
         "target_languages": "pt-BR,en",
         "extract_embedded_subtitles": True,
+        "ocr_embedded_subtitles": False,
         "forced": False,
         "hearing_impaired": False,
         "is_default": False,

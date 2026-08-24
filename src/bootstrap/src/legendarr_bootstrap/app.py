@@ -60,6 +60,7 @@ def create_app() -> FastAPI:
             retry_attempts=config.subtitle_scan_retry_attempts,
             retry_delay_seconds=config.subtitle_scan_retry_delay_seconds,
             probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
+            ocr_cue_timeout_seconds=config.ocr_cue_timeout_seconds,
             cascade=True,
         )
         scheduler.start()

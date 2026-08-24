@@ -48,3 +48,9 @@ def test_must_contain_and_must_not_contain_terms_default_to_empty():
 
     assert profile.must_contain_terms == []
     assert profile.must_not_contain_terms == []
+
+
+def test_ocr_embedded_subtitles_defaults_to_false():
+    profile = _profile()
+
+    assert profile.ocr_embedded_subtitles is False

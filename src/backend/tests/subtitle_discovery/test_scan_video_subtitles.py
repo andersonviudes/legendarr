@@ -271,3 +271,106 @@ def test_scan_video_subtitles_skips_embedded_track_with_unmapped_code_matching_k
     )
 
     assert subtitles == []
+
+
+def _pgs_track(index: int = 4, language: str = "por") -> EmbeddedSubtitleTrack:
+    return EmbeddedSubtitleTrack(
+        index=index,
+        codec_name="hdmv_pgs_subtitle",
+        language=language,
+        forced=False,
+        hearing_impaired=False,
+    )
+
+
+def test_scan_video_subtitles_ocrs_embedded_image_tracks_when_enabled(monkeypatch, tmp_path: Path):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = _pgs_track()
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda *a, **k: (_ for _ in ()).throw(
+            AssertionError("should not text-extract a PGS track")
+        ),
+    )
+    ocrd = []
+
+    def _fake_ocr(video_path, track, output_path, **kwargs):
+        ocrd.append(output_path)
+        output_path.touch()
+
+    monkeypatch.setattr(scan_video_subtitles_module, "ocr_pgs_track", _fake_ocr)
+
+    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+
+    assert len(subtitles) == 1
+    subtitle = subtitles[0]
+    assert subtitle.origin == SubtitleOrigin.EMBEDDED
+    assert subtitle.language == "pt"
+    assert subtitle.track_index == 4
+    assert subtitle.source_path == video.with_name("movie.embedded.4.por.srt")
+    assert ocrd == [video.with_name("movie.embedded.4.por.srt")]
+
+
+def test_scan_video_subtitles_skips_image_tracks_when_ocr_disabled(monkeypatch, tmp_path: Path):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = _pgs_track()
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "ocr_pgs_track",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not OCR")),
+    )
+
+    # extract_embedded=True doesn't imply ocr_embedded — the image track is skipped, not
+    # text-extracted, since ffmpeg can't convert a bitmap codec straight to `srt`.
+    subtitles = scan_video_subtitles(video, extract_embedded=True, ocr_embedded=False)
+
+    assert subtitles == []
+
+
+def test_scan_video_subtitles_reuses_already_ocrd_embedded_file(monkeypatch, tmp_path: Path):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    output_path = video.with_name("movie.embedded.4.por.srt")
+    output_path.touch()
+    track = _pgs_track()
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "ocr_pgs_track",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not re-OCR")),
+    )
+
+    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+
+    assert len(subtitles) == 1
+    assert subtitles[0].source_path == output_path
+
+
+def test_scan_video_subtitles_skips_image_track_when_ocr_leaves_no_file(
+    monkeypatch, tmp_path: Path
+):
+    """No usable OCR text (or a missing `ffmpeg` binary) leaves `output_path` unwritten —
+    the track is left out of the result instead of becoming a `Subtitle` row for a file
+    that was never created (same posture as the text-extraction path)."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = _pgs_track()
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(scan_video_subtitles_module, "ocr_pgs_track", lambda *a, **k: None)
+
+    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+
+    assert subtitles == []

@@ -283,6 +283,55 @@ def test_scan_enables_embedded_probing_when_profile_allows_it(
     assert captured["kwargs"]["probe_timeout_seconds"] == 5.0
 
 
+def test_scan_skips_ocr_without_an_effective_profile(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["kwargs"]["ocr_embedded"] is False
+
+
+def test_scan_skips_ocr_when_profile_disables_it(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    _language_profile(in_memory_session, ocr_embedded_subtitles=False)
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["kwargs"]["ocr_embedded"] is False
+
+
+def test_scan_enables_ocr_when_profile_allows_it(in_memory_session, tmp_path, monkeypatch):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    # extract_embedded_subtitles stays False — the two toggles are independent.
+    _language_profile(
+        in_memory_session, extract_embedded_subtitles=False, ocr_embedded_subtitles=True
+    )
+    captured: dict = {}
+    _capture_scan_video_subtitles_kwargs(monkeypatch, captured)
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video, ocr_cue_timeout_seconds=7.0)
+
+    assert captured["kwargs"]["extract_embedded"] is False
+    assert captured["kwargs"]["ocr_embedded"] is True
+    assert captured["kwargs"]["ocr_cue_timeout_seconds"] == 7.0
+
+
 def test_scan_persists_forced_and_hearing_impaired_flags(in_memory_session, tmp_path, monkeypatch):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
