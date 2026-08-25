@@ -3,10 +3,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from apscheduler.events import (
+    EVENT_JOB_ADDED,
     EVENT_JOB_ERROR,
     EVENT_JOB_EXECUTED,
     EVENT_JOB_MISSED,
+    EVENT_JOB_MODIFIED,
     EVENT_JOB_SUBMITTED,
+    JobEvent,
     JobExecutionEvent,
     JobSubmissionEvent,
 )
@@ -31,22 +34,46 @@ class RunningTaskRegistry:
     ring buffer this mirrors (`logging/setup.py`): this is for live status, not a
     post-mortem. Submission and completion events arrive on different threads (the
     scheduler's own timer thread vs. an executor worker thread), so access is locked.
+
+    One-off jobs — every manual "Sync Now"/"Scan Disk"/translate/acquire trigger, all
+    `"date"`-triggered — are already gone from the jobstore by the time `EVENT_JOB_SUBMITTED`
+    fires, so `scheduler.get_job()` returns `None` right when `submit()` would need it.
+    `remember()` caches each job's name/executor off `EVENT_JOB_ADDED`/`EVENT_JOB_MODIFIED`
+    for that case. Periodic jobs go the other way: they're registered *before*
+    `scheduler.start()` (`legendarr_backend/bootstrap.py`), and APScheduler doesn't dispatch
+    `EVENT_JOB_ADDED` for a stopped scheduler, so the cache is never populated for them — but
+    they're still in the jobstore at submit time, so `scheduler.get_job()` works fine there.
+    `submit()` tries the live lookup first and only falls back to the cache.
     """
 
     def __init__(self) -> None:
         self._tasks: dict[tuple[str, datetime], RunningTask] = {}
+        self._job_meta: dict[str, tuple[str, str]] = {}
         self._lock = threading.Lock()
 
-    def submit(self, event: JobSubmissionEvent, scheduler: BackgroundScheduler) -> None:
+    def remember(self, event: JobEvent, scheduler: BackgroundScheduler) -> None:
         job = scheduler.get_job(event.job_id)
         if job is None:
             return
         with self._lock:
+            self._job_meta[event.job_id] = (job.name, job.executor)
+
+    def submit(self, event: JobSubmissionEvent, scheduler: BackgroundScheduler) -> None:
+        job = scheduler.get_job(event.job_id)
+        if job is not None:
+            name, queue = job.name, job.executor
+        else:
+            with self._lock:
+                meta = self._job_meta.get(event.job_id)
+            if meta is None:
+                return
+            name, queue = meta
+        with self._lock:
             for run_time in event.scheduled_run_times:
                 self._tasks[(event.job_id, run_time)] = RunningTask(
                     job_id=event.job_id,
-                    name=job.name,
-                    queue=job.executor,
+                    name=name,
+                    queue=queue,
                     started_at=datetime.now(),
                 )
 
@@ -61,6 +88,7 @@ class RunningTaskRegistry:
     def clear(self) -> None:
         with self._lock:
             self._tasks.clear()
+            self._job_meta.clear()
 
 
 _registry = RunningTaskRegistry()
@@ -72,7 +100,12 @@ def attach_running_task_registry(scheduler: BackgroundScheduler) -> None:
     Call once per scheduler instance, alongside where its periodic jobs are registered
     (`legendarr_backend/bootstrap.py`).
     """
-    scheduler.add_listener(lambda event: _registry.submit(event, scheduler), EVENT_JOB_SUBMITTED)
+    scheduler.add_listener(
+        lambda event: _registry.remember(event, scheduler), EVENT_JOB_ADDED | EVENT_JOB_MODIFIED
+    )
+    scheduler.add_listener(
+        lambda event: _registry.submit(event, scheduler), EVENT_JOB_SUBMITTED
+    )
     scheduler.add_listener(
         _registry.finish, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED
     )
