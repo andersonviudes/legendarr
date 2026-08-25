@@ -74,3 +74,34 @@ def list_missing_target_languages_by_media_file(session: Session) -> dict[int, l
         if missing:
             missing_by_file_id[file.id] = missing
     return missing_by_file_id
+
+
+def missing_target_languages_for_media_file(session: Session, media_file_id: int) -> list[str]:
+    """Single-file counterpart to `list_missing_target_languages_by_media_file()` — for
+    call sites (the acquire/blacklist routes' pill-list OOB swap) that only need one
+    file's answer and shouldn't pay for resolving the whole library's profiles to get it.
+    """
+    media_file = session.get(MediaFile, media_file_id)
+    if media_file is None:
+        return []
+    item: Movie | Series | None
+    if media_file.movie_id is not None:
+        item = session.get(Movie, media_file.movie_id)
+    elif media_file.series_id is not None:
+        item = session.get(Series, media_file.series_id)
+    else:
+        item = None
+    if item is None:
+        return []
+    profile = resolve_effective_profile(session, item)
+    if profile is None:
+        return []
+    present = {
+        subtitle.language
+        for subtitle in session.exec(
+            select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+        )
+    }
+    return [
+        language for language in profile.target_language_list if language.lower() not in present
+    ]

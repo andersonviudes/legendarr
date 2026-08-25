@@ -192,58 +192,119 @@
 {% endmacro %}
 
 {#
-  One row per subtitle already discovered on one `MediaFile` — language/origin pill plus
-  its own "Sync timing" action (ROADMAP.md 0.7.0). Reused by the movie and series detail
-  pages' file/episode rows. "Blacklist" (ROADMAP.md 0.12.0) is external-only — an embedded
-  track can't be deleted/re-fetched, so there's nothing for it to do there.
+  Language/origin pills for the subtitles already discovered on one `MediaFile` — the
+  Subtitles-column half of a movie/series detail row. Each pill doubles as the trigger
+  for its own actions menu, opened right under it via subtitle-pill-menu.js: the two
+  file-level actions ("Translate now", "Manual search" — they don't depend on which
+  subtitle you clicked, just the file, so the same pair repeats identically in every
+  pill's menu for that file) followed by the subtitle-specific ones ("Sync timing"
+  ROADMAP.md 0.7.0, "Translate from this", and — external only, ROADMAP.md 0.12.0, since
+  an embedded track can't be deleted/re-fetched — "Blacklist"). Only "Upload subtitle"
+  remains in `.file-row-actions` (Actions column) — it doesn't apply to any subtitle,
+  existing or hypothetical, unlike the other two.
 #}
-{% macro subtitle_sync_list(subtitles) %}
-{% if subtitles %}
-<ul class="subtitle-sync-list">
+{% macro subtitle_pill_list(subtitles, media_file_id, missing_languages=[]) %}
+{% if subtitles or missing_languages %}
+<ul class="subtitle-pill-list">
   {% for subtitle in subtitles %}
-  <li class="subtitle-sync-row">
-    <span class="lang-pill" data-tooltip="{{ subtitle.origin }}">{{ subtitle.language }}</span>
-    <button
-      type="button"
-      class="app-icon-btn"
-      aria-label="Sync timing"
-      data-tooltip="Sync timing"
-      hx-post="/media/subtitles/{{ subtitle.id }}/sync-timing"
-      hx-target="#sync-result-{{ subtitle.id }}"
-      hx-swap="innerHTML"
-      hx-disabled-elt="this"
-    >{{ icon("refresh-cw") }}</button>
-    <span id="sync-result-{{ subtitle.id }}"></span>
-    <button
-      type="button"
-      class="app-icon-btn"
-      aria-label="Translate from this"
-      data-tooltip="Translate from this"
-      hx-post="/media/subtitles/{{ subtitle.id }}/translate"
-      hx-target="#translate-from-result-{{ subtitle.id }}"
-      hx-swap="innerHTML"
-      hx-disabled-elt="this"
-    >{{ icon("languages") }}</button>
-    <span id="translate-from-result-{{ subtitle.id }}"></span>
-    {% if subtitle.origin == "external" %}
-    <button
-      type="button"
-      class="app-icon-btn"
-      aria-label="Blacklist"
-      data-tooltip="Blacklist"
-      hx-post="/media/subtitles/{{ subtitle.id }}/blacklist"
-      hx-target="#blacklist-result-{{ subtitle.id }}"
-      hx-swap="innerHTML"
-      hx-disabled-elt="this"
-    >{{ icon("ban") }}</button>
-    <span id="blacklist-result-{{ subtitle.id }}"></span>
-    {% endif %}
+  <li class="subtitle-pill-item">
+    <span
+      class="lang-pill lang-pill--{{ subtitle.origin }}"
+      data-tooltip="{{ subtitle.origin }}"
+      data-subtitle-menu-toggle
+      role="button"
+      tabindex="0"
+      aria-haspopup="true"
+    >{{ subtitle.language }}</span>
+    <div class="subtitle-pill-menu" hidden>
+      {{ _subtitle_pill_file_actions(media_file_id) }}
+      <button
+        type="button"
+        class="subtitle-pill-menu-item"
+        hx-post="/media/subtitles/{{ subtitle.id }}/sync-timing"
+        hx-target="#sync-result-{{ subtitle.id }}"
+        hx-swap="innerHTML"
+        hx-disabled-elt="this"
+      >{{ icon("refresh-cw") }} Sync timing</button>
+      <span id="sync-result-{{ subtitle.id }}"></span>
+      <button
+        type="button"
+        class="subtitle-pill-menu-item"
+        hx-post="/media/subtitles/{{ subtitle.id }}/translate"
+        hx-target="#translate-from-result-{{ subtitle.id }}"
+        hx-swap="innerHTML"
+        hx-disabled-elt="this"
+      >{{ icon("languages") }} Translate from this</button>
+      <span id="translate-from-result-{{ subtitle.id }}"></span>
+      {% if subtitle.origin == "external" %}
+      <button
+        type="button"
+        class="subtitle-pill-menu-item"
+        hx-post="/media/subtitles/{{ subtitle.id }}/blacklist"
+        hx-target="#blacklist-result-{{ subtitle.id }}"
+        hx-swap="innerHTML"
+        hx-disabled-elt="this"
+      >{{ icon("ban") }} Blacklist</button>
+      <span id="blacklist-result-{{ subtitle.id }}"></span>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+  {% for language in missing_languages %}
+  <li class="subtitle-pill-item">
+    <span
+      class="lang-pill lang-pill--missing"
+      data-tooltip="missing"
+      data-subtitle-menu-toggle
+      role="button"
+      tabindex="0"
+      aria-haspopup="true"
+    >{{ language }}</span>
+    <div class="subtitle-pill-menu" hidden>
+      {{ _subtitle_pill_file_actions(media_file_id) }}
+    </div>
   </li>
   {% endfor %}
 </ul>
 {% else %}
-<span class="badge-empty">—</span>
+{#
+  No subtitles yet — still need Translate now/Manual search reachable (arguably the
+  case they matter most for), so the "—" placeholder becomes a menu trigger too, same
+  shape as a real pill just without the subtitle-specific actions.
+#}
+<span class="subtitle-pill-item">
+  <span
+    class="badge-empty"
+    data-subtitle-menu-toggle
+    role="button"
+    tabindex="0"
+    aria-haspopup="true"
+  >—</span>
+  <div class="subtitle-pill-menu" hidden>
+    {{ _subtitle_pill_file_actions(media_file_id) }}
+  </div>
+</span>
 {% endif %}
+<span id="translate-result-{{ media_file_id }}"></span>
+{% endmacro %}
+
+{% macro _subtitle_pill_file_actions(media_file_id) %}
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  hx-post="/media/files/{{ media_file_id }}/translate"
+  hx-target="#translate-result-{{ media_file_id }}"
+  hx-swap="innerHTML"
+  hx-disabled-elt="this"
+>{{ icon("send") }} Translate now</button>
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  data-subtitle-acquire-open
+  hx-get="/media/files/{{ media_file_id }}/subtitle-search"
+  hx-target="#subtitle-acquire-content"
+  hx-swap="innerHTML"
+>{{ icon("search") }} Manual search</button>
 {% endmacro %}
 
 {% macro lang_pill_group(codes) %}

@@ -32,11 +32,13 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
     if movie is None:
         return None
     assert movie.id is not None
+    profile_name, target_languages = _profile_fields(session, movie)
     files = _media_file_reads(
-        session, session.exec(select(MediaFile).where(MediaFile.movie_id == movie_id)).all()
+        session,
+        session.exec(select(MediaFile).where(MediaFile.movie_id == movie_id)).all(),
+        target_languages,
     )
     metadata = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie_id)).first()
-    profile_name, target_languages = _profile_fields(session, movie)
     return MovieDetailRead(
         id=movie.id,
         title=movie.title,
@@ -47,7 +49,7 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
         remote_path=movie.remote_path,
         language_profile_name=profile_name,
         target_languages=target_languages,
-        missing_subtitles_count=_missing_subtitles_count(files, target_languages),
+        missing_subtitles_count=_missing_subtitles_count(files),
         files=files,
     )
 
@@ -57,8 +59,9 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
     if series is None:
         return None
     assert series.id is not None
+    profile_name, target_languages = _profile_fields(session, series)
     media_files = session.exec(select(MediaFile).where(MediaFile.series_id == series_id)).all()
-    files = _media_file_reads(session, media_files)
+    files = _media_file_reads(session, media_files, target_languages)
     files_by_path = {
         media_file.relative_path: file_read
         for media_file, file_read in zip(media_files, files, strict=True)
@@ -66,7 +69,6 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
     metadata = session.exec(
         select(MediaMetadata).where(MediaMetadata.series_id == series_id)
     ).first()
-    profile_name, target_languages = _profile_fields(session, series)
     episodes, episodes_unavailable = _episode_reads(session, series, files_by_path)
     return SeriesDetailRead(
         id=series.id,
@@ -80,7 +82,7 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
         remote_path=series.remote_path,
         language_profile_name=profile_name,
         target_languages=target_languages,
-        missing_subtitles_count=_missing_subtitles_count(files, target_languages),
+        missing_subtitles_count=_missing_subtitles_count(files),
         episodes=episodes,
         episodes_unavailable=episodes_unavailable,
     )
@@ -132,7 +134,9 @@ def _profile_fields(session: Session, item: Movie | Series) -> tuple[str | None,
     return profile.name, profile.target_language_list
 
 
-def _media_file_reads(session: Session, media_files: Sequence[MediaFile]) -> list[MediaFileRead]:
+def _media_file_reads(
+    session: Session, media_files: Sequence[MediaFile], target_languages: list[str]
+) -> list[MediaFileRead]:
     media_file_ids: list[int] = []
     for media_file in media_files:
         assert media_file.id is not None
@@ -153,26 +157,23 @@ def _media_file_reads(session: Session, media_files: Sequence[MediaFile]) -> lis
                     id=subtitle.id, language=subtitle.language, origin=subtitle.origin.value
                 )
             )
+        present = {subtitle.language for subtitle in subtitle_reads}
         reads.append(
             MediaFileRead(
                 id=media_file.id,
                 relative_path=media_file.relative_path,
                 size_bytes=media_file.size_bytes,
                 subtitles=subtitle_reads,
+                missing_languages=[
+                    language for language in target_languages if language.lower() not in present
+                ],
             )
         )
     return reads
 
 
-def _missing_subtitles_count(files: list[MediaFileRead], target_languages: list[str]) -> int:
-    """Files still missing at least one of the profile's target languages — same
-    lowercase-compare convention `translate_media_file` uses, kept local to the
-    file/profile data this page already fetched instead of re-querying the DB."""
-    return sum(
-        1
-        for file in files
-        if any(
-            language.lower() not in {subtitle.language for subtitle in file.subtitles}
-            for language in target_languages
-        )
-    )
+def _missing_subtitles_count(files: list[MediaFileRead]) -> int:
+    """Files still missing at least one of the profile's target languages — each
+    file's own `missing_languages` (computed in `_media_file_reads`) already answers
+    that per file."""
+    return sum(1 for file in files if file.missing_languages)

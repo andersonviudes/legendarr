@@ -20,6 +20,21 @@ def test_scan_video_subtitles_finds_external_srt_sibling(tmp_path: Path):
     assert subtitles[0].language == "pt-br"
 
 
+def test_scan_video_subtitles_finds_external_sibling_with_brackets_in_the_name(tmp_path: Path):
+    """A `[...]`-tagged scene-release stem (e.g. `[Bluray-1080p][EN+JA]`) must be matched
+    literally — unescaped, `glob()` parses the brackets as a character class and finds
+    nothing."""
+    video = tmp_path / "Show - S01E01 - Title [Bluray-1080p][10bit][AAC 2.0][EN+JA]-DHD.mkv"
+    video.touch()
+    (tmp_path / "Show - S01E01 - Title [Bluray-1080p][10bit][AAC 2.0][EN+JA]-DHD.pt-BR.srt").touch()
+
+    subtitles = scan_video_subtitles(video)
+
+    assert len(subtitles) == 1
+    assert subtitles[0].origin == SubtitleOrigin.EXTERNAL
+    assert subtitles[0].language == "pt-br"
+
+
 def test_scan_video_subtitles_skips_embedded_probing_by_default(monkeypatch, tmp_path: Path):
     video = tmp_path / "movie.mkv"
     video.touch()

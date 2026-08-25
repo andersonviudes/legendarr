@@ -496,3 +496,150 @@ old shape — this round intentionally collapsed it to toast-only per explicit r
 (full pill) to `0.75rem`, matching the radius already used by card-like surfaces
 (`.service-card` and friends use the same `0.75rem`) instead of the badge/pill radius. Squared
 off but still visibly rounded, per the user's "mais quadrado... mas ainda com canto arredondado".
+
+**Update (2026-08-24 — per-subtitle actions menu, movie/series detail tables):** the user asked
+for a Bazarr-style per-badge dropdown (screenshot: clicking a subtitle language badge opens a
+small menu grouped into "Tools"/"Actions"). Classified our own actions the same way: per-subtitle
+(Sync timing, Translate from this, Blacklist-if-external — tied to one existing `subtitle` row)
+vs. per-episode/file (Translate now, Manual search, Upload subtitle — act on the whole
+`MediaFile`, no specific subtitle). This replaced an earlier same-session attempt at aligning two
+separate `<td>` columns (Subtitles pills / Actions icons) line-by-line via matching `<li>` counts
+and a fixed `min-height` — confirmed fragile (broke from an unrelated browser-cache issue, and
+still read as "esquisito" once fixed) and was abandoned in favor of this design.
+`macros.html::subtitle_pill_list()` now renders each pill as a `<span role="button" tabindex="0"
+data-subtitle-menu-toggle>` that toggles a sibling `.subtitle-pill-menu` (`hidden` attribute,
+`position: absolute`, same popover shape as `.lang-multiselect-options`) holding that subtitle's
+own 3 actions — no more `subtitle_action_list()`/`actions-subtitle-list-*` div, no more
+`.subtitle-line`/`vertical-align:top` cross-column alignment hack. The Actions `<td>` went back
+to being a single un-stacked `.file-row-actions` row, file-level only. Open/close JS
+(`static/js/subtitle-pill-menu.js`) follows the same open-on-click/close-on-outside-click shape
+as `language-profile-form.js`'s multiselect, plus manual `keydown` Enter/Space handling since the
+trigger is a `<span>`, not a real `<button>` (browsers don't auto-fire `click` for
+Enter/Space on `role="button"` elements the way they do for real buttons/links).
+
+- **New Pico gotcha, not covered by the list above:** Pico's own base
+  `button, [role="button"], [type="button"], ...` rule (`vendor/pico.min.css`) **redefines the
+  custom property `--pico-color` locally** on every button-like element (to
+  `var(--pico-primary-inverse)`, the dark text needed for contrast against Pico's default
+  gold-filled button background) and also sets `color: var(--pico-color)`. A custom `all: unset`
+  button (like `.subtitle-pill-menu-item`) that then does `color: var(--pico-color)` picks up
+  that *locally redefined* value, not the `:root`-level light gray — even though the custom
+  button's own selector has higher specificity, it never re-declares `--pico-color` itself, so
+  Pico's declaration (the only one that touches that custom property on this element) wins by
+  default. Rendered as near-invisible dark-on-dark text; not a caching or specificity-tie issue,
+  a different, subtler class of Pico shadowing than the `list-style`/`width:100%` ones above.
+  Fix: use `var(--pico-muted-color)` instead (already the pattern `.page-toolbar-btn` uses for
+  exactly this reason) and `var(--pico-primary)` for the `:hover` state, never `--pico-color`, on
+  any custom-styled button/`[role="button"]` element. **How to apply:** before reaching for
+  `var(--pico-color)` on any element that is (or has `role=`) a button, check this — it will
+  silently resolve to the wrong, low-contrast value.
+- Confirmed (again) the browser-cache gotcha documented above bites even with a live Playwright
+  MCP tab kept open across a long multi-round session — `Network.clearBrowserCache` +
+  `Network.setCacheDisabled` via a CDP session (`page.context().newCDPSession(page)`) before each
+  re-verification `page.goto()` is the reliable fix; a plain `page.reload()`, even after
+  `setCacheDisabled`, was NOT enough on its own once the stale entry already existed — needed the
+  explicit `clearBrowserCache` call too.
+
+**Immediate follow-up, same round:** the user then asked (terse, "traz o search e translate para
+subtitle") to move Translate now and Manual search *out* of `.file-row-actions` too — confirmed
+via `AskUserQuestion` (per [[ask-before-guessing-terse-ui-numbers]]) that this meant relocating
+both into every pill's own `.subtitle-pill-menu`, not duplicating them in both places. **This
+contradicts the per-subtitle-vs-per-file classification the paragraph above just established** —
+the user wants these two shown per-pill even though neither actually depends on which subtitle
+you clicked (`trigger_file_translation`/the manual-search panel are both keyed only by
+`media_file_id`, confirmed in `media_library/router.py` — there is no per-language variant, that's
+what "Translate from this" is already for). Implemented literally as asked: both buttons now
+render identically in *every* pill's dropdown for a given file (same `hx-post`/`hx-get` URLs
+repeated verbatim per pill) via a new private helper macro,
+`_subtitle_pill_file_actions(media_file_id)`, called from both branches of
+`subtitle_pill_list()`. `.file-row-actions` now holds only Upload subtitle.
+**Regression this surfaced and had to fix in the same pass:** `subtitle_pill_list()` renders a
+non-interactive `<span class="badge-empty">—</span>` (no menu at all) whenever a `MediaFile` has
+zero subtitles — which meant a file with nothing on it yet would have *lost* Translate now/Manual
+search entirely (no pill exists to host them), even though a subtitle-less file is arguably the
+single most common case for reaching for either action. Fixed by giving the empty-state badge a
+menu of its own: `<span class="subtitle-pill-item"><span class="badge-empty" role="button"
+data-subtitle-menu-toggle>—</span><div class="subtitle-pill-menu">{{
+_subtitle_pill_file_actions(...) }}</div></span>` — same wrapper shape as a real pill (needs
+`.subtitle-pill-item`'s `position: relative` for the popover, and `trigger.parentElement` in
+`subtitle-pill-menu.js` to find the sibling menu), just without the 3 subtitle-specific items.
+Verified with a throwaway `TestClient` render (a movie file with `subtitles: []`) rather than
+live-seeded data — none of the current Sonarr dev-stack fixture's episodes happen to have a
+`media_file` with zero subtitles, so this path wasn't reachable to screenshot live.
+**New Pico gotcha, second instance, hit immediately by this same fix:** `.badge-empty` picking up
+`role="button"` (to become a menu trigger) means it now matches the bare `[role="button"]`
+exclusion list too — same shadowing as `.subtitle-pill-menu-item` above — so its `:hover` state
+needed `var(--pico-primary)`, not `var(--pico-color)`, for the same reason. **General lesson,
+now confirmed twice: any element in this codebase that gains `role="button"` for a11y reasons
+(not to opt into Pico's button chrome) needs its own selector added to the
+`[role="button"]:not(...)` exclusion list in `styles.css` (~line 899) if it needs `display`,
+sizing, or `--pico-color`-derived styling Pico shouldn't touch — `.lang-pill` already had this,
+`.badge-empty` did not need the full exclusion (its only Pico-shadowed property, `--pico-color`,
+  was dodged by using `--pico-primary` instead) but the *next* one probably will.**
+
+**Immediate follow-up, same round (episode-table column widths):** the user then flagged the
+series-detail episode table itself (screenshot): the Episode column (2-digit numbers) was taking
+as much width as Title, because default browser table auto-layout distributes leftover width
+proportionally to each column's own preferred content width — including the header text, not
+just the data. Added `.episode-table { table-layout: fixed }` plus a `<colgroup>` in
+`series_detail.html` giving `.episode-table-col-episode`/`-subtitles`/`-actions` explicit widths
+and leaving Title unsized so it absorbs whatever's left (an unsized column only reliably grabs
+"everything else" under `table-layout: fixed` when it's the *sole* one left unsized). First
+attempt (5rem Episode / 3.5rem Actions) undershot and wrapped both headers onto multiple lines
+("Episode"→"Episo/de", "Actions"→3 lines) — `table-layout: fixed` does not shrink-to-fit header
+text the way auto-layout does, so a width below the header's own rendered width silently wraps
+instead of overflowing. Settled on 6.5rem Episode / 6rem Actions (measured via a throwaway
+off-screen `<span>` + `getComputedStyle` probe: "Episode" text ≈70px + 36px cell padding ≈106px
+minimum at this app's 18px root font-size, so gave it a comfortable single-line margin above
+that) — then, after a second follow-up screenshot from the user ("subtitles ficou esprimido"),
+bumped `.episode-table-col-subtitles` from 12rem to 18rem since the language pills read as
+cramped. **How to apply:** this `episode-table` colgroup pattern is `series_detail.html`-only —
+`movie_detail.html`'s 3-column table (File/Subtitles/Actions) wasn't touched and has different
+needs (the File column holds a full relative path, not a 2-digit number, so it shouldn't be
+squeezed the same way). If Subtitles/Actions need adjusting again, remember header text sets a
+hard minimum under `table-layout: fixed` — check rendered header width before picking a number,
+don't just eyeball a smaller rem value.
+
+**Same round, next follow-up: pills laid out vertically → horizontal, then 3-state pill coloring
+(2026-08-24).** First `.subtitle-pill-list` was `flex-direction: column` (one pill per line);
+user wanted them side by side like a reference screenshot from another app — changed to
+`flex-wrap: wrap` (`styles.css` ~447), pill menus still anchor correctly since each still opens
+relative to its own `.subtitle-pill-item`. Then a bigger ask, still terse but with clear
+*direction* per [[ask-before-guessing-terse-ui-numbers]]'s refinement (named 3 states + named
+colors, not a bare number) — acted on directly rather than asking: "legenda embedded amarelo,
+external laranja forte, cinza a do profile mas não tem ainda" (embedded=yellow, external=strong
+orange, profile-target-but-not-yet-acquired=gray). `subtitle.origin` was already exactly
+"embedded"/"external" (`SubtitleOrigin` enum,
+`subtitle_discovery/scan_video_subtitles.py:19-21`) so the real-pill half was just
+`class="lang-pill lang-pill--{{ subtitle.origin }}"` in `subtitle_pill_list()`
+(`templates/macros.html`) plus two new modifier rules — `.lang-pill--embedded` uses the
+already-existing `--lg-warn-color`/(new) `--lg-warn-dim-background-color` pair (mirrors how the
+base `.lang-pill` pairs `--pico-primary` with `--lg-primary-dim-background-color`), `external`
+needed no new rule since the pre-existing base `.lang-pill` orange already was the "strong
+orange". The gray "missing" state needed real backend work, not just CSS: `MediaFileRead` had no
+notion of "this file's profile target languages it doesn't have a subtitle for yet" per-file
+(`MediaDetailRead.target_languages` only existed at the whole movie/series level). Added
+`MediaFileRead.missing_languages: list[str]`, computed in `get_media_detail.py::_media_file_reads`
+using the same lowercase-compare convention `_missing_subtitles_count` already used (which got
+simplified to `sum(1 for file in files if file.missing_languages)` once the per-file field existed
+— avoids the same compare logic living in two places). `subtitle_pill_list()` renders one extra
+`<li>` per missing language, gray (`.lang-pill--missing`, `--pico-muted-color` +
+`--lg-neutral-dim-background-color`), clickable with the same file-level Translate-now/Manual-search
+menu the empty-state `—` badge uses (not the 3 subtitle-specific items, since there's no real
+`Subtitle` row to act on). **Gotcha caught only by live-testing, not by the unit tests:** the two
+HTMX out-of-band partials that re-swap the Subtitles `<td>` after an action —
+`_subtitle_acquire_result.html` and `_subtitle_blacklist_result.html` — call
+`subtitle_pill_list()` too, and would've silently dropped the gray pills after every
+upload/download/blacklist (macro's new 3rd arg defaults to `[]`) until the next full page load.
+Fixed by adding `missing_languages` to `SubtitleAcquisitionResult`/`SubtitleBlacklistResult`
+too, computed via a new single-file `missing_target_languages_for_media_file()` in
+`subtitle_discovery/list_missing_subtitles.py` (a per-file sibling of the existing
+whole-library `list_missing_target_languages_by_media_file()` — reused resolving one file's
+profile instead of every media file's, since the router only has one `media_file_id` at that
+point). **How to apply:** any *new* place that swaps a Subtitles `<td>` back in via
+`subtitle_pill_list()` must also pass `missing_languages` through its result schema, or the gray
+pills will vanish from that row until reload — check both HTMX OOB-swap call sites are still the
+only ones before assuming a plain 2-arg call is safe. Live-verified by creating a demo
+`LanguageProfile` (ja→pt-BR,en,fr, default) in the dev container's UI, since the seeded dev
+Sonarr/Radarr fixture data ships with **no** language profile configured at all — left that demo
+profile in place afterward (trivially deletable, low-risk on a local dev stack).

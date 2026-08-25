@@ -76,6 +76,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
     assert detail.files[0].relative_path == "Foo.mkv"
     assert detail.files[0].subtitles[0].language == "en"
     assert detail.files[0].subtitles[0].origin == "external"
+    assert detail.files[0].missing_languages == ["pt-BR", "fr"]
     assert detail.missing_subtitles_count == 1
 
 

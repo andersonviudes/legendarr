@@ -75,6 +75,26 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "/media/subtitles/12/sync-timing" in response.text
     assert "/media/subtitles/12/translate" in response.text
     assert "TBA" in response.text
+    assert 'class="lang-pill lang-pill--external"' in response.text
+
+
+def _series_detail_with_missing_language_handler(request: httpx.Request) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][0]["media_file"]["missing_languages"] = ["fr"]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_missing_language_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    assert 'class="lang-pill lang-pill--missing"' in response.text
+    assert "fr" in response.text
 
 
 def test_series_detail_page_shows_unavailable_message_when_sonarr_unreachable(

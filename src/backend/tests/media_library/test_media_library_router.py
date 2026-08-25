@@ -8,6 +8,7 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.database.engine import get_session
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
@@ -594,6 +595,13 @@ def test_blacklist_subtitle_returns_404_when_missing(isolated_database):
 def test_upload_subtitle_writes_the_file(isolated_database, tmp_path):
     with TestClient(create_api_app()) as client:
         media_file_id = _seed_movie_with_video(tmp_path)
+        with get_session() as session:
+            session.add(
+                LanguageProfile(
+                    name="Default", source_languages="en", target_languages="en,fr", is_default=True
+                )
+            )
+            session.commit()
         response = client.post(
             f"/media/files/{media_file_id}/subtitle-upload",
             data={"language": "en"},
@@ -604,6 +612,7 @@ def test_upload_subtitle_writes_the_file(isolated_database, tmp_path):
     body = response.json()
     assert body["success"] is True
     assert any(subtitle["language"] == "en" for subtitle in body["subtitles"])
+    assert body["missing_languages"] == ["fr"]
     output = tmp_path / "Foo" / "Foo.en.srt"
     assert output.read_bytes() == b"content"
     # The route owns the commit — a fresh session must see the scanned Subtitle row.
