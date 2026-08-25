@@ -136,6 +136,33 @@ body {
   color: var(--pico-primary);
 }
 
+/* Topbar running-tasks indicator — hidden entirely while empty (no tasks running), see
+   base.html and system/templates/_running_tasks_indicator.html. */
+.app-topbar-tasks {
+  margin-left: auto;
+  margin-right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--pico-primary);
+}
+
+.app-topbar-tasks:empty {
+  display: none;
+}
+
+.app-topbar-tasks svg {
+  width: 1.1em;
+  height: 1.1em;
+  animation: legendarr-spin 1s linear infinite;
+}
+
+@keyframes legendarr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .app-sidebar nav {
   flex: 1;
   display: flex;
@@ -1425,4 +1452,42 @@ button.outline.contrast:is(:hover, :focus) {
 
 .log-line--error {
   color: var(--pico-del-color);
+}
+
+.task-line-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+}
+
+.task-line:last-child {
+  border-bottom: none;
+}
+
+.task-line-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-line-queue {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+  font-size: 0.675rem;
+  font-weight: 700;
+}
+
+.task-line-time {
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
+  white-space: nowrap;
 }

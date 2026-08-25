@@ -1,0 +1,14 @@
+{% from "macros.html" import empty_state %}
+{% if tasks %}
+<ul class="task-line-list">
+  {% for task in tasks %}
+  <li class="task-line">
+    <span class="task-line-name">{{ task.name }}</span>
+    <span class="task-line-queue">{{ task.queue }}</span>
+    <span class="task-line-time">{{ task.started_at[:19].replace("T", " ") }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+{{ empty_state("No tasks running right now.") }}
+{% endif %}

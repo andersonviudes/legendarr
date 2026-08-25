@@ -21,6 +21,14 @@
       <div class="app-brand">
         <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
       </div>
+      <a
+        href="/system/tasks/"
+        class="app-topbar-tasks"
+        aria-label="Running tasks"
+        hx-get="/system/tasks/count"
+        hx-trigger="load, every 3s, refresh-tasks"
+        hx-swap="innerHTML"
+      >{% include "_running_tasks_indicator.html" %}</a>
     </header>
     <div class="app-shell">
       <aside class="app-sidebar">
@@ -156,12 +164,24 @@
               >{{ icon("list-checks") }}<span>Tasks</span></a>
             </li>
           </ul>
-          <ul>
+          <button
+            type="button"
+            class="app-nav-toggle"
+            aria-expanded="{{ 'true' if request.url.path.startswith('/system') else 'false' }}"
+            aria-controls="nav-system"
+          >{{ icon("server") }}<span>System</span>{{ icon("chevron-right") }}</button>
+          <ul id="nav-system" class="app-nav-submenu" {% if not request.url.path.startswith("/system") %}hidden{% endif %}>
             <li>
               <a
                 href="/system/"
-                {% if request.url.path.startswith("/system") %}aria-current="page"{% endif %}
-              >{{ icon("server") }}<span>System</span></a>
+                {% if request.url.path == "/system/" %}aria-current="page"{% endif %}
+              >{{ icon("scroll-text") }}<span>Logs</span></a>
+            </li>
+            <li>
+              <a
+                href="/system/tasks/"
+                {% if request.url.path.startswith("/system/tasks") %}aria-current="page"{% endif %}
+              >{{ icon("loader-circle") }}<span>Tasks</span></a>
             </li>
           </ul>
         </nav>
@@ -184,6 +204,7 @@
     <script src="/static/js/sidebar.js" defer></script>
     <script src="/static/js/theme.js" defer></script>
     <script src="/static/js/toast.js" defer></script>
+    <script src="/static/js/running-tasks.js" defer></script>
     {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
     {% block scripts %}{% endblock %}
   </body>

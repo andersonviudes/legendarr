@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException
 
 from legendarr_backend.system.browse_directory import list_subdirectories
 from legendarr_backend.system.read_logs import list_recent_logs
-from legendarr_backend.system.schemas import DirectoryListingRead, LogLineRead
+from legendarr_backend.system.running_tasks import list_running_tasks
+from legendarr_backend.system.schemas import DirectoryListingRead, LogLineRead, RunningTaskRead
 
 router = APIRouter(prefix="/system")
 
@@ -37,3 +38,8 @@ def get_logs(level: str | None = None, limit: int = 200) -> list[LogLineRead]:
         except KeyError as exc:
             raise HTTPException(status_code=422, detail="Unknown log level") from exc
     return list_recent_logs(min_level=min_level, limit=limit)
+
+
+@router.get("/tasks/running", response_model=list[RunningTaskRead])
+def get_running_tasks() -> list[RunningTaskRead]:
+    return list_running_tasks()
