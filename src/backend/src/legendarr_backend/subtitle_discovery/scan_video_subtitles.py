@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from enum import StrEnum
+from glob import escape as glob_escape
 from pathlib import Path
 
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
@@ -84,7 +85,10 @@ def _scan_external_subtitles(video_path: Path) -> list[DiscoveredSubtitle]:
     # `_scan_embedded_subtitles` instead — excluded here so the same file on disk
     # doesn't turn into two `Subtitle` rows with conflicting origins.
     embedded_prefix = f"{video_path.stem}.embedded."
-    for sibling in video_path.parent.glob(f"{video_path.stem}*"):
+    # `glob_escape` is required, not cosmetic — a stem containing `[`/`]` (routine in
+    # scene-release naming, e.g. "...[Bluray-1080p][EN+JA]-DHD") is otherwise parsed as
+    # a glob character class and matches nothing, silently hiding real sibling subtitles.
+    for sibling in video_path.parent.glob(f"{glob_escape(video_path.stem)}*"):
         if sibling.name.startswith(embedded_prefix):
             continue
         if sibling.suffix.lower() in {".srt", ".ass", ".ssa", ".vtt"}:

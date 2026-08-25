@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_sync_list %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_pill_list %}
 {% block title %}legendarr · {{ series.title }}{% endblock %}
 {% block content %}
 {{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan") }}
@@ -39,7 +39,13 @@
 {% for season_number, season_episodes in series.episodes|groupby("season_number")|reverse %}
 <details class="season-group" {% if loop.first %}open{% endif %}>
   <summary>Season {{ season_number }}</summary>
-  <table>
+  <table class="episode-table">
+    <colgroup>
+      <col class="episode-table-col-episode">
+      <col class="episode-table-col-title">
+      <col class="episode-table-col-subtitles">
+      <col class="episode-table-col-actions">
+    </colgroup>
     <thead>
       <tr>
         <th scope="col">Episode</th>
@@ -55,7 +61,7 @@
         <td>{{ episode.title }}</td>
         <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
-          {{ subtitle_sync_list(episode.media_file.subtitles) }}
+          {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages) }}
           {% else %}
           <span class="badge-empty">—</span>
           {% endif %}
@@ -63,27 +69,6 @@
         <td>
           {% if episode.media_file %}
           <div class="file-row-actions">
-            <button
-              type="button"
-              class="app-icon-btn"
-              aria-label="Translate now"
-              data-tooltip="Translate now"
-              hx-post="/media/files/{{ episode.media_file.id }}/translate"
-              hx-target="#translate-result-{{ episode.media_file.id }}"
-              hx-swap="innerHTML"
-              hx-disabled-elt="this"
-            >{{ icon("send") }}</button>
-            <span id="translate-result-{{ episode.media_file.id }}"></span>
-            <button
-              type="button"
-              class="app-icon-btn"
-              aria-label="Manual search"
-              data-tooltip="Manual search"
-              data-subtitle-acquire-open
-              hx-get="/media/files/{{ episode.media_file.id }}/subtitle-search"
-              hx-target="#subtitle-acquire-content"
-              hx-swap="innerHTML"
-            >{{ icon("search") }}</button>
             <button
               type="button"
               class="app-icon-btn"
@@ -119,4 +104,5 @@
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/subtitle-acquire.js" defer></script>
+<script src="/static/js/subtitle-pill-menu.js" defer></script>
 {% endblock %}

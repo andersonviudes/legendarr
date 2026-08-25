@@ -42,6 +42,9 @@ from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
 from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
     upload_subtitle_for_media_file,
 )
+from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
+    missing_target_languages_for_media_file,
+)
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
@@ -271,6 +274,7 @@ def _acquisition_result(
         success=success,
         message=message,
         subtitles=subtitle_reads,
+        missing_languages=missing_target_languages_for_media_file(session, media_file_id),
     )
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_sync_list %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_pill_list %}
 {% block title %}legendarr · {{ movie.title }}{% endblock %}
 {% block content %}
 {{ media_detail_toolbar("/media/movies/" ~ movie.id ~ "/scan") }}
@@ -48,30 +48,9 @@
     {% for file in movie.files %}
     <tr>
       <td>{{ file.relative_path }}</td>
-      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_sync_list(file.subtitles) }}</td>
+      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages) }}</td>
       <td>
         <div class="file-row-actions">
-          <button
-            type="button"
-            class="app-icon-btn"
-            aria-label="Translate now"
-            data-tooltip="Translate now"
-            hx-post="/media/files/{{ file.id }}/translate"
-            hx-target="#translate-result-{{ file.id }}"
-            hx-swap="innerHTML"
-            hx-disabled-elt="this"
-          >{{ icon("send") }}</button>
-          <span id="translate-result-{{ file.id }}"></span>
-          <button
-            type="button"
-            class="app-icon-btn"
-            aria-label="Manual search"
-            data-tooltip="Manual search"
-            data-subtitle-acquire-open
-            hx-get="/media/files/{{ file.id }}/subtitle-search"
-            hx-target="#subtitle-acquire-content"
-            hx-swap="innerHTML"
-          >{{ icon("search") }}</button>
           <button
             type="button"
             class="app-icon-btn"
@@ -102,4 +81,5 @@
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/subtitle-acquire.js" defer></script>
+<script src="/static/js/subtitle-pill-menu.js" defer></script>
 {% endblock %}

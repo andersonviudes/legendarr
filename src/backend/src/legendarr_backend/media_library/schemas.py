@@ -42,6 +42,9 @@ class MediaFileRead(BaseModel):
     relative_path: str
     size_bytes: int
     subtitles: list[SubtitleRead]
+    # Profile target languages this file has no subtitle for yet — rendered as extra
+    # gray pills alongside the real ones (embedded/external) in subtitle_pill_list().
+    missing_languages: list[str] = []
 
 
 class MediaDetailRead(BaseModel):
@@ -116,6 +119,7 @@ class SubtitleAcquisitionResult(BaseModel):
     success: bool
     message: str
     subtitles: list[SubtitleRead]
+    missing_languages: list[str] = []
 
 
 class SubtitleBlacklistResult(SubtitleAcquisitionResult):

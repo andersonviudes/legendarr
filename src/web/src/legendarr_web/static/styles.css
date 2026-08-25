@@ -54,6 +54,7 @@ svg.lucide {
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
   --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
   --lg-warn-color: #d9b23c;
+  --lg-warn-dim-background-color: rgba(217, 178, 60, 0.12);
   --lg-status-ended-color: #3fae6a;
   --lg-status-continuing-color: #3f8fd9;
 }
@@ -412,32 +413,114 @@ body {
   font-weight: 600;
 }
 
+/* Fixed layout so the 4 columns don't auto-size proportionally to their preferred content
+   width — that gave "Episode" (2-digit numbers, an 8-char header) as much room as Title.
+   Only Title is left unsized, so it absorbs whatever the other three don't use. */
+.episode-table {
+  table-layout: fixed;
+}
+
+.episode-table-col-episode {
+  width: 6.5rem;
+}
+
+.episode-table-col-subtitles {
+  width: 22rem;
+}
+
+.episode-table-col-actions {
+  width: 6rem;
+}
+
+/* File-level actions that don't apply to any subtitle, existing or hypothetical — just
+   Upload subtitle. Translate now/Manual search moved into `.subtitle-pill-menu` below
+   (every pill's dropdown, plus the empty-badge one), see subtitle_pill_list() in
+   macros.html. */
 .file-row-actions {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
 }
 
-/* One row per subtitle (language pill + its own "Sync timing" button), replacing the
-   plain language-pill badges wherever a subtitle needs an individually addressable
-   action — see subtitle_sync_list() in macros.html. */
-.subtitle-sync-list {
+/* Subtitles-column pill list — see subtitle_pill_list() in macros.html. Each pill is
+   also the trigger for its own actions menu (Sync timing / Translate from this /
+   Blacklist), popped open right under it rather than living in a separate column. */
+.subtitle-pill-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.3rem;
   margin: 0;
   padding: 0;
+}
+
+/* `list-style: none` has to sit directly on the `<li>` — Pico's own `ul li{list-style:
+   square}` targets the `<li>` itself, which wins over a `list-style: none` set on the
+   parent `<ul>` since that's only inherited, not a direct match. */
+.subtitle-pill-item {
+  position: relative;
   list-style: none;
 }
 
-.subtitle-sync-row {
+.subtitle-pill-item .lang-pill {
+  cursor: pointer;
+}
+
+.subtitle-pill-item .lang-pill:hover {
+  filter: brightness(1.2);
+}
+
+.subtitle-pill-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-card-background-color);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle-pill-menu-item {
+  all: unset;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.35rem;
+  font-size: var(--lg-font-xs);
+  /* Not `--pico-color`: Pico's base `button` rule redefines that custom property locally
+     (dark text for contrast against its default gold-filled background), which would
+     win here since this rule never redeclares it — same reason .page-toolbar-btn above
+     reaches for `--pico-muted-color` instead. */
+  color: var(--pico-muted-color);
+  cursor: pointer;
+}
+
+.subtitle-pill-menu-item:hover {
+  color: var(--pico-primary);
+  background-color: var(--lg-neutral-hover-background-color);
 }
 
 .badge-empty {
   color: var(--pico-muted-color);
+}
+
+/* A "—" placeholder doubling as a subtitle_pill_list() menu trigger (no subtitles yet) —
+   same hover affordance as a real .lang-pill, so it doesn't look inert. */
+.subtitle-pill-item .badge-empty {
+  cursor: pointer;
+}
+
+.subtitle-pill-item .badge-empty:hover {
+  /* Not `--pico-color`: this span carries `role="button"` (menu trigger), which Pico's
+     base button rule shadows locally — see the .subtitle-pill-menu-item comment above. */
+  color: var(--pico-primary);
 }
 
 /* === Friendly empty states (language profiles, library) === */
@@ -581,6 +664,19 @@ body {
   background-color: var(--lg-primary-dim-background-color);
   color: var(--pico-primary);
   font-size: var(--lg-font-xs);
+}
+
+/* subtitle_pill_list() state colors: external subtitles keep the base .lang-pill
+   orange (already what "strong orange" looked like); embedded and missing get their
+   own modifier on top of the base class. */
+.lang-pill--embedded {
+  background-color: var(--lg-warn-dim-background-color);
+  color: var(--lg-warn-color);
+}
+
+.lang-pill--missing {
+  background-color: var(--lg-neutral-dim-background-color);
+  color: var(--pico-muted-color);
 }
 
 .lang-pill-arrow {
@@ -846,13 +942,16 @@ button.page-toolbar-btn {
 }
 
 /* Content buttons (form actions, card actions). The shell's own buttons — .app-nav-toggle,
-   .app-icon-btn, .page-toolbar-btn and .lang-multiselect-tag-remove — fully reset themselves
-   with `all: unset` and style themselves, so they're excluded here rather than fought with
-   extra specificity elsewhere. */
-button:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove),
-[role="button"],
+   .app-icon-btn, .page-toolbar-btn, .lang-multiselect-tag-remove and
+   .subtitle-pill-menu-item — fully reset themselves with `all: unset` and style
+   themselves, so they're excluded here rather than fought with extra specificity
+   elsewhere. `.lang-pill` also gets `role="button"` (it's the subtitle-menu trigger,
+   see macros.html::subtitle_pill_list) purely for a11y semantics, not to pick up this
+   rule's button chrome. */
+button:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove):not(.subtitle-pill-menu-item),
+[role="button"]:not(.lang-pill),
 [type="submit"]:not(.page-toolbar-btn),
-[type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove) {
+[type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove):not(.subtitle-pill-menu-item) {
   display: inline-block;
   --pico-border-radius: 0.5rem;
   --pico-form-element-spacing-vertical: 0.5rem;
