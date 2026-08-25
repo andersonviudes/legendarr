@@ -26,7 +26,7 @@
         class="app-topbar-tasks"
         aria-label="Running tasks"
         hx-get="/system/tasks/count"
-        hx-trigger="load, every 3s"
+        hx-trigger="load, every 3s, refresh-tasks"
         hx-swap="innerHTML"
       >{% include "_running_tasks_indicator.html" %}</a>
     </header>
@@ -204,6 +204,7 @@
     <script src="/static/js/sidebar.js" defer></script>
     <script src="/static/js/theme.js" defer></script>
     <script src="/static/js/toast.js" defer></script>
+    <script src="/static/js/running-tasks.js" defer></script>
     {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
     {% block scripts %}{% endblock %}
   </body>

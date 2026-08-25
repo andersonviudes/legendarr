@@ -103,9 +103,7 @@ def attach_running_task_registry(scheduler: BackgroundScheduler) -> None:
     scheduler.add_listener(
         lambda event: _registry.remember(event, scheduler), EVENT_JOB_ADDED | EVENT_JOB_MODIFIED
     )
-    scheduler.add_listener(
-        lambda event: _registry.submit(event, scheduler), EVENT_JOB_SUBMITTED
-    )
+    scheduler.add_listener(lambda event: _registry.submit(event, scheduler), EVENT_JOB_SUBMITTED)
     scheduler.add_listener(
         _registry.finish, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED
     )
