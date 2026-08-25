@@ -15,6 +15,7 @@ from legendarr_backend.language_profiles import models as _language_profiles_mod
 from legendarr_backend.logging.setup import reset_log_records
 from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
 from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
+from legendarr_backend.scheduling.running_tasks import reset_running_tasks
 from legendarr_backend.subtitle_acquisition import (
     models as _subtitle_acquisition_models,  # noqa: F401
 )
@@ -66,6 +67,15 @@ def isolated_log_buffer():
     reset_log_records()
     yield
     reset_log_records()
+
+
+@pytest.fixture
+def isolated_running_tasks():
+    """Reset the in-memory running-task registry so assertions on it aren't affected by
+    jobs submitted by other tests running in the same process."""
+    reset_running_tasks()
+    yield
+    reset_running_tasks()
 
 
 @pytest.fixture

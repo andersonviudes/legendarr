@@ -25,6 +25,30 @@ async def get_logs(
     return templates.TemplateResponse(request, "_log_lines.html", {"lines": lines})
 
 
+@router.get("/tasks/")
+async def show_tasks(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    tasks = await service.get_running_tasks(client)
+    return templates.TemplateResponse(request, "tasks.html", {"tasks": tasks})
+
+
+@router.get("/tasks/running")
+async def get_running_tasks_partial(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    tasks = await service.get_running_tasks(client)
+    return templates.TemplateResponse(request, "_running_tasks_list.html", {"tasks": tasks})
+
+
+@router.get("/tasks/count")
+async def get_running_tasks_count(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    tasks = await service.get_running_tasks(client)
+    return templates.TemplateResponse(
+        request, "_running_tasks_indicator.html", {"count": len(tasks)}
+    )
+
+
 @router.get("/directories/browse")
 async def browse_directories(
     request: Request,

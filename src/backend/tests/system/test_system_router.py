@@ -1,8 +1,13 @@
 import logging
+from datetime import UTC, datetime
 
+from apscheduler.events import EVENT_JOB_SUBMITTED, JobSubmissionEvent
 from fastapi.testclient import TestClient
 from legendarr_backend.api import create_api_app
 from legendarr_backend.logging.setup import configure_logging
+from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.scheduling.running_tasks import attach_running_task_registry
+from legendarr_backend.scheduling.scheduler import build_scheduler, register_job
 
 
 def test_get_directories_returns_immediate_subdirectories(isolated_database, tmp_path):
@@ -68,3 +73,37 @@ def test_get_logs_422s_on_unknown_level(isolated_database):
         response = client.get("/system/logs", params={"level": "NOPE"})
 
     assert response.status_code == 422
+
+
+def _noop() -> None:
+    pass
+
+
+def test_get_running_tasks_returns_currently_running_tasks(
+    isolated_database, isolated_running_tasks
+):
+    scheduler = build_scheduler()
+    attach_running_task_registry(scheduler)
+    register_job(
+        scheduler,
+        _noop,
+        queue=JobQueue.SYNC,
+        job_id="router_test_job",
+        trigger="interval",
+        minutes=1,
+        retry_attempts=1,
+        retry_delay_seconds=0,
+        max_instances=1,
+        coalesce=False,
+    )
+    run_time = datetime.now(UTC)
+    scheduler._dispatch_event(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, "router_test_job", "default", [run_time])
+    )
+
+    with TestClient(create_api_app()) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    tasks = response.json()
+    assert any(task["job_id"] == "router_test_job" for task in tasks)
