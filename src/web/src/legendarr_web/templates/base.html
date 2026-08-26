@@ -61,7 +61,7 @@
               hx-swap="innerHTML"
             ></span></button>
           <div id="notifications-panel" class="app-notifications-panel" hidden>
-            <a href="/system/tasks/" class="app-notifications-panel-header">{{ icon("loader-circle") }}<span>{{ t("nav.system.tasks") }}</span></a>
+            <a href="/system/tasks/" class="app-notifications-panel-header">{{ icon("activity") }}<span>{{ t("nav.system.tasks") }}</span></a>
             <div
               id="notifications-panel-body"
               hx-get="/system/tasks/running"
@@ -250,7 +250,7 @@
               <a
                 href="/system/tasks/"
                 {% if request.url.path.startswith("/system/tasks") %}aria-current="page"{% endif %}
-              >{{ icon("loader-circle") }}<span>{{ t("nav.system.tasks") }}</span></a>
+              >{{ icon("activity") }}<span>{{ t("nav.system.tasks") }}</span></a>
             </li>
             <li>
               <a

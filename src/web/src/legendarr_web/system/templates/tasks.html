@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% block title %}legendarr · {{ t("nav.system.tasks") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("loader-circle") }} {{ t("nav.system.tasks") }}</h1>
+<h1>{{ icon("activity") }} {{ t("nav.system.tasks") }}</h1>
 
 <section>
   <div
     id="running-tasks-list"
-    class="log-lines"
     hx-get="/system/tasks/running"
     hx-trigger="every 3s"
     hx-swap="innerHTML"
