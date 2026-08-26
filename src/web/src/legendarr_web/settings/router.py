@@ -75,3 +75,48 @@ async def save_task_settings(
         )
     toast = urlencode({"toast": "Task settings saved.", "toast_type": "success"})
     return RedirectResponse(f"/settings/tasks/?{toast}", status_code=303)
+
+
+authentication_router = APIRouter(prefix="/settings/authentication")
+
+
+@authentication_router.get("/")
+async def show_auth_settings(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    auth_settings = await service.get_auth_settings(client)
+    return templates.TemplateResponse(request, "authentication.html", {"settings": auth_settings})
+
+
+@authentication_router.post("/")
+async def save_auth_settings(
+    request: Request,
+    enabled: bool = Form(False),
+    username: str = Form(""),
+    password: str = Form(""),
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    data = {"enabled": enabled, "username": username, "password": password}
+    try:
+        await service.update_auth_settings(client, data)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise
+        current = await service.get_auth_settings(client)
+        rendered_settings = {**current, "enabled": enabled, "username": username}
+        return templates.TemplateResponse(
+            request,
+            "authentication.html",
+            {"settings": rendered_settings, "error": error_detail(exc)},
+            status_code=exc.response.status_code,
+        )
+    toast = urlencode({"toast": "Authentication settings saved.", "toast_type": "success"})
+    return RedirectResponse(f"/settings/authentication/?{toast}", status_code=303)
+
+
+@authentication_router.post("/api-key/regenerate")
+async def regenerate_auth_api_key(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    auth_settings = await service.regenerate_api_key(client)
+    return templates.TemplateResponse(request, "_api_key_field.html", {"settings": auth_settings})

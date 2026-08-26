@@ -16,6 +16,7 @@ All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.con
 | `LEGENDARR_SYNC_INTERVAL_MINUTES` | `15` | How often the background scheduler resyncs the media library. Same `config.yaml` precedence as `LEGENDARR_RADARR_URL`. |
 | `LEGENDARR_TRANSLATION_PLUGIN_PACKAGES` | *(empty)* | Comma-separated `module.path:ClassName` entries — third-party [translation provider plugins](../features/subtitle-translation.md#plugins-third-party-providers) to load at startup. Read once at process startup; not stored in `config.yaml` and not editable from the web UI. |
 | `LEGENDARR_BACKEND_API_URL` | `http://127.0.0.1:8000/api` | Base URL `legendarr_web` uses to call `legendarr_backend`'s API. Only relevant when running `legendarr_web` standalone against a separately-hosted backend — the default is correct for the normal `legendarr_bootstrap` single-process deploy. |
+| `LEGENDARR_AUTH_ENABLED` | `false` | Require login for the web UI and the backend API (see [Authentication](../features/authentication.md)). Off by default so existing installs and a trusted-LAN deployment are unaffected. Same `config.yaml` precedence as `LEGENDARR_RADARR_URL`; also editable from Settings → Authentication, which is the intended way to turn it on — enabling it also needs a username and password, set from that same page, not via env vars. |
 
 !!! note
     If `LEGENDARR_DATABASE_URL` is unset, legendarr resolves it to

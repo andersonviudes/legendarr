@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state %}
+{% block title %}legendarr · Sessions{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  {% if sessions|length > 1 %}
+  <form method="post" action="/system/sessions/revoke-others">
+    <button type="submit" class="page-toolbar-btn">
+      {{ icon("log-out") }}
+      <span>Revoke Other Sessions</span>
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<h1>{{ icon("monitor") }} Sessions</h1>
+
+{% if not sessions %}
+{{ empty_state("No active sessions.") }}
+{% else %}
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Device</th>
+      <th scope="col">IP Address</th>
+      <th scope="col">Logged in</th>
+      <th scope="col">Last seen</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for session in sessions %}
+    <tr>
+      <td>
+        {{ session.user_agent or "Unknown device" }}
+        {% if session.id == current_session_id %}<span class="app-nav-badge">This device</span>{% endif %}
+      </td>
+      <td>{{ session.ip_address or "—" }}</td>
+      <td>{{ session.created_at[:19].replace("T", " ") }}</td>
+      <td>{{ session.last_seen_at[:19].replace("T", " ") }}</td>
+      <td>
+        {% if session.id != current_session_id %}
+        <form method="post" action="/system/sessions/{{ session.id }}/revoke">
+          <button type="submit" class="outline contrast">Revoke</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
