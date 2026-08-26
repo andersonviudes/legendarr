@@ -83,3 +83,16 @@ def test_sidebar_links_to_the_tasks_page(stub_backend_client):
 
     assert response.status_code == 200
     assert 'href="/system/tasks/"' in response.text
+
+
+def test_topbar_notifications_bell_polls_the_same_running_tasks_endpoints(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_no_tasks_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/")
+
+    assert response.status_code == 200
+    assert 'id="notifications-toggle"' in response.text
+    assert 'hx-get="/system/tasks/count"' in response.text
+    assert 'hx-get="/system/tasks/running"' in response.text

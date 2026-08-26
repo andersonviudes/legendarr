@@ -23,6 +23,17 @@ async def show_series(request: Request, client: httpx.AsyncClient = Depends(get_
     return templates.TemplateResponse(request, "series.html", {"series": series})
 
 
+@router.get("/search")
+async def search_media(
+    request: Request, q: str = "", client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    query = q.strip()
+    results = await service.search_media(client, query) if query else []
+    return templates.TemplateResponse(
+        request, "_search_results.html", {"results": results, "query": query}
+    )
+
+
 @router.get("/wanted")
 async def show_wanted(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     wanted = await service.list_wanted(client)

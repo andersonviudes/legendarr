@@ -1,0 +1,15 @@
+{% if results %}
+<ul class="app-search-result-list">
+  {% for item in results %}
+  <li>
+    <a href="/media/{{ 'movies' if item.type == 'movie' else 'series' }}/{{ item.id }}" class="app-search-result-item">
+      {{ icon("clapperboard") if item.type == "movie" else icon("tv") }}
+      <span class="app-search-result-title">{{ item.title }}</span>
+      <span class="app-search-result-type">{{ t("nav.movies") if item.type == "movie" else t("nav.series") }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% elif query %}
+<p class="app-search-empty">{{ t("media_library.search_no_results") }}</p>
+{% endif %}

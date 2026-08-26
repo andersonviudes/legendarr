@@ -79,7 +79,7 @@
 
   "a11y.toggle_theme": "Cambiar tema",
   "a11y.github_link": "legendarr en GitHub",
-  "a11y.running_tasks": "Tareas en ejecución",
+  "a11y.notifications": "Notificaciones",
   "a11y.remove_language": "Quitar {code}",
   "a11y.toggle_service": "alternar para habilitar o deshabilitar este {noun}",
   "a11y.webhook_url": "URL del webhook",
@@ -130,6 +130,7 @@
   "media_library.sonarr_unavailable": "No se pudo conectar con Sonarr — los episodios no están disponibles en este momento.",
   "media_library.no_episodes_yet": "Aún no se encontraron episodios para esta serie.",
   "media_library.search_providers": "Buscar proveedores",
+  "media_library.search_no_results": "No se encontraron resultados.",
   "media_library.no_candidates": "No se encontraron subtítulos para este idioma.",
   "media_library.upload_heading": "Subir un archivo de subtítulo",
   "media_library.subtitle_file_label": "Archivo de subtítulo",

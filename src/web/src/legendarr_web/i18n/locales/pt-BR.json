@@ -79,7 +79,7 @@
 
   "a11y.toggle_theme": "Alternar tema",
   "a11y.github_link": "legendarr no GitHub",
-  "a11y.running_tasks": "Tarefas em execução",
+  "a11y.notifications": "Notificações",
   "a11y.remove_language": "Remover {code}",
   "a11y.toggle_service": "alternar para habilitar ou desabilitar este {noun}",
   "a11y.webhook_url": "URL do webhook",
@@ -130,6 +130,7 @@
   "media_library.sonarr_unavailable": "Não foi possível conectar ao Sonarr — os episódios estão indisponíveis no momento.",
   "media_library.no_episodes_yet": "Nenhum episódio encontrado para esta série ainda.",
   "media_library.search_providers": "Buscar provedores",
+  "media_library.search_no_results": "Nenhum resultado encontrado.",
   "media_library.no_candidates": "Nenhuma legenda encontrada para este idioma.",
   "media_library.upload_heading": "Enviar um arquivo de legenda",
   "media_library.subtitle_file_label": "Arquivo de legenda",
