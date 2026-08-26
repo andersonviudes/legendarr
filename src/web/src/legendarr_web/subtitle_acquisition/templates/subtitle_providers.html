@@ -10,7 +10,7 @@
   {% for provider in providers %}
   <article class="service-card">
     <header class="service-card-header">
-      <p class="service-card-name">{{ provider.label }}</p>
+      <p class="service-card-name" title="{{ provider.label }}">{{ provider.label }}</p>
       {% if provider.is_configured %}
       {{ service_status(provider, "/settings/subtitle-providers/" ~ provider.id ~ "/enabled", noun="provider") }}
       {% else %}

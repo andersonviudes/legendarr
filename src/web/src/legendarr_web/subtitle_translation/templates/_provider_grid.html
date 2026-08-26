@@ -7,7 +7,7 @@
   {% for provider in providers %}
   <article class="service-card">
     <header class="service-card-header">
-      <p class="service-card-name">{{ provider.label }}</p>
+      <p class="service-card-name" title="{{ provider.label }}">{{ provider.label }}</p>
       {% if provider.kind == default_translation_provider %}<span class="app-nav-badge">{{ t("common.default_badge") }}</span>{% endif %}
       {% if provider.is_configured %}
       {{ service_status(provider, "/settings/translation-providers/" ~ provider.id ~ "/enabled", noun="provider") }}

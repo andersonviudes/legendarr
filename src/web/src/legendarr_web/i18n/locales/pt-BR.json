@@ -87,6 +87,7 @@
   "a11y.upload_subtitle": "Enviar legenda",
   "a11y.download_subtitle": "Baixar esta legenda",
   "a11y.close": "Fechar",
+  "a11y.toggle_navigation": "Alternar navegação",
 
   "providers.tab_subtitle": "Legenda",
   "providers.tab_translation": "Tradução",
@@ -123,6 +124,8 @@
   "media_library.missing_subtitles_count": "{count} legendas faltando",
   "media_library.no_files_yet": "Nenhum arquivo encontrado no disco para este filme ainda.",
   "media_library.episode_progress": "{file_count} / {episode_count} episódios",
+  "media_library.series_status_ended": "Série encerrada",
+  "media_library.series_status_continuing": "Série em andamento",
   "media_library.season": "Temporada {number}",
   "media_library.sonarr_unavailable": "Não foi possível conectar ao Sonarr — os episódios estão indisponíveis no momento.",
   "media_library.no_episodes_yet": "Nenhum episódio encontrado para esta série ainda.",

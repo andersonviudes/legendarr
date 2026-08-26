@@ -18,6 +18,14 @@
   </head>
   <body>
     <header class="app-topbar">
+      <button
+        type="button"
+        id="sidebar-toggle"
+        class="app-icon-btn app-sidebar-toggle"
+        aria-label="{{ t('a11y.toggle_navigation') }}"
+        aria-expanded="false"
+        aria-controls="app-sidebar"
+      >{{ icon("menu") }}</button>
       <div class="app-brand">
         <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
       </div>
@@ -31,7 +39,7 @@
       >{% include "_running_tasks_indicator.html" %}</a>
     </header>
     <div class="app-shell">
-      <aside class="app-sidebar">
+      <aside class="app-sidebar" id="app-sidebar">
         <nav aria-label="Main">
           <ul>
             <li>

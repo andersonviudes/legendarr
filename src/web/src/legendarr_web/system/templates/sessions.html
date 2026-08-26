@@ -2,16 +2,16 @@
 {% from "macros.html" import empty_state %}
 {% block title %}legendarr · {{ t("nav.system.sessions") }}{% endblock %}
 {% block content %}
+{% if sessions|length > 1 %}
 <div class="page-toolbar">
-  {% if sessions|length > 1 %}
   <form method="post" action="/system/sessions/revoke-others">
     <button type="submit" class="page-toolbar-btn">
       {{ icon("log-out") }}
       <span>{{ t("system.sessions.revoke_others") }}</span>
     </button>
   </form>
-  {% endif %}
 </div>
+{% endif %}
 
 <h1>{{ icon("monitor") }} {{ t("nav.system.sessions") }}</h1>
 

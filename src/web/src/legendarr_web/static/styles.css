@@ -26,7 +26,9 @@ svg.lucide {
   --pico-background-color: #202020;
   --pico-color: #b3b3b3;
   --pico-h1-color: #b3b3b3;
-  --pico-h2-color: #b3b3b3;
+  /* Dimmer than h1 so the two heading levels read as an actual hierarchy instead of
+     identical text at two sizes. */
+  --pico-h2-color: #8f8f8f;
   --pico-muted-color: #b3b3b3;
   --pico-muted-border-color: #9a9a9a;
   --pico-primary: #c9974f;
@@ -432,6 +434,12 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* Matches the "·"-separated fact line used in .poster-meta instead of relying on the
+   flex gap alone to imply grouping. */
+.media-detail-facts span + span::before {
+  content: "· ";
+}
+
 .season-group {
   margin-bottom: 0.75rem;
 }
@@ -443,8 +451,16 @@ body {
 /* Fixed layout so the 4 columns don't auto-size proportionally to their preferred content
    width — that gave "Episode" (2-digit numbers, an 8-char header) as much room as Title.
    Only Title is left unsized, so it absorbs whatever the other three don't use. */
+.episode-table-scroll {
+  overflow-x: auto;
+}
+
+/* min-width keeps every column (Title included) at a readable size instead of table-layout:
+   fixed squeezing them all down to fit a narrow viewport — .episode-table-scroll takes the
+   overflow as a horizontal scroll instead. */
 .episode-table {
   table-layout: fixed;
+  min-width: 44rem;
 }
 
 .episode-table-col-episode {
@@ -617,6 +633,11 @@ body {
 
 .service-card-name {
   margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 600;
   color: var(--pico-color);
 }
@@ -764,10 +785,18 @@ body {
   --pico-form-element-spacing-horizontal: 0.75rem;
 }
 
-.service-form legend,
 .service-form label,
 .service-form input {
   font-size: var(--lg-font-xs);
+}
+
+/* Pico's default legend inherits body color/size, so without this it reads as just
+   another label instead of a fieldset heading. */
+.service-form legend {
+  font-size: var(--lg-font-md);
+  font-weight: 700;
+  color: var(--pico-color);
+  margin-bottom: 0.75rem;
 }
 
 .service-form .field-hint {
@@ -1144,17 +1173,38 @@ button.outline.contrast:is(:hover, :focus) {
 }
 
 /* === Narrow viewports === */
+/* Hidden above ~768px — .app-sidebar is always visible there, so the toggle that
+   shows/hides it on mobile (static/js/sidebar.js) would otherwise be a dead button. */
+.app-sidebar-toggle {
+  display: none;
+}
+
 /* Below ~768px the fixed 15rem sidebar squeezes the content column, so stack the shell:
-   the sidebar drops under the topbar as a full-width nav block and the main padding tightens. */
+   the sidebar becomes an off-canvas panel toggled by .app-sidebar-toggle, and the main
+   padding tightens. */
 @media (max-width: 48rem) {
   .app-shell {
     flex-direction: column;
   }
 
-  .app-sidebar,
-  .app-brand {
+  .app-sidebar {
     flex-basis: auto;
     width: 100%;
+    display: none;
+  }
+
+  .app-sidebar.is-open {
+    display: flex;
+  }
+
+  .app-sidebar-toggle {
+    display: inline-flex;
+  }
+
+  /* Shares the topbar row with the toggle button instead of claiming the full width
+     that used to work only because it was the row's sole child. */
+  .app-brand {
+    flex: 1;
   }
 
   .app-main {

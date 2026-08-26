@@ -21,7 +21,10 @@
     </div>
     <p class="poster-title">{{ show.title }}</p>
     {% if show.episode_count %}
-    <div class="episode-bar {{ 'episode-bar--ended' if show.status == 'ended' else 'episode-bar--continuing' }}">
+    <div
+      class="episode-bar {{ 'episode-bar--ended' if show.status == 'ended' else 'episode-bar--continuing' }}"
+      title="{{ t('media_library.series_status_ended') if show.status == 'ended' else t('media_library.series_status_continuing') }}"
+    >
       <span class="episode-bar-fill" style="width: {{ (show.episode_file_count / show.episode_count * 100)|round(0, 'floor')|int }}%"></span>
     </div>
     <p class="poster-count">{{ show.episode_file_count }} / {{ show.episode_count }}</p>

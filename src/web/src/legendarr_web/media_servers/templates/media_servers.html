@@ -9,7 +9,7 @@
   {% for server in servers %}
   <article class="service-card">
     <header class="service-card-header">
-      <p class="service-card-name">{{ server.label }}</p>
+      <p class="service-card-name" title="{{ server.label }}">{{ server.label }}</p>
       {% if server.is_configured %}
       {{ service_status(server, "/settings/media-servers/" ~ server.id ~ "/enabled", noun="server") }}
       {% else %}

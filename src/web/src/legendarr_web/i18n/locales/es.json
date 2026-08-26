@@ -87,6 +87,7 @@
   "a11y.upload_subtitle": "Subir subtítulo",
   "a11y.download_subtitle": "Descargar este subtítulo",
   "a11y.close": "Cerrar",
+  "a11y.toggle_navigation": "Alternar navegación",
 
   "providers.tab_subtitle": "Subtítulo",
   "providers.tab_translation": "Traducción",
@@ -123,6 +124,8 @@
   "media_library.missing_subtitles_count": "{count} subtítulos faltantes",
   "media_library.no_files_yet": "Aún no se encontraron archivos en el disco para esta película.",
   "media_library.episode_progress": "{file_count} / {episode_count} episodios",
+  "media_library.series_status_ended": "Serie finalizada",
+  "media_library.series_status_continuing": "Serie en emisión",
   "media_library.season": "Temporada {number}",
   "media_library.sonarr_unavailable": "No se pudo conectar con Sonarr — los episodios no están disponibles en este momento.",
   "media_library.no_episodes_yet": "Aún no se encontraron episodios para esta serie.",

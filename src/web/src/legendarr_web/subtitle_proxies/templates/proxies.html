@@ -13,7 +13,7 @@
   {% for proxy in proxies %}
   <article class="service-card">
     <header class="service-card-header">
-      <p class="service-card-name">{{ proxy.name }}</p>
+      <p class="service-card-name" title="{{ proxy.name }}">{{ proxy.name }}</p>
       {{ service_status(proxy, "/settings/subtitle-proxies/" ~ proxy.id ~ "/enabled", noun="proxy") }}
     </header>
     <p class="service-card-address">{{ proxy.host }}</p>

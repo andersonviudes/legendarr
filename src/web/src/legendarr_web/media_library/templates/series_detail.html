@@ -39,6 +39,7 @@
 {% for season_number, season_episodes in series.episodes|groupby("season_number")|reverse %}
 <details class="season-group" {% if loop.first %}open{% endif %}>
   <summary>{{ t("media_library.season", number=season_number) }}</summary>
+  <div class="episode-table-scroll">
   <table class="episode-table">
     <colgroup>
       <col class="episode-table-col-episode">
@@ -86,6 +87,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </details>
 {% endfor %}
 {% elif series.episodes_unavailable %}
