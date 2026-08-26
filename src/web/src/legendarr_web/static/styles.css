@@ -475,10 +475,13 @@ body {
   color: var(--pico-muted-color);
 }
 
-/* === Poster grid: media library, Sonarr/Radarr-style === */
+/* === Poster grid: media library, Sonarr/Radarr-style ===
+   auto-fit (not auto-fill) collapses the empty tracks a wide viewport would otherwise
+   reserve for a handful of items, and the minmax upper bound keeps cards from stretching
+   to fill that reclaimed space instead of just leaving it as margin. */
 .poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 12.5rem));
   gap: 1.75rem;
   margin-block: 1.5rem 2.5rem;
 }
