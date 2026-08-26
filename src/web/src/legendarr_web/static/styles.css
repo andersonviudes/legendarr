@@ -592,8 +592,9 @@ body {
 }
 
 /* Matches the "·"-separated fact line used in .poster-meta instead of relying on the
-   flex gap alone to imply grouping. */
-.media-detail-facts span + span::before {
+   flex gap alone to imply grouping. Scoped to direct children only — otherwise this
+   would also match the individual .lang-pill spans nested inside a lang_pill_group(). */
+.media-detail-facts > span + span::before {
   content: "· ";
 }
 
@@ -859,6 +860,12 @@ body {
   align-items: center;
   gap: 0.35rem;
   margin: 0;
+}
+
+.lang-pill-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .lang-pill {

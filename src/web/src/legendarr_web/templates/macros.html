@@ -308,7 +308,7 @@
 {% endmacro %}
 
 {% macro lang_pill_group(codes) %}
-{% for code in codes.split(",") %}<span class="lang-pill">{{ code }}</span>{% endfor %}
+<span class="lang-pill-group">{% for code in codes.split(",") %}<span class="lang-pill">{{ code }}</span>{% endfor %}</span>
 {% endmacro %}
 
 {% macro profile_card(profile) %}
