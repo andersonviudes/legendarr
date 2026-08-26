@@ -37,6 +37,9 @@ src/backend/src/legendarr_backend/
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
 ├── subtitle_timing_sync/    # manual, per-subtitle ffsubsync timing-correction pass
+├── authentication/          # session-based login (AuthSession) + API key issuance (ROADMAP 0.16.0)
+├── settings/                # task/translation-default/webhook runtime settings
+├── system/                  # directory browsing, recent logs, running-task status
 ├── arr_clients/             # shared Radarr/Sonarr API clients (sync + connection test)
 ├── config/                  # env Settings + on-disk config.yaml
 ├── database/                # SQLModel engine/session + Alembic migration trigger
@@ -56,6 +59,9 @@ src/web/src/legendarr_web/
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route
 ├── system/                  # /system/ route
+├── authentication/          # /login, /logout routes (session cookie set/cleared)
+├── settings/                # /settings/tasks/, /settings/authentication/ routes (retry/interval settings, login toggle + API key)
+├── subtitle_proxies/        # /settings/subtitle-proxies/ routes (CRUD, test, enable/disable)
 ├── config/                  # env WebSettings
 ├── backend_client/          # httpx client for calling the backend API
 └── templates/               # shared Jinja2Templates factory + base.html layout

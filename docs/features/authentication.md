@@ -28,8 +28,8 @@ Two independent layers, both driven by the same `auth_enabled` flag:
 - **The backend API.** A second app-wide dependency
   (`legendarr_backend.authentication.api_guard.require_api_access`) gates
   `legendarr_backend`'s `api_app`. A request is allowed if it carries either a valid
-  `X-Api-Key` header (for scripts — the same key shown in Settings, ahead of 0.17.0's
-  External API) or a valid `X-Legendarr-Session` header (forwarded automatically by
+  `X-Api-Key` header (for scripts — the same key shown in Settings, see the [External
+  API](external-api.md)) or a valid `X-Legendarr-Session` header (forwarded automatically by
   `legendarr_web`'s `get_backend_client` on every call, so a logged-in browser session
   authorizes the backend calls made on its behalf without a second shared secret between
   the two processes). `/webhooks/*` is exempt — Radarr/Sonarr's "Connect" calls can't send
@@ -56,6 +56,5 @@ Settings → Authentication also shows a generated API key (`secrets.token_urlsa
 stored encrypted at rest the same way as `radarr_api_key`/`sonarr_api_key`
 (`security/fernet.py`), masked by default with a reveal toggle and a copy button since
 it's a credential the admin needs to retrieve, not one they chose. "Regenerate"
-invalidates the old key immediately. Nothing consumes this key yet beyond the backend's
-own access gate above — 0.17.0's documented External API will be the intended
-non-interactive surface for it.
+invalidates the old key immediately. It's the credential for the [External
+API](external-api.md) (ROADMAP.md 0.17.0) — the intended non-interactive surface for it.

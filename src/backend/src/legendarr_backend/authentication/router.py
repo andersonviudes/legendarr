@@ -30,7 +30,7 @@ from legendarr_backend.authentication.schemas import (
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 def _get_session() -> Iterator[Session]:

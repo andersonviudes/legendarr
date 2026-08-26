@@ -7,7 +7,7 @@ from legendarr_backend.system.read_logs import list_recent_logs
 from legendarr_backend.system.running_tasks import list_running_tasks
 from legendarr_backend.system.schemas import DirectoryListingRead, LogLineRead, RunningTaskRead
 
-router = APIRouter(prefix="/system")
+router = APIRouter(prefix="/system", tags=["System"])
 
 _LOG_LEVELS = {
     "DEBUG": logging.DEBUG,

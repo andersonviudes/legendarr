@@ -84,6 +84,7 @@ def test_api_key_field_shows_once_generated(stub_backend_client):
         response = client.get("/settings/authentication/")
 
     assert "generated-key" in response.text
+    assert "/api/docs" in response.text
 
 
 def test_regenerate_api_key_returns_the_updated_partial(stub_backend_client):

@@ -16,7 +16,7 @@ from legendarr_backend.language_profiles.manage_language_profile import (
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.schemas import LanguageProfileInput
 
-router = APIRouter(prefix="/language-profiles")
+router = APIRouter(prefix="/language-profiles", tags=["Language Profiles"])
 
 
 def _get_session() -> Iterator[Session]:

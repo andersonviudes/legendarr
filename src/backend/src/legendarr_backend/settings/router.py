@@ -15,7 +15,7 @@ from legendarr_backend.settings.schemas import (
     WebhookSettings,
 )
 
-router = APIRouter(prefix="/settings")
+router = APIRouter(prefix="/settings", tags=["Settings"])
 
 
 @router.get("/tasks")

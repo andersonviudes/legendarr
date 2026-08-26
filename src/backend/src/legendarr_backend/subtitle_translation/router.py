@@ -17,7 +17,7 @@ from legendarr_backend.subtitle_translation.schemas import (
     TranslationProviderConfigRead,
 )
 
-router = APIRouter(prefix="/translation-providers")
+router = APIRouter(prefix="/translation-providers", tags=["Translation Providers"])
 
 
 def _get_session() -> Iterator[Session]:

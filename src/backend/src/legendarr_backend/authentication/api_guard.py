@@ -39,8 +39,8 @@ def _route_path(request: Request) -> str:
 async def require_api_access(request: Request) -> None:
     """App-wide dependency on `api_app` (ROADMAP.md 0.16.0) gating every backend route
     except the exemptions above. A no-op when auth is off. Otherwise passes a request
-    that presents either a valid API key (`X-Api-Key` — for scripts, forward-compatible
-    with 0.17.0's External API) or a valid session (`X-Legendarr-Session`, forwarded by
+    that presents either a valid API key (`X-Api-Key` — for scripts, see ROADMAP.md
+    0.17.0's External API) or a valid session (`X-Legendarr-Session`, forwarded by
     `legendarr_web` on behalf of an already logged-in browser instead of a second shared
     secret between the two processes)."""
     if _is_exempt(_route_path(request)):

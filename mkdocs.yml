@@ -92,6 +92,7 @@ nav:
     - Subtitle Translation: features/subtitle-translation.md
     - Subtitle Timing Sync: features/subtitle-timing-sync.md
     - Authentication: features/authentication.md
+    - External API: features/external-api.md
   - Architecture:
     - Overview: architecture/overview.md
   - Contributing: contributing.md
