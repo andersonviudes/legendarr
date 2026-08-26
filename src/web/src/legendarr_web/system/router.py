@@ -1,5 +1,8 @@
+from urllib.parse import urlencode
+
 import httpx
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.system import service
@@ -47,6 +50,40 @@ async def get_running_tasks_count(
     return templates.TemplateResponse(
         request, "_running_tasks_indicator.html", {"count": len(tasks)}
     )
+
+
+@router.get("/sessions/")
+async def show_sessions(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    sessions = await service.get_sessions(client)
+    current_session = request.state.auth_session
+    current_session_id = current_session["id"] if current_session else None
+    return templates.TemplateResponse(
+        request,
+        "sessions.html",
+        {"sessions": sessions, "current_session_id": current_session_id},
+    )
+
+
+@router.post("/sessions/{session_id}/revoke")
+async def revoke_session(session_id: int, client: httpx.AsyncClient = Depends(get_backend_client)):
+    try:
+        await service.revoke_session(client, session_id)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code != 404:
+            raise
+    toast = urlencode({"toast": "Session revoked.", "toast_type": "success"})
+    return RedirectResponse(f"/system/sessions/?{toast}", status_code=303)
+
+
+@router.post("/sessions/revoke-others")
+async def revoke_other_sessions(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    current_session = request.state.auth_session
+    if current_session is not None:
+        await service.revoke_other_sessions(client, current_session["id"])
+    toast = urlencode({"toast": "Other sessions revoked.", "toast_type": "success"})
+    return RedirectResponse(f"/system/sessions/?{toast}", status_code=303)
 
 
 @router.get("/directories/browse")

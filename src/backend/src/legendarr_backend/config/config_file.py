@@ -8,7 +8,7 @@ from legendarr_backend.config.settings import Settings
 from legendarr_backend.security.fernet import resolve_fernet
 from legendarr_backend.security.secrets import decrypt_secret, encrypt_secret, is_encrypted
 
-_SECRET_FIELDS = ("radarr_api_key", "sonarr_api_key")
+_SECRET_FIELDS = ("radarr_api_key", "sonarr_api_key", "auth_api_key")
 
 
 class AppConfigFile(BaseModel):
@@ -69,6 +69,13 @@ class AppConfigFile(BaseModel):
     timing_sync_timeout_seconds: float = 120.0
     speech_to_text_model_size: str = "base"
     speech_to_text_timeout_seconds: float = 1800.0
+    # `auth_password_hash` isn't in `_SECRET_FIELDS` — it's already a one-way PBKDF2 hash
+    # (see `authentication/passwords.py`), not a bearer secret, so it round-trips as-is
+    # like every other plain field here.
+    auth_enabled: bool = False
+    auth_username: str = ""
+    auth_password_hash: str = ""
+    auth_api_key: str = ""
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -120,6 +127,10 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,
         "speech_to_text_model_size": settings.speech_to_text_model_size,
         "speech_to_text_timeout_seconds": settings.speech_to_text_timeout_seconds,
+        "auth_enabled": settings.auth_enabled,
+        "auth_username": settings.auth_username,
+        "auth_password_hash": settings.auth_password_hash,
+        "auth_api_key": settings.auth_api_key,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

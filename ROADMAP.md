@@ -368,7 +368,7 @@ to translate from.*
 *Use case: legendarr requires logging in before anyone can see or change anything, and issues
 an API key for scripts/tools instead of everyone sharing the dashboard session.*
 
-- [ ] **Settings** — Session-based login gating the web UI, plus a generated API key for
+- [x] **Settings** — Session-based login gating the web UI, plus a generated API key for
   non-interactive access, both configurable from Settings — auth can be required or left off
   for trusted networks.
 

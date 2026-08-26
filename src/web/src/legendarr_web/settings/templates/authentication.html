@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, checkbox_field %}
+{% block title %}legendarr · Authentication{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="authentication-settings-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
+<h1>{{ icon("lock") }} Authentication</h1>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form id="authentication-settings-form" class="service-form" method="post" action="/settings/authentication/">
+  <p class="field-hint">
+    When enabled, every page requires logging in and the backend API requires either
+    that login's session or the API key below — leave it off on a trusted network.
+  </p>
+
+  {{ checkbox_field("enabled", "Require login", checked=settings.enabled) }}
+
+  {{ field("username", "Username", value=settings.username, required=true) }}
+  {# Never re-display the stored password. A blank field means "keep the current one". #}
+  {{ field("password", "Password", type="password", autocomplete="new-password",
+           placeholder="Leave blank to keep the current password") }}
+</form>
+
+<section>
+  <h2>{{ icon("shield") }} API Key</h2>
+  {% if settings.api_key %}
+  {% include "_api_key_field.html" %}
+  {% else %}
+  {% from "macros.html" import empty_state %}
+  {{ empty_state("Generated automatically the first time login is enabled and saved.") }}
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/authentication-settings.js" defer></script>
+{% endblock %}

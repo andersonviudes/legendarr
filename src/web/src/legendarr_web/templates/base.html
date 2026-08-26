@@ -163,6 +163,12 @@
                 {% if request.url.path.startswith("/settings/tasks") %}aria-current="page"{% endif %}
               >{{ icon("list-checks") }}<span>Tasks</span></a>
             </li>
+            <li>
+              <a
+                href="/settings/authentication/"
+                {% if request.url.path.startswith("/settings/authentication") %}aria-current="page"{% endif %}
+              >{{ icon("lock") }}<span>Authentication</span></a>
+            </li>
           </ul>
           <button
             type="button"
@@ -183,10 +189,21 @@
                 {% if request.url.path.startswith("/system/tasks") %}aria-current="page"{% endif %}
               >{{ icon("loader-circle") }}<span>Tasks</span></a>
             </li>
+            <li>
+              <a
+                href="/system/sessions/"
+                {% if request.url.path.startswith("/system/sessions") %}aria-current="page"{% endif %}
+              >{{ icon("monitor") }}<span>Sessions</span></a>
+            </li>
           </ul>
         </nav>
         <footer class="app-sidebar-footer">
           <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="Toggle theme">{{ icon("sun") }}</button>
+          {% if request.state.auth_enabled %}
+          <form method="post" action="/logout">
+            <button type="submit" class="app-icon-btn" aria-label="Log out">{{ icon("log-out") }}</button>
+          </form>
+          {% endif %}
           <a
             href="https://github.com/andersonviudes/legendarr"
             class="app-icon-btn app-icon-btn--github"

@@ -1491,3 +1491,50 @@ button.outline.contrast:is(:hover, :focus) {
   color: var(--pico-muted-color);
   white-space: nowrap;
 }
+
+/* === Login page (authentication/templates/login.html) — the one page that doesn't
+   extend base.html, so it needs its own centered layout instead of .app-shell. === */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-shell {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--pico-h1-color);
+}
+
+.login-error {
+  color: var(--pico-del-color);
+}
+
+/* === API key field (settings/templates/_api_key_field.html) — same input+icon-buttons
+   row shape as .service-card-webhook above. === */
+.api-key-field-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-key-field-control input {
+  flex: 1;
+  min-width: 0;
+}

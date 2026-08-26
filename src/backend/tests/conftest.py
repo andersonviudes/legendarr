@@ -8,6 +8,7 @@ import pytest
 # happened to be collected first (FK resolution fails otherwise, e.g. movie ->
 # languageprofile when only media_library.models was imported).
 from legendarr_backend.arr_services import models as _arr_services_models  # noqa: F401
+from legendarr_backend.authentication import models as _authentication_models  # noqa: F401
 from legendarr_backend.config.settings import Settings
 from legendarr_backend.database import engine as database
 from legendarr_backend.database.engine import enable_sqlite_foreign_keys

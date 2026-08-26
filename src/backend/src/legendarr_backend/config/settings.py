@@ -88,6 +88,15 @@ class Settings(BaseSettings):
     # `AppConfigFile`/`config.yaml`, not editable from the web Settings UI): this is a
     # code-import path, a different trust boundary than every other runtime value here.
     translation_plugin_packages: str = Field(default="")
+    # ROADMAP.md 0.16.0 — single shared admin login gating the web UI, plus an API key
+    # for scripts/non-interactive access to the backend API. Off by default so existing
+    # installs stay open until an admin opts in from Settings. `auth_password_hash` is a
+    # one-way PBKDF2 hash (see `authentication/passwords.py`), never the plaintext
+    # password; `auth_api_key` is a bearer secret like `radarr_api_key`/`sonarr_api_key`.
+    auth_enabled: bool = Field(default=False)
+    auth_username: str = Field(default="")
+    auth_password_hash: str = Field(default="")
+    auth_api_key: str = Field(default="")
 
     @property
     def translation_plugin_package_list(self) -> list[str]:

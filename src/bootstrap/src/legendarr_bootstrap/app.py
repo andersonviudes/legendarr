@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from functools import partial
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from legendarr_backend.api import create_api_app
 from legendarr_backend.bootstrap import build_scheduler
 from legendarr_backend.config.config_file import load_or_create_config_file
@@ -22,7 +22,7 @@ from legendarr_backend.subtitle_translation.manage_translation_provider import (
     ensure_translation_providers_seeded,
 )
 from legendarr_web.app import create_app as create_web_app
-from legendarr_web.backend_client.client import get_backend_client
+from legendarr_web.backend_client.client import get_backend_client, session_headers
 
 configure_logging()
 
@@ -67,9 +67,13 @@ def create_app() -> FastAPI:
         yield
         scheduler.shutdown()
 
-    async def get_in_process_backend_client() -> AsyncIterator[httpx.AsyncClient]:
+    async def get_in_process_backend_client(
+        request: Request,
+    ) -> AsyncIterator[httpx.AsyncClient]:
         async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=api_app), base_url="http://backend/"
+            transport=httpx.ASGITransport(app=api_app),
+            base_url="http://backend/",
+            headers=session_headers(request),
         ) as client:
             yield client
 
