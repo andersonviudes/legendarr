@@ -35,6 +35,8 @@ def register_acquisition_job(
                 session,
                 retry_attempts=config.acquisition_retry_attempts,
                 retry_delay_seconds=config.acquisition_retry_delay_seconds,
+                speech_to_text_model_size=config.speech_to_text_model_size,
+                speech_to_text_timeout_seconds=config.speech_to_text_timeout_seconds,
             )
         logger.info("acquisition fan-out enqueued: %d media files", enqueued)
 
@@ -58,6 +60,8 @@ def enqueue_full_acquisition_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    speech_to_text_model_size: str = "base",
+    speech_to_text_timeout_seconds: float = 1800.0,
 ) -> int:
     """Enqueue an acquisition run for every known `MediaFile` on the bulk queue.
 
@@ -74,6 +78,8 @@ def enqueue_full_acquisition_scan(
             JobQueue.ACQUIRE_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
+            speech_to_text_model_size=speech_to_text_model_size,
+            speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
         )
     return len(media_file_ids)
 
@@ -85,6 +91,8 @@ def enqueue_acquisition(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    speech_to_text_model_size: str = "base",
+    speech_to_text_timeout_seconds: float = 1800.0,
     cascade: bool = False,
 ) -> None:
     """Enqueue an ad-hoc acquisition of one `MediaFile` for immediate execution.
@@ -124,7 +132,15 @@ def enqueue_acquisition(
                     media_file_id,
                 )
                 return
-            result = acquire_subtitle_for_media_file(session, media_file, video_path)
+            settings = get_settings()
+            result = acquire_subtitle_for_media_file(
+                session,
+                media_file,
+                video_path,
+                speech_to_text_model_size=speech_to_text_model_size,
+                speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
+                speech_to_text_model_dir=settings.speech_to_text_model_dir,
+            )
             session.commit()
             logger.info("acquisition finished for media file %d: %s", media_file_id, result)
             # A pure no-op (neither acquired nor skipped) means a source-language

@@ -101,6 +101,41 @@ weighted well above the combined attribute bonus specifically so a wrong-title c
 never out-score a right-title one purely by sharing resolution/source/codec tags; attributes
 only fine-tune the ranking once the title itself is a real match.
 
+## Speech-to-text fallback
+
+When every other tier — external file, embedded track, provider download — comes up
+empty for every one of a profile's source languages, and the profile's
+`speech_to_text_fallback` toggle (ROADMAP.md 0.15.0) is on, `acquire_subtitle_for_media_file`
+tries one more thing: transcribing the media file's own audio with a local Whisper model
+(`faster_whisper`) instead of giving up. This is a last resort, tried once per acquisition
+run, not a `SubtitleProvider` — it has no external catalog or credentials, and runs the
+same "local pipeline producing an `.srt`" shape as the OCR pipeline below.
+
+`probe_embedded_audio.py` lists the container's embedded audio tracks via `ffprobe`, and
+picks the first one whose language tag matches one of the profile's source languages, in
+priority order (comparison is the same loose, region-collapsing
+`language_codes.normalize_language_code()` used for embedded subtitle tracks). When
+nothing tags-matches — container audio-language metadata is frequently missing or wrong —
+it falls back to the first audio track, transcribed as the profile's first source
+language: the best guess available without a real tag to go on. The chosen track is
+extracted to a temporary 16kHz mono `.wav` (`extract_audio_track`), fed to
+`transcribe_audio.transcribe_audio_track`, forcing Whisper's recognition to the resolved
+language rather than letting it auto-detect, and the result is written out as a normal
+`{video}.{language}.srt` sidecar and re-scanned — indistinguishable on disk from a
+provider-acquired or external subtitle.
+
+Unlike a provider download, a speech-to-text acquisition never writes an
+`AcquiredSubtitle`/`AcquisitionAttempt` row: those tables record a release's provenance
+(name, download id, match score), none of which exists for a locally generated
+transcript. The Whisper model itself (`faster_whisper`, CPU) is downloaded on first use
+into `data_dir/whisper_models` and reused after that — no model is bundled into the
+Docker image, since sizes range from tens of MB (`tiny`) to a few GB (`large-v3`).
+`Settings.speech_to_text_model_size` (default `base`) and
+`Settings.speech_to_text_timeout_seconds` (default 1800s — far higher than any other
+timeout in the app, since transcribing a full movie on CPU can take a while) are
+config.yaml/env-var-only for now, same posture as `translate_interval_minutes` and
+`ocr_cue_timeout_seconds`.
+
 ## Manual search and upload
 
 Every movie/series detail page's file row also has "Manual search" and "Upload subtitle"

@@ -54,3 +54,9 @@ def test_ocr_embedded_subtitles_defaults_to_false():
     profile = _profile()
 
     assert profile.ocr_embedded_subtitles is False
+
+
+def test_speech_to_text_fallback_defaults_to_false():
+    profile = _profile()
+
+    assert profile.speech_to_text_fallback is False

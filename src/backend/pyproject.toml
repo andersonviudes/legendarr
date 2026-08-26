@@ -20,6 +20,7 @@ dependencies = [
     "ffsubsync>=0.5.1",
     "pytesseract>=0.3.10",
     "pillow>=10.0",
+    "faster-whisper>=1.0",
 ]
 
 [build-system]

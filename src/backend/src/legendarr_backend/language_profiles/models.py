@@ -17,6 +17,12 @@ class LanguageProfile(SQLModel, table=True):
     # `extract_embedded_subtitles` since OCR is far heavier/slower than a direct ffmpeg
     # text-track copy and can produce lower-quality text; opt-in independently.
     ocr_embedded_subtitles: bool = Field(default=False)
+    # Local speech-to-text transcription (faster-whisper) as the last-resort acquisition
+    # source (ROADMAP.md 0.15.0), tried only once every other tier — external, embedded,
+    # provider download — has already come up empty. Opt-in, same reasoning as
+    # `ocr_embedded_subtitles`: heavier/slower than any other source, and can produce
+    # lower-quality text.
+    speech_to_text_fallback: bool = Field(default=False)
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
     is_default: bool = Field(default=False)

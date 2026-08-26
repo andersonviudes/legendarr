@@ -48,6 +48,7 @@ def test_update_language_profile_replaces_fields(in_memory_session):
             forced=True,
             hearing_impaired=True,
             ocr_embedded_subtitles=True,
+            speech_to_text_fallback=True,
         ),
     )
 
@@ -56,6 +57,7 @@ def test_update_language_profile_replaces_fields(in_memory_session):
     assert updated.forced is True
     assert updated.hearing_impaired is True
     assert updated.ocr_embedded_subtitles is True
+    assert updated.speech_to_text_fallback is True
 
 
 def test_update_language_profile_replaces_release_name_filters(in_memory_session):

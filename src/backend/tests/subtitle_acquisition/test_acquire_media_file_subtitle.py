@@ -13,6 +13,8 @@ from legendarr_backend.subtitle_acquisition import search_context as search_cont
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
+from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle
+from legendarr_backend.subtitle_acquisition.probe_embedded_audio import EmbeddedAudioTrack
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -477,3 +479,151 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
     assert result.acquired_language == "ja"
     output = tmp_path / "Foo" / "Foo.ja.srt"
     assert output.exists()
+
+
+def _use_speech_to_text_fallback(monkeypatch, *, track_language="eng"):
+    track = EmbeddedAudioTrack(index=1, codec_name="aac", language=track_language)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module, "probe_embedded_audio_tracks", lambda *a, **k: [track]
+    )
+
+    def _fake_extract(video_path, track, output_path, *, timeout_seconds):
+        output_path.write_bytes(b"fake-audio")
+
+    monkeypatch.setattr(acquire_media_file_subtitle_module, "extract_audio_track", _fake_extract)
+
+    def _fake_transcribe(
+        audio_path, language, output_path, *, model_size, model_dir, timeout_seconds
+    ):
+        output_path.write_text("1\n00:00:00,000 --> 00:00:02,000\nHello\n\n")
+
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module, "transcribe_audio_track", _fake_transcribe
+    )
+    return track
+
+
+def test_acquire_subtitle_uses_speech_to_text_fallback_when_no_provider_configured(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, speech_to_text_fallback=True)
+    video = _write_video(tmp_path)
+    _use_speech_to_text_fallback(monkeypatch)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    output = tmp_path / "Foo" / "Foo.en.srt"
+    assert "Hello" in output.read_text(encoding="utf-8")
+    subtitle = in_memory_session.exec(
+        select(Subtitle).where(Subtitle.media_file_id == media_file.id)
+    ).first()
+    assert subtitle is not None
+    assert subtitle.origin == SubtitleOrigin.EXTERNAL
+    assert subtitle.language == "en"
+    # No AcquiredSubtitle row — that table is provider-download provenance only, and a
+    # locally-generated transcript has no release/download id/score to record.
+    assert in_memory_session.exec(select(AcquiredSubtitle)).first() is None
+
+
+def test_acquire_subtitle_falls_back_to_speech_to_text_after_the_provider_chain_finds_nothing(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, speech_to_text_fallback=True)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[
+            SubtitleSearchResult(
+                release_name="Completely.Unrelated.Release", download_id="1", language="en"
+            )
+        ]
+    )
+    _use_chain(monkeypatch, provider)
+    _use_speech_to_text_fallback(monkeypatch)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+
+
+def test_acquire_subtitle_does_not_try_speech_to_text_when_toggle_is_off(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    probe_calls = []
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "probe_embedded_audio_tracks",
+        lambda *a, **k: probe_calls.append(1) or [],
+    )
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.skipped_reason == "no_provider_configured"
+    assert probe_calls == []
+
+
+def test_acquire_subtitle_reports_no_match_found_when_speech_to_text_also_fails(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, speech_to_text_fallback=True)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[
+            SubtitleSearchResult(
+                release_name="Completely.Unrelated.Release", download_id="1", language="en"
+            )
+        ]
+    )
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module, "probe_embedded_audio_tracks", lambda *a, **k: []
+    )
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_match_found"
+
+
+def test_acquire_subtitle_speech_to_text_prefers_the_track_matching_source_language(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, source_languages="ja,en", speech_to_text_fallback=True)
+    video = _write_video(tmp_path)
+    tracks = [
+        EmbeddedAudioTrack(index=1, codec_name="aac", language="eng"),
+        EmbeddedAudioTrack(index=2, codec_name="aac", language="jpn"),
+    ]
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module, "probe_embedded_audio_tracks", lambda *a, **k: tracks
+    )
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "extract_audio_track",
+        lambda video_path, track, output_path, *, timeout_seconds: output_path.write_bytes(b"x"),
+    )
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "transcribe_audio_track",
+        lambda audio_path, language, output_path, *, model_size, model_dir, timeout_seconds: (
+            output_path.write_text("1\n00:00:00,000 --> 00:00:02,000\nこんにちは\n\n")
+        ),
+    )
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    # "ja" is first in the profile's priority order, and the second track is tagged
+    # "jpn" — picked over the first (English) track despite index order.
+    assert result.acquired_language == "ja"

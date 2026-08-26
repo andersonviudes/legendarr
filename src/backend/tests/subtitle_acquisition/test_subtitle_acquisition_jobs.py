@@ -15,6 +15,7 @@ from legendarr_backend.subtitle_acquisition import jobs as jobs_module
 from legendarr_backend.subtitle_acquisition import (
     upgrade_media_file_subtitle as upgrade_media_file_subtitle_module,
 )
+from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import AcquisitionResult
 from legendarr_backend.subtitle_acquisition.jobs import (
     enqueue_acquisition,
     enqueue_full_acquisition_scan,
@@ -203,6 +204,58 @@ def test_enqueued_acquisition_job_downloads_and_persists_subtitle(
     # cascade defaults to False — every existing caller (periodic fan-out, manual
     # full-item scan) keeps this exact behavior.
     assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is None
+
+
+def test_enqueue_acquisition_passes_speech_to_text_settings_through(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    captured = {}
+
+    def _fake_acquire(session, media_file, video_path, **kwargs):
+        captured.update(kwargs)
+        return AcquisitionResult(skipped_reason="no_provider_configured")
+
+    monkeypatch.setattr(jobs_module, "acquire_subtitle_for_media_file", _fake_acquire)
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler,
+        media_file.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        speech_to_text_model_size="small",
+        speech_to_text_timeout_seconds=900.0,
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert captured["speech_to_text_model_size"] == "small"
+    assert captured["speech_to_text_timeout_seconds"] == 900.0
+    assert captured["speech_to_text_model_dir"] is not None
 
 
 def test_enqueued_acquisition_job_cascades_to_translation_when_requested(

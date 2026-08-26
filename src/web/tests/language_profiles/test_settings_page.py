@@ -150,6 +150,7 @@ def test_create_language_profile_forwards_fields(stub_backend_client):
     assert captured["is_default"] is True
     assert captured["extract_embedded_subtitles"] is False
     assert captured["ocr_embedded_subtitles"] is False
+    assert captured["speech_to_text_fallback"] is False
     assert captured["release_name_must_contain"] == "PROPER, REPACK"
     assert captured["release_name_must_not_contain"] == "CAM,TS"
 
@@ -178,6 +179,34 @@ def test_create_language_profile_forwards_ocr_embedded_subtitles_when_checked(st
         )
 
     assert captured["ocr_embedded_subtitles"] is True
+
+
+def test_create_language_profile_forwards_speech_to_text_fallback_when_checked(
+    stub_backend_client,
+):
+    app = create_app()
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/language-profiles/":
+            captured.update(json.loads(request.content))
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/",
+            data={
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+                "speech_to_text_fallback": "on",
+            },
+        )
+
+    assert captured["speech_to_text_fallback"] is True
 
 
 def test_edit_language_profile_form_prefills_release_name_filters(stub_backend_client):
@@ -240,6 +269,44 @@ def test_edit_language_profile_form_checks_ocr_embedded_subtitles_when_enabled(s
     checkbox = body[
         body.index('name="ocr_embedded_subtitles"') - 20 : body.index(
             'name="ocr_embedded_subtitles"'
+        )
+        + 60
+    ]
+    assert "checked" in checkbox
+
+
+def test_edit_language_profile_form_checks_speech_to_text_fallback_when_enabled(
+    stub_backend_client,
+):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": 3,
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+                "extract_embedded_subtitles": True,
+                "ocr_embedded_subtitles": False,
+                "speech_to_text_fallback": True,
+                "forced": False,
+                "hearing_impaired": False,
+                "is_default": False,
+            },
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/3/edit")
+
+    assert response.status_code == 200
+    body = response.text
+    checkbox = body[
+        body.index('name="speech_to_text_fallback"') - 20 : body.index(
+            'name="speech_to_text_fallback"'
         )
         + 60
     ]
