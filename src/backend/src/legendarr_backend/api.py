@@ -26,6 +26,14 @@ async def lifespan(app: FastAPI):
 def create_api_app() -> FastAPI:
     app = FastAPI(
         title="legendarr-backend-api",
+        description=(
+            "legendarr's REST API — the same domain operations the dashboard uses, "
+            "mounted at /api and documented here for scripts/external tools "
+            "(ROADMAP.md 0.17.0). Every route below requires either the X-Api-Key "
+            "from Settings \u2192 Authentication or a logged-in session, unless auth is "
+            "disabled (see docs/features/authentication.md)."
+        ),
+        version="0.1.0",
         lifespan=lifespan,
         dependencies=[Depends(require_api_access)],
     )

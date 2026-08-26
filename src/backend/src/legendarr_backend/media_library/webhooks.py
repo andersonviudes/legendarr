@@ -16,7 +16,7 @@ from legendarr_backend.scheduling.queues import JobQueue
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/webhooks")
+router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
 _SCAN_EVENTS = {"Download", "Rename"}
 _DELETE_EVENTS = {"MovieDelete", "SeriesDelete", "MovieFileDelete", "EpisodeFileDelete"}

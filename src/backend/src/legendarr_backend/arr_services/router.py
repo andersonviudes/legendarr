@@ -22,7 +22,7 @@ from legendarr_backend.arr_services.schemas import (
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.http_client.client import ProviderClientError, describe_error
 
-router = APIRouter(prefix="/arr-services")
+router = APIRouter(prefix="/arr-services", tags=["Arr Services"])
 
 # The `appName` field Radarr/Sonarr report on `/api/v3/system/status`. Both apps share
 # the same status endpoint, so this is what tells a Radarr instance apart from a Sonarr one.

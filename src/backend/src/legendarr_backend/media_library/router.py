@@ -49,7 +49,7 @@ from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
 
-router = APIRouter(prefix="/media")
+router = APIRouter(prefix="/media", tags=["Media Library"])
 
 
 def _get_session() -> Iterator[Session]:

@@ -17,7 +17,7 @@ from legendarr_backend.media_metadata.schemas import (
     MetadataProviderConfigRead,
 )
 
-router = APIRouter(prefix="/metadata-providers")
+router = APIRouter(prefix="/metadata-providers", tags=["Metadata Providers"])
 
 
 def _get_session() -> Iterator[Session]:

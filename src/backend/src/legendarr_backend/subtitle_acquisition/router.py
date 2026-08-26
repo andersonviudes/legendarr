@@ -17,7 +17,7 @@ from legendarr_backend.subtitle_acquisition.schemas import (
     SubtitleProviderConfigRead,
 )
 
-router = APIRouter(prefix="/subtitle-providers")
+router = APIRouter(prefix="/subtitle-providers", tags=["Subtitle Providers"])
 
 
 def _get_session() -> Iterator[Session]:
