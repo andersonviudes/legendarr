@@ -8,22 +8,22 @@
   <article class="service-card">
     <header class="service-card-header">
       <p class="service-card-name">{{ provider.label }}</p>
-      {% if provider.kind == default_translation_provider %}<span class="app-nav-badge">Default</span>{% endif %}
+      {% if provider.kind == default_translation_provider %}<span class="app-nav-badge">{{ t("common.default_badge") }}</span>{% endif %}
       {% if provider.is_configured %}
       {{ service_status(provider, "/settings/translation-providers/" ~ provider.id ~ "/enabled", noun="provider") }}
       {% else %}
-      <span class="service-card-status is-disabled">Not configured</span>
+      <span class="service-card-status is-disabled">{{ t("common.not_configured") }}</span>
       {% endif %}
     </header>
     <p class="service-card-address">
       {% if provider.credential_fields %}
-      Requires credentials
+      {{ t("subtitle_translation.requires_credentials") }}
       {% else %}
-      Run "Test connection" to enable
+      {{ t("subtitle_translation.run_test_to_enable") }}
       {% endif %}
     </p>
     <div class="service-card-actions">
-      <a href="/settings/translation-providers/{{ provider.id }}/edit" role="button" class="outline">Edit</a>
+      <a href="/settings/translation-providers/{{ provider.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
       {% if provider.is_configured and provider.kind != default_translation_provider %}
       <button
         type="button"
@@ -31,7 +31,7 @@
         hx-post="/settings/translation-providers/{{ provider.id }}/default"
         hx-target="#translation-provider-grid"
         hx-swap="outerHTML"
-      >Set as default</button>
+      >{{ t("subtitle_translation.set_as_default") }}</button>
       {% endif %}
     </div>
   </article>

@@ -20,9 +20,9 @@
       <p>{{ series.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
-      <span>{{ series.episode_file_count }} / {{ series.episode_count }} episodes</span>
-      <span>{{ series.missing_subtitles_count }} missing subtitles</span>
-      <span>{{ "Monitored" if series.monitored else "Unmonitored" }}</span>
+      <span>{{ t("media_library.episode_progress", file_count=series.episode_file_count, episode_count=series.episode_count) }}</span>
+      <span>{{ t("media_library.missing_subtitles_count", count=series.missing_subtitles_count) }}</span>
+      <span>{{ t("common.monitored") if series.monitored else t("common.unmonitored") }}</span>
       {% if series.status %}<span>{{ series.status }}</span>{% endif %}
       {% if series.quality_profile_name %}<span>{{ series.quality_profile_name }}</span>{% endif %}
     </p>
@@ -38,7 +38,7 @@
 {% if series.episodes %}
 {% for season_number, season_episodes in series.episodes|groupby("season_number")|reverse %}
 <details class="season-group" {% if loop.first %}open{% endif %}>
-  <summary>Season {{ season_number }}</summary>
+  <summary>{{ t("media_library.season", number=season_number) }}</summary>
   <table class="episode-table">
     <colgroup>
       <col class="episode-table-col-episode">
@@ -48,10 +48,10 @@
     </colgroup>
     <thead>
       <tr>
-        <th scope="col">Episode</th>
-        <th scope="col">Title</th>
-        <th scope="col">Subtitles</th>
-        <th scope="col">Actions</th>
+        <th scope="col">{{ t("common.table.episode") }}</th>
+        <th scope="col">{{ t("common.table.title") }}</th>
+        <th scope="col">{{ t("common.table.subtitles") }}</th>
+        <th scope="col">{{ t("common.table.actions") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -72,8 +72,8 @@
             <button
               type="button"
               class="app-icon-btn"
-              aria-label="Upload subtitle"
-              data-tooltip="Upload subtitle"
+              aria-label="{{ t('a11y.upload_subtitle') }}"
+              data-tooltip="{{ t('a11y.upload_subtitle') }}"
               data-subtitle-acquire-open
               hx-get="/media/files/{{ episode.media_file.id }}/subtitle-upload"
               hx-target="#subtitle-acquire-content"
@@ -89,15 +89,15 @@
 </details>
 {% endfor %}
 {% elif series.episodes_unavailable %}
-{{ empty_state("Couldn't reach Sonarr — episodes are unavailable right now.") }}
+{{ empty_state(t("media_library.sonarr_unavailable")) }}
 {% else %}
-{{ empty_state("No episodes found for this series yet.") }}
+{{ empty_state(t("media_library.no_episodes_yet")) }}
 {% endif %}
 
 <dialog id="subtitle-acquire-modal" class="subtitle-acquire-modal">
   <header class="subtitle-acquire-modal-header">
-    <p>Subtitle</p>
-    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="Close">&times;</button>
+    <p>{{ t("common.subtitle") }}</p>
+    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="{{ t('a11y.close') }}">&times;</button>
   </header>
   <div id="subtitle-acquire-content"></div>
 </dialog>

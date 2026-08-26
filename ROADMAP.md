@@ -398,7 +398,7 @@ from the Settings page instead of only ever seeing English.*
 - [ ] **Dashboard & UI** — Visual refinement pass over the base layout from 0.1.0, once every
   page from 0.2.0 onward exists to refine against (spacing, empty states, responsiveness) —
   not a from-scratch redesign.
-- [ ] **Dashboard & UI** — i18n scaffolding for `legendarr_web` (extractable strings, a locale
+- [x] **Dashboard & UI** — i18n scaffolding for `legendarr_web` (extractable strings, a locale
   switcher) and a first batch of translated locales. Repo content itself (code, comments,
   docs) stays English per `AGENTS.md` — this is about the UI a *user* sees, not the
   codebase.

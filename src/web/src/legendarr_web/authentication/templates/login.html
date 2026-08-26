@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="{{ request.state.locale }}" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>legendarr · Log in</title>
+    <title>legendarr · {{ t("auth.login.title") }}</title>
     <script>
       // Applied before the stylesheets load so a stored preference never flashes the
       // wrong theme on first paint — same snippet as base.html.
@@ -27,11 +27,11 @@
         {% endif %}
         <form method="post" action="/login">
           <input type="hidden" name="next" value="{{ next }}" />
-          <label for="username">Username</label>
+          <label for="username">{{ t("common.username") }}</label>
           <input type="text" id="username" name="username" required autofocus />
-          <label for="password">Password</label>
+          <label for="password">{{ t("common.password") }}</label>
           <input type="password" id="password" name="password" required />
-          <button type="submit">{{ icon("log-in") }}<span>Log in</span></button>
+          <button type="submit">{{ icon("log-in") }}<span>{{ t("auth.login.submit") }}</span></button>
         </form>
       </article>
     </main>

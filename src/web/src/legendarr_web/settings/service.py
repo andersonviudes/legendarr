@@ -29,3 +29,15 @@ async def regenerate_api_key(client: httpx.AsyncClient) -> dict:
     response = await client.post("/auth/settings/api-key/regenerate")
     response.raise_for_status()
     return response.json()
+
+
+async def get_general_settings(client: httpx.AsyncClient) -> dict:
+    response = await client.get("/settings/general")
+    response.raise_for_status()
+    return response.json()
+
+
+async def update_general_settings(client: httpx.AsyncClient, data: dict) -> dict:
+    response = await client.put("/settings/general", json=data)
+    response.raise_for_status()
+    return response.json()

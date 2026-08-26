@@ -24,11 +24,11 @@
     hx-disabled-elt="this"
   >
     {{ icon("refresh-cw") }}
-    <span>Sync Now</span>
+    <span>{{ t("common.sync_now") }}</span>
   </button>
 </div>
 <div id="sync-result" aria-live="polite"></div>
-<p id="sync-indicator" class="test-indicator test-result" role="status">Syncing library…</p>
+<p id="sync-indicator" class="test-indicator test-result" role="status">{{ t("common.syncing_library") }}</p>
 {% endmacro %}
 
 {#
@@ -47,7 +47,7 @@
     hx-disabled-elt="this"
   >
     {{ icon("refresh-cw") }}
-    <span>Sync</span>
+    <span>{{ t("common.sync") }}</span>
   </button>
   <button
     type="button"
@@ -59,13 +59,13 @@
     hx-disabled-elt="this"
   >
     {{ icon("hard-drive") }}
-    <span>Scan Disk</span>
+    <span>{{ t("common.scan_disk") }}</span>
   </button>
 </div>
 <div id="sync-result" aria-live="polite"></div>
-<p id="sync-indicator" class="test-indicator test-result" role="status">Syncing library…</p>
+<p id="sync-indicator" class="test-indicator test-result" role="status">{{ t("common.syncing_library") }}</p>
 <div id="scan-result" aria-live="polite"></div>
-<p id="scan-indicator" class="test-indicator test-result" role="status">Scanning disk…</p>
+<p id="scan-indicator" class="test-indicator test-result" role="status">{{ t("common.scanning_disk") }}</p>
 {% endmacro %}
 
 {% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="", step="") %}
@@ -119,7 +119,7 @@
       {% for code in selected %}
       <li class="lang-multiselect-tag" data-code="{{ code }}">
         <span>{{ code }}</span>
-        <button type="button" class="lang-multiselect-tag-remove" aria-label="Remove {{ code }}">&times;</button>
+        <button type="button" class="lang-multiselect-tag-remove" aria-label="{{ t('a11y.remove_language', code=code) }}">&times;</button>
       </li>
       {% endfor %}
     </ul>
@@ -143,13 +143,13 @@
 <label class="service-card-toggle" hx-target="this" hx-swap="outerHTML">
   <input
     type="checkbox" name="enabled" role="switch"
-    aria-label="{{ 'Enabled' if item.enabled else 'Disabled' }} — toggle to enable or disable this {{ noun }}"
+    aria-label="{{ t('common.enabled') if item.enabled else t('common.disabled') }} — {{ t('a11y.toggle_service', noun=t('common.noun.' ~ noun)) }}"
     {{ 'checked' if item.enabled else '' }}
     hx-post="{{ toggle_url }}"
     hx-trigger="change"
   >
   <span class="service-card-status{{ '' if item.enabled else ' is-disabled' }}">
-    {{ "Enabled" if item.enabled else "Disabled" }}
+    {{ t("common.enabled") if item.enabled else t("common.disabled") }}
   </span>
 </label>
 {% endmacro %}
@@ -166,26 +166,26 @@
   <div class="service-card-webhook">
     {% if public_url %}
     {% set webhook_url = public_url.rstrip("/") ~ "/api/webhooks/arr/" ~ arr_service.id %}
-    <input type="text" readonly value="{{ webhook_url }}" aria-label="Webhook URL"
+    <input type="text" readonly value="{{ webhook_url }}" aria-label="{{ t('a11y.webhook_url') }}"
            class="webhook-url-input">
     <button
       type="button"
       class="app-icon-btn"
-      aria-label="Copy webhook URL"
-      data-tooltip="Copy webhook URL"
+      aria-label="{{ t('a11y.copy_webhook_url') }}"
+      data-tooltip="{{ t('a11y.copy_webhook_url') }}"
       data-copy="{{ webhook_url }}"
     >{{ icon("copy") }}</button>
     {% else %}
     <p class="field-hint">
-      Webhook: <code>/api/webhooks/arr/{{ arr_service.id }}</code> — set your Legendarr
-      URL above to see the full link.
+      {{ t("arr_services.webhook_label") }} <code>/api/webhooks/arr/{{ arr_service.id }}</code>
+      — {{ t("arr_services.webhook_hint") }}
     </p>
     {% endif %}
   </div>
   <div class="service-card-actions">
-    <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">Edit</a>
+    <a href="/settings/arr-services/{{ arr_service.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
     <form method="post" action="/settings/arr-services/{{ arr_service.id }}/delete">
-      <button type="submit" class="outline contrast">Delete</button>
+      <button type="submit" class="outline contrast">{{ t("common.delete") }}</button>
     </form>
   </div>
 </article>
@@ -225,7 +225,7 @@
         hx-target="#sync-result-{{ subtitle.id }}"
         hx-swap="innerHTML"
         hx-disabled-elt="this"
-      >{{ icon("refresh-cw") }} Sync timing</button>
+      >{{ icon("refresh-cw") }} {{ t("common.sync_timing") }}</button>
       <span id="sync-result-{{ subtitle.id }}"></span>
       <button
         type="button"
@@ -234,7 +234,7 @@
         hx-target="#translate-from-result-{{ subtitle.id }}"
         hx-swap="innerHTML"
         hx-disabled-elt="this"
-      >{{ icon("languages") }} Translate from this</button>
+      >{{ icon("languages") }} {{ t("common.translate_from_this") }}</button>
       <span id="translate-from-result-{{ subtitle.id }}"></span>
       {% if subtitle.origin == "external" %}
       <button
@@ -244,7 +244,7 @@
         hx-target="#blacklist-result-{{ subtitle.id }}"
         hx-swap="innerHTML"
         hx-disabled-elt="this"
-      >{{ icon("ban") }} Blacklist</button>
+      >{{ icon("ban") }} {{ t("common.blacklist") }}</button>
       <span id="blacklist-result-{{ subtitle.id }}"></span>
       {% endif %}
     </div>
@@ -254,7 +254,7 @@
   <li class="subtitle-pill-item">
     <span
       class="lang-pill lang-pill--missing"
-      data-tooltip="missing"
+    data-tooltip="{{ t('common.missing') }}"
       data-subtitle-menu-toggle
       role="button"
       tabindex="0"
@@ -296,7 +296,7 @@
   hx-target="#translate-result-{{ media_file_id }}"
   hx-swap="innerHTML"
   hx-disabled-elt="this"
->{{ icon("send") }} Translate now</button>
+>{{ icon("send") }} {{ t("common.translate_now") }}</button>
 <button
   type="button"
   class="subtitle-pill-menu-item"
@@ -304,7 +304,7 @@
   hx-get="/media/files/{{ media_file_id }}/subtitle-search"
   hx-target="#subtitle-acquire-content"
   hx-swap="innerHTML"
->{{ icon("search") }} Manual search</button>
+>{{ icon("search") }} {{ t("common.manual_search") }}</button>
 {% endmacro %}
 
 {% macro lang_pill_group(codes) %}
@@ -315,7 +315,7 @@
 <article class="service-card">
   <header class="service-card-header">
     <p class="service-card-name">{{ profile.name }}</p>
-    {% if profile.is_default %}<span class="app-nav-badge">Default</span>{% endif %}
+    {% if profile.is_default %}<span class="app-nav-badge">{{ t("common.default_badge") }}</span>{% endif %}
   </header>
   <p class="service-card-languages">
     {{ lang_pill_group(profile.source_languages) }}
@@ -324,14 +324,14 @@
   </p>
   {% if profile.forced or profile.hearing_impaired %}
   <p class="service-card-address">
-    {% if profile.forced %}Forced{% endif %}{% if profile.forced and profile.hearing_impaired %}
-    · {% endif %}{% if profile.hearing_impaired %}HI{% endif %}
+    {% if profile.forced %}{{ t("common.forced") }}{% endif %}{% if profile.forced and profile.hearing_impaired %}
+    · {% endif %}{% if profile.hearing_impaired %}{{ t("common.hi") }}{% endif %}
   </p>
   {% endif %}
   <div class="service-card-actions">
-    <a href="/settings/{{ profile.id }}/edit" role="button" class="outline">Edit</a>
+    <a href="/settings/{{ profile.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
     <form method="post" action="/settings/{{ profile.id }}/delete">
-      <button type="submit" class="outline contrast">Delete</button>
+      <button type="submit" class="outline contrast">{{ t("common.delete") }}</button>
     </form>
   </div>
 </article>
@@ -345,7 +345,7 @@
 <section>
   <h2>{{ icon(icon_name) }} {{ label }}</h2>
   {% if not services %}
-  {{ empty_state("No " ~ label ~ " server configured yet.") }}
+  {{ empty_state(t("arr_services.empty_state", label=label)) }}
   {% endif %}
   <div class="service-grid">
     {% for arr_service in services %}
@@ -353,7 +353,7 @@
     {% endfor %}
     <a href="/settings/arr-services/new?service_type={{ service_type }}" class="service-add-card">
       {{ icon(icon_name) }}
-      <span>Add {{ label }} Server</span>
+      <span>{{ t("arr_services.add_server", label=label) }}</span>
     </a>
   </div>
 </section>

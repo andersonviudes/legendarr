@@ -1,13 +1,9 @@
 {% extends "base.html" %}
 {% from "macros.html" import service_status %}
-{% block title %}legendarr · Media servers{% endblock %}
+{% block title %}legendarr · {{ t("nav.settings.media_servers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("tv") }} Media servers</h1>
-<p class="field-hint">
-  Enable the media servers legendarr should notify after a subtitle is written, and set
-  the address and token each one needs. Runs automatically after an acquisition or
-  translation writes a subtitle, refreshing just that item where the server supports it.
-</p>
+<h1>{{ icon("tv") }} {{ t("nav.settings.media_servers") }}</h1>
+<p class="field-hint">{{ t("media_servers.hint") }}</p>
 
 <div class="service-grid">
   {% for server in servers %}
@@ -17,18 +13,18 @@
       {% if server.is_configured %}
       {{ service_status(server, "/settings/media-servers/" ~ server.id ~ "/enabled", noun="server") }}
       {% else %}
-      <span class="service-card-status is-disabled">Not configured</span>
+      <span class="service-card-status is-disabled">{{ t("common.not_configured") }}</span>
       {% endif %}
     </header>
     <p class="service-card-address">
       {% if server.is_configured %}
       {{ server.base_url }}
       {% else %}
-      Add an address and token to enable
+      {{ t("media_servers.add_address_token_to_enable") }}
       {% endif %}
     </p>
     <div class="service-card-actions">
-      <a href="/settings/media-servers/{{ server.id }}/edit" role="button" class="outline">Edit</a>
+      <a href="/settings/media-servers/{{ server.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
     </div>
   </article>
   {% endfor %}

@@ -134,3 +134,31 @@ def test_put_webhook_settings_persists_and_round_trips(api_client, tmp_path):
     assert api_client.get("/settings/webhooks").json() == {
         "public_url": "https://legendarr.example.com"
     }
+
+
+def test_get_general_settings_returns_default(api_client):
+    response = api_client.get("/settings/general")
+
+    assert response.status_code == 200
+    assert response.json() == {"ui_locale": "en"}
+
+
+def test_put_general_settings_persists_and_round_trips(api_client, tmp_path):
+    response = api_client.put("/settings/general", json={"ui_locale": "pt-BR"})
+
+    assert response.status_code == 200
+    assert response.json() == {"ui_locale": "pt-BR"}
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["ui_locale"] == "pt-BR"
+    # A later GET reads the file back — the value survives a restart.
+    assert api_client.get("/settings/general").json() == {"ui_locale": "pt-BR"}
+
+
+def test_put_general_settings_rejects_unsupported_locale(api_client, tmp_path):
+    api_client.get("/settings/general")
+    before = (tmp_path / "config.yaml").read_text()
+
+    response = api_client.put("/settings/general", json={"ui_locale": "fr"})
+
+    assert response.status_code == 422
+    assert (tmp_path / "config.yaml").read_text() == before

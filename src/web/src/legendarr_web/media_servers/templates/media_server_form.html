@@ -15,11 +15,11 @@
     hx-disabled-elt="this"
   >
     {{ icon("plug-zap") }}
-    <span>Test</span>
+    <span>{{ t("common.test") }}</span>
   </button>
   <button type="submit" form="media-server-form" class="page-toolbar-btn page-toolbar-btn--primary">
     {{ icon("save") }}
-    <span>Save</span>
+    <span>{{ t("common.save") }}</span>
   </button>
 </div>
 
@@ -32,14 +32,14 @@
 <form id="media-server-form" class="service-form" method="post"
       action="/settings/media-servers/{{ server.id }}">
   <input type="hidden" name="kind" value="{{ server.kind }}">
-  {{ field("base_url", "Base URL", value=(server.base_url or ""),
+  {{ field("base_url", t("common.base_url"), value=(server.base_url or ""),
            placeholder="http://plex.local:32400") }}
   {# Never re-display the stored secret. A blank field on save means "keep the current one". #}
-  {{ field("token", "Token", type="password", autocomplete="off",
-           placeholder="Leave blank to keep the current token") }}
+  {{ field("token", t("media_servers.token_label"), type="password", autocomplete="off",
+           placeholder=t("media_servers.keep_current_token_placeholder")) }}
 
   <div id="test-result" aria-live="polite"></div>
-  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+  <p id="test-indicator" class="test-indicator test-result" role="status">{{ t("common.testing_connection") }}</p>
 </form>
 {% endblock %}
 {% block scripts %}

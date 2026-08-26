@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="{{ request.state.locale }}" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -24,7 +24,7 @@
       <a
         href="/system/tasks/"
         class="app-topbar-tasks"
-        aria-label="Running tasks"
+        aria-label="{{ t('a11y.running_tasks') }}"
         hx-get="/system/tasks/count"
         hx-trigger="load, every 3s, refresh-tasks"
         hx-swap="innerHTML"
@@ -38,7 +38,7 @@
               <a
                 href="/"
                 {% if request.url.path == "/" %}aria-current="page"{% endif %}
-              >{{ icon("layout-dashboard") }}<span>Dashboard</span></a>
+              >{{ icon("layout-dashboard") }}<span>{{ t("nav.dashboard") }}</span></a>
             </li>
           </ul>
           <button
@@ -46,19 +46,19 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/media/movies') or request.url.path.startswith('/media/series') else 'false' }}"
             aria-controls="nav-library"
-          >{{ icon("library") }}<span>Library</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("library") }}<span>{{ t("nav.library") }}</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-library" class="app-nav-submenu" {% if not (request.url.path.startswith("/media/movies") or request.url.path.startswith("/media/series")) %}hidden{% endif %}>
             <li>
               <a
                 href="/media/movies"
                 {% if request.url.path.startswith("/media/movies") %}aria-current="page"{% endif %}
-              >{{ icon("clapperboard") }}<span>Movies</span></a>
+              >{{ icon("clapperboard") }}<span>{{ t("nav.movies") }}</span></a>
             </li>
             <li>
               <a
                 href="/media/series"
                 {% if request.url.path.startswith("/media/series") %}aria-current="page"{% endif %}
-              >{{ icon("tv") }}<span>Series</span></a>
+              >{{ icon("tv") }}<span>{{ t("nav.series") }}</span></a>
             </li>
           </ul>
           <button
@@ -66,19 +66,19 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/media/wanted') else 'false' }}"
             aria-controls="nav-wanted"
-          >{{ icon("search") }}<span>Wanted</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("search") }}<span>{{ t("nav.wanted") }}</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-wanted" class="app-nav-submenu" {% if not request.url.path.startswith("/media/wanted") %}hidden{% endif %}>
             <li>
               <a
                 href="/media/wanted/movies"
                 {% if request.url.path.startswith("/media/wanted/movies") %}aria-current="page"{% endif %}
-              >{{ icon("clapperboard") }}<span>Movies</span></a>
+              >{{ icon("clapperboard") }}<span>{{ t("nav.movies") }}</span></a>
             </li>
             <li>
               <a
                 href="/media/wanted/series"
                 {% if request.url.path.startswith("/media/wanted/series") %}aria-current="page"{% endif %}
-              >{{ icon("tv") }}<span>Series</span></a>
+              >{{ icon("tv") }}<span>{{ t("nav.series") }}</span></a>
             </li>
           </ul>
           <ul>
@@ -86,7 +86,7 @@
               <a
                 href="/history/"
                 {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
-              >{{ icon("history") }}<span>History</span></a>
+              >{{ icon("history") }}<span>{{ t("nav.history") }}</span></a>
             </li>
           </ul>
           <button
@@ -94,7 +94,7 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/settings') else 'false' }}"
             aria-controls="nav-settings"
-          >{{ icon("settings") }}<span>Settings</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("settings") }}<span>{{ t("nav.settings") }}</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-settings" class="app-nav-submenu" {% if not request.url.path.startswith("/settings") %}hidden{% endif %}>
             <li>
               <a
@@ -106,14 +106,16 @@
                   request.url.path.startswith("/settings/subtitle-proxies") and not
                   request.url.path.startswith("/settings/metadata-source") and not
                   request.url.path.startswith("/settings/media-servers") and not
-                  request.url.path.startswith("/settings/tasks") %}aria-current="page"{% endif %}
-              >{{ icon("languages") }}<span>Language profiles</span></a>
+                  request.url.path.startswith("/settings/tasks") and not
+                  request.url.path.startswith("/settings/authentication") and not
+                  request.url.path.startswith("/settings/general") %}aria-current="page"{% endif %}
+              >{{ icon("languages") }}<span>{{ t("nav.settings.language_profiles") }}</span></a>
             </li>
             <li>
               <a
                 href="/settings/arr-services/"
                 {% if request.url.path.startswith("/settings/arr-services") %}aria-current="page"{% endif %}
-              >{{ icon("server") }}<span>Arr Services</span><span
+              >{{ icon("server") }}<span>{{ t("nav.settings.arr_services") }}</span><span
                 id="arr-services-count-badge"
                 hidden
                 hx-get="/settings/arr-services/count"
@@ -126,7 +128,7 @@
                 href="/settings/subtitle-providers/"
                 {% if request.url.path.startswith("/settings/subtitle-providers") or
                   request.url.path.startswith("/settings/translation-providers") %}aria-current="page"{% endif %}
-              >{{ icon("captions") }}<span>Providers</span><span
+              >{{ icon("captions") }}<span>{{ t("nav.settings.providers") }}</span><span
                 id="subtitle-providers-count-badge"
                 hidden
                 hx-get="/settings/subtitle-providers/count"
@@ -138,7 +140,7 @@
               <a
                 href="/settings/metadata-source/"
                 {% if request.url.path.startswith("/settings/metadata-source") %}aria-current="page"{% endif %}
-              >{{ icon("database") }}<span>Metadata source</span><span
+              >{{ icon("database") }}<span>{{ t("nav.settings.metadata_source") }}</span><span
                 id="metadata-providers-count-badge"
                 hidden
                 hx-get="/settings/metadata-source/count"
@@ -150,7 +152,7 @@
               <a
                 href="/settings/subtitle-proxies/"
                 {% if request.url.path.startswith("/settings/subtitle-proxies") %}aria-current="page"{% endif %}
-              >{{ icon("shield") }}<span>Proxies / Captcha</span><span
+              >{{ icon("shield") }}<span>{{ t("nav.settings.proxies") }}</span><span
                 id="subtitle-proxies-count-badge"
                 hidden
                 hx-get="/settings/subtitle-proxies/count"
@@ -162,7 +164,7 @@
               <a
                 href="/settings/media-servers/"
                 {% if request.url.path.startswith("/settings/media-servers") %}aria-current="page"{% endif %}
-              >{{ icon("tv") }}<span>Media servers</span><span
+              >{{ icon("tv") }}<span>{{ t("nav.settings.media_servers") }}</span><span
                 id="media-servers-count-badge"
                 hidden
                 hx-get="/settings/media-servers/count"
@@ -174,13 +176,19 @@
               <a
                 href="/settings/tasks/"
                 {% if request.url.path.startswith("/settings/tasks") %}aria-current="page"{% endif %}
-              >{{ icon("list-checks") }}<span>Tasks</span></a>
+              >{{ icon("list-checks") }}<span>{{ t("nav.settings.tasks") }}</span></a>
             </li>
             <li>
               <a
                 href="/settings/authentication/"
                 {% if request.url.path.startswith("/settings/authentication") %}aria-current="page"{% endif %}
-              >{{ icon("lock") }}<span>Authentication</span></a>
+              >{{ icon("lock") }}<span>{{ t("nav.settings.authentication") }}</span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/general/"
+                {% if request.url.path.startswith("/settings/general") %}aria-current="page"{% endif %}
+              >{{ icon("globe") }}<span>{{ t("nav.settings.general") }}</span></a>
             </li>
           </ul>
           <button
@@ -188,39 +196,39 @@
             class="app-nav-toggle"
             aria-expanded="{{ 'true' if request.url.path.startswith('/system') else 'false' }}"
             aria-controls="nav-system"
-          >{{ icon("server") }}<span>System</span>{{ icon("chevron-right") }}</button>
+          >{{ icon("server") }}<span>{{ t("nav.system") }}</span>{{ icon("chevron-right") }}</button>
           <ul id="nav-system" class="app-nav-submenu" {% if not request.url.path.startswith("/system") %}hidden{% endif %}>
             <li>
               <a
                 href="/system/"
                 {% if request.url.path == "/system/" %}aria-current="page"{% endif %}
-              >{{ icon("scroll-text") }}<span>Logs</span></a>
+              >{{ icon("scroll-text") }}<span>{{ t("nav.system.logs") }}</span></a>
             </li>
             <li>
               <a
                 href="/system/tasks/"
                 {% if request.url.path.startswith("/system/tasks") %}aria-current="page"{% endif %}
-              >{{ icon("loader-circle") }}<span>Tasks</span></a>
+              >{{ icon("loader-circle") }}<span>{{ t("nav.system.tasks") }}</span></a>
             </li>
             <li>
               <a
                 href="/system/sessions/"
                 {% if request.url.path.startswith("/system/sessions") %}aria-current="page"{% endif %}
-              >{{ icon("monitor") }}<span>Sessions</span></a>
+              >{{ icon("monitor") }}<span>{{ t("nav.system.sessions") }}</span></a>
             </li>
           </ul>
         </nav>
         <footer class="app-sidebar-footer">
-          <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="Toggle theme">{{ icon("sun") }}</button>
+          <button type="button" id="theme-toggle" class="app-icon-btn" aria-label="{{ t('a11y.toggle_theme') }}">{{ icon("sun") }}</button>
           {% if request.state.auth_enabled %}
           <form method="post" action="/logout">
-            <button type="submit" class="app-icon-btn" aria-label="Log out">{{ icon("log-out") }}</button>
+            <button type="submit" class="app-icon-btn" aria-label="{{ t('common.log_out') }}">{{ icon("log-out") }}</button>
           </form>
           {% endif %}
           <a
             href="https://github.com/andersonviudes/legendarr"
             class="app-icon-btn app-icon-btn--github"
-            aria-label="legendarr on GitHub"
+            aria-label="{{ t('a11y.github_link') }}"
             target="_blank"
             rel="noopener"
           >{{ icon("github") }}</a>

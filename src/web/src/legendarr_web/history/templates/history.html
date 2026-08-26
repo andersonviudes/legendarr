@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}legendarr · History{% endblock %}
+{% block title %}legendarr · {{ t("nav.history") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("history") }} History</h1>
-<p>No translation activity yet — history will appear here once subtitles are translated.</p>
+<h1>{{ icon("history") }} {{ t("nav.history") }}</h1>
+<p>{{ t("history.empty") }}</p>
 {% endblock %}

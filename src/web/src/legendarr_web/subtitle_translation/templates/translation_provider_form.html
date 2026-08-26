@@ -15,11 +15,11 @@
     hx-disabled-elt="this"
   >
     {{ icon("plug-zap") }}
-    <span>Test</span>
+    <span>{{ t("common.test") }}</span>
   </button>
   <button type="submit" form="translation-provider-form" class="page-toolbar-btn page-toolbar-btn--primary">
     {{ icon("save") }}
-    <span>Save</span>
+    <span>{{ t("common.save") }}</span>
   </button>
 </div>
 
@@ -34,39 +34,35 @@
   <input type="hidden" name="kind" value="{{ provider.kind }}">
   {% if not provider.credential_fields %}
   <p class="field-hint">
-    {{ provider.label }} doesn't need any credentials — "Test connection" only checks the
-    engine is reachable.
+    {{ t("subtitle_translation.no_credentials_hint", label=provider.label) }}
   </p>
   {% endif %}
 
   {% if "endpoint" in provider.credential_fields %}
-  {{ field("endpoint", "Endpoint URL", value=(provider.endpoint or ""),
+  {{ field("endpoint", t("subtitle_translation.endpoint_label"), value=(provider.endpoint or ""),
            placeholder=("https://api.openai.com/v1" if provider.kind == "llm" else "http://localhost:5000")) }}
   {% endif %}
 
   {% if "api_key" in provider.credential_fields %}
   {# Never re-display the stored secret. A blank field on save means "keep the current one". #}
-  {{ field("api_key", "API Key", type="password", autocomplete="off",
-           placeholder="Leave blank to keep the current key") }}
+  {{ field("api_key", t("common.api_key"), type="password", autocomplete="off",
+           placeholder=t("common.keep_current_key_placeholder")) }}
   {% endif %}
 
   {% if "model" in provider.credential_fields %}
-  {{ field("model", "Model", value=(provider.model or ""), placeholder="gpt-4o-mini") }}
-  <p class="field-hint">
-    Leave Endpoint and Model blank to use OpenAI's API with gpt-4o-mini — set them to point
-    at a self-hosted or third-party OpenAI-compatible endpoint instead.
-  </p>
+  {{ field("model", t("subtitle_translation.model_label"), value=(provider.model or ""), placeholder="gpt-4o-mini") }}
+  <p class="field-hint">{{ t("subtitle_translation.model_hint") }}</p>
   {% endif %}
 
   {% if "prompt_template" in provider.credential_fields %}
-  {{ textarea_field("prompt_template", "Prompt Template", value=(provider.prompt_template or ""),
-                     placeholder="Leave blank to use the default prompt",
-                     hint="Uses {source}, {target}, and {count} as placeholders. Write a
-                     literal curly brace twice in a row so it isn't read as one.") }}
+  {{ textarea_field("prompt_template", t("subtitle_translation.prompt_template_label"),
+                     value=(provider.prompt_template or ""),
+                     placeholder=t("subtitle_translation.prompt_template_placeholder"),
+                     hint=t("subtitle_translation.prompt_template_hint")) }}
   {% endif %}
 
   <div id="test-result" aria-live="polite"></div>
-  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+  <p id="test-indicator" class="test-indicator test-result" role="status">{{ t("common.testing_connection") }}</p>
 </form>
 {% endblock %}
 {% block scripts %}

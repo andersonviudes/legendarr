@@ -7,5 +7,5 @@
 {% if provider.is_configured %}
 {{ service_status(provider, toggle_url_prefix ~ provider.id ~ "/enabled", noun="provider") }}
 {% else %}
-<span class="service-card-status is-disabled">Not configured</span>
+<span class="service-card-status is-disabled">{{ t("common.not_configured") }}</span>
 {% endif %}

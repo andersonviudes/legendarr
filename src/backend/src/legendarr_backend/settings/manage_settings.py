@@ -13,6 +13,7 @@ from legendarr_backend.media_library.jobs import (
     register_sync_job,
 )
 from legendarr_backend.settings.schemas import (
+    GeneralSettings,
     TaskSettings,
     TranslationDefaultsSettings,
     WebhookSettings,
@@ -84,3 +85,19 @@ def update_webhook_settings(settings: Settings, update: WebhookSettings) -> Webh
     """
     config = update_config_file(settings, update.model_dump())
     return WebhookSettings.model_validate(config.model_dump())
+
+
+def get_general_settings(settings: Settings) -> GeneralSettings:
+    """Read the current UI locale from `config.yaml` (fresh from disk)."""
+    config = load_or_create_config_file(settings)
+    return GeneralSettings.model_validate(config.model_dump())
+
+
+def update_general_settings(settings: Settings, update: GeneralSettings) -> GeneralSettings:
+    """Persist the UI locale to `config.yaml`.
+
+    No scheduler involvement — `legendarr_web` reads it fresh on every request, there's
+    nothing to re-register.
+    """
+    config = update_config_file(settings, update.model_dump())
+    return GeneralSettings.model_validate(config.model_dump())

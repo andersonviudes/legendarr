@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% from "macros.html" import field, checkbox_field, language_multiselect %}
-{% block title %}legendarr · {{ "Edit" if profile else "Add" }} Language Profile{% endblock %}
+{% block title %}legendarr · {{ t("language_profiles.edit_title") if profile else t("language_profiles.add_title") }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
   <button type="submit" form="language-profile-form" class="page-toolbar-btn page-toolbar-btn--primary">
     {{ icon("save") }}
-    <span>Save</span>
+    <span>{{ t("common.save") }}</span>
   </button>
 </div>
 
-<h1>{{ icon("languages") }} {{ "Edit" if profile else "Add" }} Language Profile</h1>
+<h1>{{ icon("languages") }} {{ t("language_profiles.edit_title") if profile else t("language_profiles.add_title") }}</h1>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
@@ -21,31 +21,31 @@
   method="post"
   action="{{ '/settings/' ~ profile.id if profile else '/settings/' }}"
 >
-  {{ field("name", "Name", value=(profile.name if profile else ""), required=true) }}
-  {{ language_multiselect("source_languages", "Source Languages", languages,
+  {{ field("name", t("common.name"), value=(profile.name if profile else ""), required=true) }}
+  {{ language_multiselect("source_languages", t("language_profiles.source_languages"), languages,
                            selected=(profile.source_languages.split(",") if profile else []),
                            required=true) }}
-  {{ language_multiselect("target_languages", "Target Languages", languages,
+  {{ language_multiselect("target_languages", t("language_profiles.target_languages"), languages,
                            selected=(profile.target_languages.split(",") if profile else []),
                            required=true) }}
 
-  {{ checkbox_field("extract_embedded_subtitles", "Extract embedded subtitles",
+  {{ checkbox_field("extract_embedded_subtitles", t("language_profiles.extract_embedded"),
                      checked=(not profile or profile.extract_embedded_subtitles)) }}
-  {{ checkbox_field("ocr_embedded_subtitles", "OCR embedded image subtitles (PGS)",
+  {{ checkbox_field("ocr_embedded_subtitles", t("language_profiles.ocr_embedded"),
                      checked=(profile and profile.ocr_embedded_subtitles)) }}
-  {{ checkbox_field("speech_to_text_fallback", "Speech-to-text fallback (last resort)",
+  {{ checkbox_field("speech_to_text_fallback", t("language_profiles.stt_fallback"),
                      checked=(profile and profile.speech_to_text_fallback)) }}
-  {{ checkbox_field("forced", "Forced", checked=(profile and profile.forced)) }}
-  {{ checkbox_field("hearing_impaired", "Hearing-impaired (HI)",
+  {{ checkbox_field("forced", t("common.forced"), checked=(profile and profile.forced)) }}
+  {{ checkbox_field("hearing_impaired", t("language_profiles.hearing_impaired"),
                      checked=(profile and profile.hearing_impaired)) }}
-  {{ checkbox_field("is_default", "Default profile", checked=(profile and profile.is_default)) }}
+  {{ checkbox_field("is_default", t("language_profiles.default_profile"), checked=(profile and profile.is_default)) }}
 
-  {{ field("release_name_must_contain", "Must Contain",
+  {{ field("release_name_must_contain", t("language_profiles.must_contain"),
            value=(profile.release_name_must_contain if profile else ""),
-           placeholder="e.g. PROPER, REPACK") }}
-  {{ field("release_name_must_not_contain", "Must Not Contain",
+           placeholder=t("language_profiles.must_contain_placeholder")) }}
+  {{ field("release_name_must_not_contain", t("language_profiles.must_not_contain"),
            value=(profile.release_name_must_not_contain if profile else ""),
-           placeholder="e.g. CAM, TS") }}
+           placeholder=t("language_profiles.must_not_contain_placeholder")) }}
 </form>
 {% endblock %}
 {% block scripts %}

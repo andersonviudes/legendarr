@@ -94,6 +94,7 @@ nav:
     - Authentication: features/authentication.md
     - External API: features/external-api.md
     - Media-Server Integration: features/media-server-integration.md
+    - Internationalization: features/internationalization.md
   - Architecture:
     - Overview: architecture/overview.md
   - Contributing: contributing.md

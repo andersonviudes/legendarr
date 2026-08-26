@@ -18,6 +18,7 @@ def _empty_profiles_handler(request: httpx.Request) -> httpx.Response:
 
 
 _AUTH_DISABLED_VALIDATE_RESPONSE = {"authenticated": True, "auth_enabled": False, "session": None}
+_DEFAULT_GENERAL_SETTINGS_RESPONSE = {"ui_locale": "en"}
 
 
 def _stub_auth_validate(handler):
@@ -34,6 +35,19 @@ def _stub_auth_validate(handler):
     return _wrapped
 
 
+def _stub_general_settings(handler):
+    """Wrap `handler` so `GET /settings/general` — called by the web-wide
+    `resolve_locale` dependency on every request — always answers with the default
+    locale before reaching `handler`, same reasoning as `_stub_auth_validate` above."""
+
+    def _wrapped(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/general":
+            return httpx.Response(200, json=_DEFAULT_GENERAL_SETTINGS_RESPONSE)
+        return handler(request)
+
+    return _wrapped
+
+
 @pytest.fixture
 def stub_backend_client():
     """Override an app's `get_backend_client` dependency with a `MockTransport`.
@@ -42,10 +56,19 @@ def stub_backend_client():
     `handler` for tests that need different backend responses. `stub_auth_validate=False`
     opts out of the "auth is off" auto-answer on `/auth/sessions/validate` — for tests
     (`authentication/test_session_guard.py`) that want to drive that response themselves.
+    `stub_general_settings=False` opts out of the default-locale auto-answer on
+    `GET /settings/general` — for tests (`settings/test_general_page.py`) that want to
+    drive that response themselves.
     """
 
-    def _stub(app, handler=_empty_profiles_handler, stub_auth_validate=True):
-        wrapped = _stub_auth_validate(handler) if stub_auth_validate else handler
+    def _stub(
+        app,
+        handler=_empty_profiles_handler,
+        stub_auth_validate=True,
+        stub_general_settings=True,
+    ):
+        wrapped = _stub_general_settings(handler) if stub_general_settings else handler
+        wrapped = _stub_auth_validate(wrapped) if stub_auth_validate else wrapped
         app.dependency_overrides[get_backend_client] = lambda: httpx.AsyncClient(
             transport=httpx.MockTransport(wrapped), base_url="http://backend/"
         )

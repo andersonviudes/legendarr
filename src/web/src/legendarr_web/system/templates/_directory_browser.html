@@ -16,7 +16,7 @@
 </nav>
 <ul class="dir-browser-list">
   {% if not directories %}
-  <li class="dir-browser-empty">No subdirectories.</li>
+  <li class="dir-browser-empty">{{ t("system.dir_browser.no_subdirectories") }}</li>
   {% endif %}
   {% for directory in directories %}
   <li>
@@ -37,6 +37,6 @@
     class="dir-browser-select"
     data-path="{{ current_path }}"
     data-target="{{ target }}"
-  >Select this directory</button>
+  >{{ t("common.select_directory") }}</button>
 </div>
 {% endif %}

@@ -15,11 +15,11 @@
     hx-disabled-elt="this"
   >
     {{ icon("plug-zap") }}
-    <span>Test</span>
+    <span>{{ t("common.test") }}</span>
   </button>
   <button type="submit" form="metadata-provider-form" class="page-toolbar-btn page-toolbar-btn--primary">
     {{ icon("save") }}
-    <span>Save</span>
+    <span>{{ t("common.save") }}</span>
   </button>
 </div>
 
@@ -33,11 +33,11 @@
       action="/settings/metadata-source/{{ provider.id }}">
   <input type="hidden" name="kind" value="{{ provider.kind }}">
   {# Never re-display the stored secret. A blank field on save means "keep the current one". #}
-  {{ field("api_key", "API Key", type="password", autocomplete="off",
-           placeholder="Leave blank to keep the current key") }}
+  {{ field("api_key", t("common.api_key"), type="password", autocomplete="off",
+           placeholder=t("common.keep_current_key_placeholder")) }}
 
   <div id="test-result" aria-live="polite"></div>
-  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+  <p id="test-indicator" class="test-indicator test-result" role="status">{{ t("common.testing_connection") }}</p>
 </form>
 {% endblock %}
 {% block scripts %}

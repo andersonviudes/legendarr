@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% from "macros.html" import empty_state, lang_pill_group %}
-{% block title %}legendarr · Wanted{% endblock %}
+{% block title %}legendarr · {{ t("nav.wanted") }}{% endblock %}
 {% block content %}
 <hgroup>
-  <h1>{{ icon("search") }} Wanted</h1>
-  <p>{{ wanted|length }} item{{ "s" if wanted|length != 1 else "" }} still missing a target-language subtitle.</p>
+  <h1>{{ icon("search") }} {{ t("nav.wanted") }}</h1>
+  <p>{{ t("media_library.wanted_count_one" if wanted|length == 1 else "media_library.wanted_count_other", count=wanted|length) }}</p>
 </hgroup>
 
 {% if wanted %}
@@ -21,12 +21,12 @@
     <p class="poster-title">{{ item.title }}</p>
     <p class="poster-meta">{{ lang_pill_group(item.missing_languages|join(",")) }}</p>
     <p class="poster-meta">
-      {{ item.missing_files_count }} file{{ "s" if item.missing_files_count != 1 else "" }} missing
+      {{ t("media_library.missing_files_one" if item.missing_files_count == 1 else "media_library.missing_files_other", count=item.missing_files_count) }}
     </p>
   </a>
   {% endfor %}
 </div>
 {% else %}
-{{ empty_state("Nothing wanted — every target language is covered.") }}
+{{ empty_state(t("media_library.wanted_empty")) }}
 {% endif %}
 {% endblock %}

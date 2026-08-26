@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}legendarr · Dashboard{% endblock %}
+{% block title %}legendarr · {{ t("nav.dashboard") }}{% endblock %}
 {% block content %}
 <hgroup>
-  <h1>{{ icon("layout-dashboard") }} Dashboard</h1>
-  <p>What legendarr is doing right now.</p>
+  <h1>{{ icon("layout-dashboard") }} {{ t("nav.dashboard") }}</h1>
+  <p>{{ t("dashboard.subtitle") }}</p>
 </hgroup>
 
 <div
@@ -17,19 +17,19 @@
 >
   <article class="stat-card">
     <p class="stat-value">{{ profile_count }}</p>
-    <p class="stat-label">Language profiles configured</p>
+    <p class="stat-label">{{ t("dashboard.stat.profiles") }}</p>
   </article>
   <article class="stat-card">
     <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
-    <p class="stat-label">Until next library sync</p>
+    <p class="stat-label">{{ t("dashboard.stat.next_sync") }}</p>
   </article>
   <article class="stat-card">
     <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
-    <p class="stat-label">Sync interval</p>
+    <p class="stat-label">{{ t("dashboard.stat.sync_interval") }}</p>
   </article>
   <a class="stat-card" href="/media/wanted">
     <p class="stat-value">{{ missing_subtitles_count }}</p>
-    <p class="stat-label">Missing subtitles</p>
+    <p class="stat-label">{{ t("dashboard.stat.missing_subtitles") }}</p>
   </a>
 </div>
 {% endblock %}

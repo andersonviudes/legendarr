@@ -5,32 +5,32 @@
   wired up by authentication-settings.js.
 #}
 <div id="api-key-field" class="api-key-field">
-  <label for="api_key">API Key</label>
+  <label for="api_key">{{ t("common.api_key") }}</label>
   <div class="api-key-field-control">
     <input type="password" id="api_key" readonly value="{{ settings.api_key }}" data-api-key-input />
-    <button type="button" class="app-icon-btn" data-api-key-toggle aria-label="Show API key">
+    <button type="button" class="app-icon-btn" data-api-key-toggle aria-label="{{ t('settings.auth.show_api_key') }}">
       <span data-api-key-icon-show>{{ icon("eye") }}</span>
       <span data-api-key-icon-hide hidden>{{ icon("eye-off") }}</span>
     </button>
     <button
       type="button"
       class="app-icon-btn"
-      aria-label="Copy API key"
+      aria-label="{{ t('settings.auth.copy_api_key') }}"
       data-copy="{{ settings.api_key }}"
-      data-copy-toast="API key copied."
+      data-copy-toast="{{ t('settings.auth.api_key_copied') }}"
     >{{ icon("copy") }}</button>
     <button
       type="button"
       class="app-icon-btn"
-      aria-label="Regenerate API key"
-      hx-confirm="Regenerate the API key? Anything using the old one will stop working."
+      aria-label="{{ t('settings.auth.regenerate_api_key') }}"
+      hx-confirm="{{ t('settings.auth.regenerate_confirm') }}"
       hx-post="/settings/authentication/api-key/regenerate"
       hx-target="#api-key-field"
       hx-swap="outerHTML"
     >{{ icon("refresh-cw") }}</button>
   </div>
   <p class="field-hint">
-    Used by scripts/tools for non-interactive access to the API.
-    <a href="/api/docs" target="_blank" rel="noopener">View API docs</a>
+    {{ t("settings.auth.api_key_hint") }}
+    <a href="/api/docs" target="_blank" rel="noopener">{{ t("settings.auth.view_api_docs") }}</a>
   </p>
 </div>

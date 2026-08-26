@@ -1,3 +1,5 @@
+from typing import Literal, get_args
+
 from pydantic import BaseModel, Field
 
 from legendarr_backend.subtitle_translation.models import TranslationProviderKind
@@ -44,3 +46,16 @@ class WebhookSettings(BaseModel):
     shown on the Arr Services settings page. Empty means "not configured yet"."""
 
     public_url: str = ""
+
+
+# ROADMAP.md 0.19.0 — i18n scaffolding. Unrelated to `SUPPORTED_LANGUAGES` (subtitle
+# content languages) — this is the display language of legendarr_web itself.
+UiLocale = Literal["en", "es", "pt-BR"]
+UI_LOCALES: tuple[UiLocale, ...] = get_args(UiLocale)
+
+
+class GeneralSettings(BaseModel):
+    """The instance-wide UI display language, single shared admin account so this is one
+    preference, same posture as `TranslationDefaultsSettings`."""
+
+    ui_locale: UiLocale = "en"

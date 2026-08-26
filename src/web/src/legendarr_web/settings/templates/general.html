@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "macros.html" import select_field %}
+{% block title %}legendarr · {{ t("settings.general.title") }}{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="general-settings-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>{{ t("common.save") }}</span>
+  </button>
+</div>
+
+<h1>{{ icon("globe") }} {{ t("settings.general.title") }}</h1>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form id="general-settings-form" class="service-form" method="post" action="/settings/general/">
+  <p class="field-hint">{{ t("settings.general.locale_hint") }}</p>
+  {{ select_field("ui_locale", t("settings.general.locale_label"), locales, selected=settings.ui_locale) }}
+</form>
+{% endblock %}

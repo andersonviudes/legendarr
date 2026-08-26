@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}legendarr · System{% endblock %}
+{% block title %}legendarr · {{ t("nav.system") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("server") }} System</h1>
+<h1>{{ icon("server") }} {{ t("nav.system") }}</h1>
 
 <section>
   <div class="log-toolbar">
-    <h2>{{ icon("scroll-text") }} Logs</h2>
+    <h2>{{ icon("scroll-text") }} {{ t("nav.system.logs") }}</h2>
     <label for="log-level-filter">
-      Minimum level
+      {{ t("system.logs.min_level_label") }}
       <select id="log-level-filter" name="level">
-        <option value="">All</option>
-        <option value="DEBUG">Debug</option>
-        <option value="INFO">Info</option>
-        <option value="WARNING">Warning</option>
-        <option value="ERROR">Error</option>
+        <option value="">{{ t("common.all") }}</option>
+        <option value="DEBUG">{{ t("system.logs.level_debug") }}</option>
+        <option value="INFO">{{ t("system.logs.level_info") }}</option>
+        <option value="WARNING">{{ t("system.logs.level_warning") }}</option>
+        <option value="ERROR">{{ t("system.logs.level_error") }}</option>
       </select>
     </label>
   </div>

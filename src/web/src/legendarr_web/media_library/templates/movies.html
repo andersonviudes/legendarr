@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% from "macros.html" import empty_state, sync_now_toolbar %}
-{% block title %}legendarr · Movies{% endblock %}
+{% block title %}legendarr · {{ t("nav.movies") }}{% endblock %}
 {% block content %}
 {{ sync_now_toolbar() }}
 <hgroup>
-  <h1>{{ icon("clapperboard") }} Movies</h1>
-  <p>{{ movies|length }} movies synced.</p>
+  <h1>{{ icon("clapperboard") }} {{ t("nav.movies") }}</h1>
+  <p>{{ t("media_library.movies_synced_count", count=movies|length) }}</p>
 </hgroup>
 
 {% if movies %}
@@ -21,13 +21,13 @@
     </div>
     <p class="poster-title">{{ movie.title }}</p>
     <p class="poster-meta">
-      {{ "Monitored" if movie.monitored else "Unmonitored" }}
+      {{ t("common.monitored") if movie.monitored else t("common.unmonitored") }}
       {% if movie.quality_profile_name %} · {{ movie.quality_profile_name }}{% endif %}
     </p>
   </a>
   {% endfor %}
 </div>
 {% else %}
-{{ empty_state("Nothing synced yet — run a library sync from Radarr to see it here.") }}
+{{ empty_state(t("media_library.movies_empty")) }}
 {% endif %}
 {% endblock %}

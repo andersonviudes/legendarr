@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.i18n.translator import SUPPORTED_UI_LOCALES, current_locale, translate
 from legendarr_web.settings import service
 from legendarr_web.templates.loader import get_templates
 
@@ -73,7 +74,12 @@ async def save_task_settings(
             {"settings": data, "error": error_detail(exc)},
             status_code=exc.response.status_code,
         )
-    toast = urlencode({"toast": "Task settings saved.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "settings.tasks.saved_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/settings/tasks/?{toast}", status_code=303)
 
 
@@ -110,7 +116,12 @@ async def save_auth_settings(
             {"settings": rendered_settings, "error": error_detail(exc)},
             status_code=exc.response.status_code,
         )
-    toast = urlencode({"toast": "Authentication settings saved.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "settings.auth.saved_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/settings/authentication/?{toast}", status_code=303)
 
 
@@ -120,3 +131,51 @@ async def regenerate_auth_api_key(
 ):
     auth_settings = await service.regenerate_api_key(client)
     return templates.TemplateResponse(request, "_api_key_field.html", {"settings": auth_settings})
+
+
+general_router = APIRouter(prefix="/settings/general")
+
+
+@general_router.get("/")
+async def show_general_settings(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    general_settings = await service.get_general_settings(client)
+    return templates.TemplateResponse(
+        request,
+        "general.html",
+        {"settings": general_settings, "locales": SUPPORTED_UI_LOCALES},
+    )
+
+
+@general_router.post("/")
+async def save_general_settings(
+    request: Request,
+    ui_locale: str = Form(...),
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    data = {"ui_locale": ui_locale}
+    try:
+        await service.update_general_settings(client, data)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code >= 500:
+            raise
+        return templates.TemplateResponse(
+            request,
+            "general.html",
+            {
+                "settings": data,
+                "locales": SUPPORTED_UI_LOCALES,
+                "error": error_detail(exc),
+            },
+            status_code=exc.response.status_code,
+        )
+    # Use the newly-saved locale, not current_locale.get() — this is the one page where
+    # the two can differ within the same request (resolve_locale ran before the save).
+    toast = urlencode(
+        {
+            "toast": translate(ui_locale, "settings.general.saved_toast"),
+            "toast_type": "success",
+        }
+    )
+    return RedirectResponse(f"/settings/general/?{toast}", status_code=303)

@@ -1,14 +1,9 @@
 {% extends "base.html" %}
-{% block title %}legendarr · Providers{% endblock %}
+{% block title %}legendarr · {{ t("nav.settings.providers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("captions") }} Providers</h1>
+<h1>{{ icon("captions") }} {{ t("nav.settings.providers") }}</h1>
 {% include "_provider_tabs.html" %}
-<p class="field-hint">
-  Enable the translation engines you want legendarr to use, and configure credentials where
-  an engine needs them. Translation jobs try the default provider first, falling back through
-  every other enabled, credentialed engine in order if it fails. `echo` (returns the source
-  text unchanged) is always available too, for development.
-</p>
+<p class="field-hint">{{ t("subtitle_translation.providers_hint") }}</p>
 
 {% include "_provider_grid.html" %}
 {% endblock %}
