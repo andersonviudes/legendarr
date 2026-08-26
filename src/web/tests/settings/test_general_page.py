@@ -55,7 +55,9 @@ def test_save_general_settings_puts_to_backend_and_redirects_with_toast(stub_bac
     assert response.status_code == 303
     location = response.headers["location"]
     assert location.startswith("/settings/general/?")
-    assert "General+settings+saved." in location
+    # The toast reflects the newly-saved locale (es), not the one active when the
+    # request started (en) — this is the one page where the two can differ.
+    assert "Configuraci%C3%B3n+general+guardada." in location
 
 
 def test_save_general_settings_renders_error_on_backend_rejection(stub_backend_client):

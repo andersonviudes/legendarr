@@ -170,9 +170,11 @@ async def save_general_settings(
             },
             status_code=exc.response.status_code,
         )
+    # Use the newly-saved locale, not current_locale.get() — this is the one page where
+    # the two can differ within the same request (resolve_locale ran before the save).
     toast = urlencode(
         {
-            "toast": translate(current_locale.get(), "settings.general.saved_toast"),
+            "toast": translate(ui_locale, "settings.general.saved_toast"),
             "toast_type": "success",
         }
     )
