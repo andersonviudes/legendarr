@@ -8,6 +8,9 @@ from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.media_servers.notify_media_servers import (
+    notify_media_servers_of_subtitle_write,
+)
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
@@ -143,6 +146,8 @@ def enqueue_acquisition(
             )
             session.commit()
             logger.info("acquisition finished for media file %d: %s", media_file_id, result)
+            if result.acquired_language is not None:
+                notify_media_servers_of_subtitle_write(session, video_path)
             # A pure no-op (neither acquired nor skipped) means a source-language
             # subtitle already existed — check whether a better release has since
             # shown up for it (ROADMAP.md 0.12.0's upgrade/replace pass).
@@ -150,6 +155,8 @@ def enqueue_acquisition(
                 upgrade_result = upgrade_subtitle_for_media_file(session, media_file, video_path)
                 session.commit()
                 logger.info("upgrade finished for media file %d: %s", media_file_id, upgrade_result)
+                if upgrade_result.upgraded_language is not None:
+                    notify_media_servers_of_subtitle_write(session, video_path)
             # Only cascade forward on an actual find — an unconditional cascade here would
             # oscillate forever against `subtitle_translation.jobs.run_translation`'s own
             # cascade back into acquisition on a missing source subtitle.

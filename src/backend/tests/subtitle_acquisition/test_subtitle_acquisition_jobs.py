@@ -547,3 +547,193 @@ def test_enqueue_full_acquisition_scan_enqueues_every_known_media_file(
     ids = {kwargs["id"] for _, kwargs in added}
     assert ids == {f"subtitle_acquisition:{first.id}", f"subtitle_acquisition:{second.id}"}
     assert all(kwargs["executor"] == JobQueue.ACQUIRE_BULK.value for _, kwargs in added)
+
+
+def test_enqueued_acquisition_job_notifies_media_servers_after_download(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+    notified = []
+    monkeypatch.setattr(
+        jobs_module,
+        "notify_media_servers_of_subtitle_write",
+        lambda session, video_path: notified.append(video_path),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler, media_file.id, JobQueue.ACQUIRE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert notified == [tmp_path / "Foo" / "Foo.mkv"]
+
+
+def test_enqueued_acquisition_job_does_not_notify_media_servers_on_no_match(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_NoMatchProvider()],
+    )
+    notified = []
+    monkeypatch.setattr(
+        jobs_module,
+        "notify_media_servers_of_subtitle_write",
+        lambda session, video_path: notified.append(video_path),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler, media_file.id, JobQueue.ACQUIRE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert notified == []
+
+
+def test_enqueued_acquisition_job_notifies_media_servers_after_upgrade(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        upgrade_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+    notified = []
+    monkeypatch.setattr(
+        jobs_module,
+        "notify_media_servers_of_subtitle_write",
+        lambda session, video_path: notified.append(video_path),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text("old", encoding="utf-8")
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo.en.srt",
+            content_hash="old-hash",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    record_acquired_subtitle(
+        in_memory_session,
+        media_file.id,
+        "en",
+        provider="old-provider",
+        release_name="Foo.OLD",
+        download_id="old-1",
+        evaluation=CandidateEvaluation(score=0.1, title_similarity=0.1, attribute_matches={}),
+    )
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler, media_file.id, JobQueue.ACQUIRE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert notified == [tmp_path / "Foo" / "Foo.mkv"]

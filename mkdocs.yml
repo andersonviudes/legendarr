@@ -93,6 +93,7 @@ nav:
     - Subtitle Timing Sync: features/subtitle-timing-sync.md
     - Authentication: features/authentication.md
     - External API: features/external-api.md
+    - Media-Server Integration: features/media-server-integration.md
   - Architecture:
     - Overview: architecture/overview.md
   - Contributing: contributing.md

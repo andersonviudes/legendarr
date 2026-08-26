@@ -8,6 +8,9 @@ from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.media_servers.notify_media_servers import (
+    notify_media_servers_of_subtitle_write,
+)
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
@@ -120,6 +123,8 @@ def enqueue_translation(
             )
             session.commit()
             logger.info("translation finished for media file %d: %s", media_file_id, result)
+            if result.translated_languages:
+                notify_media_servers_of_subtitle_write(session, video_path)
             if result.skipped_reason == "no_source_subtitle":
                 # Local import: subtitle_acquisition.jobs imports enqueue_translation from
                 # this module, so a module-level import here would be circular.

@@ -13,6 +13,7 @@ _TAG_BY_PREFIX = {
     "/media": "Media Library",
     "/webhooks": "Webhooks",
     "/metadata-providers": "Metadata Providers",
+    "/media-servers": "Media Servers",
     "/settings": "Settings",
     "/subtitle-providers": "Subtitle Providers",
     "/subtitle-proxies": "Subtitle Proxies",

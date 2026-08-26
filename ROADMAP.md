@@ -378,7 +378,7 @@ an API key for scripts/tools instead of everyone sharing the dashboard session.*
 REST API, gated by the API key from 0.16.0, instead of only ever driving it through the
 dashboard.*
 
-- [ ] Documented REST API surface covering media, language profiles, subtitles, and system
+- [x] Documented REST API surface covering media, language profiles, subtitles, and system
   status — the same domain operations the dashboard already uses, exposed for external
   tools.
 
@@ -387,7 +387,7 @@ dashboard.*
 *Use case: a freshly translated subtitle shows up in Plex/Jellyfin immediately, without a
 user manually triggering a library rescan.*
 
-- [ ] **Media providers** — Targeted Plex/Jellyfin library-item refresh after a subtitle is
+- [x] **Media providers** — Targeted Plex/Jellyfin library-item refresh after a subtitle is
   written, falling back to a full library scan if a targeted refresh isn't available.
 
 ## 0.19.0 — UI polish and internationalization
