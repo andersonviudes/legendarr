@@ -105,7 +105,11 @@
   "dashboard.stat.profiles": "Perfis de idioma configurados",
   "dashboard.stat.next_sync": "Até a próxima sincronização da biblioteca",
   "dashboard.stat.sync_interval": "Intervalo de sincronização",
-  "dashboard.stat.missing_subtitles": "Legendas faltando",
+  "dashboard.stat.missing_movies": "Filmes com legendas faltando",
+  "dashboard.stat.missing_series": "Séries com legendas faltando",
+  "dashboard.providers_heading": "Provedores",
+  "dashboard.stat.subtitle_providers": "Provedores de legenda habilitados",
+  "dashboard.stat.translation_providers": "Provedores de tradução habilitados",
 
   "auth.login.title": "Entrar",
   "auth.login.submit": "Entrar",

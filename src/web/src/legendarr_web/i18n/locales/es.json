@@ -105,7 +105,11 @@
   "dashboard.stat.profiles": "Perfiles de idioma configurados",
   "dashboard.stat.next_sync": "Hasta la próxima sincronización de biblioteca",
   "dashboard.stat.sync_interval": "Intervalo de sincronización",
-  "dashboard.stat.missing_subtitles": "Subtítulos faltantes",
+  "dashboard.stat.missing_movies": "Películas con subtítulos faltantes",
+  "dashboard.stat.missing_series": "Series con subtítulos faltantes",
+  "dashboard.providers_heading": "Proveedores",
+  "dashboard.stat.subtitle_providers": "Proveedores de subtítulos habilitados",
+  "dashboard.stat.translation_providers": "Proveedores de traducción habilitados",
 
   "auth.login.title": "Iniciar sesión",
   "auth.login.submit": "Iniciar sesión",

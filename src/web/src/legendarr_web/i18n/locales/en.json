@@ -105,7 +105,11 @@
   "dashboard.stat.profiles": "Language profiles configured",
   "dashboard.stat.next_sync": "Until next library sync",
   "dashboard.stat.sync_interval": "Sync interval",
-  "dashboard.stat.missing_subtitles": "Missing subtitles",
+  "dashboard.stat.missing_movies": "Movies missing subtitles",
+  "dashboard.stat.missing_series": "Series missing subtitles",
+  "dashboard.providers_heading": "Providers",
+  "dashboard.stat.subtitle_providers": "Subtitle providers enabled",
+  "dashboard.stat.translation_providers": "Translation providers enabled",
 
   "auth.login.title": "Log in",
   "auth.login.submit": "Log in",

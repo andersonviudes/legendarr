@@ -14,10 +14,12 @@ def test_dashboard_returns_ok(stub_backend_client):
     assert "legendarr" in response.text
 
 
-def test_dashboard_shows_missing_subtitles_count(stub_backend_client):
+def test_dashboard_shows_missing_subtitles_count_by_media_type(stub_backend_client):
     def _handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/media/wanted":
-            return httpx.Response(200, json=[{"id": 1}, {"id": 2}])
+            return httpx.Response(
+                200, json=[{"id": 1, "kind": "movie"}, {"id": 2, "kind": "series"}]
+            )
         return httpx.Response(200, json=[])
 
     app = create_app()
@@ -27,5 +29,27 @@ def test_dashboard_shows_missing_subtitles_count(stub_backend_client):
         response = client.get("/")
 
     assert response.status_code == 200
-    assert 'href="/media/wanted"' in response.text
-    assert "Missing subtitles" in response.text
+    assert 'href="/media/wanted/movies"' in response.text
+    assert 'href="/media/wanted/series"' in response.text
+    assert "Movies missing subtitles" in response.text
+    assert "Series missing subtitles" in response.text
+
+
+def test_dashboard_shows_provider_status(stub_backend_client):
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-providers/":
+            return httpx.Response(200, json=[{"enabled": True}, {"enabled": False}])
+        if request.url.path == "/translation-providers/":
+            return httpx.Response(200, json=[{"enabled": True}])
+        return httpx.Response(200, json=[])
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Providers" in response.text
+    assert "1/2" in response.text
+    assert "1/1" in response.text

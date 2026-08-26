@@ -7,29 +7,48 @@
 </hgroup>
 
 <div
-  id="dashboard-stats"
-  class="stat-grid"
+  id="dashboard-content"
   hx-get="/"
-  hx-select="#dashboard-stats"
+  hx-select="#dashboard-content"
   hx-target="this"
   hx-swap="outerHTML"
   hx-trigger="every 15s"
 >
-  <article class="stat-card">
-    <p class="stat-value">{{ profile_count }}</p>
-    <p class="stat-label">{{ t("dashboard.stat.profiles") }}</p>
-  </article>
-  <article class="stat-card">
-    <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
-    <p class="stat-label">{{ t("dashboard.stat.next_sync") }}</p>
-  </article>
-  <article class="stat-card">
-    <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
-    <p class="stat-label">{{ t("dashboard.stat.sync_interval") }}</p>
-  </article>
-  <a class="stat-card" href="/media/wanted">
-    <p class="stat-value">{{ missing_subtitles_count }}</p>
-    <p class="stat-label">{{ t("dashboard.stat.missing_subtitles") }}</p>
-  </a>
+  <div class="stat-grid">
+    <article class="stat-card">
+      <p class="stat-value">{{ profile_count }}</p>
+      <p class="stat-label">{{ icon("languages") }} {{ t("dashboard.stat.profiles") }}</p>
+    </article>
+    <article class="stat-card">
+      <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
+      <p class="stat-label">{{ icon("history") }} {{ t("dashboard.stat.next_sync") }}</p>
+    </article>
+    <article class="stat-card">
+      <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
+      <p class="stat-label">{{ icon("refresh-cw") }} {{ t("dashboard.stat.sync_interval") }}</p>
+    </article>
+    <a class="stat-card" href="/media/wanted/movies">
+      <p class="stat-value">{{ movies_missing_count }}</p>
+      <p class="stat-label">{{ icon("clapperboard") }} {{ t("dashboard.stat.missing_movies") }}</p>
+    </a>
+    <a class="stat-card" href="/media/wanted/series">
+      <p class="stat-value">{{ series_missing_count }}</p>
+      <p class="stat-label">{{ icon("tv") }} {{ t("dashboard.stat.missing_series") }}</p>
+    </a>
+  </div>
+
+  <section>
+    <h2>{{ icon("captions") }} {{ t("dashboard.providers_heading") }}</h2>
+    <div class="stat-grid">
+      <a class="stat-card" href="/settings/subtitle-providers/">
+        <p class="stat-value">{{ subtitle_providers_enabled }}/{{ subtitle_providers_total }}</p>
+        <p class="stat-label">{{ icon("captions") }} {{ t("dashboard.stat.subtitle_providers") }}</p>
+      </a>
+      <a class="stat-card" href="/settings/translation-providers/">
+        <p class="stat-value">{{ translation_providers_enabled }}/{{ translation_providers_total }}</p>
+        <p class="stat-label">{{ icon("globe") }} {{ t("dashboard.stat.translation_providers") }}</p>
+      </a>
+    </div>
+  </section>
 </div>
 {% endblock %}
