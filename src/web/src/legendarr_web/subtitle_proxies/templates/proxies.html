@@ -1,15 +1,12 @@
 {% extends "base.html" %}
 {% from "macros.html" import empty_state, service_status %}
-{% block title %}legendarr · Proxies / Captcha{% endblock %}
+{% block title %}legendarr · {{ t("nav.settings.proxies") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("shield") }} Proxies / Captcha</h1>
-<p class="field-hint">
-  Register a proxy (e.g. FlareSolverr) subtitle providers can be pointed at from their own
-  edit page to get past a CAPTCHA or Cloudflare wall.
-</p>
+<h1>{{ icon("shield") }} {{ t("nav.settings.proxies") }}</h1>
+<p class="field-hint">{{ t("subtitle_proxies.hint") }}</p>
 
 {% if not proxies %}
-{{ empty_state("No proxy configured yet.") }}
+{{ empty_state(t("subtitle_proxies.empty")) }}
 {% endif %}
 
 <div class="service-grid">
@@ -21,16 +18,16 @@
     </header>
     <p class="service-card-address">{{ proxy.host }}</p>
     <div class="service-card-actions">
-      <a href="/settings/subtitle-proxies/{{ proxy.id }}/edit" role="button" class="outline">Edit</a>
+      <a href="/settings/subtitle-proxies/{{ proxy.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
       <form method="post" action="/settings/subtitle-proxies/{{ proxy.id }}/delete">
-        <button type="submit" class="outline contrast">Delete</button>
+        <button type="submit" class="outline contrast">{{ t("common.delete") }}</button>
       </form>
     </div>
   </article>
   {% endfor %}
   <a href="/settings/subtitle-proxies/new" class="service-add-card">
     {{ icon("shield") }}
-    <span>Add Proxy</span>
+    <span>{{ t("subtitle_proxies.add") }}</span>
   </a>
 </div>
 {% endblock %}

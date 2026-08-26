@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros.html" import field, checkbox_field %}
-{% block title %}legendarr · {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server{% endblock %}
+{% block title %}legendarr · {{ t("arr_services.edit_server_title", type=service_type|capitalize) if service else t("arr_services.add_server_title", type=service_type|capitalize) }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
   <button
@@ -15,15 +15,15 @@
     hx-disabled-elt="this"
   >
     {{ icon("plug-zap") }}
-    <span>Test</span>
+    <span>{{ t("common.test") }}</span>
   </button>
   <button type="submit" form="arr-service-form" class="page-toolbar-btn page-toolbar-btn--primary">
     {{ icon("save") }}
-    <span>Save</span>
+    <span>{{ t("common.save") }}</span>
   </button>
 </div>
 
-<h1>{{ icon("settings") }} {{ "Edit" if service else "Add" }} {{ service_type|capitalize }} Server</h1>
+<h1>{{ icon("settings") }} {{ t("arr_services.edit_server_title", type=service_type|capitalize) if service else t("arr_services.add_server_title", type=service_type|capitalize) }}</h1>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
@@ -37,41 +37,40 @@
 >
   <input type="hidden" name="service_type" value="{{ service_type }}">
 
-  {{ checkbox_field("enabled", "Enabled", checked=(not service or service.enabled)) }}
+  {{ checkbox_field("enabled", t("common.enabled"), checked=(not service or service.enabled)) }}
 
   <fieldset>
-    <legend>Host</legend>
+    <legend>{{ t("common.host") }}</legend>
 
-    {{ field("name", "Name", value=(service.name if service else ""), required=true) }}
-    {{ field("host", "Address", value=(service.host if service else ""),
-             placeholder="Hostname or IPv4 Address", required=true) }}
-    {{ field("port", "Port", type="number", value=(service.port if service else default_port),
+    {{ field("name", t("common.name"), value=(service.name if service else ""), required=true) }}
+    {{ field("host", t("arr_services.address_label"), value=(service.host if service else ""),
+             placeholder=t("arr_services.address_placeholder"), required=true) }}
+    {{ field("port", t("common.port"), type="number", value=(service.port if service else default_port),
              required=true) }}
-    {{ field("base_url", "Base URL", value=(service.base_url if service else "/")) }}
-    {{ field("http_timeout_seconds", "HTTP Timeout", type="number",
+    {{ field("base_url", t("common.base_url"), value=(service.base_url if service else "/")) }}
+    {{ field("http_timeout_seconds", t("arr_services.http_timeout_label"), type="number",
              value=(service.http_timeout_seconds if service else 60)) }}
 
     {# Never re-display the stored secret. On edit, a blank field means "keep the current key". #}
-    {{ field("api_key", "API Key", type="password", autocomplete="off",
+    {{ field("api_key", t("common.api_key"), type="password", autocomplete="off",
              required=(not service),
-             placeholder=("Leave blank to keep the current key" if service else "")) }}
+             placeholder=(t("common.keep_current_key_placeholder") if service else "")) }}
 
-    {{ checkbox_field("use_ssl", "SSL", checked=(service and service.use_ssl)) }}
+    {{ checkbox_field("use_ssl", t("common.ssl"), checked=(service and service.use_ssl)) }}
   </fieldset>
 
   <fieldset>
-    <legend>Path Mapping</legend>
+    <legend>{{ t("arr_services.path_mapping_legend") }}</legend>
     <p class="field-hint">
-      Only needed when legendarr and this server run in separate containers with different
-      mounts — e.g. the server reports <code>/movies</code> but legendarr sees the same
-      files under <code>/media/movies</code>.
+      {{ t("arr_services.path_mapping_hint_prefix") }} <code>/movies</code>
+      {{ t("arr_services.path_mapping_hint_suffix") }} <code>/media/movies</code>.
     </p>
 
-    {{ field("remote_path_prefix", "Remote Path Prefix",
+    {{ field("remote_path_prefix", t("arr_services.remote_path_prefix_label"),
              value=((service.remote_path_prefix or "") if service else ""),
              placeholder="/movies") }}
     <div class="field-with-browse">
-      {{ field("local_path_prefix", "Local Path Prefix",
+      {{ field("local_path_prefix", t("arr_services.local_path_prefix_label"),
                value=((service.local_path_prefix or "") if service else ""),
                placeholder="/media/movies") }}
       <button
@@ -82,18 +81,18 @@
         hx-vals='{"target": "local_path_prefix"}'
         hx-target="#dir-browser-content"
         hx-swap="innerHTML"
-      >{{ icon("folder") }}<span>Browse</span></button>
+      >{{ icon("folder") }}<span>{{ t("common.browse") }}</span></button>
     </div>
   </fieldset>
 
   <div id="test-result" aria-live="polite"></div>
-  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+  <p id="test-indicator" class="test-indicator test-result" role="status">{{ t("common.testing_connection") }}</p>
 </form>
 
 <dialog id="dir-browser-modal" class="dir-browser-modal">
   <header class="dir-browser-modal-header">
-    <p>Choose a directory</p>
-    <button type="button" class="dir-browser-close" data-dir-browser-close aria-label="Close">&times;</button>
+    <p>{{ t("common.choose_directory") }}</p>
+    <button type="button" class="dir-browser-close" data-dir-browser-close aria-label="{{ t('a11y.close') }}">&times;</button>
   </header>
   <div id="dir-browser-content"></div>
 </dialog>

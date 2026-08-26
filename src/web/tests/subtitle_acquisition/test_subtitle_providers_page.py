@@ -109,7 +109,7 @@ def test_page_hints_test_connection_for_unverified_credential_less_provider(stub
         response = client.get("/settings/subtitle-providers/")
 
     assert response.status_code == 200
-    assert 'Run "Test connection" to enable' in response.text
+    assert "Run &#34;Test connection&#34; to enable" in response.text
     assert "No credentials needed" not in response.text
 
 
@@ -196,7 +196,7 @@ def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend
     assert response.status_code == 200
     assert 'name="api_key"' not in response.text
     assert "data-test-connection" in response.text
-    assert "doesn't need any credentials" in response.text
+    assert "doesn&#39;t need any credentials" in response.text
 
 
 def test_edit_form_shows_search_options_for_opensubtitles(stub_backend_client):

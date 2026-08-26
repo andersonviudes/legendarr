@@ -76,6 +76,7 @@ class AppConfigFile(BaseModel):
     auth_username: str = ""
     auth_password_hash: str = ""
     auth_api_key: str = ""
+    ui_locale: str = "en"
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -131,6 +132,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "auth_username": settings.auth_username,
         "auth_password_hash": settings.auth_password_hash,
         "auth_api_key": settings.auth_api_key,
+        "ui_locale": settings.ui_locale,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

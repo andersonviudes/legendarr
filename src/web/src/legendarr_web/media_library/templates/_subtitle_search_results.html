@@ -18,8 +18,8 @@
     <button
       type="button"
       class="app-icon-btn"
-      aria-label="Download this subtitle"
-      data-tooltip="Download"
+      aria-label="{{ t('a11y.download_subtitle') }}"
+      data-tooltip="{{ t('common.download') }}"
       hx-post="/media/files/{{ media_file_id }}/subtitle-candidates/download"
       hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": language, "page_link": candidate.page_link or ""} | tojson }}'
       hx-target="#subtitle-acquire-content"
@@ -30,5 +30,5 @@
   {% endfor %}
 </ul>
 {% else %}
-{{ empty_state("No subtitles found for this language.") }}
+{{ empty_state(t("media_library.no_candidates")) }}
 {% endif %}

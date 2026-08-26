@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.i18n.translator import current_locale, translate
 from legendarr_web.language_profiles import service
 from legendarr_web.languages import SUPPORTED_LANGUAGES
 from legendarr_web.templates.loader import get_templates
@@ -96,7 +97,12 @@ async def create_language_profile(
             {"profile": data, "error": error_detail(exc), "languages": SUPPORTED_LANGUAGES},
             status_code=exc.response.status_code,
         )
-    toast = urlencode({"toast": "Language profile added.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "language_profiles.added_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/settings/?{toast}", status_code=303)
 
 
@@ -124,7 +130,12 @@ async def update_language_profile(
             },
             status_code=exc.response.status_code,
         )
-    toast = urlencode({"toast": "Language profile updated.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "language_profiles.updated_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/settings/?{toast}", status_code=303)
 
 

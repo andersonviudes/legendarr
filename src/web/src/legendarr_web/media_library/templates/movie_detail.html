@@ -20,9 +20,9 @@
       <p>{{ movie.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
-      <span>{{ movie.files|length }} file{{ "s" if movie.files|length != 1 else "" }}</span>
-      <span>{{ movie.missing_subtitles_count }} missing subtitles</span>
-      <span>{{ "Monitored" if movie.monitored else "Unmonitored" }}</span>
+      <span>{{ t("media_library.file_count_one" if movie.files|length == 1 else "media_library.file_count_other", count=movie.files|length) }}</span>
+      <span>{{ t("media_library.missing_subtitles_count", count=movie.missing_subtitles_count) }}</span>
+      <span>{{ t("common.monitored") if movie.monitored else t("common.unmonitored") }}</span>
       {% if movie.status %}<span>{{ movie.status }}</span>{% endif %}
       {% if movie.quality_profile_name %}<span>{{ movie.quality_profile_name }}</span>{% endif %}
     </p>
@@ -39,9 +39,9 @@
 <table>
   <thead>
     <tr>
-      <th scope="col">File</th>
-      <th scope="col">Subtitles</th>
-      <th scope="col">Actions</th>
+      <th scope="col">{{ t("common.table.file") }}</th>
+      <th scope="col">{{ t("common.table.subtitles") }}</th>
+      <th scope="col">{{ t("common.table.actions") }}</th>
     </tr>
   </thead>
   <tbody>
@@ -54,8 +54,8 @@
           <button
             type="button"
             class="app-icon-btn"
-            aria-label="Upload subtitle"
-            data-tooltip="Upload subtitle"
+            aria-label="{{ t('a11y.upload_subtitle') }}"
+            data-tooltip="{{ t('a11y.upload_subtitle') }}"
             data-subtitle-acquire-open
             hx-get="/media/files/{{ file.id }}/subtitle-upload"
             hx-target="#subtitle-acquire-content"
@@ -68,13 +68,13 @@
   </tbody>
 </table>
 {% else %}
-{{ empty_state("No files found on disk for this movie yet.") }}
+{{ empty_state(t("media_library.no_files_yet")) }}
 {% endif %}
 
 <dialog id="subtitle-acquire-modal" class="subtitle-acquire-modal">
   <header class="subtitle-acquire-modal-header">
-    <p>Subtitle</p>
-    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="Close">&times;</button>
+    <p>{{ t("common.subtitle") }}</p>
+    <button type="button" class="subtitle-acquire-close" data-subtitle-acquire-close aria-label="{{ t('a11y.close') }}">&times;</button>
   </header>
   <div id="subtitle-acquire-content"></div>
 </dialog>

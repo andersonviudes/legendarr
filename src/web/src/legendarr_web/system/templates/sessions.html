@@ -1,30 +1,30 @@
 {% extends "base.html" %}
 {% from "macros.html" import empty_state %}
-{% block title %}legendarr · Sessions{% endblock %}
+{% block title %}legendarr · {{ t("nav.system.sessions") }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
   {% if sessions|length > 1 %}
   <form method="post" action="/system/sessions/revoke-others">
     <button type="submit" class="page-toolbar-btn">
       {{ icon("log-out") }}
-      <span>Revoke Other Sessions</span>
+      <span>{{ t("system.sessions.revoke_others") }}</span>
     </button>
   </form>
   {% endif %}
 </div>
 
-<h1>{{ icon("monitor") }} Sessions</h1>
+<h1>{{ icon("monitor") }} {{ t("nav.system.sessions") }}</h1>
 
 {% if not sessions %}
-{{ empty_state("No active sessions.") }}
+{{ empty_state(t("system.sessions.empty")) }}
 {% else %}
 <table>
   <thead>
     <tr>
-      <th scope="col">Device</th>
-      <th scope="col">IP Address</th>
-      <th scope="col">Logged in</th>
-      <th scope="col">Last seen</th>
+      <th scope="col">{{ t("system.sessions.device") }}</th>
+      <th scope="col">{{ t("system.sessions.ip_address") }}</th>
+      <th scope="col">{{ t("system.sessions.logged_in") }}</th>
+      <th scope="col">{{ t("system.sessions.last_seen") }}</th>
       <th scope="col"></th>
     </tr>
   </thead>
@@ -32,8 +32,8 @@
     {% for session in sessions %}
     <tr>
       <td>
-        {{ session.user_agent or "Unknown device" }}
-        {% if session.id == current_session_id %}<span class="app-nav-badge">This device</span>{% endif %}
+        {{ session.user_agent or t("system.sessions.unknown_device") }}
+        {% if session.id == current_session_id %}<span class="app-nav-badge">{{ t("system.sessions.this_device") }}</span>{% endif %}
       </td>
       <td>{{ session.ip_address or "—" }}</td>
       <td>{{ session.created_at[:19].replace("T", " ") }}</td>
@@ -41,7 +41,7 @@
       <td>
         {% if session.id != current_session_id %}
         <form method="post" action="/system/sessions/{{ session.id }}/revoke">
-          <button type="submit" class="outline contrast">Revoke</button>
+          <button type="submit" class="outline contrast">{{ t("system.sessions.revoke") }}</button>
         </form>
         {% endif %}
       </td>

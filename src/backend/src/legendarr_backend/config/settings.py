@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     auth_username: str = Field(default="")
     auth_password_hash: str = Field(default="")
     auth_api_key: str = Field(default="")
+    # ROADMAP.md 0.19.0 — instance-wide UI display language for legendarr_web, unrelated
+    # to `SUPPORTED_LANGUAGES` (subtitle content languages). Single shared admin account,
+    # so this is one instance-wide preference, same posture as `default_translation_provider`.
+    ui_locale: str = Field(default="en")
 
     @property
     def translation_plugin_package_list(self) -> list[str]:

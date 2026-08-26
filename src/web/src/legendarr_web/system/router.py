@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.i18n.translator import current_locale, translate
 from legendarr_web.system import service
 from legendarr_web.templates.loader import get_templates
 
@@ -71,7 +72,12 @@ async def revoke_session(session_id: int, client: httpx.AsyncClient = Depends(ge
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code != 404:
             raise
-    toast = urlencode({"toast": "Session revoked.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "system.sessions.revoked_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/system/sessions/?{toast}", status_code=303)
 
 
@@ -82,7 +88,12 @@ async def revoke_other_sessions(
     current_session = request.state.auth_session
     if current_session is not None:
         await service.revoke_other_sessions(client, current_session["id"])
-    toast = urlencode({"toast": "Other sessions revoked.", "toast_type": "success"})
+    toast = urlencode(
+        {
+            "toast": translate(current_locale.get(), "system.sessions.others_revoked_toast"),
+            "toast_type": "success",
+        }
+    )
     return RedirectResponse(f"/system/sessions/?{toast}", status_code=303)
 
 

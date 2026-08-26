@@ -1,6 +1,6 @@
 {# Loaded into #subtitle-acquire-content by the "Upload subtitle" file-row button. #}
 {% from "macros.html" import select_field %}
-<h3>Upload a subtitle file</h3>
+<h3>{{ t("media_library.upload_heading") }}</h3>
 <form
   hx-post="/media/files/{{ media_file_id }}/subtitle-upload"
   hx-encoding="multipart/form-data"
@@ -8,11 +8,11 @@
   hx-swap="innerHTML"
   hx-disabled-elt="find button"
 >
-  {{ select_field("language", "Language", languages) }}
-  <label for="file">Subtitle file</label>
+  {{ select_field("language", t("common.language"), languages) }}
+  <label for="file">{{ t("media_library.subtitle_file_label") }}</label>
   <input type="file" id="file" name="file" accept=".srt,.ass,.ssa,.vtt" required>
   <button type="submit">
     {{ icon("upload") }}
-    <span>Upload</span>
+    <span>{{ t("common.upload") }}</span>
   </button>
 </form>

@@ -2,14 +2,17 @@ from fastapi import APIRouter, Request
 
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.settings.manage_settings import (
+    get_general_settings,
     get_task_settings,
     get_translation_defaults,
     get_webhook_settings,
+    update_general_settings,
     update_task_settings,
     update_translation_defaults,
     update_webhook_settings,
 )
 from legendarr_backend.settings.schemas import (
+    GeneralSettings,
     TaskSettings,
     TranslationDefaultsSettings,
     WebhookSettings,
@@ -53,3 +56,13 @@ def read_webhook_settings() -> WebhookSettings:
 @router.put("/webhooks")
 def save_webhook_settings(update: WebhookSettings) -> WebhookSettings:
     return update_webhook_settings(get_settings(), update)
+
+
+@router.get("/general")
+def read_general_settings() -> GeneralSettings:
+    return get_general_settings(get_settings())
+
+
+@router.put("/general")
+def save_general_settings(update: GeneralSettings) -> GeneralSettings:
+    return update_general_settings(get_settings(), update)

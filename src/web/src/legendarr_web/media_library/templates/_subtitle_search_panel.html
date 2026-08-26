@@ -1,7 +1,7 @@
 {# Loaded into #subtitle-acquire-content by the "Manual search" file-row button. #}
 {% from "macros.html" import select_field %}
-<h3>Search providers</h3>
-{{ select_field("language", "Language", languages) }}
+<h3>{{ t("media_library.search_providers") }}</h3>
+{{ select_field("language", t("common.language"), languages) }}
 <button
   type="button"
   class="page-toolbar-btn"
@@ -13,7 +13,7 @@
   hx-disabled-elt="this"
 >
   {{ icon("search") }}
-  <span>Search</span>
+  <span>{{ t("common.search") }}</span>
 </button>
-<p id="subtitle-search-indicator" class="test-indicator test-result" role="status">Searching…</p>
+<p id="subtitle-search-indicator" class="test-indicator test-result" role="status">{{ t("common.searching") }}</p>
 <div id="subtitle-search-results"></div>

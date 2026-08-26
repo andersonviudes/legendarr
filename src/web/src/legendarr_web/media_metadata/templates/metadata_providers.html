@@ -1,13 +1,9 @@
 {% extends "base.html" %}
 {% from "macros.html" import service_status %}
-{% block title %}legendarr · Metadata source{% endblock %}
+{% block title %}legendarr · {{ t("nav.settings.metadata_source") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("database") }} Metadata source</h1>
-<p class="field-hint">
-  Enable the metadata sources legendarr should use to fetch info about new series and
-  movies, and set the API key each one needs. Runs automatically the next time a
-  library sync finds a brand-new series or movie.
-</p>
+<h1>{{ icon("database") }} {{ t("nav.settings.metadata_source") }}</h1>
+<p class="field-hint">{{ t("media_metadata.hint") }}</p>
 
 <div class="service-grid">
   {% for provider in providers %}
@@ -17,18 +13,18 @@
       {% if provider.is_configured %}
       {{ service_status(provider, "/settings/metadata-source/" ~ provider.id ~ "/enabled", noun="provider") }}
       {% else %}
-      <span class="service-card-status is-disabled">Not configured</span>
+      <span class="service-card-status is-disabled">{{ t("common.not_configured") }}</span>
       {% endif %}
     </header>
     <p class="service-card-address">
       {% if provider.is_configured %}
-      Requires an API key
+      {{ t("media_metadata.requires_api_key") }}
       {% else %}
-      Add an API key to enable
+      {{ t("media_metadata.add_api_key_to_enable") }}
       {% endif %}
     </p>
     <div class="service-card-actions">
-      <a href="/settings/metadata-source/{{ provider.id }}/edit" role="button" class="outline">Edit</a>
+      <a href="/settings/metadata-source/{{ provider.id }}/edit" role="button" class="outline">{{ t("common.edit") }}</a>
     </div>
   </article>
   {% endfor %}

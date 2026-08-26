@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% from "macros.html" import empty_state, profile_card %}
-{% block title %}legendarr · Language profiles{% endblock %}
+{% block title %}legendarr · {{ t("nav.settings.language_profiles") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("languages") }} Language profiles</h1>
+<h1>{{ icon("languages") }} {{ t("nav.settings.language_profiles") }}</h1>
 
 {% if not profiles %}
-{{ empty_state("No profile configured yet.") }}
+{{ empty_state(t("language_profiles.empty")) }}
 {% endif %}
 
 <div class="service-grid">
@@ -14,7 +14,7 @@
   {% endfor %}
   <a href="/settings/new" class="service-add-card">
     {{ icon("languages") }}
-    <span>Add Language Profile</span>
+    <span>{{ t("language_profiles.add_title") }}</span>
   </a>
 </div>
 {% endblock %}
