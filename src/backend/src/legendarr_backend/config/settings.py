@@ -74,6 +74,15 @@ class Settings(BaseSettings):
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = Field(default=5.0)
     timing_sync_timeout_seconds: float = Field(default=120.0)
+    # ROADMAP.md 0.15.0 — speech-to-text fallback (`faster_whisper`), tried only when a
+    # `LanguageProfile.speech_to_text_fallback` profile finds nothing via any other
+    # acquisition tier. `model_size` is a global instance-wide choice (same posture as
+    # `default_translation_provider` above), not per-profile — trades accuracy for
+    # speed/RAM, so one deployment picks one size. The timeout defaults far higher than
+    # `timing_sync_timeout_seconds`: transcribing a full movie on CPU can take much
+    # longer than `ffsubsync`'s audio-decode-only pass.
+    speech_to_text_model_size: str = Field(default="base")
+    speech_to_text_timeout_seconds: float = Field(default=1800.0)
     # ROADMAP.md 0.9.0 — comma-separated `module.path:ClassName` entries, each imported
     # at startup by `subtitle_translation.plugins`. Env-var-only by design (not part of
     # `AppConfigFile`/`config.yaml`, not editable from the web Settings UI): this is a
@@ -92,6 +101,13 @@ class Settings(BaseSettings):
             return self.database_url
         self.data_dir.mkdir(parents=True, exist_ok=True)
         return f"sqlite:///{self.data_dir / 'legendarr.db'}"
+
+    @property
+    def speech_to_text_model_dir(self) -> Path:
+        """Where `faster_whisper` caches downloaded model weights — inside `data_dir` so
+        they survive a container recreate instead of being re-downloaded, same volume as
+        the sqlite database."""
+        return self.data_dir / "whisper_models"
 
 
 @lru_cache

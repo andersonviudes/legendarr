@@ -67,6 +67,8 @@ class AppConfigFile(BaseModel):
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = 5.0
     timing_sync_timeout_seconds: float = 120.0
+    speech_to_text_model_size: str = "base"
+    speech_to_text_timeout_seconds: float = 1800.0
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -116,6 +118,8 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "timing_sync_retry_attempts": settings.timing_sync_retry_attempts,
         "timing_sync_retry_delay_seconds": settings.timing_sync_retry_delay_seconds,
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,
+        "speech_to_text_model_size": settings.speech_to_text_model_size,
+        "speech_to_text_timeout_seconds": settings.speech_to_text_timeout_seconds,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

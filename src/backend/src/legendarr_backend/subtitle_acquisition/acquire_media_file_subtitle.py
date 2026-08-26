@@ -19,15 +19,34 @@ from legendarr_backend.subtitle_acquisition.match_score import (
     evaluate_candidate,
     pick_best_match,
 )
+from legendarr_backend.subtitle_acquisition.probe_embedded_audio import (
+    EmbeddedAudioTrack,
+    extract_audio_track,
+    probe_embedded_audio_tracks,
+)
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
 from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
 from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
+from legendarr_backend.subtitle_acquisition.transcribe_audio import transcribe_audio_track
+from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
+    DEFAULT_PROBE_TIMEOUT_SECONDS,
+)
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
 logger = logging.getLogger(__name__)
+
+# Default speech-to-text model size/timeout/model directory, mirroring
+# `Settings.speech_to_text_model_size`/`speech_to_text_timeout_seconds`/
+# `speech_to_text_model_dir` — production always passes the configured values explicitly
+# (see `subtitle_acquisition/jobs.py`), same posture as
+# `subtitle_discovery.probe_embedded_subtitles.DEFAULT_PROBE_TIMEOUT_SECONDS`.
+DEFAULT_SPEECH_TO_TEXT_MODEL_SIZE = "base"
+DEFAULT_SPEECH_TO_TEXT_TIMEOUT_SECONDS = 1800.0
+DEFAULT_SPEECH_TO_TEXT_MODEL_DIR = Path("./data/whisper_models")
 
 
 @dataclass(frozen=True)
@@ -57,7 +76,13 @@ class _AcquiredCandidate:
 
 
 def acquire_subtitle_for_media_file(
-    session: Session, media_file: MediaFile, video_path: Path
+    session: Session,
+    media_file: MediaFile,
+    video_path: Path,
+    *,
+    speech_to_text_model_size: str = DEFAULT_SPEECH_TO_TEXT_MODEL_SIZE,
+    speech_to_text_timeout_seconds: float = DEFAULT_SPEECH_TO_TEXT_TIMEOUT_SECONDS,
+    speech_to_text_model_dir: Path = DEFAULT_SPEECH_TO_TEXT_MODEL_DIR,
 ) -> AcquisitionResult:
     """Search and download a source-language subtitle for `media_file` when it has
     none yet (external or embedded), in its `LanguageProfile`'s source-language
@@ -82,6 +107,15 @@ def acquire_subtitle_for_media_file(
     This never runs automatically from `translate_media_file` — that unification is
     0.11.0/0.12.0 roadmap work; this is a standalone, explicitly-triggered step (see
     `subtitle_acquisition/jobs.py`).
+
+    When every source language comes up empty (no configured provider, or none found an
+    above-cutoff match) and the profile's `speech_to_text_fallback` (ROADMAP.md 0.15.0)
+    is on, a local Whisper transcription of the media file's own audio is tried once —
+    see `_attempt_speech_to_text_fallback`. Unlike a provider download, this never writes
+    an `AcquiredSubtitle`/`AcquisitionAttempt` row: those tables record a release's
+    provenance (name, download id, match score), none of which exists for a locally
+    generated transcript — same posture as the 0.14.0 OCR pipeline, which also never
+    writes one.
     """
     profile = resolve_media_file_profile(session, media_file)
     if profile is None:
@@ -93,17 +127,20 @@ def acquire_subtitle_for_media_file(
         return AcquisitionResult()
 
     chain = resolve_subtitle_provider_chain(session)
-    if not chain:
+    if not chain and not profile.speech_to_text_fallback:
         logger.info(
             "acquisition skipped: media file %d has no subtitle provider configured",
             media_file.id,
         )
         return AcquisitionResult(skipped_reason="no_provider_configured")
 
-    context = resolve_subtitle_search_context(session, media_file, video_path)
-
     try:
+        context = (
+            resolve_subtitle_search_context(session, media_file, video_path) if chain else None
+        )
         for language in profile.source_language_list:
+            if context is None:
+                break
             result = _search_and_download(
                 session,
                 media_file.id,
@@ -143,11 +180,26 @@ def acquire_subtitle_for_media_file(
             if close is not None:
                 close()
 
+    if profile.speech_to_text_fallback:
+        transcribed_language = _attempt_speech_to_text_fallback(
+            media_file.id,
+            video_path,
+            profile.source_language_list,
+            model_size=speech_to_text_model_size,
+            model_dir=speech_to_text_model_dir,
+            timeout_seconds=speech_to_text_timeout_seconds,
+        )
+        if transcribed_language is not None:
+            scan_subtitles_for_media_file(session, media_file, video_path)
+            return AcquisitionResult(acquired_language=transcribed_language)
+
     logger.info(
         "acquisition failed: media file %d found no above-cutoff match in any source language",
         media_file.id,
     )
-    return AcquisitionResult(skipped_reason="no_match_found")
+    return AcquisitionResult(
+        skipped_reason="no_provider_configured" if not chain else "no_match_found"
+    )
 
 
 def _has_source_language_subtitle(
@@ -157,6 +209,78 @@ def _has_source_language_subtitle(
         session.exec(select(Subtitle.language).where(Subtitle.media_file_id == media_file.id)).all()
     )
     return any(language.lower() in existing_languages for language in source_languages)
+
+
+def _attempt_speech_to_text_fallback(
+    media_file_id: int,
+    video_path: Path,
+    source_languages: list[str],
+    *,
+    model_size: str,
+    model_dir: Path,
+    timeout_seconds: float,
+) -> str | None:
+    """Transcribe `video_path`'s own audio as the last-resort source subtitle, once.
+
+    Picks the first embedded audio track whose container language tag
+    (`probe_embedded_audio`, normalized via `language_codes.normalize_language_code`)
+    matches one of `source_languages`, in that priority order; when nothing tags-matches
+    (embedded language metadata is frequently missing or wrong), falls back to the
+    container's first audio track, transcribed as the profile's first source language —
+    the best guess available without a real tag to go on.
+
+    Returns the language it wrote a subtitle for, or `None` for any of: no audio track at
+    all, extraction failed (missing `ffmpeg`), or transcription produced nothing
+    (missing model / timed out / no intelligible speech) — every case logged by the
+    functions it calls, not re-logged here.
+    """
+    tracks = probe_embedded_audio_tracks(video_path, timeout_seconds=DEFAULT_PROBE_TIMEOUT_SECONDS)
+    if not tracks:
+        logger.info(
+            "speech-to-text fallback skipped: media file %d has no embedded audio track",
+            media_file_id,
+        )
+        return None
+
+    track, language = _pick_audio_track(tracks, source_languages)
+    audio_path = video_path.with_name(f"{video_path.stem}.stt.tmp.wav")
+    output_path = video_path.with_name(f"{video_path.stem}.{language.lower()}.srt")
+    try:
+        extract_audio_track(
+            video_path, track, audio_path, timeout_seconds=DEFAULT_PROBE_TIMEOUT_SECONDS
+        )
+        if not audio_path.is_file():
+            return None
+        transcribe_audio_track(
+            audio_path,
+            language,
+            output_path,
+            model_size=model_size,
+            model_dir=model_dir,
+            timeout_seconds=timeout_seconds,
+        )
+    finally:
+        audio_path.unlink(missing_ok=True)
+
+    if not output_path.is_file():
+        return None
+    logger.info(
+        "speech-to-text fallback acquired media file %d: language=%r (track language tag=%r)",
+        media_file_id,
+        language,
+        track.language,
+    )
+    return language
+
+
+def _pick_audio_track(
+    tracks: list[EmbeddedAudioTrack], source_languages: list[str]
+) -> tuple[EmbeddedAudioTrack, str]:
+    for language in source_languages:
+        for track in tracks:
+            if normalize_language_code(track.language) == language.strip().lower():
+                return track, language
+    return tracks[0], source_languages[0]
 
 
 def _search_and_download(

@@ -359,7 +359,7 @@ into text and translated like any other track.*
 no provider match — so legendarr transcribes the audio itself to produce a source subtitle
 to translate from.*
 
-- [ ] **Subtitle acquisition** — Local speech-to-text transcription (e.g. Whisper) as the
+- [x] **Subtitle acquisition** — Local speech-to-text transcription (e.g. Whisper) as the
   last-resort acquisition source, used only when every other tier — external (0.3.0),
   embedded (0.6.0), and provider download (0.6.0–0.12.0) — comes up empty.
 

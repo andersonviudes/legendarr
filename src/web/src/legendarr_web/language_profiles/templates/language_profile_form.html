@@ -33,6 +33,8 @@
                      checked=(not profile or profile.extract_embedded_subtitles)) }}
   {{ checkbox_field("ocr_embedded_subtitles", "OCR embedded image subtitles (PGS)",
                      checked=(profile and profile.ocr_embedded_subtitles)) }}
+  {{ checkbox_field("speech_to_text_fallback", "Speech-to-text fallback (last resort)",
+                     checked=(profile and profile.speech_to_text_fallback)) }}
   {{ checkbox_field("forced", "Forced", checked=(profile and profile.forced)) }}
   {{ checkbox_field("hearing_impaired", "Hearing-impaired (HI)",
                      checked=(profile and profile.hearing_impaired)) }}
