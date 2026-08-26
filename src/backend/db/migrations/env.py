@@ -8,6 +8,7 @@ from legendarr_backend.config.settings import get_settings
 from legendarr_backend.language_profiles import models as language_profiles_models  # noqa: F401
 from legendarr_backend.media_library import models as media_library_models  # noqa: F401
 from legendarr_backend.media_metadata import models as media_metadata_models  # noqa: F401
+from legendarr_backend.media_servers import models as media_servers_models  # noqa: F401
 from legendarr_backend.subtitle_acquisition import (
     models as subtitle_acquisition_models,  # noqa: F401
 )

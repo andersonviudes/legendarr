@@ -13,6 +13,7 @@ from legendarr_backend.logging.setup import configure_logging
 from legendarr_backend.media_metadata.manage_metadata_provider import (
     ensure_metadata_providers_seeded,
 )
+from legendarr_backend.media_servers.manage_media_server import ensure_media_servers_seeded
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     ensure_subtitle_providers_seeded,
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
         with get_session() as session:
             ensure_subtitle_providers_seeded(session)
             ensure_metadata_providers_seeded(session)
+            ensure_media_servers_seeded(session)
             ensure_translation_providers_seeded(session)
         scheduler = build_scheduler()
         # The webhook/scan routers live on the mounted `api_app`, so the scheduler is

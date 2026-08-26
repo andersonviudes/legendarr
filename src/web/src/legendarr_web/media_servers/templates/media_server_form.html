@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "macros.html" import field %}
+{% block title %}legendarr · {{ server.label }}{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    data-test-connection
+    hx-post="/settings/media-servers/{{ server.id }}/test"
+    hx-include="#media-server-form"
+    hx-target="#test-result"
+    hx-swap="innerHTML"
+    hx-indicator="#test-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("plug-zap") }}
+    <span>Test</span>
+  </button>
+  <button type="submit" form="media-server-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>Save</span>
+  </button>
+</div>
+
+<h1>{{ icon("tv") }} {{ server.label }}</h1>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form id="media-server-form" class="service-form" method="post"
+      action="/settings/media-servers/{{ server.id }}">
+  <input type="hidden" name="kind" value="{{ server.kind }}">
+  {{ field("base_url", "Base URL", value=(server.base_url or ""),
+           placeholder="http://plex.local:32400") }}
+  {# Never re-display the stored secret. A blank field on save means "keep the current one". #}
+  {{ field("token", "Token", type="password", autocomplete="off",
+           placeholder="Leave blank to keep the current token") }}
+
+  <div id="test-result" aria-live="polite"></div>
+  <p id="test-indicator" class="test-indicator test-result" role="status">Testing connection…</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/provider-test-connection.js" defer></script>
+{% endblock %}

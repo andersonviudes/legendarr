@@ -371,3 +371,117 @@ def test_enqueue_full_translation_scan_enqueues_every_known_media_file(
     ids = {kwargs["id"] for _, kwargs in added}
     assert ids == {f"subtitle_translation:{first.id}", f"subtitle_translation:{second.id}"}
     assert all(kwargs["executor"] == JobQueue.TRANSLATE_BULK.value for _, kwargs in added)
+
+
+def test_enqueued_translation_job_notifies_media_servers_after_write(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "post_json",
+        lambda self, path, json: {"translations": [{"text": "olá"}]},
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+    notified = []
+    monkeypatch.setattr(
+        jobs_module,
+        "notify_media_servers_of_subtitle_write",
+        lambda session, video_path: notified.append(video_path),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.add(TranslationProviderConfig(kind="deepl", enabled=True, api_key="a-key"))
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, tmp_path / "Foo" / "Foo.mkv")
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler, media_file.id, JobQueue.TRANSLATE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert notified == [tmp_path / "Foo" / "Foo.mkv"]
+
+
+def test_enqueued_translation_job_does_not_notify_media_servers_on_skip(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    notified = []
+    monkeypatch.setattr(
+        jobs_module,
+        "notify_media_servers_of_subtitle_write",
+        lambda session, video_path: notified.append(video_path),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler, media_file.id, JobQueue.TRANSLATE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert notified == []

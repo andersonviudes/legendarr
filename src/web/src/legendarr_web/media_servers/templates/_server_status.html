@@ -1,0 +1,9 @@
+{# Standalone render of the enable/disable toggle for the POST .../enabled swap — same
+   is_configured-gated shape as the shared `_provider_status.html`, but with noun="server"
+   instead of "provider" (media servers, not API providers). #}
+{% from "macros.html" import service_status %}
+{% if provider.is_configured %}
+{{ service_status(provider, toggle_url_prefix ~ provider.id ~ "/enabled", noun="server") }}
+{% else %}
+<span class="service-card-status is-disabled">Not configured</span>
+{% endif %}
