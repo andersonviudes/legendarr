@@ -16,3 +16,4 @@
 - [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — env.py's fileConfig() disables pre-existing loggers, breaks caplog in the full suite
 - [legendarr VobSub/DVB OCR deferred](legendarr-vobsub-dvb-ocr-deferred.md) — ROADMAP 0.14.0 only covers PGS OCR; VobSub/DVB need their own parser, not on the roadmap yet
 - [legendarr docker-compose dev stack staleness](legendarr-docker-compose-dev-stack-staleness.md) — dev legendarr container silently runs old code until `build` + `up -d` rerun
+- [legendarr i18n conventions](legendarr-i18n-conventions.md) — t() Jinja global, ContextVar (not request.state) for macro support, ui_locale in config.yaml, PR #65
