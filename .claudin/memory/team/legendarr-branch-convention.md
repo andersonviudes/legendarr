@@ -36,3 +36,20 @@ implementation on `main`. **How to apply:** for any plan whose scope is `feat:`-
 "create and switch to the feature branch" as the first Tasks entry and "push the branch and
 open the PR" as the last, before ever calling `ExitPlanMode` — don't wait for the user to point
 this out.
+
+**2026-08-26 — stacking `fix:` commits onto an active feature branch instead of switching to
+`main`:** while iterating on UI polish on `feat/dashboard-redesign` (a branch already several
+commits ahead of `main`, including an earlier `fix(web): flatten the System > Tasks page`
+commit), several unrelated `fix:`-sized changes (a CSS specificity bug, a poster-grid layout
+bug, toolbar padding) were committed directly onto that feature branch rather than switching to
+`main` first. **Why:** the files being fixed (`styles.css`, `macros.html`) had already
+diverged substantially between `main` and the feature branch from earlier commits in the same
+stack, so switching to `main` with the fix as uncommitted changes risked a messy/conflicting
+checkout; committing onto the already-open feature branch was the safer, and evidently
+established, path in this repo when a fix's target files are mid-refactor on a long-lived
+branch. **How to apply:** the literal "`fix:` can go straight to `main`" rule is *permission*,
+not a *requirement* — when the fix touches files that a currently-checked-out, unmerged feature
+branch has already changed, prefer committing the fix onto that branch over a risky
+`git checkout main` with conflicting uncommitted edits. Only actually switch to `main` for a
+fix when the working tree is clean of unrelated feature work and the touched files haven't
+diverged.
