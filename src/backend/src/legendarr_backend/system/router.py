@@ -1,11 +1,19 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from legendarr_backend.system.browse_directory import list_subdirectories
+from legendarr_backend.system.job_history import list_job_runs
 from legendarr_backend.system.read_logs import list_recent_logs
 from legendarr_backend.system.running_tasks import list_running_tasks
-from legendarr_backend.system.schemas import DirectoryListingRead, LogLineRead, RunningTaskRead
+from legendarr_backend.system.scheduler_status import list_scheduled_jobs
+from legendarr_backend.system.schemas import (
+    DirectoryListingRead,
+    JobRunRead,
+    LogLineRead,
+    RunningTaskRead,
+    ScheduledJobRead,
+)
 
 router = APIRouter(prefix="/system", tags=["System"])
 
@@ -15,6 +23,13 @@ _LOG_LEVELS = {
     "WARNING": logging.WARNING,
     "ERROR": logging.ERROR,
 }
+
+
+def _get_scheduler(request: Request):
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler is None:
+        raise HTTPException(status_code=503, detail="Scheduler is not running")
+    return scheduler
 
 
 @router.get("/directories", response_model=DirectoryListingRead)
@@ -43,3 +58,25 @@ def get_logs(level: str | None = None, limit: int = 200) -> list[LogLineRead]:
 @router.get("/tasks/running", response_model=list[RunningTaskRead])
 def get_running_tasks() -> list[RunningTaskRead]:
     return list_running_tasks()
+
+
+@router.get("/jobs/scheduled", response_model=list[ScheduledJobRead])
+def get_scheduled_jobs(request: Request) -> list[ScheduledJobRead]:
+    return list_scheduled_jobs(_get_scheduler(request))
+
+
+@router.get("/jobs/history", response_model=list[JobRunRead])
+def get_job_history(limit: int = 20) -> list[JobRunRead]:
+    runs = list_job_runs(limit=limit)
+    return [
+        JobRunRead(
+            job_id=run.job_id,
+            name=run.name,
+            queue=run.queue,
+            status=run.status,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+            error_message=run.error_message,
+        )
+        for run in runs
+    ]

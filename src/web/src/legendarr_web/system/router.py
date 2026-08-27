@@ -32,7 +32,13 @@ async def get_logs(
 @router.get("/tasks/")
 async def show_tasks(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     tasks = await service.get_running_tasks(client)
-    return templates.TemplateResponse(request, "tasks.html", {"tasks": tasks})
+    scheduled_jobs = await service.get_scheduled_jobs(client)
+    history = await service.get_job_history(client)
+    return templates.TemplateResponse(
+        request,
+        "tasks.html",
+        {"tasks": tasks, "scheduled_jobs": scheduled_jobs, "history": history},
+    )
 
 
 @router.get("/tasks/running")

@@ -13,6 +13,7 @@ from legendarr_backend.scheduling.scheduler import build_scheduler as build_bare
 from legendarr_backend.subtitle_acquisition.jobs import register_acquisition_job
 from legendarr_backend.subtitle_discovery.jobs import register_subtitle_scan_job
 from legendarr_backend.subtitle_translation.jobs import register_translation_job
+from legendarr_backend.system.job_history import attach_job_history_recorder
 
 
 def build_scheduler() -> BackgroundScheduler:
@@ -22,6 +23,7 @@ def build_scheduler() -> BackgroundScheduler:
 
     scheduler = build_bare_scheduler()
     attach_running_task_registry(scheduler)
+    attach_job_history_recorder(scheduler)
     register_sync_job(scheduler, config)
     register_scan_job(scheduler, config)
     register_history_poll_job(scheduler, config)

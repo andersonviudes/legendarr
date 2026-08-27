@@ -9,12 +9,40 @@ _TASK = {
     "started_at": "2026-08-24T10:15:30.123456",
 }
 
+_SCHEDULED_JOB = {
+    "job_id": "media_library_sync",
+    "name": "media_library_sync",
+    "queue": "sync",
+    "trigger": "interval[0:15:00]",
+    "next_run_time": "2026-08-27T22:15:00+00:00",
+}
+
+_JOB_RUN = {
+    "job_id": "media_library_sync",
+    "name": "media_library_sync",
+    "queue": "sync",
+    "status": "failure",
+    "started_at": "2026-08-27T22:00:00+00:00",
+    "finished_at": "2026-08-27T22:00:05+00:00",
+    "error_message": "connection refused",
+}
+
 
 def _tasks_handler(request: httpx.Request) -> httpx.Response:
-    return httpx.Response(200, json=[_TASK])
+    if request.url.path == "/system/tasks/running":
+        return httpx.Response(200, json=[_TASK])
+    return httpx.Response(200, json=[])
 
 
 def _no_tasks_handler(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, json=[])
+
+
+def _scheduling_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/system/jobs/scheduled":
+        return httpx.Response(200, json=[_SCHEDULED_JOB])
+    if request.url.path == "/system/jobs/history":
+        return httpx.Response(200, json=[_JOB_RUN])
     return httpx.Response(200, json=[])
 
 
@@ -39,6 +67,32 @@ def test_tasks_page_shows_empty_state_with_no_tasks(stub_backend_client):
 
     assert response.status_code == 200
     assert "No tasks running right now." in response.text
+    assert "No scheduled jobs." in response.text
+    assert "No job runs recorded yet." in response.text
+
+
+def test_tasks_page_lists_scheduled_jobs(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_scheduling_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/")
+
+    assert response.status_code == 200
+    assert "media_library_sync" in response.text
+    assert "22:15:00" in response.text
+
+
+def test_tasks_page_lists_job_history_with_status_and_error(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_scheduling_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/")
+
+    assert response.status_code == 200
+    assert "Failed" in response.text
+    assert "connection refused" in response.text
 
 
 def test_running_tasks_partial_lists_tasks(stub_backend_client):

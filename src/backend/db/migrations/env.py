@@ -16,6 +16,7 @@ from legendarr_backend.subtitle_discovery import models as subtitle_discovery_mo
 from legendarr_backend.subtitle_translation import (
     models as subtitle_translation_models,  # noqa: F401
 )
+from legendarr_backend.system import models as system_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 

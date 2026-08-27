@@ -1738,6 +1738,29 @@ button.outline.contrast:is(:hover, :focus) {
   white-space: nowrap;
 }
 
+/* Job history status pill (System → Tasks "Recent Runs") — same shape as
+   .task-line-queue, colored like .subtitle-match-badge's yes/no/na trio. */
+.task-line-status {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--lg-neutral-dim-background-color);
+  font-size: 0.675rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.task-line-status--success {
+  color: var(--pico-ins-color);
+}
+
+.task-line-status--failure {
+  color: var(--pico-del-color);
+}
+
+.task-line-status--missed {
+  color: var(--lg-warn-color);
+}
+
 /* === Login page (authentication/templates/login.html) — the one page that doesn't
    extend base.html, so it needs its own centered layout instead of .app-shell. === */
 .login-page {
