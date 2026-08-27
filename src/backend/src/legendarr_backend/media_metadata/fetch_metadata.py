@@ -18,8 +18,9 @@ def fetch_metadata_for_new_items(
     """Fetch and persist metadata for media items a sync run just created.
 
     Runs every enabled+configured provider for each item and merges results with
-    TheTVDB authoritative for `overview`/`poster_url`/`year`, IMDb only contributing
-    `imdb_rating` — the one field TVDB doesn't have. A provider failing (or not being
+    TheTVDB authoritative for `overview`/`poster_url`/`year`, TMDb only filling in
+    whichever of those TheTVDB didn't have, and IMDb only contributing `imdb_rating` —
+    the one field neither of the others has. A provider failing (or not being
     configured) never blocks the others; an item with nothing usable from any provider
     is simply left without a `MediaMetadata` row.
     """
@@ -109,14 +110,22 @@ def _safe_fetch(
 
 
 def _merge(merged: dict, kind: str, result: MetadataResult) -> None:
-    """TheTVDB is authoritative for overview/poster/year; IMDb only ever contributes
-    `imdb_rating`, the one field TVDB doesn't have."""
+    """TheTVDB is authoritative for overview/poster/year; TMDb only fills in whichever
+    of those TheTVDB left empty (so processing order between the two doesn't matter);
+    IMDb only ever contributes `imdb_rating`, the one field neither of the others has."""
     if kind == "tvdb":
         if result.overview is not None:
             merged["overview"] = result.overview
         if result.poster_url is not None:
             merged["poster_url"] = result.poster_url
         if result.year is not None:
+            merged["year"] = result.year
+    elif kind == "tmdb":
+        if result.overview is not None and "overview" not in merged:
+            merged["overview"] = result.overview
+        if result.poster_url is not None and "poster_url" not in merged:
+            merged["poster_url"] = result.poster_url
+        if result.year is not None and "year" not in merged:
             merged["year"] = result.year
     elif kind == "imdb" and result.imdb_rating is not None:
         merged["imdb_rating"] = result.imdb_rating

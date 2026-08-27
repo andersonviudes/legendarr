@@ -39,6 +39,7 @@ def test_page_renders_provider_cards(stub_backend_client):
             json=[
                 _provider(id=1, kind="tvdb", enabled=True),
                 _provider(id=2, kind="imdb", enabled=False),
+                _provider(id=3, kind="tmdb", enabled=False),
             ],
         )
 
@@ -51,6 +52,7 @@ def test_page_renders_provider_cards(stub_backend_client):
     body = response.text
     assert "TheTVDB" in body
     assert "IMDb" in body
+    assert "TMDb" in body
     assert 'role="switch"' in body
     assert "/settings/metadata-source/1/edit" in body
 

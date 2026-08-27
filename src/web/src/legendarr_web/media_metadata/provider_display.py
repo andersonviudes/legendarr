@@ -1,6 +1,7 @@
 PROVIDER_LABELS = {
     "tvdb": "TheTVDB",
     "imdb": "IMDb",
+    "tmdb": "TMDb",
 }
 
 

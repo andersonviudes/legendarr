@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel
 
 from legendarr_backend.security.encrypted_string import EncryptedString
 
-MEDIA_METADATA_PROVIDER_KINDS = ("tvdb", "imdb")
+MEDIA_METADATA_PROVIDER_KINDS = ("tvdb", "imdb", "tmdb")
 
 # Derived from the tuple above rather than hand-duplicated, so the two can't drift apart.
 MediaMetadataProviderKind = Literal[*MEDIA_METADATA_PROVIDER_KINDS]
@@ -16,8 +16,8 @@ class MetadataProviderConfig(SQLModel, table=True):
     """Registration/credentials for one of the fixed `MEDIA_METADATA_PROVIDER_KINDS`.
 
     Same fixed-catalog shape as `SubtitleProviderConfig` (one row per kind, seeded at
-    startup) — both kinds here authenticate with an api key only. Unlike subtitle
-    providers, new rows seed `enabled=True`: the user asked for both sources on by
+    startup) — all three kinds here authenticate with an api key only. Unlike subtitle
+    providers, new rows seed `enabled=True`: the user asked for all sources on by
     default, so the gate that actually matters is `has_credentials`/`is_configured`.
     """
 
@@ -44,7 +44,8 @@ class MediaMetadata(SQLModel, table=True):
     Exactly one of `movie_id`/`series_id` is set, same convention as `MediaFile`. One
     row per media item — refetching overwrites it rather than keeping a row per source,
     since the merge policy (TheTVDB wins overview/poster/year, IMDb only contributes
-    `imdb_rating`) is applied before this is written.
+    `imdb_rating`, TMDb only fills in whatever TheTVDB didn't have) is applied before
+    this is written.
     """
 
     id: int | None = Field(default=None, primary_key=True)

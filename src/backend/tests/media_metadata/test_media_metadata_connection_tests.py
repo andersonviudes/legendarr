@@ -92,3 +92,47 @@ def test_imdb_reports_rejected_key(monkeypatch):
 
     assert success is False
     assert "API Key" in message
+
+
+def test_tmdb_requires_api_key():
+    success, message = check_connection(_config(kind="tmdb", api_key=None))
+
+    assert success is False
+    assert "API Key" in message
+
+
+def test_tmdb_succeeds(monkeypatch):
+    def _get_json(self, path):
+        if path.startswith("/find/"):
+            return {"movie_results": [{"id": 278}]}
+        return {"overview": "A story", "poster_path": None, "release_date": "1994-09-23"}
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+
+    success, message = check_connection(_config(kind="tmdb", api_key="a-key"))
+
+    assert success is True
+
+
+def test_tmdb_reports_failure_when_lookup_finds_nothing(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"movie_results": []})
+
+    success, message = check_connection(_config(kind="tmdb", api_key="a-key"))
+
+    assert success is False
+    assert "returned nothing" in message
+
+
+def test_tmdb_reports_rejected_key(monkeypatch):
+    def _raise(self, path):
+        request = httpx.Request("GET", "https://api.themoviedb.org/3/find/tt0111161")
+        response = httpx.Response(401, request=request)
+        cause = httpx.HTTPStatusError("Unauthorized", request=request, response=response)
+        raise ProviderClientError("failed with 401") from cause
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _raise)
+
+    success, message = check_connection(_config(kind="tmdb", api_key="bad-key"))
+
+    assert success is False
+    assert "API Key" in message
