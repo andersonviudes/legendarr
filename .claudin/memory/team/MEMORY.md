@@ -21,3 +21,5 @@
 - [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean tool params intermittently fail validation; retry once then use browser_run_code_unsafe
 - [legendarr Pico search-input specificity gotcha](legendarr-pico-search-input-specificity-gotcha.md) — Pico's [type=search] padding/height rules silently outrank a bare custom class
 - [legendarr OpenSubtitles login auth](legendarr-opensubtitles-login-auth.md) — username/password login like Bazarr, not a user API key; app-level `_APP_API_KEY` is still a placeholder
+- [legendarr apply_patch heading-anchor gotcha](legendarr-apply-patch-heading-anchor-gotcha.md) — trailing context spanning into the next `##` heading rejects a hunk that looks byte-correct
+- [legendarr Anime Tosho AniDB key requirement](legendarr-animetosho-anidb-key.md) — confirmed real (matches Bazarr); untaken no-auth q=/aid= search fallback exists
