@@ -67,6 +67,9 @@ class AppConfigFile(BaseModel):
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = 5.0
     timing_sync_timeout_seconds: float = 120.0
+    # Manual-only, same reasoning as `timing_sync_*` above — no interval/max_instances/coalesce.
+    metadata_refetch_retry_attempts: int = Field(default=3, ge=1)
+    metadata_refetch_retry_delay_seconds: float = 5.0
     speech_to_text_model_size: str = "base"
     speech_to_text_timeout_seconds: float = 1800.0
     # `auth_password_hash` isn't in `_SECRET_FIELDS` — it's already a one-way PBKDF2 hash
@@ -126,6 +129,8 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "timing_sync_retry_attempts": settings.timing_sync_retry_attempts,
         "timing_sync_retry_delay_seconds": settings.timing_sync_retry_delay_seconds,
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,
+        "metadata_refetch_retry_attempts": settings.metadata_refetch_retry_attempts,
+        "metadata_refetch_retry_delay_seconds": settings.metadata_refetch_retry_delay_seconds,
         "speech_to_text_model_size": settings.speech_to_text_model_size,
         "speech_to_text_timeout_seconds": settings.speech_to_text_timeout_seconds,
         "auth_enabled": settings.auth_enabled,

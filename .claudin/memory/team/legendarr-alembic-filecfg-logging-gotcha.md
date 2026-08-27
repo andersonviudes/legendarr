@@ -1,33 +1,39 @@
 ---
 name: legendarr-alembic-filecfg-logging-gotcha
-description: Alembic's env.py fileConfig() silently disables pre-existing Python loggers process-wide, breaking pytest caplog in the full suite
+description: RESOLVED 2026-08-27 — Alembic's env.py fileConfig() used to silently wipe the app's logging setup (stdout + System page ring buffer) every startup; now skipped for the programmatic init_db() path
 type: project
 ---
 
-`src/backend/db/migrations/env.py:27` calls `fileConfig(config.config_file_name)`
-(stdlib `logging.config.fileConfig`) to set up logging from `alembic.ini`. This function
-defaults to `disable_existing_loggers=True` — the first time it runs in a test process
-(triggered by anything using the `isolated_database` fixture / real `init_db()` /
-Alembic migration path), it sets `.disabled = True` on every `Logger` object that
-already existed in `logging.Logger.manager.loggerDict` and isn't explicitly declared in
-`alembic.ini`'s `[loggers]` section. That includes any module's
-`logger = logging.getLogger(__name__)` created at import time. The disabled flag sticks
-for the rest of the process (loggers are cached by name), so `pytest`'s `caplog` fixture
-silently captures nothing (`caplog.text == ""`) for that logger in any test that runs
-afterward — reproduced with `subtitle_translation.plugins`'s logger: `caplog`-based
-assertions passed when running `test_plugins.py`/the `subtitle_translation` folder alone,
-but failed with an empty `caplog.text` when running the full backend suite, because an
-earlier test elsewhere used `isolated_database` first.
+`src/backend/db/migrations/env.py` calls `fileConfig(config.config_file_name)` (stdlib
+`logging.config.fileConfig`) to set up logging from `alembic.ini`. This didn't just break
+pytest's `caplog` (the original finding below) — it also broke the *running app*: every
+call to `init_db()` (real startup, both entrypoints, plus every test using
+`isolated_database`) ran Alembic migrations, which reconfigured the **root logger** to
+`alembic.ini`'s own setup (stderr, WARNING-only) and disabled every already-imported
+module logger process-wide. Symptom: the System → Logs page showed "No log lines yet."
+even on a live, request-serving instance, and `docker logs` only ever showed the 2 uvicorn
+startup lines plus Alembic's own migration-context lines.
 
-**Why:** not caused by anything in [[legendarr-db-migrations]] itself — it's stock
-Alembic env.py boilerplate — but it's a real, order-dependent footgun for any future test
-using `caplog` on a `legendarr_backend`/`legendarr_web` logger.
+**Fix applied:** `database/engine.py::init_db()` now passes
+`attributes={"configure_logger": False}` when building the Alembic `Config`; `env.py`
+checks `config.attributes.get("configure_logger", True)` and skips `fileConfig()`
+entirely for that programmatic path — the app already configures its own root logger
+(`legendarr_backend/logging/setup.py::configure_logging()`, called once per
+`.claudin/rules/python-conventions.md`), so Alembic never needs to touch it there. Bare
+`alembic upgrade`/`db-revision` CLI invocations (no `attributes` set) are unaffected and
+still get `fileConfig()`, now with `disable_existing_loggers=False` as an added safety net
+for that path. Verified live (rebuilt dev container): `docker logs` and the System → Logs
+page both show real INFO-level activity (scheduler job registration, httpx request logs,
+etc.) after this fix, not just the 6-line startup stub. Full backend suite (970 tests)
+passes unchanged.
 
-**How to apply:** either (a) fix at the source — pass
-`fileConfig(config.config_file_name, disable_existing_loggers=False)` in `env.py`, which
-is the commonly-recommended safe default and a one-line, low-risk change — or (b) when
-writing a `caplog`-based test in the meantime, don't rely on it running reliably as part
-of the full `make test` suite; assert on the function's return value/side effects instead
-of on `caplog.text`. Chosen (b) — skipped the log-message assertions — for the
-ROADMAP.md 0.9.0 plugin-loader tests (`test_plugins.py`) rather than touching shared
-Alembic bootstrap code out of scope for that feature.
+**Original finding (kept for context):** the first time `fileConfig()` ran in a test
+process (triggered by anything using the `isolated_database` fixture / real `init_db()` /
+Alembic migration path), it set `.disabled = True` on every `Logger` object that already
+existed and wasn't explicitly declared in `alembic.ini`'s `[loggers]` section — reproduced
+with `subtitle_translation.plugins`'s logger: `caplog`-based assertions passed running
+`test_plugins.py` alone, but failed with empty `caplog.text` when running the full backend
+suite, because an earlier test used `isolated_database` first. Since `fileConfig()` no
+longer runs at all on the `init_db()` path, this specific failure mode is now gone too —
+a `caplog`-based test on a `legendarr_backend`/`legendarr_web` logger should be safe to
+write again, though it wasn't re-verified as part of this fix.

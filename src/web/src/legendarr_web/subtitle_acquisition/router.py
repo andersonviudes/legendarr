@@ -9,8 +9,10 @@ from legendarr_web.subtitle_acquisition import service
 from legendarr_web.subtitle_acquisition.provider_display import (
     provider_credential_fields,
     provider_credential_hint,
+    provider_description,
     provider_label,
     provider_search_options,
+    provider_username_label,
 )
 from legendarr_web.subtitle_proxies import service as proxy_service
 from legendarr_web.templates.loader import get_templates
@@ -23,8 +25,10 @@ def _with_display(provider: dict) -> dict:
     return {
         **provider,
         "label": provider_label(provider["kind"]),
+        "description": provider_description(provider["kind"]),
         "credential_fields": provider_credential_fields(provider["kind"]),
         "credential_hint": provider_credential_hint(provider["kind"]),
+        "username_label": provider_username_label(provider["kind"]),
         "search_options": provider_search_options(provider["kind"]),
     }
 

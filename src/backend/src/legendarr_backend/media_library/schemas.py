@@ -28,11 +28,27 @@ class SeriesRead(MediaRead):
 
 class SubtitleRead(BaseModel):
     """One discovered subtitle. `id` addresses it for the per-subtitle "sync timing"
-    action; `language`/`origin` are what the badge/row display needs."""
+    action; `language`/`origin` are what the badge/row display needs.
+
+    `provider`/`release_name`/`score` come from `AcquiredSubtitle` — `None` for a
+    subtitle that was never downloaded from a provider (embedded, manually uploaded, or
+    translated). The five `*_matched` flags come off that same subtitle's latest
+    `AcquisitionAttempt` (mirrors `match_score.ATTRIBUTE_WEIGHTS`'s five attributes),
+    `None` either way for the same reason, or per-attribute when the reference filename
+    had nothing to compare (see `AcquisitionAttempt`'s own docstring)."""
 
     id: int
     language: str
     origin: str
+    size_bytes: int
+    provider: str | None = None
+    release_name: str | None = None
+    score: float | None = None
+    resolution_matched: bool | None = None
+    source_matched: bool | None = None
+    codec_matched: bool | None = None
+    release_group_matched: bool | None = None
+    edition_matched: bool | None = None
 
 
 class MediaFileRead(BaseModel):

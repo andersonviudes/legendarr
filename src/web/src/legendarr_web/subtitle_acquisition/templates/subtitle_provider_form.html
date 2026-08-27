@@ -48,7 +48,10 @@
   {% endif %}
 
   {% if "username" in provider.credential_fields %}
-  {{ field("username", t("common.username"), value=(provider.username or "")) }}
+  {{ field("username", t(provider.username_label), value=(provider.username or "")) }}
+  {% if provider.credential_hint %}
+  <p class="field-hint">{{ t(provider.credential_hint) }}</p>
+  {% endif %}
   {{ field("password", t("common.password"), type="password", autocomplete="off",
            placeholder=t("common.keep_current_password_placeholder")) }}
   {% endif %}

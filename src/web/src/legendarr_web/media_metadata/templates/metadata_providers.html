@@ -5,6 +5,23 @@
 <h1>{{ icon("database") }} {{ t("nav.settings.metadata_source") }}</h1>
 <p class="field-hint">{{ t("media_metadata.hint") }}</p>
 
+<div class="page-toolbar">
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    hx-post="/settings/metadata-source/refetch"
+    hx-target="#refetch-result"
+    hx-swap="innerHTML"
+    hx-indicator="#refetch-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("refresh-cw") }}
+    <span>{{ t("media_metadata.refetch_all") }}</span>
+  </button>
+</div>
+<div id="refetch-result" aria-live="polite"></div>
+<p id="refetch-indicator" class="test-indicator test-result" role="status">{{ t("media_metadata.refetching") }}</p>
+
 <div class="service-grid">
   {% for provider in providers %}
   <article class="service-card">

@@ -1,4 +1,4 @@
-// Settings → Authentication page: reveal/copy for the generated API key
+// Settings → General page: reveal/copy for the generated API key
 // (settings/templates/_api_key_field.html). Delegated on the document — the field is
 // swapped wholesale (outerHTML) after "Regenerate", so a listener bound to the original
 // element would be gone after that swap.

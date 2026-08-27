@@ -33,6 +33,11 @@ class Subtitle(SQLModel, table=True):
     track_index: int | None = None
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
+    # Byte size of the subtitle file itself (not the video) — recomputed on every scan
+    # alongside `content_hash`, same source read. Works identically for external and
+    # embedded subtitles since both end up as a real `.srt` sibling on disk by the time
+    # `scan_media_subtitles` sees them (an embedded track is extracted first).
+    size_bytes: int = Field(default=0)
     # sha256 of the subtitle file's bytes, recomputed on every scan (`scan_media_subtitles`) —
     # lets `translate_media_file` tell an unchanged source from one whose content changed
     # since the last translation.

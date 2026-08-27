@@ -16,6 +16,7 @@ def _provider(**overrides) -> dict:
         "enabled": True,
         "username": None,
         "is_configured": True,
+        "credentials_required": True,
         "use_hash": True,
         "include_ai_translated": False,
         "include_machine_translated": False,
@@ -44,7 +45,7 @@ def test_page_renders_provider_cards(stub_backend_client):
             200,
             json=[
                 _provider(id=1, kind="opensubtitles", enabled=True),
-                _provider(id=2, kind="napiprojekt", enabled=False),
+                _provider(id=2, kind="napiprojekt", enabled=False, credentials_required=False),
             ],
         )
 
@@ -61,6 +62,8 @@ def test_page_renders_provider_cards(stub_backend_client):
     assert "Requires credentials" in body
     assert "No credentials needed" in body
     assert "/settings/subtitle-providers/1/edit" in body
+    assert "largest general subtitle database" in body
+    assert "Polish subtitle database" in body
 
 
 def test_page_hides_toggle_for_unconfigured_provider(stub_backend_client):
@@ -101,7 +104,12 @@ def test_page_hints_test_connection_for_unverified_credential_less_provider(stub
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=[_provider(id=1, kind="napiprojekt", is_configured=False)])
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="napiprojekt", is_configured=False, credentials_required=False)
+            ],
+        )
 
     stub_backend_client(app, handler=handler)
 
@@ -111,6 +119,30 @@ def test_page_hints_test_connection_for_unverified_credential_less_provider(stub
     assert response.status_code == 200
     assert "Run &#34;Test connection&#34; to enable" in response.text
     assert "No credentials needed" not in response.text
+
+
+def test_page_does_not_claim_animetosho_requires_credentials(stub_backend_client):
+    """`animetosho` has a real, displayed `api_key` field (unlike napiprojekt above), but
+    it's optional — the list page must go by `credentials_required`, not merely whether
+    the kind has a credential field to show in its edit form."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="animetosho", is_configured=True, credentials_required=False)
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/")
+
+    assert response.status_code == 200
+    assert "Requires credentials" not in response.text
+    assert "No credentials needed" in response.text
 
 
 def test_count_badge_reflects_enabled_providers(stub_backend_client):
@@ -205,6 +237,27 @@ def test_edit_form_shows_credential_fields_for_opensubtitles(stub_backend_client
     assert 'name="username"' in response.text
     assert 'name="password"' in response.text
     assert 'name="api_key"' not in response.text
+
+
+def test_edit_form_labels_legendas_net_username_field_as_email(stub_backend_client):
+    """legendas.net's own login form only accepts an email address in this field
+    (`type="email" name="email"`) — a site display username 401s the same way any other
+    wrong credential does, so the generic "Username" label is actively misleading here."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=_provider(id=1, kind="legendas_net"))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="username"' in response.text
+    assert "not your site display username" in response.text
 
 
 def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend_client):

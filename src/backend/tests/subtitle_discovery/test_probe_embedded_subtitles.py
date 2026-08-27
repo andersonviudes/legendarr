@@ -146,6 +146,9 @@ def test_extract_invokes_ffmpeg_with_expected_map_and_codec(monkeypatch, tmp_pat
     assert "-i" in cmd and cmd[cmd.index("-i") + 1] == str(video_path)
     assert "-map" in cmd and cmd[cmd.index("-map") + 1] == "0:2"
     assert "-c:s" in cmd and cmd[cmd.index("-c:s") + 1] == "srt"
+    # The temp sibling's name ends in `.tmp`, not `.srt` — ffmpeg can't infer the muxer
+    # from that extension, so `-f srt` has to say so explicitly (see the docstring).
+    assert "-f" in cmd and cmd[cmd.index("-f") + 1] == "srt"
     # ffmpeg is pointed at a temp sibling, not `output_path` itself — see below.
     assert cmd[-1] == str(output_path) + ".tmp"
     assert captured["kwargs"]["check"] is True

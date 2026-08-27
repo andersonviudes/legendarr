@@ -136,3 +136,84 @@ def test_fetch_metadata_for_new_items_leaves_no_row_when_nothing_usable(
     fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
 
     assert session.exec(select(MediaMetadata)).all() == []
+
+
+def test_fetch_metadata_for_new_items_tmdb_fills_gaps_tvdb_left_empty(
+    in_memory_session, monkeypatch
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+
+    def _fake_build(config):
+        if config.kind == "tvdb":
+            # TheTVDB found the record but has no poster for it.
+            return _StubProvider(MetadataResult(overview="TVDB overview", year=1994))
+        if config.kind == "tmdb":
+            return _StubProvider(
+                MetadataResult(overview="TMDb overview", poster_url="tmdb.png", year=1993)
+            )
+        return _StubProvider(MetadataResult(imdb_rating=9.3))
+
+    monkeypatch.setattr(fetch_metadata, "build_metadata_provider", _fake_build)
+
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    stored = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).one()
+    # TheTVDB wins wherever it has data; TMDb only fills the poster gap it left.
+    assert stored.overview == "TVDB overview"
+    assert stored.poster_url == "tmdb.png"
+    assert stored.year == 1994
+    assert stored.imdb_rating == 9.3
+
+
+def test_fetch_metadata_for_new_items_tmdb_is_authoritative_when_tvdb_finds_nothing(
+    in_memory_session, monkeypatch
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+
+    def _fake_build(config):
+        if config.kind == "tvdb":
+            return _StubProvider(None)
+        if config.kind == "tmdb":
+            return _StubProvider(
+                MetadataResult(overview="TMDb overview", poster_url="tmdb.png", year=1994)
+            )
+        return _StubProvider(None)
+
+    monkeypatch.setattr(fetch_metadata, "build_metadata_provider", _fake_build)
+
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    stored = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).one()
+    assert stored.overview == "TMDb overview"
+    assert stored.poster_url == "tmdb.png"
+    assert stored.year == 1994
+
+
+def test_fetch_metadata_for_movie_overwrites_an_existing_row_instead_of_duplicating(
+    in_memory_session, monkeypatch
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(overview="first pass", year=1994)),
+    )
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(overview="refetched", year=2024)),
+    )
+    fetch_metadata.fetch_metadata_for_movie(session, movie)
+
+    rows = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).all()
+    assert len(rows) == 1
+    assert rows[0].overview == "refetched"
+    assert rows[0].year == 2024

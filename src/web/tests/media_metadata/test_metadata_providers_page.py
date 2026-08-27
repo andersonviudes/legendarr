@@ -39,6 +39,7 @@ def test_page_renders_provider_cards(stub_backend_client):
             json=[
                 _provider(id=1, kind="tvdb", enabled=True),
                 _provider(id=2, kind="imdb", enabled=False),
+                _provider(id=3, kind="tmdb", enabled=False),
             ],
         )
 
@@ -51,8 +52,10 @@ def test_page_renders_provider_cards(stub_backend_client):
     body = response.text
     assert "TheTVDB" in body
     assert "IMDb" in body
+    assert "TMDb" in body
     assert 'role="switch"' in body
     assert "/settings/metadata-source/1/edit" in body
+    assert 'hx-post="/settings/metadata-source/refetch"' in body
 
 
 def test_page_hides_toggle_for_unconfigured_provider(stub_backend_client):
@@ -203,3 +206,38 @@ def test_test_connection_shows_message(stub_backend_client):
 
     assert response.status_code == 200
     assert "Connection successful" in response.text
+
+
+def test_refetch_route_shows_success_toast_on_202(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/metadata-providers/refetch":
+            return httpx.Response(202, json={"movies_enqueued": 2, "series_enqueued": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/metadata-source/refetch")
+
+    assert response.status_code == 200
+    assert 'data-toast-type="success"' in response.text
+    assert "Metadata refetch started." in response.text
+
+
+def test_refetch_route_shows_error_toast_when_backend_unavailable(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/metadata-providers/refetch":
+            return httpx.Response(503, json={"detail": "Scheduler is not running"})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/metadata-source/refetch")
+
+    assert response.status_code == 200
+    assert 'data-toast-type="error"' in response.text

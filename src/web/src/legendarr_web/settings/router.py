@@ -83,56 +83,6 @@ async def save_task_settings(
     return RedirectResponse(f"/settings/tasks/?{toast}", status_code=303)
 
 
-authentication_router = APIRouter(prefix="/settings/authentication")
-
-
-@authentication_router.get("/")
-async def show_auth_settings(
-    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
-):
-    auth_settings = await service.get_auth_settings(client)
-    return templates.TemplateResponse(request, "authentication.html", {"settings": auth_settings})
-
-
-@authentication_router.post("/")
-async def save_auth_settings(
-    request: Request,
-    enabled: bool = Form(False),
-    username: str = Form(""),
-    password: str = Form(""),
-    client: httpx.AsyncClient = Depends(get_backend_client),
-):
-    data = {"enabled": enabled, "username": username, "password": password}
-    try:
-        await service.update_auth_settings(client, data)
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code >= 500:
-            raise
-        current = await service.get_auth_settings(client)
-        rendered_settings = {**current, "enabled": enabled, "username": username}
-        return templates.TemplateResponse(
-            request,
-            "authentication.html",
-            {"settings": rendered_settings, "error": error_detail(exc)},
-            status_code=exc.response.status_code,
-        )
-    toast = urlencode(
-        {
-            "toast": translate(current_locale.get(), "settings.auth.saved_toast"),
-            "toast_type": "success",
-        }
-    )
-    return RedirectResponse(f"/settings/authentication/?{toast}", status_code=303)
-
-
-@authentication_router.post("/api-key/regenerate")
-async def regenerate_auth_api_key(
-    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
-):
-    auth_settings = await service.regenerate_api_key(client)
-    return templates.TemplateResponse(request, "_api_key_field.html", {"settings": auth_settings})
-
-
 general_router = APIRouter(prefix="/settings/general")
 
 
@@ -141,10 +91,17 @@ async def show_general_settings(
     request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
     general_settings = await service.get_general_settings(client)
+    webhook_settings = await service.get_webhook_settings(client)
+    auth_settings = await service.get_auth_settings(client)
     return templates.TemplateResponse(
         request,
         "general.html",
-        {"settings": general_settings, "locales": SUPPORTED_UI_LOCALES},
+        {
+            "settings": general_settings,
+            "locales": SUPPORTED_UI_LOCALES,
+            "public_url": webhook_settings["public_url"],
+            "auth_settings": auth_settings,
+        },
     )
 
 
@@ -152,20 +109,31 @@ async def show_general_settings(
 async def save_general_settings(
     request: Request,
     ui_locale: str = Form(...),
+    public_url: str = Form(""),
+    enabled: bool = Form(False),
+    username: str = Form(""),
+    password: str = Form(""),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
     data = {"ui_locale": ui_locale}
     try:
         await service.update_general_settings(client, data)
+        await service.update_webhook_settings(client, {"public_url": public_url})
+        await service.update_auth_settings(
+            client, {"enabled": enabled, "username": username, "password": password}
+        )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code >= 500:
             raise
+        current_auth = await service.get_auth_settings(client)
         return templates.TemplateResponse(
             request,
             "general.html",
             {
                 "settings": data,
                 "locales": SUPPORTED_UI_LOCALES,
+                "public_url": public_url,
+                "auth_settings": {**current_auth, "enabled": enabled, "username": username},
                 "error": error_detail(exc),
             },
             status_code=exc.response.status_code,
@@ -179,3 +147,13 @@ async def save_general_settings(
         }
     )
     return RedirectResponse(f"/settings/general/?{toast}", status_code=303)
+
+
+@general_router.post("/api-key/regenerate")
+async def regenerate_auth_api_key(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    auth_settings = await service.regenerate_api_key(client)
+    return templates.TemplateResponse(
+        request, "_api_key_field.html", {"auth_settings": auth_settings}
+    )

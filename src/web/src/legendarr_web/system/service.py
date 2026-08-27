@@ -20,6 +20,18 @@ async def get_running_tasks(client: httpx.AsyncClient) -> list[dict]:
     return response.json()
 
 
+async def get_scheduled_jobs(client: httpx.AsyncClient) -> list[dict]:
+    response = await client.get("/system/jobs/scheduled")
+    response.raise_for_status()
+    return response.json()
+
+
+async def get_job_history(client: httpx.AsyncClient) -> list[dict]:
+    response = await client.get("/system/jobs/history")
+    response.raise_for_status()
+    return response.json()
+
+
 async def get_sessions(client: httpx.AsyncClient) -> list[dict]:
     response = await client.get("/auth/sessions")
     response.raise_for_status()

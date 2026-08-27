@@ -31,6 +31,11 @@ class JobQueue(StrEnum):
     # its own queue, same reasoning as `TRANSLATE`/`ACQUIRE`. Manual-only (one subtitle at a
     # time, triggered from the UI), so no `_BULK` variant.
     TIMING_SYNC = "timing_sync"
+    # Metadata fetch calls a real provider API per movie/series. Manual-only (no periodic
+    # equivalent — metadata is fetched once on discovery, see `fetch_metadata_for_new_items`),
+    # triggered by the "Refetch All" button; its own queue, same `_BULK` reasoning as
+    # `SCAN_BULK`/`TRANSLATE_BULK`/`ACQUIRE_BULK`.
+    METADATA_BULK = "metadata_bulk"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
@@ -42,4 +47,5 @@ QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.ACQUIRE: 2,
     JobQueue.ACQUIRE_BULK: 1,
     JobQueue.TIMING_SYNC: 2,
+    JobQueue.METADATA_BULK: 1,
 }

@@ -79,3 +79,37 @@ shared branch), ask which method before running either — default recommendatio
 revert`, since it's non-destructive and doesn't require `--force`; only reset+force-push if the
 user explicitly wants the commit erased from history. See [[legendarr-animetosho-anidb-key]]
 for the case that prompted this.
+
+**2026-08-27 — user directs "work only on this feature branch this session," including a
+`fix:`; staging around unrelated pre-existing uncommitted WIP on the same branch:** started a
+session on `main` (per the conversation's own `gitStatus` snapshot), but by the time work
+began the checked-out branch had silently become `feat/tmdb-metadata-provider` with a large,
+unrelated, uncommitted diff already in the working tree (the user's own in-progress work on
+another machine/terminal, not something this session created — see
+[[background-agents-switch-branches]] for the sibling case where an *agent* causes this; here
+it was pre-existing state, discovered via `git status` before the first commit). Surfaced it
+instead of assuming `main`; user replied "faz direto na nossa branch feat/tmdb-metadata-provider
+vamos trabalhar so nela nessa sessao" — explicit permission to commit both the `fix:` (a
+logging bug) and a follow-up `feat:` straight onto that branch, no new branch, no PR this
+session. **Why:** the literal branch convention above (`fix:` → `main`, `feat:` → its own
+branch+PR) is the *default*, not an override of an explicit, contemporaneous user instruction
+about which branch to commit to.
+
+Four files (`i18n/locales/{en,es,pt-BR}.json`, `static/styles.css`) had the user's unrelated WIP
+and this session's new lines in the *same file*, so `git add <file>` would have swept the WIP
+into this session's commit. Fix: for each such file, copied the file's *own* hunk (identified by
+diffing against HEAD and picking out the hunk whose content matched what this session added) into
+a hand-built unified diff — `diff --git a/<path> b/<path>` / `--- a/<path>` / `+++ b/<path>` /
+one `@@` hunk — and ran `git apply --cached -` (patch on stdin via a Bash heredoc, since a
+worktree-scratch file was denied by the sandbox — writes outside the repo aren't permitted) to
+stage just that hunk into the index, leaving the rest of the file's diff unstaged. Confirmed with
+`git diff --cached -- <file>` before committing that each staged diff was hunk-for-hunk exactly
+this session's addition. **How to apply:** when a target file has *other* uncommitted changes
+already in the working tree that aren't part of the current change, don't `git add` the whole
+file — `git diff -- <file>` to find your own hunk's `@@ -old,n +old,n @@` header (using the
+*original*, i.e. pre-my-changes, line numbers — `git apply --cached` resolves them against the
+index, which is HEAD's content, unaffected by any other unstaged hunk in the same file), wrap it
+in a minimal `diff --git`/`---`/`+++` header, and `git apply --cached -` it via a heredoc. Verify
+with `git diff --cached` before committing. `git add -p` (interactive) is the standard tool for
+this but isn't practical to drive non-interactively; the hand-built-patch approach is the
+scriptable equivalent.

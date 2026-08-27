@@ -22,6 +22,7 @@ from legendarr_backend.media_library.schemas import (
     SubtitleRead,
 )
 from legendarr_backend.media_metadata.models import MediaMetadata
+from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle, AcquisitionAttempt
 from legendarr_backend.subtitle_discovery.models import Subtitle
 
 logger = logging.getLogger(__name__)
@@ -146,15 +147,49 @@ def _media_file_reads(
         select(Subtitle).where(col(Subtitle.media_file_id).in_(media_file_ids))
     ).all():
         subtitles_by_file_id[subtitle.media_file_id].append(subtitle)
+    subtitle_ids = [
+        subtitle.id for subtitles in subtitles_by_file_id.values() for subtitle in subtitles
+    ]
+    acquired_by_subtitle_id: dict[int, AcquiredSubtitle] = {
+        acquired.subtitle_id: acquired
+        for acquired in session.exec(
+            select(AcquiredSubtitle).where(col(AcquiredSubtitle.subtitle_id).in_(subtitle_ids))
+        ).all()
+    }
+    # `AcquisitionAttempt` is append-only and always written in lockstep with
+    # `AcquiredSubtitle` (see `manage_acquired_subtitle.record_acquired_subtitle`), so the
+    # highest-id attempt for a subtitle is always the one behind its current
+    # `AcquiredSubtitle` row — iterating oldest-first and overwriting the dict lands on
+    # that one without a second query per subtitle.
+    attempts_by_subtitle_id: dict[int, AcquisitionAttempt] = {}
+    for attempt in session.exec(
+        select(AcquisitionAttempt)
+        .where(col(AcquisitionAttempt.subtitle_id).in_(subtitle_ids))
+        .order_by(col(AcquisitionAttempt.id))
+    ).all():
+        attempts_by_subtitle_id[attempt.subtitle_id] = attempt
     reads = []
     for media_file in media_files:
         assert media_file.id is not None
         subtitle_reads = []
         for subtitle in subtitles_by_file_id.get(media_file.id, []):
             assert subtitle.id is not None
+            acquired = acquired_by_subtitle_id.get(subtitle.id)
+            attempt = attempts_by_subtitle_id.get(subtitle.id)
             subtitle_reads.append(
                 SubtitleRead(
-                    id=subtitle.id, language=subtitle.language, origin=subtitle.origin.value
+                    id=subtitle.id,
+                    language=subtitle.language,
+                    origin=subtitle.origin.value,
+                    size_bytes=subtitle.size_bytes,
+                    provider=acquired.provider if acquired else None,
+                    release_name=acquired.release_name if acquired else None,
+                    score=acquired.score if acquired else None,
+                    resolution_matched=attempt.resolution_matched if attempt else None,
+                    source_matched=attempt.source_matched if attempt else None,
+                    codec_matched=attempt.codec_matched if attempt else None,
+                    release_group_matched=attempt.release_group_matched if attempt else None,
+                    edition_matched=attempt.edition_matched if attempt else None,
                 )
             )
         present = {subtitle.language for subtitle in subtitle_reads}

@@ -6,7 +6,6 @@ from fastapi.responses import RedirectResponse
 
 from legendarr_web.arr_services import service
 from legendarr_web.backend_client.client import error_detail, get_backend_client
-from legendarr_web.i18n.translator import current_locale, translate
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/settings/arr-services")
@@ -58,22 +57,6 @@ async def show_arr_services(
             "public_url": webhook_settings["public_url"],
         },
     )
-
-
-@router.post("/webhook-url")
-async def save_webhook_url(
-    request: Request,
-    public_url: str = Form(""),
-    client: httpx.AsyncClient = Depends(get_backend_client),
-):
-    await service.update_webhook_settings(client, {"public_url": public_url})
-    toast = urlencode(
-        {
-            "toast": translate(current_locale.get(), "arr_services.url_saved_toast"),
-            "toast_type": "success",
-        }
-    )
-    return RedirectResponse(f"/settings/arr-services/?{toast}", status_code=303)
 
 
 @router.get("/count")

@@ -427,6 +427,13 @@ vanishing.*
   acquisition provider backs off instead of failing every job.
 - [ ] **Operations** — Retry handling around scheduled jobs, building on the per-job
   retry/concurrency policy established at 0.1.0.
+- [ ] **Media library** — Periodic metadata refresh: a scheduled job re-fetches
+  `media_metadata` (overview/poster/year/rating) for movies/series already in the library,
+  instead of only on first sync or via the manual "Refetch All" action. Defaults to once a
+  day (`metadata_refresh_interval_minutes`, config/env only like `translate_interval_minutes`
+  — metadata changes far less often than library contents, so this doesn't need the 15/60 min
+  cadence the sync/scan/history-poll jobs use). Also cache poster images locally (or proxy
+  them) instead of hotlinking the provider's CDN URL directly from `poster_url`.
 
 ## 0.22.0 — Maintenance & backup
 

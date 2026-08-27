@@ -31,8 +31,8 @@ src/backend/src/legendarr_backend/
 │   └── jobs.py               # the APScheduler job that drives the sync
 ├── subtitle_acquisition/    # subtitle-provider registration (credentials, test connection)
 │   └── providers/            # subdomain: SubtitleProvider protocol (interface only)
-├── media_metadata/          # TheTVDB/IMDb metadata provider registration + fetch-on-sync
-│   └── providers/            # subdomain: MetadataProvider protocol + TVDB/OMDb clients
+├── media_metadata/          # TheTVDB/IMDb/TMDb metadata provider registration + fetch-on-sync/refetch
+│   └── providers/            # subdomain: MetadataProvider protocol + TVDB/OMDb/TMDb clients
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
 │   └── providers/            # subdomain: translation-provider adapters
@@ -53,14 +53,14 @@ src/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
 ├── arr_services/            # /settings/arr-services/ routes (CRUD, test, enable/disable)
 ├── subtitle_acquisition/    # /settings/subtitle-providers/ routes (enable, credentials, test)
-├── media_metadata/          # /settings/metadata-source/ routes (enable, credentials, test)
+├── media_metadata/          # /settings/metadata-source/ routes (enable, credentials, test, refetch)
 ├── language_profiles/       # /settings/ route
 ├── subtitle_translation/    # /settings/translation-providers/ routes (enable, credentials, test, default)
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route
 ├── system/                  # /system/ route
 ├── authentication/          # /login, /logout routes (session cookie set/cleared)
-├── settings/                # /settings/tasks/, /settings/authentication/ routes (retry/interval settings, login toggle + API key)
+├── settings/                # /settings/tasks/, /settings/general/ routes (retry/interval settings, display language + webhook URL + login toggle + API key)
 ├── subtitle_proxies/        # /settings/subtitle-proxies/ routes (CRUD, test, enable/disable)
 ├── config/                  # env WebSettings
 ├── backend_client/          # httpx client for calling the backend API

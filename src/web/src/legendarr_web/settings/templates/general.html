@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import select_field %}
+{% from "macros.html" import select_field, field, checkbox_field %}
 {% block title %}legendarr · {{ t("settings.general.title") }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
@@ -18,5 +18,30 @@
 <form id="general-settings-form" class="service-form" method="post" action="/settings/general/">
   <p class="field-hint">{{ t("settings.general.locale_hint") }}</p>
   {{ select_field("ui_locale", t("settings.general.locale_label"), locales, selected=settings.ui_locale) }}
+
+  <p class="field-hint">{{ t("settings.general.legendarr_url_hint") }}</p>
+  {{ field("public_url", t("settings.general.legendarr_url_label"), placeholder="https://legendarr.example.com",
+           value=public_url, autocomplete="off") }}
+
+  <p class="field-hint">{{ t("settings.auth.hint") }}</p>
+  {{ checkbox_field("enabled", t("settings.auth.require_login"), checked=auth_settings.enabled) }}
+
+  {{ field("username", t("common.username"), value=auth_settings.username) }}
+  {# Never re-display the stored password. A blank field means "keep the current one". #}
+  {{ field("password", t("common.password"), type="password", autocomplete="new-password",
+           placeholder=t("common.keep_current_password_placeholder")) }}
 </form>
+
+<section>
+  <h2>{{ icon("shield") }} {{ t("common.api_key") }}</h2>
+  {% if auth_settings.api_key %}
+  {% include "_api_key_field.html" %}
+  {% else %}
+  {% from "macros.html" import empty_state %}
+  {{ empty_state(t("settings.auth.api_key_empty")) }}
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/authentication-settings.js" defer></script>
 {% endblock %}

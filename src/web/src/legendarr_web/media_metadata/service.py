@@ -31,3 +31,9 @@ async def test_metadata_provider(client: httpx.AsyncClient, provider_id: int, da
     response = await client.post(f"/metadata-providers/{provider_id}/test", json=data)
     response.raise_for_status()
     return response.json()
+
+
+async def trigger_metadata_refetch(client: httpx.AsyncClient) -> dict:
+    response = await client.post("/metadata-providers/refetch")
+    response.raise_for_status()
+    return response.json()

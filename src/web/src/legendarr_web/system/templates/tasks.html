@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import empty_state %}
 {% block title %}legendarr · {{ t("nav.system.tasks") }}{% endblock %}
 {% block content %}
 <h1>{{ icon("activity") }} {{ t("nav.system.tasks") }}</h1>
@@ -12,5 +13,45 @@
   >
     {% include "_running_tasks_list.html" %}
   </div>
+</section>
+
+<section>
+  <h2>{{ t("system.tasks.scheduled_jobs_title") }}</h2>
+  {% if scheduled_jobs %}
+  <ul class="task-line-list">
+    {% for job in scheduled_jobs %}
+    <li class="task-line">
+      <span class="task-line-name">{{ job.name }}</span>
+      <span class="task-line-queue">{{ job.queue }}</span>
+      <span class="task-line-time">
+        {{ t("system.tasks.next_run") }}:
+        {% if job.next_run_time %}{{ job.next_run_time[:19].replace("T", " ") }}{% else %}—{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {{ empty_state(t("system.tasks.scheduled_jobs_empty")) }}
+  {% endif %}
+</section>
+
+<section>
+  <h2>{{ t("system.tasks.history_title") }}</h2>
+  {% if history %}
+  <ul class="task-line-list">
+    {% for run in history %}
+    <li class="task-line" {% if run.error_message %}title="{{ run.error_message }}"{% endif %}>
+      <span class="task-line-status task-line-status--{{ run.status }}">
+        {{ t("system.tasks.status_" ~ run.status) }}
+      </span>
+      <span class="task-line-name">{{ run.name }}</span>
+      <span class="task-line-queue">{{ run.queue }}</span>
+      <span class="task-line-time">{{ run.finished_at[:19].replace("T", " ") }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {{ empty_state(t("system.tasks.history_empty")) }}
+  {% endif %}
 </section>
 {% endblock %}

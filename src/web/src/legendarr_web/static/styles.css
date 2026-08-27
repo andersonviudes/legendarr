@@ -6,7 +6,7 @@
    This app's `.app-main` has no such container, so on a wide viewport that scaling just
    inflates every unstyled Pico element (raw form labels/inputs in particular) — pin it. */
 :root {
-  --pico-font-size: 18px;
+  --pico-font-size: 17px;
 
   /* Type scale — tokens for the sizes reused across components, so a tweak lands in one
      place instead of being hunted down in five. Values are rem, tracking the root size. */
@@ -611,44 +611,49 @@ body {
 
 /* Fixed layout so the 4 columns don't auto-size proportionally to their preferred content
    width — that gave "Episode" (2-digit numbers, an 8-char header) as much room as Title.
-   Only Title is left unsized, so it absorbs whatever the other three don't use. */
-.episode-table-scroll {
-  overflow-x: auto;
-}
-
-/* min-width keeps every column (Title included) at a readable size instead of table-layout:
-   fixed squeezing them all down to fit a narrow viewport — .episode-table-scroll takes the
-   overflow as a horizontal scroll instead. */
+   Only Title is left unsized, so it absorbs whatever the other three don't use. Widths are
+   percentages (not rem) so the table always fits the viewport instead of overflowing into
+   a horizontal scrollbar — Title text and the subtitle pill list both wrap onto more lines
+   as the column shrinks. */
 .episode-table {
   table-layout: fixed;
-  min-width: 44rem;
+  width: 100%;
 }
 
 .episode-table-col-episode {
-  width: 6.5rem;
+  width: 10%;
 }
 
 .episode-table-col-subtitles {
-  width: 22rem;
+  width: 32%;
 }
 
 .episode-table-col-actions {
-  width: 6rem;
+  width: 10%;
+}
+
+/* Tighter row height than Pico's default td/th padding (0.5rem block) — episode rows are
+   dense, repetitive data, not prose, so they don't need that much breathing room. */
+.episode-table td,
+.episode-table th {
+  padding-block: 0.3rem;
 }
 
 /* File-level actions that don't apply to any subtitle, existing or hypothetical — just
    Upload subtitle. Translate now/Manual search moved into `.subtitle-pill-menu` below
-   (every pill's dropdown, plus the empty-badge one), see subtitle_pill_list() in
-   macros.html. */
+   (the missing-language pill's dropdown, plus the empty-badge one) or into the per-file
+   subtitles dialog (external/embedded pills), see subtitle_pill_list() in macros.html. */
 .file-row-actions {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
 }
 
-/* Subtitles-column pill list — see subtitle_pill_list() in macros.html. Each pill is
-   also the trigger for its own actions menu (Sync timing / Translate from this /
-   Blacklist), popped open right under it rather than living in a separate column. */
+/* Subtitles-column pill list — see subtitle_pill_list() in macros.html. A missing-
+   language pill (or the empty-badge placeholder) is its own small actions menu trigger,
+   popped open right under it; external/embedded pills instead open the shared per-file
+   subtitles dialog (.subtitle-file-modal-* below), since those carry per-subtitle
+   actions that would make a whole row of tiny dropdowns unwieldy. */
 .subtitle-pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -826,6 +831,14 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* Provider "what is this" blurb (subtitle providers list) — a touch dimmer than the card
+   name but readable, sitting above the muted credentials-status line below it. */
+.service-card-description {
+  margin: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-color);
+}
+
 .service-card-address {
   margin: 0;
   font-size: var(--lg-font-xs);
@@ -892,6 +905,15 @@ body {
 .lang-pill--missing {
   background-color: var(--lg-neutral-dim-background-color);
   color: var(--pico-muted-color);
+}
+
+/* The collapsed "N embedded" trigger pill (subtitle_pill_list() in macros.html) packs
+   an icon in ahead of the count — shrunk to match the pill's own --lg-font-xs text
+   instead of the SVGs' native 24x24. */
+.subtitle-pill-item .lang-pill--embedded svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.15rem;
 }
 
 .lang-pill-arrow {
@@ -1429,7 +1451,30 @@ button.outline.contrast:is(:hover, :focus) {
 
 /* === Directory browser <dialog> (arr_service_form.html + system/templates) === */
 .dir-browser-modal {
+  /* Pico's vendored dialog{} rule (vendor/pico.min.css) turns <dialog> itself into a
+     full-viewport flex overlay: inset: 0 plus width/min-width/height/min-height:
+     inherit/100%, expecting a nested <article> for the actual box — this markup skips
+     that and styles <dialog> directly. `inset: 0` (top/right/bottom/left all 0) paired
+     with `margin: auto` looks like the classic auto-centering trick, but it only
+     shrink-wraps when width/height are both fixed lengths — with height: auto and both
+     top and bottom pinned, the box stretches to fill the viewport instead (verified
+     empirically; auto margins resolve to whatever's left over, not to true centering).
+     So: reset inset to auto and center with top/left: 50% + transform instead, which
+     shrink-wraps regardless of content height. max-height/overflow cap it on short
+     viewports, matching Pico's own dialog>article max-height treatment. */
+  display: block;
+  position: fixed;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  min-width: auto;
+  height: auto;
+  min-height: auto;
   width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
   padding: 0;
   border: 1px solid var(--pico-card-border-color);
   border-radius: 0.75rem;
@@ -1534,7 +1579,20 @@ button.outline.contrast:is(:hover, :focus) {
 
 /* === Subtitle search/upload <dialog> (movie/series detail pages) === */
 .subtitle-acquire-modal {
+  /* Same Pico dialog{} override as .dir-browser-modal above — see that comment. */
+  display: block;
+  position: fixed;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  min-width: auto;
+  height: auto;
+  min-height: auto;
   width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
   padding: 0;
   border: 1px solid var(--pico-card-border-color);
   border-radius: 0.75rem;
@@ -1556,6 +1614,7 @@ button.outline.contrast:is(:hover, :focus) {
 
 .subtitle-acquire-modal-header p {
   margin: 0;
+  overflow-wrap: anywhere;
   font-weight: 600;
 }
 
@@ -1634,6 +1693,108 @@ button.outline.contrast:is(:hover, :focus) {
   color: var(--pico-muted-color);
   font-size: var(--lg-font-xs);
   white-space: nowrap;
+}
+
+/* === Per-file subtitles <dialog> (movie/series detail pages) === */
+/* Wider than the base .subtitle-acquire-modal (search/upload) — this one lays its rows
+   out as a Language/Provider/Release/Match/Score/Size/Actions table
+   (.subtitle-file-modal-row's grid-template-columns below), which needs real room for
+   a release name to be legible before it gets ellipsis-truncated. */
+.subtitle-file-modal {
+  width: min(64rem, calc(100vw - 2rem));
+}
+
+.subtitle-file-modal-list {
+  max-height: 28rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin: 1rem 1.25rem 1.25rem;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--lg-neutral-dim-background-color);
+  border-radius: 0.5rem;
+}
+
+/* Language | Provider | Release | Match | Score | Size | Actions — shared by the header
+   row and every data row so their columns line up. Release is the only flexible column;
+   everything else is sized to its content (a lang pill, "opensubtitles", a 2-3-icon
+   action cluster — Sync timing/Blacklist only show for external subtitles, see
+   subtitle_pill_list() in macros.html). */
+.subtitle-file-modal-row {
+  display: grid;
+  grid-template-columns: 4.25rem 9rem 1fr 7.5rem 3.25rem 4.5rem 7.5rem;
+  align-items: center;
+  column-gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+}
+
+.subtitle-file-modal-row:last-child {
+  border-bottom: none;
+}
+
+.subtitle-file-modal-row--header {
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Provider/Release cells: real values can run long ("opensubtitles",
+   a full scene-release filename) — clip to the grid column and let `data-tooltip`
+   (set only when there's a value, see subtitle_pill_list()) surface the rest. */
+.subtitle-file-modal-cell-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.subtitle-file-modal-match {
+  display: flex;
+  gap: 0.15rem;
+}
+
+/* One letter per matched release attribute (Resolution/Source/Codec/release Group/
+   Edition) — a compact stand-in for a 5-icon row since none of the vendored Lucide
+   icons fit that meaning and hand-drawing five new ones isn't worth it here. Color
+   alone (not the letter) carries matched/unmatched; --na is the "nothing to compare"
+   case (see `AcquisitionAttempt`'s docstring), styled halfway between so it doesn't
+   read as a hard miss. */
+.subtitle-match-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 0.25rem;
+  background-color: var(--lg-neutral-dim-background-color);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.subtitle-match-badge--yes {
+  color: var(--pico-ins-color);
+}
+
+.subtitle-match-badge--no {
+  color: var(--pico-del-color);
+}
+
+.subtitle-match-badge--na {
+  color: var(--pico-muted-color);
+}
+
+.subtitle-file-modal-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.subtitle-file-modal-row-actions svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* === System page: log viewer === */
@@ -1728,6 +1889,29 @@ button.outline.contrast:is(:hover, :focus) {
   font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
   white-space: nowrap;
+}
+
+/* Job history status pill (System → Tasks "Recent Runs") — same shape as
+   .task-line-queue, colored like .subtitle-match-badge's yes/no/na trio. */
+.task-line-status {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--lg-neutral-dim-background-color);
+  font-size: 0.675rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.task-line-status--success {
+  color: var(--pico-ins-color);
+}
+
+.task-line-status--failure {
+  color: var(--pico-del-color);
+}
+
+.task-line-status--missed {
+  color: var(--lg-warn-color);
 }
 
 /* === Login page (authentication/templates/login.html) — the one page that doesn't
