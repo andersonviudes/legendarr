@@ -24,3 +24,11 @@ docker-compose.dev.yml up -d legendarr` to pick it up — the `./dev/legendarr-c
 mount (SQLite DB + config) persists across the rebuild, so this is safe and doesn't lose
 data. `docker compose up -d legendarr` alone (no `build`) will NOT rebuild even if the
 Dockerfile or source changed.
+
+**Alternative for browser/Playwright QA on a feature branch:** skip the compose stack
+entirely — point `LEGENDARR_DATA_DIR` at a throwaway directory, run
+`uv run uvicorn legendarr_bootstrap.app:app --host 127.0.0.1 --port <port>` in the
+background on that branch, drive it with the Playwright MCP tools, then kill the process
+and delete the throwaway dir. Guarantees the code under test instead of whatever the
+container last had baked in. Used 2026-08-26 to manually verify PR #65 (i18n) across
+en/es/pt-BR on every settings page.

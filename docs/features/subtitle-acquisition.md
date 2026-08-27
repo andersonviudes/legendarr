@@ -13,7 +13,8 @@ BetaSeries. Each one can be enabled or disabled, and configured with the credent
 (an API key, a username/password pair, or none at all, depending on the provider).
 
 "Test connection" runs a lightweight check per provider — for five of the six with a real API
-key or login (OpenSubtitles, Subdl, legendas.net, Addic7ed, BetaSeries), it validates the
+key or login (Subdl, legendas.net, Addic7ed, BetaSeries, and OpenSubtitles — a
+username/password login against the user's own account, not an API key), it validates the
 credential against the provider's own service; for a provider with no credential (YIFY
 Subtitles, TVsubtitles, Napiprojekt, Anime Tosho, Supersubtitles, AnimeKalesi, GreekSubtitles),
 it only confirms the site is reachable. Subsource is the exception: it needs an API key like

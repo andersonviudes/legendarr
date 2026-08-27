@@ -149,7 +149,7 @@ def test_edit_form_shows_credential_fields_for_kind_that_needs_them(stub_backend
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/subtitle-proxies/":
             return httpx.Response(200, json=[])
-        return httpx.Response(200, json=_provider(id=1, kind="opensubtitles"))
+        return httpx.Response(200, json=_provider(id=1, kind="subdl"))
 
     stub_backend_client(app, handler=handler)
 
@@ -178,6 +178,28 @@ def test_edit_form_shows_credential_fields_for_animetosho(stub_backend_client):
 
     assert response.status_code == 200
     assert 'name="api_key"' in response.text
+
+
+def test_edit_form_shows_credential_fields_for_opensubtitles(stub_backend_client):
+    """OpenSubtitles authenticates with the user's own username/password — `Api-Key` is a
+    legendarr-side application credential, never asked from the user — same shape as
+    Addic7ed/legendas.net, not the generic single API-key field."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=_provider(id=1, kind="opensubtitles"))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="username"' in response.text
+    assert 'name="password"' in response.text
+    assert 'name="api_key"' not in response.text
 
 
 def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend_client):
@@ -246,7 +268,7 @@ def test_edit_form_does_not_prefill_api_key(stub_backend_client):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/subtitle-proxies/":
             return httpx.Response(200, json=[])
-        return httpx.Response(200, json=_provider(id=1, kind="opensubtitles"))
+        return httpx.Response(200, json=_provider(id=1, kind="subdl"))
 
     stub_backend_client(app, handler=handler)
 
@@ -308,7 +330,8 @@ def test_update_provider_redirects_with_success_toast(stub_backend_client):
 
     with TestClient(app) as client:
         response = client.post(
-            "/settings/subtitle-providers/1", data={"kind": "opensubtitles", "api_key": "a-key"}
+            "/settings/subtitle-providers/1",
+            data={"kind": "opensubtitles", "username": "user", "password": "pass"},
         )
 
     assert response.status_code == 200
@@ -332,7 +355,12 @@ def test_update_provider_forwards_search_options(stub_backend_client):
     with TestClient(app) as client:
         client.post(
             "/settings/subtitle-providers/1",
-            data={"kind": "opensubtitles", "api_key": "a-key", "include_ai_translated": "true"},
+            data={
+                "kind": "opensubtitles",
+                "username": "user",
+                "password": "pass",
+                "include_ai_translated": "true",
+            },
         )
 
     assert captured["use_hash"] is False
@@ -379,7 +407,7 @@ def test_update_provider_rerenders_form_on_validation_error(stub_backend_client)
 
     with TestClient(app) as client:
         response = client.post(
-            "/settings/subtitle-providers/1", data={"kind": "opensubtitles", "api_key": ""}
+            "/settings/subtitle-providers/1", data={"kind": "subdl", "api_key": ""}
         )
 
     assert response.status_code == 422
@@ -433,7 +461,7 @@ def test_test_connection_shows_message(stub_backend_client):
     with TestClient(app) as client:
         response = client.post(
             "/settings/subtitle-providers/1/test",
-            data={"kind": "opensubtitles", "api_key": "a-key"},
+            data={"kind": "opensubtitles", "username": "user", "password": "pass"},
         )
 
     assert response.status_code == 200

@@ -30,7 +30,8 @@ from legendarr_backend.subtitle_acquisition.providers.legendas_net import (
     legendas_net_login,
 )
 from legendarr_backend.subtitle_acquisition.providers.opensubtitles import (
-    OPENSUBTITLES_USER_AGENT,
+    opensubtitles_client,
+    opensubtitles_login,
 )
 from legendarr_backend.subtitle_acquisition.providers.subsource import SUBSOURCE_API_BASE_URL
 
@@ -53,18 +54,21 @@ def _require(value: str | None, label: str) -> str | None:
 
 
 def _test_opensubtitles(config: SubtitleProviderConfig) -> ConnectionTestResult:
-    if (error := _require(config.api_key, "An API Key")) is not None:
+    if (error := _require(config.username, "Username")) is not None:
         return False, error
-    assert config.api_key is not None
-    client = ProviderHttpClient(
-        "OpenSubtitles",
-        "https://api.opensubtitles.com",
-        headers={"Api-Key": config.api_key, "User-Agent": OPENSUBTITLES_USER_AGENT},
-    )
+    if (error := _require(config.password, "Password")) is not None:
+        return False, error
+    assert config.username is not None
+    assert config.password is not None
+    # `opensubtitles_login` is the same login flow the real provider uses once
+    # credentials pass. The `Api-Key` header it needs identifies legendarr itself, not
+    # the user (see `providers/opensubtitles.py`'s module docstring), so it's baked into
+    # `opensubtitles_client()` rather than coming from `config`.
+    client = opensubtitles_client()
     try:
-        client.get_json("/api/v1/infos/user")
+        opensubtitles_login(client, config.username, config.password)
     except ProviderClientError as exc:
-        return False, describe_error(exc)
+        return False, str(exc)
     finally:
         client.close()
     return True, "Connection successful"

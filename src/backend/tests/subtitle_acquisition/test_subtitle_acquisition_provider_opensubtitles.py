@@ -6,7 +6,7 @@ from legendarr_backend.subtitle_acquisition.providers.opensubtitles import OpenS
 
 
 def _config(**overrides) -> SubtitleProviderConfig:
-    data = {"kind": "opensubtitles", "enabled": True, "api_key": "a-key"}
+    data = {"kind": "opensubtitles", "enabled": True, "username": "user", "password": "pass"}
     data.update(overrides)
     return SubtitleProviderConfig(**data)
 
@@ -27,15 +27,21 @@ def _search_response(**overrides) -> dict:
     return data
 
 
+def _login_post_json(self, path, json):
+    assert path == "/api/v1/login"
+    assert json == {"username": "user", "password": "pass"}
+    return {"token": "token123", "base_url": "api.opensubtitles.com"}
+
+
 def test_opensubtitles_search_returns_one_result_per_file(monkeypatch):
     seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
 
     def _get_json(self, path):
         seen["path"] = path
         return _search_response()
 
     monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config())
     results = provider.search("Movie Name", "en")
@@ -52,13 +58,13 @@ def test_opensubtitles_search_returns_one_result_per_file(monkeypatch):
 
 def test_opensubtitles_search_includes_optional_ai_and_machine_translated(monkeypatch):
     seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
 
     def _get_json(self, path):
         seen["path"] = path
         return _search_response()
 
     monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(
         _config(include_ai_translated=True, include_machine_translated=True)
@@ -71,13 +77,13 @@ def test_opensubtitles_search_includes_optional_ai_and_machine_translated(monkey
 
 def test_opensubtitles_search_passes_imdb_id_and_moviehash_when_given(monkeypatch):
     seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
 
     def _get_json(self, path):
         seen["path"] = path
         return _search_response()
 
     monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config())
     provider.search("Movie Name", "en", imdb_id="tt1234567", moviehash="abc123")
@@ -88,13 +94,13 @@ def test_opensubtitles_search_passes_imdb_id_and_moviehash_when_given(monkeypatc
 
 def test_opensubtitles_search_ignores_moviehash_when_use_hash_is_disabled(monkeypatch):
     seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
 
     def _get_json(self, path):
         seen["path"] = path
         return _search_response()
 
     monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config(use_hash=False))
     provider.search("Movie Name", "en", moviehash="abc123")
@@ -103,18 +109,57 @@ def test_opensubtitles_search_ignores_moviehash_when_use_hash_is_disabled(monkey
 
 
 def test_opensubtitles_search_returns_empty_list_when_no_results(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
     monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config())
 
     assert provider.search("Movie Name", "en") == []
 
 
+def test_opensubtitles_search_raises_when_login_fails(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "post_json", lambda self, path, json: {"error": "no"})
+
+    provider = OpenSubtitlesProvider(_config())
+
+    with pytest.raises(ProviderClientError):
+        provider.search("Movie Name", "en")
+
+
+def test_opensubtitles_search_routes_a_vip_account_to_its_own_host(monkeypatch):
+    seen: dict = {"base_urls": []}
+    original_init = ProviderHttpClient.__init__
+
+    def _init(self, provider, base_url, headers=None, timeout=10.0):
+        seen["base_urls"].append(base_url)
+        seen["headers"] = headers
+        original_init(self, provider, base_url, headers=headers, timeout=timeout)
+
+    monkeypatch.setattr(ProviderHttpClient, "__init__", _init)
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "post_json",
+        lambda self, path, json: {"token": "token123", "base_url": "vip-api.opensubtitles.com"},
+    )
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = OpenSubtitlesProvider(_config())
+    provider.search("Movie Name", "en")
+
+    assert seen["base_urls"] == [
+        "https://api.opensubtitles.com",
+        "https://vip-api.opensubtitles.com",
+    ]
+    assert seen["headers"]["Authorization"] == "Bearer token123"
+
+
 def test_opensubtitles_download_fetches_link_then_returns_its_text(monkeypatch):
     seen = {}
 
     def _post_json(self, path, json):
+        if path == "/api/v1/login":
+            return _login_post_json(self, path, json)
         seen["download_request"] = (path, json)
         return {"link": "https://example.com/download/abc.srt"}
 
@@ -128,7 +173,6 @@ def test_opensubtitles_download_fetches_link_then_returns_its_text(monkeypatch):
 
     monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
     monkeypatch.setattr(ProviderHttpClient, "request", _request)
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config())
     result = provider.download(
@@ -141,21 +185,22 @@ def test_opensubtitles_download_fetches_link_then_returns_its_text(monkeypatch):
 
 
 def test_opensubtitles_download_raises_when_the_link_fails(monkeypatch):
-    monkeypatch.setattr(
-        ProviderHttpClient, "post_json", lambda self, path, json: {"link": "https://x/y.srt"}
-    )
+    def _post_json(self, path, json):
+        if path == "/api/v1/login":
+            return _login_post_json(self, path, json)
+        return {"link": "https://x/y.srt"}
 
     class _Response:
         is_success = False
         status_code = 404
         text = ""
 
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
     monkeypatch.setattr(
         ProviderHttpClient,
         "request",
         lambda self, method, path, data=None, follow_redirects=False: _Response(),
     )
-    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
 
     provider = OpenSubtitlesProvider(_config())
 
@@ -163,3 +208,39 @@ def test_opensubtitles_download_raises_when_the_link_fails(monkeypatch):
         provider.download(
             SubtitleSearchResult(release_name="Movie.Name.2024", download_id="123", language="en")
         )
+
+
+def test_opensubtitles_reuses_the_same_client_across_calls(monkeypatch):
+    login_calls = []
+
+    def _post_json(self, path, json):
+        login_calls.append(path)
+        return {"token": "token123", "base_url": "api.opensubtitles.com"}
+
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
+
+    provider = OpenSubtitlesProvider(_config())
+    provider.search("Movie Name", "en")
+    provider.search("Movie Name", "en")
+
+    assert len(login_calls) == 1
+
+
+def test_opensubtitles_close_closes_the_client(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
+    closed = {"called": False}
+
+    def _close(self):
+        closed["called"] = True
+
+    monkeypatch.setattr(ProviderHttpClient, "close", _close)
+
+    provider = OpenSubtitlesProvider(_config())
+    assert closed["called"] is False
+
+    provider.search("Movie Name", "en")
+    provider.close()
+
+    assert closed["called"] is True

@@ -32,6 +32,15 @@ Babel/gettext dependency — matches the project's minimal-dependency style.
 - **Server-built strings** (toast messages in various `router.py` files, ~8 of them)
   also go through `translate(current_locale.get(), "key")` directly — same `ContextVar`,
   no Jinja context needed since it's plain Python.
+- **Gotcha — a handler that itself changes `ui_locale`**: `resolve_locale` sets the
+  `ContextVar` from the *pre-request* locale before the POST handler runs, so
+  Settings → General's save handler (`settings/router.py`'s `save_general_settings`)
+  can't use `current_locale.get()` to build its own confirmation toast — that still
+  holds the old locale mid-request. Found via manual Playwright QA of PR #65 on
+  2026-08-26 (switching languages showed the toast in the *old* language); fixed by
+  building the toast from the just-saved form value instead. Any future endpoint that
+  both saves `ui_locale` and returns a translated response in the same request needs
+  the same care.
 - **Adding a new UI string**: use `t("some.key")` in the template, add the key to all
   three locale JSON files. No extraction tooling — hand-maintained.
 - **Not translated on purpose**: backend-sourced data (titles, error details, log

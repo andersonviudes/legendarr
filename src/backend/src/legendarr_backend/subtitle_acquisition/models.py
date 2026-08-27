@@ -31,8 +31,12 @@ SubtitleProviderKind = Literal[*SUBTITLE_PROVIDER_KINDS]
 # "animetosho"'s `api_key` holds an AniDB API client key, not a credential for
 # animetosho.org itself — resolving its subtitle search needs a call to the real AniDB
 # HTTP API, which requires one (see `providers/animetosho.py`).
-_API_KEY_KINDS = {"opensubtitles", "subdl", "subsource", "betaseries", "animetosho"}
-_USERNAME_PASSWORD_KINDS = {"addic7ed", "legendas_net"}
+_API_KEY_KINDS = {"subdl", "subsource", "betaseries", "animetosho"}
+# OpenSubtitles' "API key" identifies the calling *application*, not the user — it's
+# hardcoded in `providers/opensubtitles.py` rather than stored per-row, so this kind
+# authenticates with the user's own username/password (via a real `/login` call) like
+# Addic7ed/legendas.net, not the generic single-secret shape.
+_USERNAME_PASSWORD_KINDS = {"addic7ed", "legendas_net", "opensubtitles"}
 
 
 class SubtitleProviderConfig(SQLModel, table=True):
