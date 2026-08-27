@@ -34,9 +34,8 @@ PROVIDER_CREDENTIAL_FIELDS = {
 }
 
 # Extra explanation shown under a credential field for a kind whose field isn't
-# self-explanatory from its generic label alone — currently only Anime Tosho, whose
-# "API Key" is actually an AniDB HTTP API client name (see `PROVIDER_CREDENTIAL_FIELDS`
-# above). A kind with no entry here shows no extra hint.
+# self-explanatory from its generic label alone, or (Anime Tosho's case) isn't actually
+# required — a kind with no entry here shows no extra hint.
 PROVIDER_CREDENTIAL_HINTS = {
     "animetosho": "subtitle_acquisition.animetosho_api_key_hint",
 }

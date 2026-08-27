@@ -14,7 +14,9 @@ from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
         ("yify_subtitles", None, None, None, True),
         ("tvsubtitles", None, None, None, True),
         ("napiprojekt", None, None, None, True),
-        ("animetosho", None, None, None, False),
+        # animetosho's api_key is optional, not required — see models.py's
+        # `_API_KEY_KINDS` comment.
+        ("animetosho", None, None, None, True),
         ("animetosho", "key", None, None, True),
     ],
 )
@@ -31,6 +33,11 @@ def test_has_credentials(kind, api_key, username, password, expected):
     [
         ("napiprojekt", None, False, False),  # no credential, but never tested successfully
         ("napiprojekt", None, True, True),
+        # Same shape as napiprojekt: animetosho's api_key is optional, so it's still
+        # gated on a successful "Test connection" rather than the credential alone.
+        ("animetosho", None, False, False),
+        ("animetosho", None, True, True),
+        ("animetosho", "key", False, False),
     ],
 )
 def test_is_configured(kind, api_key, connection_verified, expected):

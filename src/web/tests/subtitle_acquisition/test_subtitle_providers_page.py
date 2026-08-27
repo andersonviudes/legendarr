@@ -166,9 +166,8 @@ def test_edit_form_shows_credential_fields_for_kind_that_needs_them(stub_backend
 def test_edit_form_shows_credential_fields_for_animetosho(stub_backend_client):
     """Anime Tosho's `api_key` holds an AniDB API client key, not its own credential —
     still shown as the generic "API Key" field, same as every other API-key kind, but
-    with an extra hint explaining what it actually is (there's no per-provider AniDB
-    credential in Bazarr's UI either — it's a global setting there, so users coming
-    from Bazarr don't expect a plain "API Key" field to mean this)."""
+    with an extra hint explaining it's optional (search falls back to a filename match
+    without it — see `providers/animetosho.py`'s `_search_by_anime_id`)."""
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:

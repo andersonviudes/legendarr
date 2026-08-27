@@ -38,7 +38,11 @@ Tosho, and BetaSeries are the opposite: none has movie content, so each is skipp
 or an unresolved episode and instead needs a real season/episode number to search — Anime
 Tosho and BetaSeries additionally require `Series.tvdb_id` to resolve their own per-episode id
 (an AniDB episode id and a BetaSeries episode id, respectively), while AnimeKalesi (Turkish
-only) resolves the episode from its own scraped season/episode listing instead. legendas.net,
+only) resolves the episode from its own scraped season/episode listing instead. Anime Tosho's
+AniDB episode id resolution only runs when its optional API Key (a free AniDB HTTP API client
+name) is set; without one, it instead lists every release for the anime and matches the target
+episode against each file's own name — less precise, but no credential needed at all.
+legendas.net,
 Subsource, and Supersubtitles all have real movie and TV content, searching by `imdb_id` for
 a movie and by
 season/episode for a series (neither means the search is skipped, same shape as
