@@ -25,6 +25,25 @@ async def list_wanted(client: httpx.AsyncClient) -> list[dict]:
     return response.json()
 
 
+async def search_media(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """Case-insensitive title search across synced movies and series, for the topbar
+    search dropdown — capped to a handful of results."""
+    needle = query.lower()
+    movies = await list_movies(client)
+    series = await list_series(client)
+    matches = [
+        {"id": movie["id"], "title": movie["title"], "type": "movie"}
+        for movie in movies
+        if needle in movie["title"].lower()
+    ]
+    matches += [
+        {"id": item["id"], "title": item["title"], "type": "series"}
+        for item in series
+        if needle in item["title"].lower()
+    ]
+    return matches[:8]
+
+
 async def get_movie(client: httpx.AsyncClient, movie_id: int) -> dict:
     response = await client.get(f"/media/movies/{movie_id}")
     response.raise_for_status()

@@ -395,7 +395,7 @@ user manually triggering a library rescan.*
 *Use case: the dashboard looks and feels finished, and a user can pick their own UI language
 from the Settings page instead of only ever seeing English.*
 
-- [ ] **Dashboard & UI** — Visual refinement pass over the base layout from 0.1.0, once every
+- [x] **Dashboard & UI** — Visual refinement pass over the base layout from 0.1.0, once every
   page from 0.2.0 onward exists to refine against (spacing, empty states, responsiveness) —
   not a from-scratch redesign.
 - [x] **Dashboard & UI** — i18n scaffolding for `legendarr_web` (extractable strings, a locale

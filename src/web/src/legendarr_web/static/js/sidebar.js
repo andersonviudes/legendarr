@@ -7,3 +7,14 @@ document.querySelectorAll(".app-nav-toggle").forEach((toggle) => {
     submenu.hidden = expanded;
   });
 });
+
+// Toggles the off-canvas sidebar on narrow viewports (see the "Narrow viewports"
+// section of styles.css).
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const sidebar = document.getElementById("app-sidebar");
+if (sidebarToggle && sidebar) {
+  sidebarToggle.addEventListener("click", () => {
+    const isOpen = sidebar.classList.toggle("is-open");
+    sidebarToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+}

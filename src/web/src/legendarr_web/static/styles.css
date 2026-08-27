@@ -26,7 +26,9 @@ svg.lucide {
   --pico-background-color: #202020;
   --pico-color: #b3b3b3;
   --pico-h1-color: #b3b3b3;
-  --pico-h2-color: #b3b3b3;
+  /* Dimmer than h1 so the two heading levels read as an actual hierarchy instead of
+     identical text at two sizes. */
+  --pico-h2-color: #8f8f8f;
   --pico-muted-color: #b3b3b3;
   --pico-muted-border-color: #9a9a9a;
   --pico-primary: #c9974f;
@@ -136,22 +138,144 @@ body {
   color: var(--pico-primary);
 }
 
-/* Topbar running-tasks indicator — hidden entirely while empty (no tasks running), see
-   base.html and system/templates/_running_tasks_indicator.html. */
-.app-topbar-tasks {
+.app-topbar-actions {
   margin-left: auto;
   margin-right: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 1rem;
+}
+
+/* === Global search (topbar) — searches synced movies/series by title, see
+   media_library/router.py::search_media and _search_results.html. === */
+.app-search {
+  position: relative;
+  width: 16rem;
+}
+
+.app-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--pico-muted-color);
+  pointer-events: none;
+}
+
+.app-search-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Pico ships its own `input:not(...)[type="search"] { padding-inline-start: ... }` and
+   `input:not(...) { height: calc(1rem * line-height + spacing-vertical * 2 + ...) }`
+   rules — plus a `background-image: var(--pico-icon-search)` on that same selector,
+   Pico's own magnifier icon rendered behind our text, duplicating `.app-search-icon`
+   below — all scoped more tightly than a bare class, silently overriding the padding
+   and height and adding a second icon. The `.app-search input.` prefix matches (or
+   beats) Pico's specificity so ours wins (it's also loaded after pico.min.css, so ties
+   go to us too); `height: auto` drops Pico's fixed formula back to sizing from our own
+   padding + line-height, and `background-image: none` removes Pico's icon. */
+.app-search input.app-search-input {
+  width: 100%;
+  margin: 0;
+  height: auto;
+  padding: 0.4rem 0.75rem 0.4rem 2.25rem;
+  border: 1px solid var(--pico-form-element-border-color);
+  border-radius: 999px;
+  background-color: var(--pico-form-element-background-color);
+  background-image: none;
+  font-size: var(--lg-font-xs);
+}
+
+.app-search-results {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-card-background-color);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.app-search-result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.app-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  color: var(--pico-color);
+  text-decoration: none;
+  font-size: var(--lg-font-xs);
+}
+
+.app-search-result-item:hover {
+  background-color: var(--lg-neutral-hover-background-color);
   color: var(--pico-primary);
 }
 
-.app-topbar-tasks:empty {
+.app-search-result-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-search-result-type {
+  color: var(--pico-muted-color);
+}
+
+.app-search-empty {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+}
+
+/* === Notifications bell (topbar) — reuses the same running-tasks data as
+   system/templates/_running_tasks_indicator.html and _running_tasks_list.html, just
+   surfaced as a dropdown instead of a plain link away to the Tasks page. === */
+.app-notifications {
+  position: relative;
+}
+
+.app-notifications-badge {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background-color: var(--lg-sidebar-background-color);
+  color: var(--pico-primary);
+  font-size: 0.675rem;
+  font-weight: 700;
+}
+
+.app-notifications-badge:empty {
   display: none;
 }
 
-.app-topbar-tasks svg {
+.app-notifications-badge svg {
   width: 1.1em;
   height: 1.1em;
   animation: legendarr-spin 1s linear infinite;
@@ -163,13 +287,48 @@ body {
   }
 }
 
+.app-notifications-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 22rem;
+  margin: 0;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-card-background-color);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.app-notifications-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+  color: var(--pico-color);
+  text-decoration: none;
+  font-size: var(--lg-font-sm);
+  font-weight: 600;
+}
+
+.app-notifications-panel-header:hover {
+  color: var(--pico-primary);
+}
+
+.app-notifications-panel .empty-state {
+  margin: 0;
+  padding: 0.9rem;
+}
+
 .app-sidebar nav {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  padding: 1.25rem 0.75rem 0.75rem;
+  padding: 0.75rem 0.5rem 0.5rem;
 }
 
 .app-nav-toggle {
@@ -211,7 +370,7 @@ body {
 }
 
 .app-sidebar ul + ul {
-  margin-top: 0.6rem;
+  margin-top: 0.4rem;
 }
 
 /* Beats Pico's nav ul:first-of-type/:last-of-type negative side margins (meant to flush
@@ -232,7 +391,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin: 0;
-  padding: 0.5rem 0.9rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 0.6rem;
   color: var(--pico-muted-color);
   text-decoration: none;
@@ -281,7 +440,7 @@ body {
 .app-main {
   flex: 1;
   min-width: 0;
-  padding: 3rem 3.5rem;
+  padding: 1.25rem 1.5rem;
 }
 
 /* === Stat cards: dashboard === */
@@ -316,10 +475,13 @@ body {
   color: var(--pico-muted-color);
 }
 
-/* === Poster grid: media library, Sonarr/Radarr-style === */
+/* === Poster grid: media library, Sonarr/Radarr-style ===
+   auto-fit (not auto-fill) collapses the empty tracks a wide viewport would otherwise
+   reserve for a handful of items, and the minmax upper bound keeps cards from stretching
+   to fill that reclaimed space instead of just leaving it as margin. */
 .poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 12.5rem));
   gap: 1.75rem;
   margin-block: 1.5rem 2.5rem;
 }
@@ -432,6 +594,13 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* Matches the "·"-separated fact line used in .poster-meta instead of relying on the
+   flex gap alone to imply grouping. Scoped to direct children only — otherwise this
+   would also match the individual .lang-pill spans nested inside a lang_pill_group(). */
+.media-detail-facts > span + span::before {
+  content: "· ";
+}
+
 .season-group {
   margin-bottom: 0.75rem;
 }
@@ -443,8 +612,16 @@ body {
 /* Fixed layout so the 4 columns don't auto-size proportionally to their preferred content
    width — that gave "Episode" (2-digit numbers, an 8-char header) as much room as Title.
    Only Title is left unsized, so it absorbs whatever the other three don't use. */
+.episode-table-scroll {
+  overflow-x: auto;
+}
+
+/* min-width keeps every column (Title included) at a readable size instead of table-layout:
+   fixed squeezing them all down to fit a narrow viewport — .episode-table-scroll takes the
+   overflow as a horizontal scroll instead. */
 .episode-table {
   table-layout: fixed;
+  min-width: 44rem;
 }
 
 .episode-table-col-episode {
@@ -617,6 +794,11 @@ body {
 
 .service-card-name {
   margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 600;
   color: var(--pico-color);
 }
@@ -681,6 +863,12 @@ body {
   align-items: center;
   gap: 0.35rem;
   margin: 0;
+}
+
+.lang-pill-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .lang-pill {
@@ -764,10 +952,18 @@ body {
   --pico-form-element-spacing-horizontal: 0.75rem;
 }
 
-.service-form legend,
 .service-form label,
 .service-form input {
   font-size: var(--lg-font-xs);
+}
+
+/* Pico's default legend inherits body color/size, so without this it reads as just
+   another label instead of a fieldset heading. */
+.service-form legend {
+  font-size: var(--lg-font-md);
+  font-weight: 700;
+  color: var(--pico-color);
+  margin-bottom: 0.75rem;
 }
 
 .service-form .field-hint {
@@ -921,8 +1117,8 @@ body {
 .page-toolbar {
   display: flex;
   gap: 0.5rem;
-  margin: 0 0 1.75rem;
-  padding-bottom: 1.25rem;
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--pico-card-border-color);
 }
 
@@ -938,7 +1134,7 @@ button.page-toolbar-btn {
   gap: 0.2rem;
   width: auto;
   min-width: 4rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 0.5rem;
   color: var(--pico-muted-color);
   font-size: var(--lg-font-xs);
@@ -950,8 +1146,8 @@ button.page-toolbar-btn {
 }
 
 .page-toolbar-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .page-toolbar-btn:hover {
@@ -1144,21 +1340,63 @@ button.outline.contrast:is(:hover, :focus) {
 }
 
 /* === Narrow viewports === */
+/* Hidden above ~768px — .app-sidebar is always visible there, so the toggle that
+   shows/hides it on mobile (static/js/sidebar.js) would otherwise be a dead button. */
+.app-sidebar-toggle {
+  display: none;
+}
+
 /* Below ~768px the fixed 15rem sidebar squeezes the content column, so stack the shell:
-   the sidebar drops under the topbar as a full-width nav block and the main padding tightens. */
+   the sidebar becomes an off-canvas panel toggled by .app-sidebar-toggle, and the main
+   padding tightens. */
 @media (max-width: 48rem) {
   .app-shell {
     flex-direction: column;
   }
 
-  .app-sidebar,
-  .app-brand {
+  .app-sidebar {
     flex-basis: auto;
     width: 100%;
+    display: none;
+  }
+
+  .app-sidebar.is-open {
+    display: flex;
+  }
+
+  .app-sidebar-toggle {
+    display: inline-flex;
+  }
+
+  /* Shares the topbar row with the toggle button, the search box and the
+     notifications bell instead of claiming the full width that used to work only
+     because it was the row's sole child. The wordmark is dropped so the icon-only
+     mark plus those fixed-width siblings fit a phone-width row without overflowing. */
+  .app-brand {
+    flex: 1;
+    padding: 0 0.75rem;
+  }
+
+  .app-brand-label {
+    display: none;
   }
 
   .app-main {
     padding: 1.5rem 1.25rem;
+  }
+
+  .app-topbar-actions {
+    margin-right: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .app-search {
+    width: 6rem;
+  }
+
+  .app-notifications-panel {
+    width: 16rem;
+    right: -0.5rem;
   }
 }
 

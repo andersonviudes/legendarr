@@ -18,20 +18,62 @@
   </head>
   <body>
     <header class="app-topbar">
+      <button
+        type="button"
+        id="sidebar-toggle"
+        class="app-icon-btn app-sidebar-toggle"
+        aria-label="{{ t('a11y.toggle_navigation') }}"
+        aria-expanded="false"
+        aria-controls="app-sidebar"
+      >{{ icon("menu") }}</button>
       <div class="app-brand">
-        <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span>legendarr</span></a>
+        <a href="/"><span class="app-brand-mark">{{ icon("home") }}</span><span class="app-brand-label">legendarr</span></a>
       </div>
-      <a
-        href="/system/tasks/"
-        class="app-topbar-tasks"
-        aria-label="{{ t('a11y.running_tasks') }}"
-        hx-get="/system/tasks/count"
-        hx-trigger="load, every 3s, refresh-tasks"
-        hx-swap="innerHTML"
-      >{% include "_running_tasks_indicator.html" %}</a>
+      <div class="app-topbar-actions">
+        <div class="app-search">
+          <span class="app-search-icon">{{ icon("search") }}</span>
+          <input
+            type="search"
+            id="global-search-input"
+            name="q"
+            class="app-search-input"
+            placeholder="{{ t('common.search') }}"
+            autocomplete="off"
+            hx-get="/media/search"
+            hx-trigger="input changed delay:300ms, search"
+            hx-target="#global-search-results"
+            hx-swap="innerHTML"
+          >
+          <div id="global-search-results" class="app-search-results" hidden></div>
+        </div>
+        <div class="app-notifications">
+          <button
+            type="button"
+            id="notifications-toggle"
+            class="app-icon-btn"
+            aria-label="{{ t('a11y.notifications') }}"
+            aria-expanded="false"
+            aria-controls="notifications-panel"
+          >{{ icon("bell") }}<span
+              class="app-notifications-badge"
+              hx-get="/system/tasks/count"
+              hx-trigger="load, every 3s, refresh-tasks"
+              hx-swap="innerHTML"
+            ></span></button>
+          <div id="notifications-panel" class="app-notifications-panel" hidden>
+            <a href="/system/tasks/" class="app-notifications-panel-header">{{ icon("activity") }}<span>{{ t("nav.system.tasks") }}</span></a>
+            <div
+              id="notifications-panel-body"
+              hx-get="/system/tasks/running"
+              hx-trigger="load, every 3s, refresh-tasks"
+              hx-swap="innerHTML"
+            ></div>
+          </div>
+        </div>
+      </div>
     </header>
     <div class="app-shell">
-      <aside class="app-sidebar">
+      <aside class="app-sidebar" id="app-sidebar">
         <nav aria-label="Main">
           <ul>
             <li>
@@ -208,7 +250,7 @@
               <a
                 href="/system/tasks/"
                 {% if request.url.path.startswith("/system/tasks") %}aria-current="page"{% endif %}
-              >{{ icon("loader-circle") }}<span>{{ t("nav.system.tasks") }}</span></a>
+              >{{ icon("activity") }}<span>{{ t("nav.system.tasks") }}</span></a>
             </li>
             <li>
               <a
@@ -243,6 +285,7 @@
     <script src="/static/js/theme.js" defer></script>
     <script src="/static/js/toast.js" defer></script>
     <script src="/static/js/running-tasks.js" defer></script>
+    <script src="/static/js/topbar.js" defer></script>
     {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
     {% block scripts %}{% endblock %}
   </body>
