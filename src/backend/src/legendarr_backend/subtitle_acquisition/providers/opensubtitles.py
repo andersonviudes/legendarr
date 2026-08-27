@@ -9,7 +9,53 @@ from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearch
 # this is now the module that does the real, ongoing calling.
 OPENSUBTITLES_USER_AGENT = "legendarr (+https://andersonviudes.github.io/legendarr)"
 
-_BASE_URL = "https://api.opensubtitles.com"
+OPENSUBTITLES_BASE_URL = "https://api.opensubtitles.com"
+
+# legendarr's own OpenSubtitles.com API consumer key, registered at
+# https://www.opensubtitles.com/en/consumers under the legendarr application. This
+# identifies legendarr as the calling application — the same app-level credential Bazarr
+# hardcodes for every one of its own users (`bazarr/app/get_providers.py:261`,
+# `'s38zmzVlW7IlYruWi7mHwDYl2SfMQoC1'`). It's never the end user's own secret, which is
+# why it's a module constant here instead of a per-`SubtitleProviderConfig` field like
+# the other API-key kinds — the user only ever provides their own OpenSubtitles.com
+# username/password (see `SubtitleProviderConfig._USERNAME_PASSWORD_KINDS`).
+# TODO: replace with legendarr's real registered key once one exists — this placeholder
+# 401s.
+_APP_API_KEY = "REPLACE_WITH_LEGENDARR_OPENSUBTITLES_API_KEY"
+
+
+def opensubtitles_client(
+    base_url: str = OPENSUBTITLES_BASE_URL, *, token: str | None = None
+) -> ProviderHttpClient:
+    """Build a `ProviderHttpClient` carrying the header(s) every OpenSubtitles.com
+    request needs — shared by this module's own login step and
+    `connection_tests._test_opensubtitles`. `Api-Key` (see `_APP_API_KEY` above) is
+    always sent; `Authorization` is only added once a user's logged in
+    (`opensubtitles_login`)."""
+    headers = {"Api-Key": _APP_API_KEY, "User-Agent": OPENSUBTITLES_USER_AGENT}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return ProviderHttpClient("OpenSubtitles", base_url, headers=headers)
+
+
+def opensubtitles_login(
+    client: ProviderHttpClient, username: str, password: str
+) -> tuple[str, str | None]:
+    """POST `/api/v1/login` (username + password) -> `(token, base_url)`. Raises instead
+    of returning an empty token, so a `search()`/`download()` caller's broad exception
+    handling treats a login failure as "this provider isn't usable right now" and moves
+    on to the next one. Ported from Bazarr's own `OpenSubtitlesComProvider.login`
+    (`opensubtitlescom.py:214-243`, the confirmed-working reference) — `base_url` comes
+    back non-default (`vip-...`) for a VIP account, which `_authenticated_client` uses to
+    route that account's calls to OpenSubtitles' own dedicated VIP host. Shared with
+    `connection_tests._test_opensubtitles`, which is the same flow with no real request
+    to follow it.
+    """
+    body = client.post_json("/api/v1/login", {"username": username, "password": password})
+    token = body.get("token") if isinstance(body, dict) else None
+    if not token:
+        raise ProviderClientError("OpenSubtitles login succeeded but no token was returned")
+    return token, body.get("base_url") if isinstance(body, dict) else None
 
 
 class OpenSubtitlesProvider:
@@ -17,15 +63,24 @@ class OpenSubtitlesProvider:
     `SubtitleProviderConfig`. `include_ai_translated`/`include_machine_translated` map
     directly onto the API's own `ai_translated`/`machine_translated` filters — the first
     fields on that config this provider actually reads.
+
+    Like `LegendasNetProvider`, this holds one lazily-created, logged-in
+    `ProviderHttpClient` for the provider instance's lifetime — `close()` releases it.
+    Unlike legendas.net (whose download host differs from its API host, so auth travels
+    per-call), OpenSubtitles' `Authorization` is baked into the client at construction —
+    every call this provider makes, including the download link fetch, goes through the
+    one client.
     """
 
     name = "opensubtitles"
 
     def __init__(self, config: SubtitleProviderConfig) -> None:
-        self._api_key = config.api_key
+        self._username = config.username
+        self._password = config.password
         self._include_ai_translated = config.include_ai_translated
         self._include_machine_translated = config.include_machine_translated
         self._use_hash = config.use_hash
+        self._client: ProviderHttpClient | None = None
 
     def search(
         self,
@@ -54,11 +109,8 @@ class OpenSubtitlesProvider:
             params["imdb_id"] = imdb_id.removeprefix("tt")
         if moviehash and self._use_hash:
             params["moviehash"] = moviehash
-        client = self._client()
-        try:
-            response = client.get_json(f"/api/v1/subtitles?{urlencode(params)}")
-        finally:
-            client.close()
+        client = self._authenticated_client()
+        response = client.get_json(f"/api/v1/subtitles?{urlencode(params)}")
         return [
             SubtitleSearchResult(
                 release_name=attributes.get("release") or title,
@@ -71,24 +123,32 @@ class OpenSubtitlesProvider:
         ]
 
     def download(self, result: SubtitleSearchResult) -> str:
-        client = self._client()
-        try:
-            download_info = client.post_json(
-                "/api/v1/download", {"file_id": int(result.download_id)}
+        client = self._authenticated_client()
+        download_info = client.post_json("/api/v1/download", {"file_id": int(result.download_id)})
+        response = client.request("GET", download_info["link"], follow_redirects=True)
+        if not response.is_success:
+            raise ProviderClientError(
+                f"OpenSubtitles download link {download_info['link']} failed with "
+                f"{response.status_code}"
             )
-            response = client.request("GET", download_info["link"], follow_redirects=True)
-            if not response.is_success:
-                raise ProviderClientError(
-                    f"OpenSubtitles download link {download_info['link']} failed with "
-                    f"{response.status_code}"
-                )
-        finally:
-            client.close()
         return response.text
 
-    def _client(self) -> ProviderHttpClient:
-        return ProviderHttpClient(
-            "OpenSubtitles",
-            _BASE_URL,
-            headers={"Api-Key": self._api_key or "", "User-Agent": OPENSUBTITLES_USER_AGENT},
-        )
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+
+    def _authenticated_client(self) -> ProviderHttpClient:
+        if self._client is None:
+            # Only ever constructed via `resolve_subtitle_provider_chain`, which already
+            # filtered to configs with `has_credentials` true for this kind — both
+            # fields are guaranteed set here.
+            assert self._username is not None
+            assert self._password is not None
+            client = opensubtitles_client()
+            token, base_url = opensubtitles_login(client, self._username, self._password)
+            if base_url and base_url.startswith("vip"):
+                client.close()
+                client = opensubtitles_client(f"https://{base_url}", token=token)
+            self._client = client
+        return self._client

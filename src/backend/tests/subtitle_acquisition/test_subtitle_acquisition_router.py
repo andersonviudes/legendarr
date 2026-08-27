@@ -124,7 +124,8 @@ def test_is_configured_reflects_whether_the_required_credential_is_set(isolated_
         assert napiprojekt["is_configured"] is False  # needs a successful "Test connection" first
 
         response = client.patch(
-            f"/subtitle-providers/{opensubtitles_id}", json={"api_key": "key-1"}
+            f"/subtitle-providers/{opensubtitles_id}",
+            json={"username": "user", "password": "pass"},
         )
 
         assert response.json()["is_configured"] is True

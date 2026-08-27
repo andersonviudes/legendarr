@@ -6,7 +6,8 @@ from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
     "kind,api_key,username,password,expected",
     [
         ("opensubtitles", None, None, None, False),
-        ("opensubtitles", "key", None, None, True),
+        ("opensubtitles", None, "user", None, False),
+        ("opensubtitles", None, "user", "pass", True),
         ("addic7ed", None, None, None, False),
         ("addic7ed", None, "user", None, False),
         ("addic7ed", None, "user", "pass", True),
@@ -28,9 +29,6 @@ def test_has_credentials(kind, api_key, username, password, expected):
 @pytest.mark.parametrize(
     "kind,api_key,connection_verified,expected",
     [
-        ("opensubtitles", None, False, False),
-        ("opensubtitles", "key", False, True),  # credentialed kinds don't need a test
-        ("opensubtitles", "key", True, True),
         ("napiprojekt", None, False, False),  # no credential, but never tested successfully
         ("napiprojekt", None, True, True),
     ],
@@ -38,6 +36,27 @@ def test_has_credentials(kind, api_key, username, password, expected):
 def test_is_configured(kind, api_key, connection_verified, expected):
     provider = SubtitleProviderConfig(
         kind=kind, api_key=api_key, connection_verified=connection_verified
+    )
+
+    assert provider.is_configured is expected
+
+
+@pytest.mark.parametrize(
+    "username,password,connection_verified,expected",
+    [
+        (None, None, False, False),
+        ("user", "pass", False, True),  # credentialed kinds don't need a test
+        ("user", "pass", True, True),
+    ],
+)
+def test_is_configured_for_a_username_password_kind(
+    username, password, connection_verified, expected
+):
+    provider = SubtitleProviderConfig(
+        kind="opensubtitles",
+        username=username,
+        password=password,
+        connection_verified=connection_verified,
     )
 
     assert provider.is_configured is expected
