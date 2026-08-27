@@ -1,24 +1,8 @@
 {% extends "base.html" %}
-{% from "macros.html" import service_section, field %}
+{% from "macros.html" import service_section %}
 {% block title %}legendarr · {{ t("nav.settings.arr_services") }}{% endblock %}
 {% block content %}
-<div class="page-toolbar">
-  <button type="submit" form="legendarr-url-form" class="page-toolbar-btn page-toolbar-btn--primary">
-    {{ icon("save") }}
-    <span>{{ t("common.save") }}</span>
-  </button>
-</div>
-
 <h1>{{ icon("server") }} {{ t("nav.settings.arr_services") }}</h1>
-
-<section>
-  <h2>{{ icon("globe") }} {{ t("arr_services.legendarr_url_heading") }}</h2>
-  <form id="legendarr-url-form" class="service-form" method="post" action="/settings/arr-services/webhook-url">
-    <p class="field-hint">{{ t("arr_services.legendarr_url_hint") }}</p>
-    {{ field("public_url", t("arr_services.legendarr_url_label"), placeholder="https://legendarr.example.com",
-             value=public_url, autocomplete="off") }}
-  </form>
-</section>
 
 {{ service_section("Radarr", "clapperboard", "radarr", radarr_services, public_url) }}
 {{ service_section("Sonarr", "tv", "sonarr", sonarr_services, public_url) }}

@@ -141,10 +141,15 @@ async def show_general_settings(
     request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
 ):
     general_settings = await service.get_general_settings(client)
+    webhook_settings = await service.get_webhook_settings(client)
     return templates.TemplateResponse(
         request,
         "general.html",
-        {"settings": general_settings, "locales": SUPPORTED_UI_LOCALES},
+        {
+            "settings": general_settings,
+            "locales": SUPPORTED_UI_LOCALES,
+            "public_url": webhook_settings["public_url"],
+        },
     )
 
 
@@ -152,6 +157,7 @@ async def show_general_settings(
 async def save_general_settings(
     request: Request,
     ui_locale: str = Form(...),
+    public_url: str = Form(""),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
     data = {"ui_locale": ui_locale}
@@ -166,10 +172,12 @@ async def save_general_settings(
             {
                 "settings": data,
                 "locales": SUPPORTED_UI_LOCALES,
+                "public_url": public_url,
                 "error": error_detail(exc),
             },
             status_code=exc.response.status_code,
         )
+    await service.update_webhook_settings(client, {"public_url": public_url})
     # Use the newly-saved locale, not current_locale.get() — this is the one page where
     # the two can differ within the same request (resolve_locale ran before the save).
     toast = urlencode(

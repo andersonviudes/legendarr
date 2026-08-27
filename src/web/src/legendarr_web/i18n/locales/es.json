@@ -94,13 +94,15 @@
   "providers.tab_translation": "Traducción",
 
   "arr_services.webhook_label": "Webhook:",
-  "arr_services.webhook_hint": "configura tu URL de Legendarr arriba para ver el enlace completo.",
+  "arr_services.webhook_hint": "configura tu URL de Legendarr en Configuración general para ver el enlace completo.",
   "arr_services.empty_state": "Aún no hay ningún servidor {label} configurado.",
   "arr_services.add_server": "Agregar servidor {label}",
 
   "settings.general.title": "General",
   "settings.general.locale_label": "Idioma de visualización",
   "settings.general.locale_hint": "Idioma usado en todo el panel de legendarr — no afecta los idiomas del contenido de los subtítulos, que se configuran por perfil de idioma.",
+  "settings.general.legendarr_url_label": "URL de Legendarr",
+  "settings.general.legendarr_url_hint": "La dirección donde Radarr/Sonarr pueden alcanzar esta instancia de legendarr — se usa para construir la URL del webhook que se muestra en la tarjeta de cada conexión en Arr Services, para que las importaciones activen la traducción de inmediato en lugar de esperar el próximo ciclo programado.",
 
   "dashboard.subtitle": "Lo que legendarr está haciendo ahora mismo.",
   "dashboard.stat.profiles": "Perfiles de idioma configurados",
@@ -155,9 +157,6 @@
   "language_profiles.must_contain_placeholder": "p. ej. PROPER, REPACK",
   "language_profiles.must_not_contain_placeholder": "p. ej. CAM, TS",
 
-  "arr_services.legendarr_url_heading": "URL de Legendarr",
-  "arr_services.legendarr_url_hint": "La dirección donde Radarr/Sonarr pueden alcanzar esta instancia de legendarr — se usa para construir la URL del webhook que se muestra abajo en cada conexión, para que las importaciones activen la traducción de inmediato en lugar de esperar el próximo ciclo programado.",
-  "arr_services.legendarr_url_label": "URL de Legendarr",
   "arr_services.edit_server_title": "Editar servidor {type}",
   "arr_services.add_server_title": "Agregar servidor {type}",
   "arr_services.address_label": "Dirección",
@@ -279,8 +278,6 @@
   "settings.tasks.saved_toast": "Configuración de tareas guardada.",
   "settings.auth.saved_toast": "Configuración de autenticación guardada.",
   "settings.general.saved_toast": "Configuración general guardada.",
-
-  "arr_services.url_saved_toast": "URL de Legendarr guardada.",
 
   "language_profiles.added_toast": "Perfil de idioma agregado.",
   "language_profiles.updated_toast": "Perfil de idioma actualizado."

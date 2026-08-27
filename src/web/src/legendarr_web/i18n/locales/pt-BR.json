@@ -94,13 +94,15 @@
   "providers.tab_translation": "Tradução",
 
   "arr_services.webhook_label": "Webhook:",
-  "arr_services.webhook_hint": "defina sua URL do Legendarr acima para ver o link completo.",
+  "arr_services.webhook_hint": "defina sua URL do Legendarr em Configurações gerais para ver o link completo.",
   "arr_services.empty_state": "Nenhum servidor {label} configurado ainda.",
   "arr_services.add_server": "Adicionar servidor {label}",
 
   "settings.general.title": "Geral",
   "settings.general.locale_label": "Idioma de exibição",
   "settings.general.locale_hint": "Idioma usado em todo o painel do legendarr — não afeta os idiomas do conteúdo das legendas, que são definidos por perfil de idioma.",
+  "settings.general.legendarr_url_label": "URL do Legendarr",
+  "settings.general.legendarr_url_hint": "O endereço pelo qual o Radarr/Sonarr alcançam esta instância do legendarr — usado para montar a URL do webhook mostrada no card de cada conexão em Arr Services, para que importações disparem a tradução imediatamente em vez de esperar a próxima execução agendada.",
 
   "dashboard.subtitle": "O que o legendarr está fazendo agora.",
   "dashboard.stat.profiles": "Perfis de idioma configurados",
@@ -155,9 +157,6 @@
   "language_profiles.must_contain_placeholder": "ex.: PROPER, REPACK",
   "language_profiles.must_not_contain_placeholder": "ex.: CAM, TS",
 
-  "arr_services.legendarr_url_heading": "URL do Legendarr",
-  "arr_services.legendarr_url_hint": "O endereço pelo qual o Radarr/Sonarr alcançam esta instância do legendarr — usado para montar a URL do webhook mostrada abaixo em cada conexão, para que importações disparem a tradução imediatamente em vez de esperar a próxima execução agendada.",
-  "arr_services.legendarr_url_label": "URL do Legendarr",
   "arr_services.edit_server_title": "Editar servidor {type}",
   "arr_services.add_server_title": "Adicionar servidor {type}",
   "arr_services.address_label": "Endereço",
@@ -279,8 +278,6 @@
   "settings.tasks.saved_toast": "Configurações de tarefas salvas.",
   "settings.auth.saved_toast": "Configurações de autenticação salvas.",
   "settings.general.saved_toast": "Configurações gerais salvas.",
-
-  "arr_services.url_saved_toast": "URL do Legendarr salva.",
 
   "language_profiles.added_toast": "Perfil de idioma adicionado.",
   "language_profiles.updated_toast": "Perfil de idioma atualizado."

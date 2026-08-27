@@ -511,27 +511,3 @@ def test_service_card_shows_relative_webhook_path_when_public_url_unset(stub_bac
     assert "set your Legendarr" in body
     assert "to see the full link" in body
     assert "data-copy" not in body
-
-
-def test_save_webhook_url_redirects_with_success_toast(stub_backend_client):
-    app = create_app()
-    saved: dict = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.method == "PUT" and request.url.path == "/settings/webhooks":
-            saved.update(json.loads(request.content))
-            return httpx.Response(200, json=saved)
-        return _default_response(request)
-
-    stub_backend_client(app, handler=handler)
-
-    with TestClient(app) as client:
-        response = client.post(
-            "/settings/arr-services/webhook-url",
-            data={"public_url": "https://legendarr.example.com"},
-        )
-
-    assert response.status_code == 200
-    assert response.request.url.path == "/settings/arr-services/"
-    assert "toast=Legendarr+URL+saved." in str(response.request.url)
-    assert saved == {"public_url": "https://legendarr.example.com"}

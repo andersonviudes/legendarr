@@ -53,9 +53,3 @@ async def get_webhook_settings(client: httpx.AsyncClient) -> dict:
     response = await client.get("/settings/webhooks")
     response.raise_for_status()
     return response.json()
-
-
-async def update_webhook_settings(client: httpx.AsyncClient, data: dict) -> dict:
-    response = await client.put("/settings/webhooks", json=data)
-    response.raise_for_status()
-    return response.json()
