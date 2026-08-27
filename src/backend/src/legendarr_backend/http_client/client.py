@@ -41,9 +41,14 @@ class ProviderHttpClient:
             if check_status:
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
+            # The response body is often the only place a provider explains *why* a
+            # request was rejected (OpenSubtitles' login 400s carry a JSON `errors`
+            # list, for one) — a bare status code alone left every "test connection"
+            # failure impossible to diagnose past 401/403's `describe_error` case.
+            detail = f": {exc.response.text[:200]}" if exc.response.text else ""
             raise ProviderClientError(
                 f"{self._provider} request to {exc.request.url} failed with "
-                f"{exc.response.status_code}"
+                f"{exc.response.status_code}{detail}"
             ) from exc
         except httpx.RequestError as exc:
             raise ProviderClientError(
