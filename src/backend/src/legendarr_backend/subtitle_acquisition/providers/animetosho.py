@@ -1,5 +1,6 @@
 import logging
 import lzma
+import re
 import time
 import xml.etree.ElementTree as ET
 from datetime import date
@@ -16,9 +17,12 @@ logger = logging.getLogger(__name__)
 # Same constants `connection_tests.py`'s "Test connection" check uses — owned here since
 # this is now the module that does the real, ongoing calling. Three different hosts:
 # the feed API this provider searches against, the storage host it downloads from, and
-# the real AniDB HTTP API it resolves an episode id through.
+# the real AniDB HTTP API it resolves an episode id through. `storage.animetosho.org`
+# (not the bare `animetosho.org/storage/...` Bazarr's own reference still uses) is
+# confirmed live as the current host — the bare-domain path now 301s there, and
+# `ProviderHttpClient.request` doesn't follow redirects by default.
 ANIMETOSHO_FEED_BASE_URL = "https://feed.animetosho.org"
-ANIMETOSHO_STORAGE_BASE_URL = "https://animetosho.org"
+ANIMETOSHO_STORAGE_BASE_URL = "https://storage.animetosho.org"
 ANIDB_API_URL = "http://api.anidb.net:9001/httpapi"
 
 # Bazarr's own default (`AniDBClient.__init__`'s `api_client_ver=1`) — one hardcoded
@@ -38,6 +42,19 @@ _EPISODES_CACHE_TTL_SECONDS = 60 * 60 * 24
 # exposes this as a user-configurable "search threshold"; legendarr doesn't have that
 # setting concept yet, so this is a fixed constant instead (YAGNI).
 _ENTRY_LIMIT = 10
+
+# Cap on how many releases the no-key `aid=` fallback pulls per anime before scanning
+# them for the target episode — confirmed live that this endpoint returns every torrent
+# for that anime with no pagination unless `limit=` is passed (Cowboy Bebop's 75
+# releases came back in one page); generous enough for a normal season, at the cost of
+# more requests for a very long-running series.
+_ANIME_SEARCH_LIMIT = 200
+
+# How many of those (potentially hundreds of) releases to actually fetch full file
+# listings for, newest first — each one is a separate `show=torrent` HTTP call, so this
+# bounds one search()'s worst-case latency independently of `_ANIME_SEARCH_LIMIT` (how
+# many release summaries are listed in the first place).
+_MAX_ENTRIES_INSPECTED = 30
 
 _XZ_MAGIC = b"\xfd7zXZ\x00"
 
@@ -81,21 +98,27 @@ _daily_quota_count = 0
 class AnimeToshoProvider:
     """Real Anime Tosho `search()`/`download()` backend, ported from Bazarr's own
     `AnimeToshoProvider` (`/home/viudes/projects/bazarr/custom_libs/subliminal_patch/
-    providers/animetosho.py`), the confirmed-working reference. Anime Tosho's own feed
-    API (`feed.animetosho.org/json`) has no text search at all, only `?eid=<AniDB
-    episode id>`, so resolving that id is most of this module:
+    providers/animetosho.py`), the confirmed-working reference, for the precise `eid=`
+    path below. Anime Tosho's own feed API (`feed.animetosho.org/json`) also has a
+    public, unauthenticated `aid=<AniDB anime id>` listing and free-text `q=` search —
+    confirmed live against the real API, since no official docs for it exist — which is
+    what makes the AniDB API client key optional rather than mandatory:
 
     1. `Series.tvdb_id`/`season`/`episode` -> `(AniDB anime id, AniDB episode number)`,
        via the same community-maintained TVDB->AniDB mapping list Bazarr's
        `bazarr/subtitles/refiners/anidb.py:AniDBClient.get_show_information` uses
-       (`_resolve_anidb_ids`).
-    2. `(AniDB anime id, AniDB episode number)` -> AniDB episode id, via a real call to
-       the AniDB HTTP API — needs a registered AniDB API client key
-       (`SubtitleProviderConfig.api_key`, this kind's only credential), and is
-       rate-limited to Bazarr's own 200-requests/day soft limit, tracked here as a
-       simple in-memory daily counter (`_daily_quota_date`/`_daily_quota_count`) rather
-       than a persistent cache.
-    3. Only then: `eid=` -> torrent entries -> per-torrent file attachments -> download.
+       (`_resolve_anidb_ids`) — free, no credential needed either way.
+    2. With an AniDB API client key configured (`SubtitleProviderConfig.api_key`):
+       `(AniDB anime id, AniDB episode number)` -> AniDB episode id, via a real call to
+       the AniDB HTTP API, rate-limited to Bazarr's own 200-requests/day soft limit,
+       tracked here as a simple in-memory daily counter
+       (`_daily_quota_date`/`_daily_quota_count`) rather than a persistent cache. Then
+       `eid=` -> torrent entries -> per-torrent file attachments -> download — exact,
+       a handful of HTTP calls for the whole episode.
+    3. Without a key (`_search_by_anime_id`): `aid=` lists every release Anime Tosho has
+       for that anime instead, and each candidate file's own name is matched against the
+       AniDB episode number locally (`_extract_episode_number`) — no AniDB call at all,
+       at the cost of a heuristic, filename-based match instead of an exact id.
 
     Series only, like `TVsubtitlesProvider` — Anime Tosho has no movie content, so a
     search missing any of `tvdb_id`/`season`/`episode` is skipped with no HTTP calls.
@@ -142,9 +165,8 @@ class AnimeToshoProvider:
             )
             return []
         language_code = _ANIMETOSHO_LANGUAGE_CODES.get(language.strip().lower())
-        if language_code is None or not self._anidb_api_key:
+        if language_code is None:
             return []
-        assert self._anidb_api_key is not None
         client = ProviderHttpClient("Anime Tosho", ANIMETOSHO_FEED_BASE_URL)
         try:
             mapping_root = _get_anime_list_mapping(client)
@@ -157,6 +179,10 @@ class AnimeToshoProvider:
                 )
                 return []
             anidb_id, anidb_episode_no = anidb_ids
+            if not self._anidb_api_key:
+                return _search_by_anime_id(
+                    client, anidb_id, anidb_episode_no, language, language_code
+                )
             episode_id = _resolve_anidb_episode_id(
                 client, self._anidb_api_key, anidb_id, anidb_episode_no
             )
@@ -175,7 +201,7 @@ class AnimeToshoProvider:
         hex_id = format(subtitle_id, "08x")
         client = ProviderHttpClient("Anime Tosho", ANIMETOSHO_STORAGE_BASE_URL)
         try:
-            response = client.request("GET", f"/storage/attach/{hex_id}/{subtitle_id}.xz")
+            response = client.request("GET", f"/attach/{hex_id}/{subtitle_id}.xz")
             if not response.is_success:
                 raise ProviderClientError(
                     f"Anime Tosho download for attachment {subtitle_id} failed with "
@@ -378,6 +404,97 @@ def _parse_subtitle_attachment(
         download_id=str(attachment_id),
         language=language,
     )
+
+
+def _fetch_feed_entries_by_anime(client: ProviderHttpClient, anidb_id: int) -> list[dict[str, Any]]:
+    """Anime Tosho's own `aid=` listing — public, unauthenticated, confirmed live
+    (`https://feed.animetosho.org/json?aid=<id>`). Unlike `eid=` it isn't scoped to one
+    episode, so every release for the whole anime comes back; `_search_by_anime_id`
+    still has to pick the right file itself."""
+    response = client.get_json(f"/json?aid={anidb_id}&limit={_ANIME_SEARCH_LIMIT}")
+    if not isinstance(response, list):
+        return []
+    complete = [entry for entry in response if entry.get("status") == "complete"]
+    complete.sort(key=lambda entry: entry.get("timestamp", 0), reverse=True)
+    return complete
+
+
+def _search_by_anime_id(
+    client: ProviderHttpClient,
+    anidb_id: int,
+    anidb_episode_no: int,
+    language: str,
+    language_code: str,
+) -> list[SubtitleSearchResult]:
+    """No-API-key fallback for `search()` — skips `_resolve_anidb_episode_id` (the only
+    step that needs a registered AniDB client key) entirely, and instead scans every
+    release Anime Tosho has for this anime, matching `anidb_episode_no` against each
+    candidate file's own name (`_extract_episode_number`) rather than an exact AniDB
+    episode id."""
+    results: list[SubtitleSearchResult] = []
+    entries = _fetch_feed_entries_by_anime(client, anidb_id)[:_MAX_ENTRIES_INSPECTED]
+    for entry in entries:
+        results.extend(
+            _search_entry_subtitles_for_episode(
+                client, entry, anidb_episode_no, language, language_code
+            )
+        )
+        if len(results) >= _ENTRY_LIMIT:
+            break
+    return results[:_ENTRY_LIMIT]
+
+
+def _search_entry_subtitles_for_episode(
+    client: ProviderHttpClient,
+    entry: dict[str, Any],
+    anidb_episode_no: int,
+    language: str,
+    language_code: str,
+) -> list[SubtitleSearchResult]:
+    """Same per-entry file/attachment fetch as `_search_entry_subtitles`, but — since
+    `aid=` doesn't scope an entry to one episode the way `eid=` does — only looks at
+    files whose own name resolves to `anidb_episode_no`, so a season-batch release only
+    contributes the one file that's actually the requested episode."""
+    entry_id = entry.get("id")
+    if entry_id is None:
+        return []
+    response = client.get_json(f"/json?show=torrent&id={entry_id}")
+    if not isinstance(response, dict):
+        return []
+    release_name = response.get("title") or entry.get("title") or "Anime Tosho"
+    return [
+        result
+        for file in response.get("files", [])
+        if _extract_episode_number(file.get("filename", "")) == anidb_episode_no
+        for attachment in file.get("attachments", [])
+        if (result := _parse_subtitle_attachment(attachment, release_name, language, language_code))
+        is not None
+    ]
+
+
+# Best-effort episode-number extraction from a torrent file's own name, only needed by
+# `_search_by_anime_id` — without an AniDB episode id there's nothing else to tell one
+# file in a multi-episode release (or full-season batch) apart from another. Tried in
+# order: the "S01E02" scheme first (unambiguous), then a bare number — the far more
+# common convention among the fansub groups Anime Tosho indexes (confirmed against real
+# releases, e.g. "Cowboy Bebop - 20 [BD ...].mkv", "Cowboy_Bebop_20_1080p_..."). The
+# bare pattern's boundaries were tuned against those same real filenames to reject
+# resolution/bitrate/hash noise ("1080p", "10bit", "[4C5F5F39]"), audio-channel counts
+# ("5.1", "7.1"), and a "(Season 1)" folder-style tag, that would otherwise misread as
+# an episode number.
+_SEASON_EPISODE_PATTERN = re.compile(r"s\d{1,2}e(\d{1,3})", re.IGNORECASE)
+_BARE_EPISODE_PATTERN = re.compile(
+    r"(?<!season )(?<![a-z\d.])(?:ep?\.?\s*)?0*([1-9]\d{0,2})(?:v\d+)?(?=[\s_\-\[\]()]|\.(?!\d)|$)",
+    re.IGNORECASE,
+)
+
+
+def _extract_episode_number(filename: str) -> int | None:
+    if (match := _SEASON_EPISODE_PATTERN.search(filename)) is not None:
+        return int(match.group(1))
+    if (match := _BARE_EPISODE_PATTERN.search(filename)) is not None:
+        return int(match.group(1))
+    return None
 
 
 def _extract_subtitle_text(content: bytes) -> str:

@@ -265,11 +265,15 @@ def test_addic7ed_reports_captcha(monkeypatch):
     assert "CAPTCHA" in message
 
 
-def test_animetosho_requires_api_key():
+def test_animetosho_is_reachability_only_without_api_key(monkeypatch):
+    """The AniDB API Client Key is optional (see `models.py`'s `_API_KEY_KINDS`
+    comment) — without one, "Test connection" falls back to just checking Anime
+    Tosho's own feed API answers, same as a no-credential provider."""
+    monkeypatch.setattr(ProviderHttpClient, "ping", lambda self, path="/": None)
+
     success, message = check_connection(_config(kind="animetosho", api_key=None))
 
-    assert success is False
-    assert "AniDB API Client Key" in message
+    assert success is True
 
 
 def test_animetosho_succeeds(monkeypatch):

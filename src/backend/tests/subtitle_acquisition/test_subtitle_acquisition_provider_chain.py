@@ -156,6 +156,18 @@ def test_resolve_subtitle_provider_chain_resolves_animetosho_when_credentialed(i
     assert isinstance(chain[0], AnimeToshoProvider)
 
 
+def test_resolve_subtitle_provider_chain_resolves_animetosho_without_api_key(in_memory_session):
+    """animetosho's api_key is optional (see `models.py`'s `_API_KEY_KINDS` comment) —
+    enabling it needs no credential at all, unlike subdl/subsource/betaseries."""
+    in_memory_session.add(SubtitleProviderConfig(kind="animetosho", enabled=True))
+    in_memory_session.commit()
+
+    chain = resolve_subtitle_provider_chain(in_memory_session)
+
+    assert len(chain) == 1
+    assert isinstance(chain[0], AnimeToshoProvider)
+
+
 def test_resolve_subtitle_provider_chain_resolves_supersubtitles_when_enabled(in_memory_session):
     in_memory_session.add(SubtitleProviderConfig(kind="supersubtitles", enabled=True))
     in_memory_session.commit()

@@ -63,10 +63,103 @@ def test_animetosho_search_returns_empty_list_for_unsupported_language():
     assert provider.search("Solo Leveling", "xx", season=1, episode=12, tvdb_id=389597) == []
 
 
-def test_animetosho_search_returns_empty_list_without_api_key():
-    provider = AnimeToshoProvider(_config(api_key=None))
+def test_animetosho_search_without_api_key_falls_back_to_anime_id_search(monkeypatch):
+    """No AniDB API client key configured: `search()` skips `_resolve_anidb_episode_id`
+    (and the AniDB HTTP API entirely — asserted below by only stubbing the mapping-list
+    host) and matches episodes off each file's own name instead
+    (`_search_by_anime_id`)."""
 
-    assert provider.search("Solo Leveling", "en", season=1, episode=12, tvdb_id=389597) == []
+    def _request(self, method, path, data=None, json=None, headers=None, follow_redirects=False):
+        if "raw.githubusercontent.com" in path:
+            return httpx.Response(200, content=_MAPPING_XML, request=httpx.Request(method, path))
+        raise AssertionError(f"AniDB API should not be called without an api_key: {path}")
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+
+    def _get_json(self, path):
+        if path == "/json?aid=17495&limit=200":
+            return [
+                {
+                    "id": 608526,
+                    "title": "[EMBER] Solo Leveling - 12",
+                    "timestamp": 1,
+                    "status": "complete",
+                }
+            ]
+        if path == "/json?show=torrent&id=608526":
+            return {
+                "title": "[EMBER] Solo Leveling - 12",
+                "files": [
+                    {
+                        "filename": "[EMBER] Solo Leveling - 12 [1080p].mkv",
+                        "attachments": [
+                            {"id": 1961547, "type": "subtitle", "info": {"lang": "eng"}},
+                            {"id": 1, "type": "other", "info": {}},
+                        ],
+                    }
+                ],
+            }
+        raise AssertionError(f"unexpected path: {path}")
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+
+    provider = AnimeToshoProvider(_config(api_key=None))
+    results = provider.search("Solo Leveling", "en", season=1, episode=12, tvdb_id=389597)
+
+    assert results == [
+        SubtitleSearchResult(
+            release_name="[EMBER] Solo Leveling - 12", download_id="1961547", language="en"
+        )
+    ]
+
+
+def test_animetosho_search_without_api_key_only_matches_the_target_episode_file(monkeypatch):
+    """A season-batch release only contributes the one file that's actually the
+    requested episode — every other file in the same entry is skipped."""
+
+    def _request(self, method, path, data=None, json=None, headers=None, follow_redirects=False):
+        if "raw.githubusercontent.com" in path:
+            return httpx.Response(200, content=_MAPPING_XML, request=httpx.Request(method, path))
+        raise AssertionError(f"AniDB API should not be called without an api_key: {path}")
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+
+    def _get_json(self, path):
+        if path == "/json?aid=17495&limit=200":
+            return [
+                {
+                    "id": 900,
+                    "title": "[Group] Solo Leveling Batch",
+                    "timestamp": 1,
+                    "status": "complete",
+                }
+            ]
+        if path == "/json?show=torrent&id=900":
+            return {
+                "title": "[Group] Solo Leveling Batch",
+                "files": [
+                    {
+                        "filename": "[Group] Solo Leveling - 11.mkv",
+                        "attachments": [{"id": 1, "type": "subtitle", "info": {"lang": "eng"}}],
+                    },
+                    {
+                        "filename": "[Group] Solo Leveling - 12.mkv",
+                        "attachments": [{"id": 2, "type": "subtitle", "info": {"lang": "eng"}}],
+                    },
+                ],
+            }
+        raise AssertionError(f"unexpected path: {path}")
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+
+    provider = AnimeToshoProvider(_config(api_key=None))
+    results = provider.search("Solo Leveling", "en", season=1, episode=12, tvdb_id=389597)
+
+    assert results == [
+        SubtitleSearchResult(
+            release_name="[Group] Solo Leveling Batch", download_id="2", language="en"
+        )
+    ]
 
 
 def test_animetosho_search_returns_empty_list_when_no_anidb_mapping(monkeypatch):

@@ -159,11 +159,15 @@ def test_edit_form_shows_credential_fields_for_kind_that_needs_them(stub_backend
     assert response.status_code == 200
     assert 'name="api_key"' in response.text
     assert "data-test-connection" in response.text
+    # Subdl's api_key needs no extra explanation — the AniDB hint is animetosho-only.
+    assert "AniDB" not in response.text
 
 
 def test_edit_form_shows_credential_fields_for_animetosho(stub_backend_client):
     """Anime Tosho's `api_key` holds an AniDB API client key, not its own credential —
-    still shown as the generic "API Key" field, same as every other API-key kind."""
+    still shown as the generic "API Key" field, same as every other API-key kind, but
+    with an extra hint explaining it's optional (search falls back to a filename match
+    without it — see `providers/animetosho.py`'s `_search_by_anime_id`)."""
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -178,6 +182,7 @@ def test_edit_form_shows_credential_fields_for_animetosho(stub_backend_client):
 
     assert response.status_code == 200
     assert 'name="api_key"' in response.text
+    assert "AniDB HTTP API client name" in response.text
 
 
 def test_edit_form_shows_credential_fields_for_opensubtitles(stub_backend_client):
