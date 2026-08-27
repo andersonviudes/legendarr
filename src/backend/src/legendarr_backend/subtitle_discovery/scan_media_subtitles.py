@@ -88,7 +88,8 @@ def scan_subtitles_for_media_file(
     added = 0
     for item in discovered:
         relative_path = (video_dir / item.source_path.name).as_posix()
-        content_hash = hashlib.sha256(item.source_path.read_bytes()).hexdigest()
+        content = item.source_path.read_bytes()
+        content_hash = hashlib.sha256(content).hexdigest()
         row = existing.pop(relative_path, None)
         if row is None:
             session.add(
@@ -100,6 +101,7 @@ def scan_subtitles_for_media_file(
                     track_index=item.track_index,
                     forced=item.forced,
                     hearing_impaired=item.hearing_impaired,
+                    size_bytes=len(content),
                     content_hash=content_hash,
                     scanned_at=now,
                 )
@@ -111,6 +113,7 @@ def scan_subtitles_for_media_file(
             row.track_index = item.track_index
             row.forced = item.forced
             row.hearing_impaired = item.hearing_impaired
+            row.size_bytes = len(content)
             # A source that changed since the last translation invalidates the stamp
             # `translate_media_file` left — an unchanged rescan (the common case) keeps it.
             if row.content_hash != content_hash:

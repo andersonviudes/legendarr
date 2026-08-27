@@ -48,7 +48,7 @@
     {% for file in movie.files %}
     <tr>
       <td>{{ file.relative_path }}</td>
-      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages) }}</td>
+      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path) }}</td>
       <td>
         <div class="file-row-actions">
           <button
@@ -82,4 +82,5 @@
 {% block scripts %}
 <script src="/static/js/subtitle-acquire.js" defer></script>
 <script src="/static/js/subtitle-pill-menu.js" defer></script>
+<script src="/static/js/subtitle-file-modal.js" defer></script>
 {% endblock %}

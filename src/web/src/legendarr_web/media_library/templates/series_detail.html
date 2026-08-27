@@ -62,7 +62,7 @@
         <td>{{ episode.title }}</td>
         <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
-          {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages) }}
+          {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path) }}
           {% else %}
           <span class="badge-empty">—</span>
           {% endif %}
@@ -107,4 +107,5 @@
 {% block scripts %}
 <script src="/static/js/subtitle-acquire.js" defer></script>
 <script src="/static/js/subtitle-pill-menu.js" defer></script>
+<script src="/static/js/subtitle-file-modal.js" defer></script>
 {% endblock %}

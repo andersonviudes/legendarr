@@ -24,7 +24,7 @@ def record_acquisition_attempt(
     `replaced_attempt_id` is set to the subtitle's most recent prior attempt (if any),
     linking an upgraded subtitle back to the one it replaced.
     """
-    previous = _latest_attempt(session, subtitle_id)
+    previous = get_latest_attempt(session, subtitle_id)
     session.add(
         AcquisitionAttempt(
             subtitle_id=subtitle_id,
@@ -57,7 +57,7 @@ def list_acquisition_attempts(session: Session, subtitle_id: int) -> list[Acquis
     )
 
 
-def _latest_attempt(session: Session, subtitle_id: int) -> AcquisitionAttempt | None:
+def get_latest_attempt(session: Session, subtitle_id: int) -> AcquisitionAttempt | None:
     return session.exec(
         select(AcquisitionAttempt)
         .where(AcquisitionAttempt.subtitle_id == subtitle_id)

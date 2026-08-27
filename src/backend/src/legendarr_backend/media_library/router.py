@@ -31,10 +31,12 @@ from legendarr_backend.media_library.schemas import (
     WantedRead,
 )
 from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.subtitle_acquisition.audit_trail import get_latest_attempt
 from legendarr_backend.subtitle_acquisition.blacklist_subtitle import blacklist_subtitle
 from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
     download_subtitle_candidate,
 )
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
     SubtitleCandidate,
     search_media_file_subtitle_candidates,
@@ -267,8 +269,23 @@ def _acquisition_result(
     subtitle_reads = []
     for row in rows:
         assert row.id is not None
+        acquired = get_acquired_subtitle(session, row.id)
+        attempt = get_latest_attempt(session, row.id)
         subtitle_reads.append(
-            SubtitleRead(id=row.id, language=row.language, origin=row.origin.value)
+            SubtitleRead(
+                id=row.id,
+                language=row.language,
+                origin=row.origin.value,
+                size_bytes=row.size_bytes,
+                provider=acquired.provider if acquired else None,
+                release_name=acquired.release_name if acquired else None,
+                score=acquired.score if acquired else None,
+                resolution_matched=attempt.resolution_matched if attempt else None,
+                source_matched=attempt.source_matched if attempt else None,
+                codec_matched=attempt.codec_matched if attempt else None,
+                release_group_matched=attempt.release_group_matched if attempt else None,
+                edition_matched=attempt.edition_matched if attempt else None,
+            )
         )
     return SubtitleAcquisitionResult(
         success=success,

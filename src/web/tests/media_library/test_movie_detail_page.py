@@ -50,7 +50,6 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "Foo.mkv" in response.text
     assert "en" in response.text
     assert "1 missing subtitles" in response.text
-    assert "/media/files/5/translate" in response.text
     assert "/media/subtitles/9/sync-timing" in response.text
     assert "/media/subtitles/9/translate" in response.text
     assert "/media/subtitles/9/blacklist" in response.text
@@ -72,9 +71,136 @@ def test_movie_detail_page_hides_blacklist_for_an_embedded_subtitle(stub_backend
         response = client.get("/media/movies/1")
 
     assert response.status_code == 200
-    assert "/media/subtitles/9/sync-timing" in response.text
+    assert "/media/subtitles/9/sync-timing" not in response.text
     assert "/media/subtitles/9/blacklist" not in response.text
     assert 'class="lang-pill lang-pill--embedded"' in response.text
+
+
+def _movie_detail_with_many_embedded_subtitles_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = [
+        {"id": 9, "language": "en", "origin": "embedded"},
+        {"id": 10, "language": "ja", "origin": "embedded"},
+        {"id": 11, "language": "fr", "origin": "embedded"},
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_collapses_embedded_subtitles_into_one_dialog(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_many_embedded_subtitles_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    # No individual pill for any of the three embedded subtitles — just the collapsed
+    # trigger pill (1) plus one row per subtitle inside the dialog (3).
+    assert response.text.count('class="lang-pill lang-pill--embedded"') == 4
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    assert 'id="subtitle-file-modal-5"' in response.text
+    for subtitle_id in (9, 10, 11):
+        assert f"/media/subtitles/{subtitle_id}/sync-timing" not in response.text
+        assert f"/media/subtitles/{subtitle_id}/translate" in response.text
+
+
+def _movie_detail_with_external_and_embedded_subtitles_handler(
+    request: httpx.Request,
+) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = [
+        {"id": 9, "language": "en", "origin": "external"},
+        {"id": 10, "language": "ja", "origin": "embedded"},
+        {"id": 11, "language": "fr", "origin": "embedded"},
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_lists_external_subtitles_in_the_same_dialog(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_external_and_embedded_subtitles_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    # The external pill opens the very same per-file dialog as the embedded one, not its
+    # own dropdown.
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    assert "data-subtitle-menu-toggle" not in response.text
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "/media/subtitles/9/blacklist" in dialog
+    assert "/media/subtitles/10/sync-timing" not in dialog
+    assert "/media/subtitles/11/sync-timing" not in dialog
+    assert "/media/subtitles/10/blacklist" not in dialog
+    assert "/media/subtitles/11/blacklist" not in dialog
+
+
+def test_movie_detail_page_shows_the_file_name_in_the_subtitles_dialog(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_embedded_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    assert "<p>Foo.mkv</p>" in response.text
+
+
+def _movie_detail_with_acquired_subtitle_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = [
+        {
+            "id": 9,
+            "language": "en",
+            "origin": "external",
+            "size_bytes": 2048,
+            "provider": "opensubtitles",
+            "release_name": "Foo.2024.1080p.WEB-DL.DDP5.1.H.264-GROUP",
+            "score": 0.94,
+            "resolution_matched": True,
+            "source_matched": True,
+            "codec_matched": False,
+            "release_group_matched": None,
+            "edition_matched": True,
+        }
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_renders_provider_release_match_score_and_size(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_acquired_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    assert "opensubtitles" in response.text
+    assert "Foo.2024.1080p.WEB-DL.DDP5.1.H.264-GROUP" in response.text
+    assert "94%" in response.text
+    assert "2.0 kB" in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--yes"' in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--no"' in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--na"' in response.text
+
+
+def test_movie_detail_page_hides_provider_columns_without_acquisition_data(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "subtitle-match-badge" not in dialog
+    assert "0 Bytes" in dialog
 
 
 def _movie_detail_with_missing_language_handler(request: httpx.Request) -> httpx.Response:

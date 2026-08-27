@@ -28,3 +28,7 @@ Exception: `directory-browser.js` wires the shared directory-picker `<dialog>` â
 opened only from `arr_service_form.html`, but the widget isn't tied to that page, so any form
 that needs a filesystem-path picker can reuse the same dialog markup and script. It's named
 after the widget rather than a page for that reason.
+
+Exception: `subtitle-file-modal.js` wires the per-file subtitles `<dialog>`
+(`subtitle_pill_list()` in `macros.html`, loaded from `movie_detail.html` and
+`series_detail.html`) â€” same shared-widget reasoning as `directory-browser.js`.

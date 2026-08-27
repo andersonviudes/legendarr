@@ -71,7 +71,6 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "Season 1" in response.text
     assert "Pilot" in response.text
     assert "pt-BR" in response.text
-    assert response.text.count("/media/files/5/translate") == 1
     assert "/media/subtitles/12/sync-timing" in response.text
     assert "/media/subtitles/12/translate" in response.text
     assert "TBA" in response.text
@@ -95,6 +94,71 @@ def test_series_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backe
     assert response.status_code == 200
     assert 'class="lang-pill lang-pill--missing"' in response.text
     assert "fr" in response.text
+
+
+def _series_detail_with_many_embedded_subtitles_handler(request: httpx.Request) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][0]["media_file"]["subtitles"] = [
+        {"id": 21, "language": "en", "origin": "embedded"},
+        {"id": 22, "language": "ja", "origin": "embedded"},
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_collapses_embedded_subtitles_into_one_dialog(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_many_embedded_subtitles_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    # Trigger pill (1) plus one row per embedded subtitle inside the dialog (2).
+    assert response.text.count('class="lang-pill lang-pill--embedded"') == 3
+    assert 'id="subtitle-file-modal-5"' in response.text
+    assert "/media/subtitles/21/sync-timing" not in response.text
+    assert "/media/subtitles/22/sync-timing" not in response.text
+    assert "<p>Season 01/Bar.S01E01.mkv</p>" in response.text
+
+
+def _series_detail_with_acquired_subtitle_handler(request: httpx.Request) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][0]["media_file"]["subtitles"] = [
+        {
+            "id": 12,
+            "language": "pt-BR",
+            "origin": "external",
+            "size_bytes": 2048,
+            "provider": "legendas_net",
+            "release_name": "Bar.S01E01.1080p.WEB-DL-GROUP",
+            "score": 0.87,
+            "resolution_matched": True,
+            "source_matched": False,
+            "codec_matched": None,
+            "release_group_matched": True,
+            "edition_matched": None,
+        }
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_renders_provider_release_match_score_and_size(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_acquired_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    assert "legendas_net" in response.text
+    assert "Bar.S01E01.1080p.WEB-DL-GROUP" in response.text
+    assert "87%" in response.text
+    assert "2.0 kB" in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--yes"' in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--no"' in response.text
+    assert 'class="subtitle-match-badge subtitle-match-badge--na"' in response.text
 
 
 def test_series_detail_page_shows_unavailable_message_when_sonarr_unreachable(
