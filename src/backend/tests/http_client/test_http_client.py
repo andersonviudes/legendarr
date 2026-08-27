@@ -69,6 +69,16 @@ def test_post_json_wraps_http_status_errors():
         client.post_json("/login", {"username": "a"})
 
 
+def test_post_json_wraps_http_status_errors_includes_response_body():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, json={"errors": ["Invalid parameters"]})
+
+    client = _client_with_transport(handler)
+
+    with pytest.raises(ProviderClientError, match="Invalid parameters"):
+        client.post_json("/login", {"username": "a"})
+
+
 def test_post_json_wraps_request_errors():
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused", request=request)
