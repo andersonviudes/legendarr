@@ -182,9 +182,13 @@ def _test_napiprojekt(config: SubtitleProviderConfig) -> ConnectionTestResult:
 
 
 def _test_animetosho(config: SubtitleProviderConfig) -> ConnectionTestResult:
-    if (error := _require(config.api_key, "An AniDB API Client Key")) is not None:
-        return False, error
-    assert config.api_key is not None
+    # The AniDB API Client Key is optional (see `models.py`'s `_API_KEY_KINDS` comment)
+    # — without one, "Test connection" only proves Anime Tosho's own feed API answers,
+    # same as `_reachability_only`. With one, it's still worth validating for real
+    # against AniDB itself, since a wrong key silently degrades search to the same
+    # filename-matching fallback as having none at all.
+    if not config.api_key:
+        return _reachability_only("Anime Tosho", ANIMETOSHO_FEED_BASE_URL)
     # Same real AniDB HTTP API `providers/animetosho.py`'s `_get_anidb_episodes` calls,
     # confirmed against Bazarr's own working `AniDBClient.get_episodes` (see that
     # module's docstring) — a fixed, long-registered anime id (AniDB has no dedicated

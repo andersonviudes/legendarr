@@ -26,12 +26,15 @@ SUBTITLE_PROVIDER_KINDS = (
 SubtitleProviderKind = Literal[*SUBTITLE_PROVIDER_KINDS]
 
 # Which credential(s) each kind needs to be usable — mirrors the `_require()` checks in
-# `connection_tests.py`. A kind in neither set needs no credential at all, so it's always
-# considered configured.
-# "animetosho"'s `api_key` holds an AniDB API client key, not a credential for
-# animetosho.org itself — resolving its subtitle search needs a call to the real AniDB
-# HTTP API, which requires one (see `providers/animetosho.py`).
-_API_KEY_KINDS = {"subdl", "subsource", "betaseries", "animetosho"}
+# `connection_tests.py`. A kind in neither set needs no *required* credential, so it's
+# always considered configured (once a successful "Test connection" confirms it, for a
+# kind with no credential concept at all — see `is_configured` below).
+# "animetosho" isn't here even though `api_key` is a real, usable field for it — its
+# `api_key` (an AniDB HTTP API client key) is optional, not required: search still
+# works without one via a heuristic filename match (see `providers/animetosho.py`'s
+# `_search_by_anime_id`), just less precisely than the exact-episode-id path a key
+# unlocks. So it's grouped with the no-credential kinds here on purpose.
+_API_KEY_KINDS = {"subdl", "subsource", "betaseries"}
 # OpenSubtitles' "API key" identifies the calling *application*, not the user — it's
 # hardcoded in `providers/opensubtitles.py` rather than stored per-row, so this kind
 # authenticates with the user's own username/password (via a real `/login` call) like
