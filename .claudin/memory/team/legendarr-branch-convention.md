@@ -36,3 +36,15 @@ implementation on `main`. **How to apply:** for any plan whose scope is `feat:`-
 "create and switch to the feature branch" as the first Tasks entry and "push the branch and
 open the PR" as the last, before ever calling `ExitPlanMode` — don't wait for the user to point
 this out.
+
+**2026-08-27 — landing an isolated docs/chore change while a feature branch has unrelated
+stacked commits:** to add a `ROADMAP.md`-only line while `feat/tmdb-metadata-provider` had two
+unpushed `feat:` commits stacked on top of it, used `git stash push -- <file>` to shelve just
+that one file, `git checkout main`, `git stash pop`, commit + push straight to `main` (per the
+`docs:`-direct-to-main rule above), then `git checkout` back to the feature branch. **Why:**
+lands the docs commit on `main` immediately instead of it waiting on that branch's eventual PR,
+without disturbing the feature branch's own state. **Side effect to expect:** switching
+branches when the two branches' tracked files differ triggers a wave of "file was modified,
+either by the user or by a linter" system reminders for every file that differs between them —
+this is normal branch-diff noise from `checkout`, not a real edit; don't try to "restore" those
+files and don't mention the noise to the user.

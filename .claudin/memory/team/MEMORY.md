@@ -17,3 +17,4 @@
 - [legendarr VobSub/DVB OCR deferred](legendarr-vobsub-dvb-ocr-deferred.md) — ROADMAP 0.14.0 only covers PGS OCR; VobSub/DVB need their own parser, not on the roadmap yet
 - [legendarr docker-compose dev stack staleness](legendarr-docker-compose-dev-stack-staleness.md) — dev legendarr container silently runs old code until `build` + `up -d` rerun
 - [legendarr i18n conventions](legendarr-i18n-conventions.md) — t() Jinja global, ContextVar (not request.state) for macro support, ui_locale in config.yaml, PR #65
+- [legendarr apply_patch heading-anchor gotcha](legendarr-apply-patch-heading-anchor-gotcha.md) — trailing context spanning into the next `##` heading rejects a hunk that looks byte-correct

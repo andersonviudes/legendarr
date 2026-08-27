@@ -48,15 +48,27 @@ insert path, so refetching an item that already had a `MediaMetadata` row would 
 movie_id/series_id unique-constraint on insert; it now overwrites the existing row in place
 (verified against the real dev stack: same row `id`, newer `fetched_at`, on a second click).
 
-**Confirmed gap (2026-08-27, from a direct user question, not yet on ROADMAP.md)**: no local
-image caching and no periodic metadata refresh. `poster_url` is stored and served as a
-straight hotlink to the provider's own CDN (e.g. `image.tmdb.org`) — legendarr never
-downloads/proxies the image itself, so caching is whatever the browser/provider CDN does on
-its own. And metadata for an *existing* item only ever updates on a brand-new-item sync or a
-manual "Refetch All" click — there's no `IntervalTrigger`-based job (unlike
-`register_sync_job`/`register_scan_job` in `media_library`) that periodically re-pulls
-metadata for items already in the library, so upstream changes (a corrected poster, an
-updated rating) don't propagate until someone clicks refetch again.
+**Confirmed gap (2026-08-27, from a direct user question)**: no local image caching and no
+periodic metadata refresh. `poster_url` is stored and served as a straight hotlink to the
+provider's own CDN (e.g. `image.tmdb.org`) — legendarr never downloads/proxies the image
+itself, so caching is whatever the browser/provider CDN does on its own. And metadata for an
+*existing* item only ever updates on a brand-new-item sync or a manual "Refetch All" click —
+there's no `IntervalTrigger`-based job (unlike `register_sync_job`/`register_scan_job` in
+`media_library`) that periodically re-pulls metadata for items already in the library, so
+upstream changes (a corrected poster, an updated rating) don't propagate until someone clicks
+refetch again. **Backlogged** the same day at the user's request ("adiciona isso no
+backlog"): `ROADMAP.md` 0.21.0 — Resilience gained an unchecked `**Media library**` bullet
+covering both (commit `bb1a145`, pushed straight to `main` as a `docs:` change per
+[[legendarr-branch-convention]]) — not implemented yet, just tracked.
+
+**Cadence added in a follow-up commit** the same day (`0c59a4d`, also `docs:` direct-to-
+`main`): the bullet now names a concrete default — `metadata_refresh_interval_minutes`, once
+a day, config/env only (same posture as `translate_interval_minutes`), reasoned as "metadata
+changes far less often than library contents" vs. the 15/60 min cadence the sync/scan/
+history-poll jobs use. **This default was picked unilaterally** — an auto-mode "Continue with
+the task" nudge, not an explicit user answer to "quer que eu já defina um valor no ROADMAP,
+ou prefere decidir na hora de implementar?". Treat it as a placeholder to confirm with the
+user, not a settled decision, when this backlog item actually gets implemented.
 
 **Resolved**: the "explicitly out of scope" note this memory used to carry (surfacing
 `poster_url`/`overview` on `/media/movies`/`/media/series`, tracked at
