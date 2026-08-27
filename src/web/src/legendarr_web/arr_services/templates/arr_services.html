@@ -2,15 +2,21 @@
 {% from "macros.html" import service_section, field %}
 {% block title %}legendarr · {{ t("nav.settings.arr_services") }}{% endblock %}
 {% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="legendarr-url-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>{{ t("common.save") }}</span>
+  </button>
+</div>
+
 <h1>{{ icon("server") }} {{ t("nav.settings.arr_services") }}</h1>
 
 <section>
-  <h2>{{ icon("server") }} {{ t("arr_services.legendarr_url_heading") }}</h2>
-  <p class="field-hint">{{ t("arr_services.legendarr_url_hint") }}</p>
-  <form class="service-form" method="post" action="/settings/arr-services/webhook-url">
+  <h2>{{ icon("globe") }} {{ t("arr_services.legendarr_url_heading") }}</h2>
+  <form id="legendarr-url-form" class="service-form" method="post" action="/settings/arr-services/webhook-url">
+    <p class="field-hint">{{ t("arr_services.legendarr_url_hint") }}</p>
     {{ field("public_url", t("arr_services.legendarr_url_label"), placeholder="https://legendarr.example.com",
              value=public_url, autocomplete="off") }}
-    <button type="submit">{{ icon("save") }} <span>{{ t("common.save") }}</span></button>
   </form>
 </section>
 
