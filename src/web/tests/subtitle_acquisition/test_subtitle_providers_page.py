@@ -62,6 +62,8 @@ def test_page_renders_provider_cards(stub_backend_client):
     assert "Requires credentials" in body
     assert "No credentials needed" in body
     assert "/settings/subtitle-providers/1/edit" in body
+    assert "largest general subtitle database" in body
+    assert "Polish subtitle database" in body
 
 
 def test_page_hides_toggle_for_unconfigured_provider(stub_backend_client):

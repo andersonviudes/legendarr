@@ -826,6 +826,14 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* Provider "what is this" blurb (subtitle providers list) — a touch dimmer than the card
+   name but readable, sitting above the muted credentials-status line below it. */
+.service-card-description {
+  margin: 0;
+  font-size: var(--lg-font-xs);
+  color: var(--pico-color);
+}
+
 .service-card-address {
   margin: 0;
   font-size: var(--lg-font-xs);

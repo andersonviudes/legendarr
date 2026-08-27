@@ -17,6 +17,9 @@
       <span class="service-card-status is-disabled">{{ t("common.not_configured") }}</span>
       {% endif %}
     </header>
+    {% if provider.description %}
+    <p class="service-card-description">{{ t(provider.description) }}</p>
+    {% endif %}
     <p class="service-card-address">
       {% if provider.credentials_required %}
       {{ t("subtitle_acquisition.requires_credentials") }}
