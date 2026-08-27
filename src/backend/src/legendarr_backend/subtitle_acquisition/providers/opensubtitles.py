@@ -19,9 +19,7 @@ OPENSUBTITLES_BASE_URL = "https://api.opensubtitles.com"
 # why it's a module constant here instead of a per-`SubtitleProviderConfig` field like
 # the other API-key kinds — the user only ever provides their own OpenSubtitles.com
 # username/password (see `SubtitleProviderConfig._USERNAME_PASSWORD_KINDS`).
-# TODO: replace with legendarr's real registered key once one exists — this placeholder
-# 401s.
-_APP_API_KEY = "REPLACE_WITH_LEGENDARR_OPENSUBTITLES_API_KEY"
+_APP_API_KEY = "s57fpg9JaLZqnSZCAAF8kz43DeDI4AOK"
 
 
 def opensubtitles_client(
