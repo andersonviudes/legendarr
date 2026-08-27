@@ -33,14 +33,6 @@ PROVIDER_CREDENTIAL_FIELDS = {
     "animetosho": ("api_key",),
 }
 
-# Extra explanation shown under a credential field for a kind whose field isn't
-# self-explanatory from its generic label alone — currently only Anime Tosho, whose
-# "API Key" is actually an AniDB HTTP API client name (see `PROVIDER_CREDENTIAL_FIELDS`
-# above). A kind with no entry here shows no extra hint.
-PROVIDER_CREDENTIAL_HINTS = {
-    "animetosho": "subtitle_acquisition.animetosho_api_key_hint",
-}
-
 # Provider-specific search options shown on the edit form, beyond credentials — currently
 # only OpenSubtitles has any (mirrors Bazarr's opensubtitlescom provider settings). Search
 # itself isn't built yet, so these are saved but not yet read back out anywhere.
@@ -55,10 +47,6 @@ def provider_label(kind: str) -> str:
 
 def provider_credential_fields(kind: str) -> tuple[str, ...]:
     return PROVIDER_CREDENTIAL_FIELDS.get(kind, ())
-
-
-def provider_credential_hint(kind: str) -> str | None:
-    return PROVIDER_CREDENTIAL_HINTS.get(kind)
 
 
 def provider_search_options(kind: str) -> tuple[str, ...]:

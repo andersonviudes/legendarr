@@ -8,7 +8,6 @@ from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.subtitle_acquisition import service
 from legendarr_web.subtitle_acquisition.provider_display import (
     provider_credential_fields,
-    provider_credential_hint,
     provider_label,
     provider_search_options,
 )
@@ -24,7 +23,6 @@ def _with_display(provider: dict) -> dict:
         **provider,
         "label": provider_label(provider["kind"]),
         "credential_fields": provider_credential_fields(provider["kind"]),
-        "credential_hint": provider_credential_hint(provider["kind"]),
         "search_options": provider_search_options(provider["kind"]),
     }
 
