@@ -191,3 +191,29 @@ def test_fetch_metadata_for_new_items_tmdb_is_authoritative_when_tvdb_finds_noth
     assert stored.overview == "TMDb overview"
     assert stored.poster_url == "tmdb.png"
     assert stored.year == 1994
+
+
+def test_fetch_metadata_for_movie_overwrites_an_existing_row_instead_of_duplicating(
+    in_memory_session, monkeypatch
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(overview="first pass", year=1994)),
+    )
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(overview="refetched", year=2024)),
+    )
+    fetch_metadata.fetch_metadata_for_movie(session, movie)
+
+    rows = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).all()
+    assert len(rows) == 1
+    assert rows[0].overview == "refetched"
+    assert rows[0].year == 2024

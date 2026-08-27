@@ -198,6 +198,8 @@
   "media_metadata.hint": "Habilite as fontes de metadados que o legendarr deve usar para buscar informações sobre séries e filmes novos, e defina a chave de API que cada uma precisa. Roda automaticamente na próxima vez que uma sincronização de biblioteca encontrar uma série ou filme totalmente novo.",
   "media_metadata.requires_api_key": "Requer uma chave de API",
   "media_metadata.add_api_key_to_enable": "Adicione uma chave de API para habilitar",
+  "media_metadata.refetch_all": "Buscar tudo novamente",
+  "media_metadata.refetching": "Buscando metadados novamente…",
 
   "media_servers.hint": "Habilite os servidores de mídia que o legendarr deve notificar depois que uma legenda for gravada, e defina o endereço e o token que cada um precisa. Roda automaticamente depois que uma aquisição ou tradução grava uma legenda, atualizando só aquele item onde o servidor tiver suporte.",
   "media_servers.add_address_token_to_enable": "Adicione um endereço e um token para habilitar",

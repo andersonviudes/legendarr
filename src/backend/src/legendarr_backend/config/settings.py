@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = Field(default=5.0)
     timing_sync_timeout_seconds: float = Field(default=120.0)
+    # Manual "refetch metadata" only, same posture as timing_sync_retry_attempts above —
+    # no interval/max_instances/coalesce fields, just the retry policy
+    # `enqueue_metadata_refetch` needs.
+    metadata_refetch_retry_attempts: int = Field(default=3, ge=1)
+    metadata_refetch_retry_delay_seconds: float = Field(default=5.0)
     # ROADMAP.md 0.15.0 — speech-to-text fallback (`faster_whisper`), tried only when a
     # `LanguageProfile.speech_to_text_fallback` profile finds nothing via any other
     # acquisition tier. `model_size` is a global instance-wide choice (same posture as

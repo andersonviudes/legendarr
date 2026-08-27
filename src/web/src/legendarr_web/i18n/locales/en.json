@@ -198,6 +198,8 @@
   "media_metadata.hint": "Enable the metadata sources legendarr should use to fetch info about new series and movies, and set the API key each one needs. Runs automatically the next time a library sync finds a brand-new series or movie.",
   "media_metadata.requires_api_key": "Requires an API key",
   "media_metadata.add_api_key_to_enable": "Add an API key to enable",
+  "media_metadata.refetch_all": "Refetch All",
+  "media_metadata.refetching": "Refetching metadata…",
 
   "media_servers.hint": "Enable the media servers legendarr should notify after a subtitle is written, and set the address and token each one needs. Runs automatically after an acquisition or translation writes a subtitle, refreshing just that item where the server supports it.",
   "media_servers.add_address_token_to_enable": "Add an address and token to enable",

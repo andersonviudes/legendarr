@@ -55,6 +55,18 @@ async def edit_metadata_provider(
     )
 
 
+@router.post("/refetch")
+async def trigger_metadata_refetch(
+    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    try:
+        await service.trigger_metadata_refetch(client)
+        result = {"success": True, "message": "Metadata refetch started."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't start the metadata refetch."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
 @router.post("/{provider_id}")
 async def update_metadata_provider(
     request: Request,

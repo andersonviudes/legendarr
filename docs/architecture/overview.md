@@ -31,7 +31,7 @@ src/backend/src/legendarr_backend/
 │   └── jobs.py               # the APScheduler job that drives the sync
 ├── subtitle_acquisition/    # subtitle-provider registration (credentials, test connection)
 │   └── providers/            # subdomain: SubtitleProvider protocol (interface only)
-├── media_metadata/          # TheTVDB/IMDb/TMDb metadata provider registration + fetch-on-sync
+├── media_metadata/          # TheTVDB/IMDb/TMDb metadata provider registration + fetch-on-sync/refetch
 │   └── providers/            # subdomain: MetadataProvider protocol + TVDB/OMDb/TMDb clients
 ├── subtitle_discovery/      # finding subtitle tracks (external + embedded)
 ├── subtitle_translation/    # translation providers and the translate step
@@ -53,7 +53,7 @@ src/web/src/legendarr_web/
 ├── dashboard/               # home page — profile-count stats, polls via htmx
 ├── arr_services/            # /settings/arr-services/ routes (CRUD, test, enable/disable)
 ├── subtitle_acquisition/    # /settings/subtitle-providers/ routes (enable, credentials, test)
-├── media_metadata/          # /settings/metadata-source/ routes (enable, credentials, test)
+├── media_metadata/          # /settings/metadata-source/ routes (enable, credentials, test, refetch)
 ├── language_profiles/       # /settings/ route
 ├── subtitle_translation/    # /settings/translation-providers/ routes (enable, credentials, test, default)
 ├── media_library/           # /media/movies, /media/series routes

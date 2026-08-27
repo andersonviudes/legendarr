@@ -198,6 +198,8 @@
   "media_metadata.hint": "Habilita las fuentes de metadatos que legendarr debe usar para obtener información sobre series y películas nuevas, y configura la clave de API que cada una necesita. Se ejecuta automáticamente la próxima vez que una sincronización de biblioteca encuentre una serie o película completamente nueva.",
   "media_metadata.requires_api_key": "Requiere una clave de API",
   "media_metadata.add_api_key_to_enable": "Agrega una clave de API para habilitar",
+  "media_metadata.refetch_all": "Volver a buscar todo",
+  "media_metadata.refetching": "Volviendo a buscar metadatos…",
 
   "media_servers.hint": "Habilita los servidores multimedia que legendarr debe notificar después de escribir un subtítulo, y configura la dirección y el token que cada uno necesita. Se ejecuta automáticamente después de que una adquisición o traducción escribe un subtítulo, actualizando solo ese elemento donde el servidor lo admita.",
   "media_servers.add_address_token_to_enable": "Agrega una dirección y un token para habilitar",
