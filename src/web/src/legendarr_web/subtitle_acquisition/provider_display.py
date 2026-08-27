@@ -52,11 +52,21 @@ PROVIDER_CREDENTIAL_FIELDS = {
     "animetosho": ("api_key",),
 }
 
+# Label shown for the "username" credential field — most providers log in with a real
+# username/handle, so the generic "Username" label fits. legendas.net's own login form
+# (`type="email" name="email"`) only ever accepts the account's email address, and a
+# site handle there 401s with the same generic "Invalid username/password" the API
+# gives for any wrong credential — a kind with no entry here keeps the generic label.
+PROVIDER_USERNAME_LABELS = {
+    "legendas_net": "common.email",
+}
+
 # Extra explanation shown under a credential field for a kind whose field isn't
 # self-explanatory from its generic label alone, or (Anime Tosho's case) isn't actually
 # required — a kind with no entry here shows no extra hint.
 PROVIDER_CREDENTIAL_HINTS = {
     "animetosho": "subtitle_acquisition.animetosho_api_key_hint",
+    "legendas_net": "subtitle_acquisition.legendas_net_email_hint",
 }
 
 # Provider-specific search options shown on the edit form, beyond credentials — currently
@@ -73,6 +83,10 @@ def provider_label(kind: str) -> str:
 
 def provider_description(kind: str) -> str | None:
     return PROVIDER_DESCRIPTIONS.get(kind)
+
+
+def provider_username_label(kind: str) -> str:
+    return PROVIDER_USERNAME_LABELS.get(kind, "common.username")
 
 
 def provider_credential_fields(kind: str) -> tuple[str, ...]:

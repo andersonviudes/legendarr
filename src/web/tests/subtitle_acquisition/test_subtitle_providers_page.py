@@ -239,6 +239,27 @@ def test_edit_form_shows_credential_fields_for_opensubtitles(stub_backend_client
     assert 'name="api_key"' not in response.text
 
 
+def test_edit_form_labels_legendas_net_username_field_as_email(stub_backend_client):
+    """legendas.net's own login form only accepts an email address in this field
+    (`type="email" name="email"`) — a site display username 401s the same way any other
+    wrong credential does, so the generic "Username" label is actively misleading here."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/subtitle-proxies/":
+            return httpx.Response(200, json=[])
+        return httpx.Response(200, json=_provider(id=1, kind="legendas_net"))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/1/edit")
+
+    assert response.status_code == 200
+    assert 'name="username"' in response.text
+    assert "not your site display username" in response.text
+
+
 def test_edit_form_hides_credential_fields_for_kind_that_needs_none(stub_backend_client):
     app = create_app()
 
