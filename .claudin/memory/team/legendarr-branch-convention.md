@@ -65,3 +65,17 @@ branches when the two branches' tracked files differ triggers a wave of "file wa
 either by the user or by a linter" system reminders for every file that differs between them —
 this is normal branch-diff noise from `checkout`, not a real edit; don't try to "restore" those
 files and don't mention the noise to the user.
+
+**2026-08-27 — undoing a `fix:` commit already pushed to `main`:** asked to remove a `fix:`
+commit from `main` and keep it only on the feature branch that had already merged it, offered
+two explicit options via `AskUserQuestion` — `git revert` (new commit undoing the change,
+doesn't rewrite already-published history) vs. `git reset --hard` + force-push (erases the
+commit from `main`'s history entirely, riskier since it's already on `origin`) — instead of
+picking one. The user chose `git revert`. **Why:** rewriting a shared branch's already-pushed
+history is a destructive, outward-facing action (per the harness's confirm-first rule) with a
+real difference in risk between the two methods, not a judgment call to make unilaterally.
+**How to apply:** for any request to undo/remove a commit already pushed to `main` (or another
+shared branch), ask which method before running either — default recommendation is `git
+revert`, since it's non-destructive and doesn't require `--force`; only reset+force-push if the
+user explicitly wants the commit erased from history. See [[legendarr-animetosho-anidb-key]]
+for the case that prompted this.
