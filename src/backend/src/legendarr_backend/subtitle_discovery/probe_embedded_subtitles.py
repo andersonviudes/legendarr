@@ -100,6 +100,11 @@ def extract_embedded_subtitle_track(
     "already extracted" on a later scan, so a killed or timed-out run must not leave a
     partial `.srt` behind for that check to mistake as complete.
 
+    `-f srt` is required, not cosmetic — the temp sibling's name ends in `.tmp`, and ffmpeg
+    picks its output muxer from the filename extension alone (`-c:s` only selects the codec
+    inside that container), so without it ffmpeg can't tell what to write and fails with
+    "Unable to find a suitable output format" before touching the track at all.
+
     A missing `ffmpeg` binary is treated like `probe_embedded_subtitle_tracks`'s missing-
     `ffprobe` case: log a warning and leave `output_path` unwritten rather than raising —
     the caller skips the track when that happens instead of persisting a row for a file
@@ -118,6 +123,8 @@ def extract_embedded_subtitle_track(
                 "-map",
                 f"0:{track.index}",
                 "-c:s",
+                "srt",
+                "-f",
                 "srt",
                 str(temp_path),
             ],
