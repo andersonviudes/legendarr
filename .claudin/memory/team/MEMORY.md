@@ -20,3 +20,4 @@
 - [legendarr Playwright cache after rebuild](legendarr-playwright-cache-after-rebuild.md) — bust styles.css/JS with a `?bust=` query after rebuilding the container mid-session
 - [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean tool params intermittently fail validation; retry once then use browser_run_code_unsafe
 - [legendarr Pico search-input specificity gotcha](legendarr-pico-search-input-specificity-gotcha.md) — Pico's [type=search] padding/height rules silently outrank a bare custom class
+- [legendarr OpenSubtitles login auth](legendarr-opensubtitles-login-auth.md) — username/password login like Bazarr, not a user API key; app-level `_APP_API_KEY` is still a placeholder

@@ -18,8 +18,11 @@ PROVIDER_LABELS = {
 # shapes `legendarr_backend.subtitle_acquisition.connection_tests` checks against. A kind
 # with no entry here needs no credential at all (reachability-only "test connection").
 PROVIDER_CREDENTIAL_FIELDS = {
-    "opensubtitles": ("api_key",),
     "addic7ed": ("username", "password"),
+    # `Api-Key` is a legendarr-side application credential (see
+    # `subtitle_acquisition.providers.opensubtitles`'s module docstring), never the
+    # user's own — the user only ever supplies their OpenSubtitles.com username/password.
+    "opensubtitles": ("username", "password"),
     "subdl": ("api_key",),
     "legendas_net": ("username", "password"),
     "subsource": ("api_key",),

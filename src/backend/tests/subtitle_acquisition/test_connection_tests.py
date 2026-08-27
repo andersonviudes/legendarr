@@ -24,34 +24,33 @@ def test_unknown_kind_fails():
     assert "Unknown provider kind" in message
 
 
-def test_opensubtitles_requires_api_key():
-    success, message = check_connection(_config(kind="opensubtitles", api_key=None))
+def test_opensubtitles_requires_credentials():
+    success, message = check_connection(_config(kind="opensubtitles", username=None))
 
     assert success is False
-    assert "API Key" in message
+    assert "Username" in message
 
 
 def test_opensubtitles_succeeds(monkeypatch):
-    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"level": "free"})
+    monkeypatch.setattr(ProviderHttpClient, "post_json", lambda self, path, json: {"token": "abc"})
 
-    success, message = check_connection(_config(kind="opensubtitles", api_key="a-key"))
+    success, message = check_connection(
+        _config(kind="opensubtitles", username="user", password="pass")
+    )
 
     assert success is True
 
 
-def test_opensubtitles_reports_rejected_key(monkeypatch):
-    def _raise(self, path):
-        request = httpx.Request("GET", "https://api.opensubtitles.com/api/v1/infos/user")
-        response = httpx.Response(401, request=request)
-        cause = httpx.HTTPStatusError("Unauthorized", request=request, response=response)
-        raise ProviderClientError("failed with 401") from cause
+def test_opensubtitles_fails_without_token(monkeypatch):
+    monkeypatch.setattr(
+        ProviderHttpClient, "post_json", lambda self, path, json: {"error": "invalid_credentials"}
+    )
 
-    monkeypatch.setattr(ProviderHttpClient, "get_json", _raise)
-
-    success, message = check_connection(_config(kind="opensubtitles", api_key="bad-key"))
+    success, message = check_connection(
+        _config(kind="opensubtitles", username="user", password="bad-pass")
+    )
 
     assert success is False
-    assert "API Key" in message
 
 
 def test_subdl_requires_api_key():
