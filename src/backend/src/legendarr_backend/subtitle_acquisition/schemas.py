@@ -29,6 +29,7 @@ class SubtitleProviderConfigRead(BaseModel):
     enabled: bool
     username: str | None
     is_configured: bool
+    credentials_required: bool
     proxy_id: int | None
     use_hash: bool
     include_ai_translated: bool

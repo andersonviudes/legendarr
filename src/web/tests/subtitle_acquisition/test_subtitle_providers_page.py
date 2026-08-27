@@ -16,6 +16,7 @@ def _provider(**overrides) -> dict:
         "enabled": True,
         "username": None,
         "is_configured": True,
+        "credentials_required": True,
         "use_hash": True,
         "include_ai_translated": False,
         "include_machine_translated": False,
@@ -44,7 +45,7 @@ def test_page_renders_provider_cards(stub_backend_client):
             200,
             json=[
                 _provider(id=1, kind="opensubtitles", enabled=True),
-                _provider(id=2, kind="napiprojekt", enabled=False),
+                _provider(id=2, kind="napiprojekt", enabled=False, credentials_required=False),
             ],
         )
 
@@ -101,7 +102,12 @@ def test_page_hints_test_connection_for_unverified_credential_less_provider(stub
     app = create_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=[_provider(id=1, kind="napiprojekt", is_configured=False)])
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="napiprojekt", is_configured=False, credentials_required=False)
+            ],
+        )
 
     stub_backend_client(app, handler=handler)
 
@@ -111,6 +117,30 @@ def test_page_hints_test_connection_for_unverified_credential_less_provider(stub
     assert response.status_code == 200
     assert "Run &#34;Test connection&#34; to enable" in response.text
     assert "No credentials needed" not in response.text
+
+
+def test_page_does_not_claim_animetosho_requires_credentials(stub_backend_client):
+    """`animetosho` has a real, displayed `api_key` field (unlike napiprojekt above), but
+    it's optional — the list page must go by `credentials_required`, not merely whether
+    the kind has a credential field to show in its edit form."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=[
+                _provider(id=1, kind="animetosho", is_configured=True, credentials_required=False)
+            ],
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/subtitle-providers/")
+
+    assert response.status_code == 200
+    assert "Requires credentials" not in response.text
+    assert "No credentials needed" in response.text
 
 
 def test_count_badge_reflects_enabled_providers(stub_backend_client):

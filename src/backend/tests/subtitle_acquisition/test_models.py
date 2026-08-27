@@ -67,3 +67,23 @@ def test_is_configured_for_a_username_password_kind(
     )
 
     assert provider.is_configured is expected
+
+
+@pytest.mark.parametrize(
+    "kind,expected",
+    [
+        ("opensubtitles", True),
+        ("addic7ed", True),
+        ("subdl", True),
+        ("napiprojekt", False),
+        ("yify_subtitles", False),
+        # animetosho has a real, displayed `api_key` field, but it's optional — same
+        # no-credential-required group as napiprojekt, not the api-key/username-password
+        # groups above. See models.py's `_API_KEY_KINDS` comment.
+        ("animetosho", False),
+    ],
+)
+def test_credentials_required(kind, expected):
+    provider = SubtitleProviderConfig(kind=kind)
+
+    assert provider.credentials_required is expected

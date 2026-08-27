@@ -131,6 +131,19 @@ def test_is_configured_reflects_whether_the_required_credential_is_set(isolated_
         assert response.json()["is_configured"] is True
 
 
+def test_credentials_required_is_false_for_animetosho_despite_having_an_api_key_field(
+    isolated_database,
+):
+    with TestClient(create_api_app()) as client:
+        _seed()
+        providers = client.get("/subtitle-providers/").json()
+        opensubtitles = next(p for p in providers if p["kind"] == "opensubtitles")
+        animetosho = next(p for p in providers if p["kind"] == "animetosho")
+
+        assert opensubtitles["credentials_required"] is True
+        assert animetosho["credentials_required"] is False
+
+
 def test_is_configured_becomes_true_after_a_successful_test_for_a_credential_less_provider(
     isolated_database, monkeypatch
 ):

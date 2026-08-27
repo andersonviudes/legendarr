@@ -95,6 +95,15 @@ class SubtitleProviderConfig(SQLModel, table=True):
             return self.has_credentials
         return self.connection_verified
 
+    @property
+    def credentials_required(self) -> bool:
+        """Whether this kind can't be enabled without a credential — the web UI uses this
+        to decide between "Requires credentials" and "No credentials needed"/"Run test to
+        enable" on the provider list. Same two groups as `is_configured` above: `animetosho`
+        has a real `api_key` field but isn't in either group (it's optional), so this is
+        `False` for it just like a true no-credential kind."""
+        return self.kind in _API_KEY_KINDS or self.kind in _USERNAME_PASSWORD_KINDS
+
 
 class SubtitleProxy(SQLModel, table=True):
     """A user-registered indexer-style proxy (e.g. FlareSolverr) a `SubtitleProviderConfig`

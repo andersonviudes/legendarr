@@ -18,7 +18,7 @@
       {% endif %}
     </header>
     <p class="service-card-address">
-      {% if provider.credential_fields %}
+      {% if provider.credentials_required %}
       {{ t("subtitle_acquisition.requires_credentials") }}
       {% elif provider.is_configured %}
       {{ t("subtitle_acquisition.no_credentials_needed") }}
