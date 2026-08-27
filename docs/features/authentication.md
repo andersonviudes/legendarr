@@ -6,7 +6,7 @@ deployment are unaffected until an admin opts in from Settings.*
 
 ## Enabling login
 
-Settings → Authentication (`/settings/authentication/`) has one toggle — "Require
+Settings → General (`/settings/general/`) has one toggle — "Require
 login" — plus a username and password. Enabling it requires both to already be set or
 provided in the same save; `manage_authentication.update_auth_settings` rejects an
 `enabled=True` update that would leave the account without a resolvable username and
@@ -52,7 +52,7 @@ revoke any other session individually or all of them at once.
 
 ## API key
 
-Settings → Authentication also shows a generated API key (`secrets.token_urlsafe(32)`),
+Settings → General also shows a generated API key (`secrets.token_urlsafe(32)`),
 stored encrypted at rest the same way as `radarr_api_key`/`sonarr_api_key`
 (`security/fernet.py`), masked by default with a reveal toggle and a copy button since
 it's a credential the admin needs to retrieve, not one they chose. "Regenerate"

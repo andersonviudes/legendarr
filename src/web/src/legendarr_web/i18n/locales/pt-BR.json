@@ -71,7 +71,6 @@
   "nav.settings.proxies": "Proxies / Captcha",
   "nav.settings.media_servers": "Servidores de mídia",
   "nav.settings.tasks": "Tarefas",
-  "nav.settings.authentication": "Autenticação",
   "nav.settings.general": "Geral",
   "nav.system": "Sistema",
   "nav.system.logs": "Logs",
@@ -276,7 +275,6 @@
   "system.sessions.others_revoked_toast": "Outras sessões revogadas.",
 
   "settings.tasks.saved_toast": "Configurações de tarefas salvas.",
-  "settings.auth.saved_toast": "Configurações de autenticação salvas.",
   "settings.general.saved_toast": "Configurações gerais salvas.",
 
   "language_profiles.added_toast": "Perfil de idioma adicionado.",

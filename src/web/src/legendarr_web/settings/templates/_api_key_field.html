@@ -7,7 +7,7 @@
 <div id="api-key-field" class="api-key-field">
   <label for="api_key">{{ t("common.api_key") }}</label>
   <div class="api-key-field-control">
-    <input type="password" id="api_key" readonly value="{{ settings.api_key }}" data-api-key-input />
+    <input type="password" id="api_key" readonly value="{{ auth_settings.api_key }}" data-api-key-input />
     <button type="button" class="app-icon-btn" data-api-key-toggle aria-label="{{ t('settings.auth.show_api_key') }}">
       <span data-api-key-icon-show>{{ icon("eye") }}</span>
       <span data-api-key-icon-hide hidden>{{ icon("eye-off") }}</span>
@@ -16,7 +16,7 @@
       type="button"
       class="app-icon-btn"
       aria-label="{{ t('settings.auth.copy_api_key') }}"
-      data-copy="{{ settings.api_key }}"
+      data-copy="{{ auth_settings.api_key }}"
       data-copy-toast="{{ t('settings.auth.api_key_copied') }}"
     >{{ icon("copy") }}</button>
     <button
@@ -24,7 +24,7 @@
       class="app-icon-btn"
       aria-label="{{ t('settings.auth.regenerate_api_key') }}"
       hx-confirm="{{ t('settings.auth.regenerate_confirm') }}"
-      hx-post="/settings/authentication/api-key/regenerate"
+      hx-post="/settings/general/api-key/regenerate"
       hx-target="#api-key-field"
       hx-swap="outerHTML"
     >{{ icon("refresh-cw") }}</button>

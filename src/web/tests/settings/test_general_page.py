@@ -4,8 +4,12 @@ import httpx
 from fastapi.testclient import TestClient
 from legendarr_web.app import create_app
 
+_AUTH_SETTINGS_DEFAULT = {"enabled": False, "username": "", "api_key": ""}
 
-def _general_settings_handler(locale: str, public_url: str = ""):
+
+def _general_settings_handler(locale: str, public_url: str = "", auth_settings: dict | None = None):
+    auth_settings = _AUTH_SETTINGS_DEFAULT if auth_settings is None else auth_settings
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/settings/general" and request.method == "PUT":
             body = json.loads(request.content)
@@ -17,6 +21,11 @@ def _general_settings_handler(locale: str, public_url: str = ""):
             return httpx.Response(200, json=body)
         if request.url.path == "/settings/webhooks":
             return httpx.Response(200, json={"public_url": public_url})
+        if request.url.path == "/auth/settings" and request.method == "PUT":
+            body = json.loads(request.content)
+            return httpx.Response(200, json={**auth_settings, **body, "api_key": "generated-key"})
+        if request.url.path == "/auth/settings":
+            return httpx.Response(200, json=auth_settings)
         return httpx.Response(200, json=[])
 
     return handler
@@ -46,6 +55,18 @@ def test_general_page_renders_the_saved_legendarr_url(stub_backend_client):
 
     assert response.status_code == 200
     assert 'value="https://legendarr.example.com"' in response.text
+
+
+def test_general_page_renders_auth_defaults(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_general_settings_handler("en"), stub_general_settings=False)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/general/")
+
+    assert response.status_code == 200
+    assert "Require login" in response.text
+    assert "Generated automatically" in response.text
 
 
 def test_general_page_renders_chrome_in_the_saved_locale(stub_backend_client):
@@ -84,9 +105,7 @@ def test_save_general_settings_renders_error_on_backend_rejection(stub_backend_c
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/settings/general" and request.method == "PUT":
             return httpx.Response(422, json={"detail": "Unsupported locale"})
-        if request.url.path == "/settings/general":
-            return httpx.Response(200, json={"ui_locale": "en"})
-        return httpx.Response(200, json=[])
+        return _general_settings_handler("en")(request)
 
     app = create_app()
     stub_backend_client(app, handler=handler, stub_general_settings=False)
@@ -122,3 +141,89 @@ def test_save_general_settings_also_saves_legendarr_url(stub_backend_client):
     assert response.status_code == 303
     assert "toast=General+settings+saved." in response.headers["location"]
     assert saved == {"public_url": "https://legendarr.example.com"}
+
+
+def test_save_general_settings_also_saves_auth_settings(stub_backend_client):
+    app = create_app()
+    saved: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT" and request.url.path == "/auth/settings":
+            saved.update(json.loads(request.content))
+            return httpx.Response(200, json={**saved, "api_key": "generated-key"})
+        return _general_settings_handler("en")(request)
+
+    stub_backend_client(app, handler=handler, stub_general_settings=False)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/general/",
+            data={
+                "ui_locale": "en",
+                "enabled": "true",
+                "username": "admin",
+                "password": "hunter2",
+            },
+            follow_redirects=False,
+        )
+
+    assert response.status_code == 303
+    assert "toast=General+settings+saved." in response.headers["location"]
+    assert saved == {"enabled": True, "username": "admin", "password": "hunter2"}
+
+
+def test_save_general_settings_renders_error_on_auth_rejection(stub_backend_client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/auth/settings" and request.method == "PUT":
+            return httpx.Response(
+                400, json={"detail": "Enabling login requires a username and password to be set"}
+            )
+        return _general_settings_handler("en")(request)
+
+    app = create_app()
+    stub_backend_client(app, handler=handler, stub_general_settings=False)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/settings/general/",
+            data={"ui_locale": "en", "enabled": "true", "username": "", "password": ""},
+            follow_redirects=False,
+        )
+
+    assert response.status_code == 400
+    assert "Enabling login requires a username and password to be set" in response.text
+
+
+def test_api_key_field_shows_once_generated(stub_backend_client):
+    app = create_app()
+    stub_backend_client(
+        app,
+        handler=_general_settings_handler(
+            "en", auth_settings={"enabled": True, "username": "admin", "api_key": "generated-key"}
+        ),
+        stub_general_settings=False,
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/settings/general/")
+
+    assert "generated-key" in response.text
+    assert "/api/docs" in response.text
+
+
+def test_regenerate_api_key_returns_the_updated_partial(stub_backend_client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/auth/settings/api-key/regenerate":
+            return httpx.Response(
+                200, json={"enabled": True, "username": "admin", "api_key": "new-key"}
+            )
+        return httpx.Response(200, json=[])
+
+    app = create_app()
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.post("/settings/general/api-key/regenerate")
+
+    assert response.status_code == 200
+    assert "new-key" in response.text

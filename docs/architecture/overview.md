@@ -60,7 +60,7 @@ src/web/src/legendarr_web/
 ├── history/                 # /history/ route
 ├── system/                  # /system/ route
 ├── authentication/          # /login, /logout routes (session cookie set/cleared)
-├── settings/                # /settings/tasks/, /settings/authentication/ routes (retry/interval settings, login toggle + API key)
+├── settings/                # /settings/tasks/, /settings/general/ routes (retry/interval settings, display language + webhook URL + login toggle + API key)
 ├── subtitle_proxies/        # /settings/subtitle-proxies/ routes (CRUD, test, enable/disable)
 ├── config/                  # env WebSettings
 ├── backend_client/          # httpx client for calling the backend API

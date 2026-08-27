@@ -12,7 +12,7 @@ The API is mounted at `/api` on the same process/port as the web UI — e.g.
 ## Authentication
 
 Every route requires either an `X-Api-Key` header or a logged-in browser session, unless
-login is disabled (Settings → Authentication, see [Authentication](authentication.md)).
+login is disabled (Settings → General, see [Authentication](authentication.md)).
 For scripts, use the API key shown there:
 
 ```bash

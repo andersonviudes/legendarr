@@ -17,7 +17,6 @@ from legendarr_web.language_profiles.router import router as language_profiles_r
 from legendarr_web.media_library.router import router as media_library_router
 from legendarr_web.media_metadata.router import router as media_metadata_router
 from legendarr_web.media_servers.router import router as media_servers_router
-from legendarr_web.settings.router import authentication_router as auth_settings_router
 from legendarr_web.settings.router import general_router as general_settings_router
 from legendarr_web.settings.router import router as settings_router
 from legendarr_web.subtitle_acquisition.router import router as subtitle_acquisition_router
@@ -45,7 +44,6 @@ def create_app() -> FastAPI:
     app.include_router(media_servers_router)
     app.include_router(translation_provider_router)
     app.include_router(settings_router)
-    app.include_router(auth_settings_router)
     app.include_router(general_settings_router)
     app.include_router(history_router)
     app.include_router(system_router)
