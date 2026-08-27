@@ -13,7 +13,7 @@
 - [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — RESOLVED 2026-08-01 by PR #25; kept as history only
 - [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/TMDb/IMDb providers, "Refetch All" bulk job, confirmed no poster-cache/periodic-refresh gap
 - [legendarr type-checking rule](legendarr-type-checking-rule.md) — pyright wired up via pyrightconfig.json, run alongside make lint/make test, not yet in CI
-- [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — env.py's fileConfig() disables pre-existing loggers, breaks caplog in the full suite
+- [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — RESOLVED 2026-08-27: also broke the live app's logs/System page, not just caplog
 - [legendarr VobSub/DVB OCR deferred](legendarr-vobsub-dvb-ocr-deferred.md) — ROADMAP 0.14.0 only covers PGS OCR; VobSub/DVB need their own parser, not on the roadmap yet
 - [legendarr docker-compose dev stack staleness](legendarr-docker-compose-dev-stack-staleness.md) — dev legendarr container silently runs old code until `build` + `up -d` rerun
 - [legendarr i18n conventions](legendarr-i18n-conventions.md) — t() Jinja global, ContextVar (not request.state) for macro support, ui_locale in config.yaml, PR #65
@@ -23,3 +23,4 @@
 - [legendarr OpenSubtitles login auth](legendarr-opensubtitles-login-auth.md) — username/password login like Bazarr, not a user API key; app-level `_APP_API_KEY` is still a placeholder
 - [legendarr apply_patch heading-anchor gotcha](legendarr-apply-patch-heading-anchor-gotcha.md) — trailing context spanning into the next `##` heading rejects a hunk that looks byte-correct
 - [legendarr Anime Tosho AniDB key requirement](legendarr-animetosho-anidb-key.md) — confirmed real (matches Bazarr); untaken no-auth q=/aid= search fallback exists
+- [legendarr ffmpeg temp-suffix format gotcha](legendarr-ffmpeg-temp-suffix-format-gotcha.md) — ffmpeg calls writing to a .tmp temp sibling need an explicit -f, or every extraction fails

@@ -25,8 +25,17 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# `database/engine.py::init_db()` (the programmatic path — the real running app, plus
+# every test that goes through `isolated_database`) passes `configure_logger: False` in
+# `config.attributes` to skip this: the app already configured the root logger itself
+# (`legendarr_backend/logging/setup.py::configure_logging()`), and `fileConfig()` here
+# would silently replace its handlers with `alembic.ini`'s own (stderr, WARNING) *and*
+# disable every already-imported module logger process-wide (`disable_existing_loggers`
+# defaults to `True`) — breaking both the System page's log viewer and pytest's `caplog`
+# for the rest of the process. Bare `alembic` CLI invocations (no `attributes` set) are
+# unaffected and still get logging configured here, same as before.
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # every SQLModel table module is imported above so its tables register on
 # SQLModel.metadata before autogenerate compares against it

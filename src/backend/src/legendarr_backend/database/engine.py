@@ -33,7 +33,12 @@ def get_engine():
 
 def init_db() -> None:
     engine = get_engine()
-    alembic_cfg = Config(str(Path(__file__).resolve().parents[3] / "alembic.ini"))
+    # `configure_logger: False` tells `env.py` to skip `fileConfig()` for this
+    # programmatic invocation — see the comment there for why.
+    alembic_cfg = Config(
+        str(Path(__file__).resolve().parents[3] / "alembic.ini"),
+        attributes={"configure_logger": False},
+    )
     alembic_cfg.set_main_option("sqlalchemy.url", engine.url.render_as_string(hide_password=False))
     command.upgrade(alembic_cfg, "head")
 
