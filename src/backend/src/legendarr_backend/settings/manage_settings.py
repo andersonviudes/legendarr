@@ -13,6 +13,7 @@ from legendarr_backend.media_library.jobs import (
     register_sync_job,
 )
 from legendarr_backend.settings.schemas import (
+    BackupSettings,
     GeneralSettings,
     TaskSettings,
     TranslationDefaultsSettings,
@@ -101,3 +102,19 @@ def update_general_settings(settings: Settings, update: GeneralSettings) -> Gene
     """
     config = update_config_file(settings, update.model_dump())
     return GeneralSettings.model_validate(config.model_dump())
+
+
+def get_backup_settings(settings: Settings) -> BackupSettings:
+    """Read the current backup-retention count from `config.yaml` (fresh from disk)."""
+    config = load_or_create_config_file(settings)
+    return BackupSettings.model_validate(config.model_dump())
+
+
+def update_backup_settings(settings: Settings, update: BackupSettings) -> BackupSettings:
+    """Persist the backup-retention count to `config.yaml`.
+
+    No scheduler involvement — `backup.manage_backups.create_backup` reads it fresh at
+    each run, there's nothing to re-register.
+    """
+    config = update_config_file(settings, update.model_dump())
+    return BackupSettings.model_validate(config.model_dump())

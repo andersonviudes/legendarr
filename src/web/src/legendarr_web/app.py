@@ -10,6 +10,7 @@ from legendarr_web.authentication.session_guard import (
     AuthenticationRequiredError,
     require_authenticated_session,
 )
+from legendarr_web.backup.router import router as backup_router
 from legendarr_web.config.settings import get_web_settings
 from legendarr_web.dashboard.router import router as dashboard_router
 from legendarr_web.history.router import router as history_router
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(translation_provider_router)
     app.include_router(settings_router)
     app.include_router(general_settings_router)
+    app.include_router(backup_router)
     app.include_router(history_router)
     app.include_router(statistics_router)
     app.include_router(system_router)

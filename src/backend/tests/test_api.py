@@ -8,6 +8,7 @@ from legendarr_backend.authentication import router as authentication_router
 # call, so Swagger UI (`/api/docs`) groups routes by domain instead of one flat list.
 _TAG_BY_PREFIX = {
     "/auth": "Authentication",
+    "/backup": "Backup",
     "/language-profiles": "Language Profiles",
     "/arr-services": "Arr Services",
     "/media": "Media Library",

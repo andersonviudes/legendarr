@@ -95,6 +95,7 @@ nav:
     - External API: features/external-api.md
     - Media-Server Integration: features/media-server-integration.md
     - Internationalization: features/internationalization.md
+    - Backup & Restore: features/backup-restore.md
   - Architecture:
     - Overview: architecture/overview.md
   - Contributing: contributing.md
