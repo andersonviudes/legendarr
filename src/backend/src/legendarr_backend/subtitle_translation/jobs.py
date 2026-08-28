@@ -13,6 +13,7 @@ from legendarr_backend.media_servers.notify_media_servers import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import report_progress
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
 
@@ -100,6 +101,7 @@ def enqueue_translation(
     non-overriding enqueue for the same file replaces a still-pending overriding one, and
     vice versa — last enqueue wins, same as everywhere else in this module.
     """
+    job_id = f"subtitle_translation:{media_file_id}"
 
     def run_translation() -> None:
         with get_session() as session:
@@ -120,6 +122,9 @@ def enqueue_translation(
                 video_path,
                 default_translation_provider,
                 source_subtitle_id=source_subtitle_id,
+                on_progress=lambda current, total, language: report_progress(
+                    job_id, phase="translating", current=current, total=total, language=language
+                ),
             )
             session.commit()
             logger.info("translation finished for media file %d: %s", media_file_id, result)
@@ -143,8 +148,8 @@ def enqueue_translation(
     scheduler.add_job(
         with_retry(run_translation, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
         "date",
-        id=f"subtitle_translation:{media_file_id}",
-        name=f"subtitle_translation:{media_file_id}",
+        id=job_id,
+        name=job_id,
         executor=queue.value,
         max_instances=1,
         replace_existing=True,

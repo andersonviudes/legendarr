@@ -116,6 +116,7 @@
   "dashboard.providers_heading": "Providers",
   "dashboard.stat.subtitle_providers": "Subtitle providers enabled",
   "dashboard.stat.translation_providers": "Translation providers enabled",
+  "dashboard.live_activity_heading": "Live Activity",
 
   "auth.login.title": "Log in",
   "auth.login.submit": "Log in",
@@ -293,6 +294,9 @@
   "system.tasks.status_success": "Success",
   "system.tasks.status_failure": "Failed",
   "system.tasks.status_missed": "Missed",
+  "system.tasks.phase_translating": "Translating to {language} ({current}/{total})",
+  "system.tasks.phase_searching": "Searching {language} ({current}/{total})",
+  "system.tasks.phase_searching_provider": "Searching {language} via {provider} ({current}/{total})",
   "system.dir_browser.no_subdirectories": "No subdirectories.",
   "system.sessions.revoke_others": "Revoke Other Sessions",
   "system.sessions.empty": "No active sessions.",

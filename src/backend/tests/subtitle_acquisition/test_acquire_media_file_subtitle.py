@@ -506,6 +506,74 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
     assert output.exists()
 
 
+def test_acquire_subtitle_calls_on_progress_per_provider_attempt(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FailingProvider(), _FakeProvider())
+    calls: list[tuple[int, int, str, str | None]] = []
+
+    result = acquire_subtitle_for_media_file(
+        in_memory_session, media_file, video, on_progress=lambda *args: calls.append(args)
+    )
+
+    assert result.acquired_language == "en"
+    assert calls == [
+        (1, 1, "en", None),
+        (1, 1, "en", "failing"),
+        (1, 1, "en", "fake"),
+    ]
+
+
+def test_acquire_subtitle_calls_on_progress_for_each_source_language_tried(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, source_languages="en,ja")
+    video = _write_video(tmp_path)
+
+    class _LanguageAwareProvider:
+        name = "language-aware"
+
+        def search(
+            self,
+            title,
+            language,
+            *,
+            imdb_id=None,
+            moviehash=None,
+            season=None,
+            episode=None,
+            video_path=None,
+            tvdb_id=None,
+        ):
+            if language != "ja":
+                return []
+            return [SubtitleSearchResult(release_name="Foo", download_id="1", language="ja")]
+
+        def download(self, result):
+            return "1\n00:00:00,000 --> 00:00:15,000\nこんにちは\n\n"
+
+    _use_chain(monkeypatch, _LanguageAwareProvider())
+    calls: list[tuple[int, int, str, str | None]] = []
+
+    result = acquire_subtitle_for_media_file(
+        in_memory_session, media_file, video, on_progress=lambda *args: calls.append(args)
+    )
+
+    assert result.acquired_language == "ja"
+    assert calls == [
+        (1, 2, "en", None),
+        (1, 2, "en", "language-aware"),
+        (2, 2, "ja", None),
+        (2, 2, "ja", "language-aware"),
+    ]
+
+
 def _use_speech_to_text_fallback(monkeypatch, *, track_language="eng"):
     track = EmbeddedAudioTrack(index=1, codec_name="aac", language=track_language)
     monkeypatch.setattr(

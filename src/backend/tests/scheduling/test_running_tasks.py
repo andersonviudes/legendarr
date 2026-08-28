@@ -16,6 +16,7 @@ from legendarr_backend.scheduling.running_tasks import (
     RunningTaskRegistry,
     attach_running_task_registry,
     get_running_tasks,
+    report_progress,
     reset_running_tasks,
 )
 from legendarr_backend.scheduling.scheduler import build_scheduler, register_job
@@ -149,6 +150,49 @@ def test_two_concurrent_instances_of_the_same_job_dont_collide():
     assert len(registry.tasks()) == 1
 
 
+def test_report_progress_updates_the_matching_task():
+    scheduler = _scheduler_with_job()
+    registry = RunningTaskRegistry()
+    run_time = datetime.now(UTC)
+    registry.remember(_added_event("test_job"), scheduler)
+    registry.submit(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, "test_job", "default", [run_time]), scheduler
+    )
+
+    registry.report_progress("test_job", phase="translating", current=1, total=3, language="pt-BR")
+
+    task = registry.tasks()[0]
+    assert task.phase == "translating"
+    assert task.current_step == 1
+    assert task.total_steps == 3
+    assert task.language == "pt-BR"
+    assert task.provider is None
+
+
+def test_report_progress_carries_a_provider_when_given():
+    scheduler = _scheduler_with_job()
+    registry = RunningTaskRegistry()
+    run_time = datetime.now(UTC)
+    registry.remember(_added_event("test_job"), scheduler)
+    registry.submit(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, "test_job", "default", [run_time]), scheduler
+    )
+
+    registry.report_progress(
+        "test_job", phase="searching", current=1, total=2, language="en", provider="opensubtitles"
+    )
+
+    assert registry.tasks()[0].provider == "opensubtitles"
+
+
+def test_report_progress_for_a_job_not_running_is_a_noop():
+    registry = RunningTaskRegistry()
+
+    registry.report_progress("missing_job", phase="translating", current=1, total=1, language="en")
+
+    assert registry.tasks() == []
+
+
 def test_end_to_end_a_real_one_off_job_run_through_a_real_scheduler_shows_up_while_running():
     """No synthetic events: drives an actual `BackgroundScheduler` through `add_job` for a
     one-off `"date"` trigger, the same shape as every manual "Sync Now"/"Scan Disk" trigger.
@@ -175,6 +219,37 @@ def test_end_to_end_a_real_one_off_job_run_through_a_real_scheduler_shows_up_whi
         tasks = get_running_tasks()
         assert len(tasks) == 1
         assert tasks[0].job_id == "e2e_one_off"
+    finally:
+        finish.set()
+        scheduler.shutdown(wait=False)
+        reset_running_tasks()
+
+
+def test_module_level_report_progress_updates_the_shared_registry():
+    reset_running_tasks()
+    scheduler = build_scheduler()
+    attach_running_task_registry(scheduler)
+    scheduler.start()
+    started = threading.Event()
+    finish = threading.Event()
+
+    def slow_job() -> None:
+        started.set()
+        finish.wait(timeout=5)
+
+    try:
+        scheduler.add_job(slow_job, "date", id="e2e_progress", executor=JobQueue.SYNC.value)
+        assert started.wait(timeout=5)
+        for _ in range(50):
+            if get_running_tasks():
+                break
+            time.sleep(0.02)
+
+        report_progress("e2e_progress", phase="translating", current=1, total=1, language="pt-BR")
+
+        tasks = get_running_tasks()
+        assert len(tasks) == 1
+        assert tasks[0].phase == "translating"
     finally:
         finish.set()
         scheduler.shutdown(wait=False)

@@ -265,6 +265,74 @@ def test_enqueued_translation_job_writes_translated_subtitle(
     assert any(row.language == "pt-br" for row in rows)
 
 
+def test_enqueued_translation_job_reports_progress_via_report_progress(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "post_json",
+        lambda self, path, json: {"translations": [{"text": "olá"}]},
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+    progress_calls = []
+    monkeypatch.setattr(
+        jobs_module,
+        "report_progress",
+        lambda job_id, **kwargs: progress_calls.append((job_id, kwargs)),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.add(TranslationProviderConfig(kind="deepl", enabled=True, api_key="a-key"))
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+    (tmp_path / "Foo" / "Foo.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, tmp_path / "Foo" / "Foo.mkv")
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    enqueue_translation(
+        scheduler, media_file.id, JobQueue.TRANSLATE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_translation:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert progress_calls == [
+        (
+            f"subtitle_translation:{media_file.id}",
+            {"phase": "translating", "current": 1, "total": 1, "language": "pt-BR"},
+        )
+    ]
+
+
 def test_enqueued_translation_job_honors_manually_picked_source_subtitle(
     in_memory_session, tmp_path, monkeypatch
 ):

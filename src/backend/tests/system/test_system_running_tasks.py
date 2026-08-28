@@ -28,3 +28,26 @@ def test_list_running_tasks_returns_most_recently_started_first(
 def test_list_running_tasks_reflects_the_shared_registry(isolated_running_tasks):
     assert get_running_tasks() == []
     assert list_running_tasks() == []
+
+
+def test_list_running_tasks_carries_progress_fields_through(isolated_running_tasks, monkeypatch):
+    task = RunningTask(
+        job_id="translating_job",
+        name="translating_job",
+        queue="translate",
+        started_at=datetime.now(),
+        phase="translating",
+        current_step=1,
+        total_steps=2,
+        language="pt-BR",
+        provider=None,
+    )
+    monkeypatch.setattr("legendarr_backend.system.running_tasks.get_running_tasks", lambda: [task])
+
+    read = list_running_tasks()[0]
+
+    assert read.phase == "translating"
+    assert read.current_step == 1
+    assert read.total_steps == 2
+    assert read.language == "pt-BR"
+    assert read.provider is None

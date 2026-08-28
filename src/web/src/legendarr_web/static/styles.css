@@ -1940,6 +1940,7 @@ button.outline.contrast:is(:hover, :focus) {
 .task-line {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--lg-neutral-dim-background-color);
@@ -1967,6 +1968,25 @@ button.outline.contrast:is(:hover, :focus) {
   font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
   white-space: nowrap;
+}
+
+/* Live-progress line (ROADMAP 0.20.0) — a full-width second row under a `.task-line`
+   with a running phase, wrapped onto its own line by `.task-line`'s `flex-wrap`. */
+.task-line-progress {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-line-progress progress {
+  flex: 0 0 auto;
+  width: 8rem;
+}
+
+.task-line-progress-detail {
+  font-size: var(--lg-font-xs);
+  color: var(--pico-muted-color);
 }
 
 /* Job history status pill (System → Tasks "Recent Runs") — same shape as

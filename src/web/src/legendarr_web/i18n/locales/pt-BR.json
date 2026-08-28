@@ -116,6 +116,7 @@
   "dashboard.providers_heading": "Provedores",
   "dashboard.stat.subtitle_providers": "Provedores de legenda habilitados",
   "dashboard.stat.translation_providers": "Provedores de tradução habilitados",
+  "dashboard.live_activity_heading": "Atividade ao vivo",
 
   "auth.login.title": "Entrar",
   "auth.login.submit": "Entrar",
@@ -293,6 +294,9 @@
   "system.tasks.status_success": "Sucesso",
   "system.tasks.status_failure": "Falhou",
   "system.tasks.status_missed": "Perdida",
+  "system.tasks.phase_translating": "Traduzindo para {language} ({current}/{total})",
+  "system.tasks.phase_searching": "Buscando {language} ({current}/{total})",
+  "system.tasks.phase_searching_provider": "Buscando {language} via {provider} ({current}/{total})",
   "system.dir_browser.no_subdirectories": "Sem subdiretórios.",
   "system.sessions.revoke_others": "Revogar outras sessões",
   "system.sessions.empty": "Nenhuma sessão ativa.",

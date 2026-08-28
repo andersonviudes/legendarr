@@ -258,6 +258,69 @@ def test_enqueue_acquisition_passes_speech_to_text_settings_through(
     assert captured["speech_to_text_model_dir"] is not None
 
 
+def test_enqueued_acquisition_job_wires_on_progress_into_report_progress(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    captured = {}
+
+    def _fake_acquire(session, media_file, video_path, **kwargs):
+        captured.update(kwargs)
+        return AcquisitionResult(skipped_reason="no_provider_configured")
+
+    monkeypatch.setattr(jobs_module, "acquire_subtitle_for_media_file", _fake_acquire)
+    progress_calls = []
+    monkeypatch.setattr(
+        jobs_module,
+        "report_progress",
+        lambda job_id, **kwargs: progress_calls.append((job_id, kwargs)),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler, media_file.id, JobQueue.ACQUIRE, retry_attempts=1, retry_delay_seconds=0.0
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    captured["on_progress"](1, 2, "en", "opensubtitles")
+
+    assert progress_calls == [
+        (
+            f"subtitle_acquisition:{media_file.id}",
+            {
+                "phase": "searching",
+                "current": 1,
+                "total": 2,
+                "language": "en",
+                "provider": "opensubtitles",
+            },
+        )
+    ]
+
+
 def test_enqueued_acquisition_job_cascades_to_translation_when_requested(
     in_memory_session, tmp_path, monkeypatch
 ):
