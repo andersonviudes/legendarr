@@ -10,7 +10,13 @@ def build_base_url(host: str, port: int, base_url: str, use_ssl: bool) -> str:
     return f"{scheme}://{host}:{port}{path}".rstrip("/")
 
 
+_CLIENT_CLASSES = {
+    "radarr": RadarrClient,
+    "sonarr": SonarrClient,
+}
+
+
 def build_client(data: ArrServiceInput | ArrService) -> RadarrClient | SonarrClient:
     base_url = build_base_url(data.host, data.port, data.base_url, data.use_ssl)
-    client_cls = RadarrClient if data.service_type == "radarr" else SonarrClient
+    client_cls = _CLIENT_CLASSES[data.service_type]
     return client_cls(base_url, data.api_key, timeout=data.http_timeout_seconds)

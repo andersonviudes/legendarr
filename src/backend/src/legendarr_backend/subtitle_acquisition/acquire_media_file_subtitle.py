@@ -16,29 +16,35 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
-from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_failure
-from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
-    record_acquired_subtitle,
-)
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
-    list_blacklisted_download_ids,
-)
-from legendarr_backend.subtitle_acquisition.match_score import (
-    CandidateEvaluation,
-    evaluate_candidate,
-    pick_best_match,
-)
-from legendarr_backend.subtitle_acquisition.probe_embedded_audio import (
+from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_audio import (
     EmbeddedAudioTrack,
     extract_audio_track,
     probe_embedded_audio_tracks,
 )
+from legendarr_backend.subtitle_acquisition.audio_transcription.transcribe_audio import (
+    transcribe_audio_track,
+)
+from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_failure
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+    evaluate_candidate,
+    pick_best_match,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
+    passes_quality_gate,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_filters import (
+    passes_release_name_filters,
+)
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
+)
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
-from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
-from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
-from legendarr_backend.subtitle_acquisition.transcribe_audio import transcribe_audio_track
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (

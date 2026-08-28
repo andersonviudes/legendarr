@@ -4,11 +4,11 @@ from urllib.parse import urlencode
 
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
-from legendarr_backend.subtitle_acquisition.napiprojekt_hash import (
+from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_acquisition.providers.napiprojekt_hash import (
     compute_napiprojekt_hash,
     napiprojekt_subhash,
 )
-from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 
 logger = logging.getLogger(__name__)
 

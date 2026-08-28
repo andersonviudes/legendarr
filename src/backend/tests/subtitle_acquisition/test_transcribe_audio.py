@@ -1,8 +1,8 @@
 import time
 from dataclasses import dataclass
 
-from legendarr_backend.subtitle_acquisition import transcribe_audio
-from legendarr_backend.subtitle_acquisition.transcribe_audio import (
+from legendarr_backend.subtitle_acquisition.audio_transcription import transcribe_audio
+from legendarr_backend.subtitle_acquisition.audio_transcription.transcribe_audio import (
     _get_model,
     transcribe_audio_track,
 )

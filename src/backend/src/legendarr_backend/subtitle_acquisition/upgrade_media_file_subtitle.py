@@ -14,16 +14,22 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+    evaluate_candidate,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
+    passes_quality_gate,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_filters import (
+    passes_release_name_filters,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
-)
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
-    list_blacklisted_download_ids,
-)
-from legendarr_backend.subtitle_acquisition.match_score import (
-    CandidateEvaluation,
-    evaluate_candidate,
 )
 from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
@@ -31,8 +37,6 @@ from legendarr_backend.subtitle_acquisition.providers.base import (
     SubtitleProvider,
     SubtitleSearchResult,
 )
-from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
-from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file

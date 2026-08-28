@@ -1,4 +1,6 @@
-from legendarr_backend.subtitle_acquisition.release_filters import passes_release_name_filters
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_filters import (
+    passes_release_name_filters,
+)
 
 
 def test_passes_release_name_filters_with_no_terms_always_passes():

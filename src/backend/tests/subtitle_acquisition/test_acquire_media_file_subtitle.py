@@ -19,8 +19,10 @@ from legendarr_backend.subtitle_acquisition import search_context as search_cont
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
+from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_audio import (
+    EmbeddedAudioTrack,
+)
 from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle, AcquisitionFailure
-from legendarr_backend.subtitle_acquisition.probe_embedded_audio import EmbeddedAudioTrack
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin

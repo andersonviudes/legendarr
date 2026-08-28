@@ -3,7 +3,8 @@ from typing import Any
 from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     get_subtitle_provider,
 )
-from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import (
+from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
+from legendarr_backend.subtitle_proxies.manage_subtitle_proxy import (
     create_subtitle_proxy,
     delete_subtitle_proxy,
     get_subtitle_proxy,
@@ -11,8 +12,7 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import (
     set_subtitle_proxy_enabled,
     update_subtitle_proxy,
 )
-from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
-from legendarr_backend.subtitle_acquisition.schemas import SubtitleProxyInput
+from legendarr_backend.subtitle_proxies.schemas import SubtitleProxyInput
 
 
 def _flaresolverr_input(**overrides) -> SubtitleProxyInput:

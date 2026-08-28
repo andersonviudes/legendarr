@@ -3,7 +3,7 @@ import json
 import httpx
 from fastapi.testclient import TestClient
 from legendarr_web.app import create_app
-from legendarr_web.authentication.cookies import SESSION_COOKIE_NAME
+from legendarr_web.backend_client.client import SESSION_COOKIE_NAME
 
 
 def _login_handler(request: httpx.Request) -> httpx.Response:

@@ -6,7 +6,7 @@ from sqlmodel import Session
 
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
-from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import (
+from legendarr_backend.subtitle_proxies.manage_subtitle_proxy import (
     create_subtitle_proxy,
     delete_subtitle_proxy,
     get_subtitle_proxy,
@@ -14,8 +14,8 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import (
     set_subtitle_proxy_enabled,
     update_subtitle_proxy,
 )
-from legendarr_backend.subtitle_acquisition.models import SubtitleProxy
-from legendarr_backend.subtitle_acquisition.schemas import (
+from legendarr_backend.subtitle_proxies.models import SubtitleProxy
+from legendarr_backend.subtitle_proxies.schemas import (
     SubtitleProxyEnabledInput,
     SubtitleProxyInput,
     SubtitleProxyRead,

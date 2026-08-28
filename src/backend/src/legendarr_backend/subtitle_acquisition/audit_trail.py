@@ -2,7 +2,9 @@ from datetime import datetime
 
 from sqlmodel import Session, col, select
 
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.models import AcquisitionAttempt, AcquisitionFailure
 
 

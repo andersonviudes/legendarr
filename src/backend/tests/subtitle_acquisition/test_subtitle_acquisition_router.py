@@ -5,9 +5,9 @@ from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     ensure_subtitle_providers_seeded,
     get_subtitle_provider,
 )
-from legendarr_backend.subtitle_acquisition.manage_subtitle_proxy import create_subtitle_proxy
 from legendarr_backend.subtitle_acquisition.models import SUBTITLE_PROVIDER_KINDS
-from legendarr_backend.subtitle_acquisition.schemas import SubtitleProxyInput
+from legendarr_backend.subtitle_proxies.manage_subtitle_proxy import create_subtitle_proxy
+from legendarr_backend.subtitle_proxies.schemas import SubtitleProxyInput
 
 
 def _seed() -> None:

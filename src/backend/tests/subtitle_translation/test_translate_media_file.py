@@ -11,7 +11,9 @@ from legendarr_backend.scheduling.circuit_breaker import (
     is_open,
     record_failure,
 )
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import add_blacklist_entry
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
+    add_blacklist_entry,
+)
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin

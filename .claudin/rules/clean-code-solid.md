@@ -19,6 +19,12 @@ described in `AGENTS.md`.
 - Don't grow a generic `service.py`/`utils.py` into a god object. If it
   starts coordinating unrelated concerns, split it into new files inside the
   slice.
+- If a slice's top-level files pile up and a genuine subgroup (≥2 files with real coupling —
+  they import each other, or share one model/concept) forms, extract a subdomain folder for
+  it instead of leaving everything flat or splitting into a new top-level slice — see
+  `docs/architecture/overview.md`'s "When to extract a subdomain" for the full criteria and
+  examples (`subtitle_acquisition/providers/`, `blacklist/`, `audio_transcription/`,
+  `candidate_evaluation/`).
 
 ## Open/Closed
 

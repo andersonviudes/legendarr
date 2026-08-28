@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from legendarr_backend.subtitle_acquisition.probe_embedded_audio import (
+from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_audio import (
     EmbeddedAudioTrack,
     extract_audio_track,
     probe_embedded_audio_tracks,

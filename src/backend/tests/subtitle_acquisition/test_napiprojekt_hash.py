@@ -1,6 +1,6 @@
 import hashlib
 
-from legendarr_backend.subtitle_acquisition.napiprojekt_hash import (
+from legendarr_backend.subtitle_acquisition.providers.napiprojekt_hash import (
     compute_napiprojekt_hash,
     napiprojekt_subhash,
 )

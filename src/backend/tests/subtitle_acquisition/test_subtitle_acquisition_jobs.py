@@ -16,6 +16,9 @@ from legendarr_backend.subtitle_acquisition import (
     upgrade_media_file_subtitle as upgrade_media_file_subtitle_module,
 )
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import AcquisitionResult
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.jobs import (
     enqueue_acquisition,
     enqueue_full_acquisition_scan,
@@ -24,7 +27,6 @@ from legendarr_backend.subtitle_acquisition.jobs import (
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
