@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI
 from legendarr_backend.arr_services.router import router as arr_services_router
 from legendarr_backend.authentication.api_guard import require_api_access
 from legendarr_backend.authentication.router import router as authentication_router
+from legendarr_backend.backup.router import router as backup_router
 from legendarr_backend.database.engine import init_db
 from legendarr_backend.history.router import router as history_router
 from legendarr_backend.language_profiles.router import router as language_profiles_router
@@ -41,6 +42,7 @@ def create_api_app() -> FastAPI:
         dependencies=[Depends(require_api_access)],
     )
     app.include_router(authentication_router)
+    app.include_router(backup_router)
     app.include_router(language_profiles_router)
     app.include_router(arr_services_router)
     app.include_router(media_library_router)

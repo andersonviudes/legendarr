@@ -141,6 +141,11 @@ class Settings(BaseSettings):
     # to `SUPPORTED_LANGUAGES` (subtitle content languages). Single shared admin account,
     # so this is one instance-wide preference, same posture as `default_translation_provider`.
     ui_locale: str = Field(default="en")
+    # ROADMAP.md 0.22.0 — how many `backup/` archives to keep in `data_dir/backups/`
+    # before the oldest are pruned on the next create. Backup/restore here covers
+    # `config.yaml` + the Fernet key file only, not the SQLite database — see
+    # `backup/manage_backups.py`.
+    backup_retention_count: int = Field(default=7, ge=1)
 
     @property
     def translation_plugin_package_list(self) -> list[str]:

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, empty_state %}
+{% block title %}legendarr · {{ t("settings.backup.title") }}{% endblock %}
+{% block content %}
+<div class="page-toolbar">
+  <button type="submit" form="backup-create-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("hard-drive") }}
+    <span>{{ t("settings.backup.create_button") }}</span>
+  </button>
+  <button type="submit" form="backup-retention-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("save") }}
+    <span>{{ t("common.save") }}</span>
+  </button>
+  <button id="backup-restore-submit-btn" type="submit" form="backup-restore-form" class="page-toolbar-btn page-toolbar-btn--primary">
+    {{ icon("upload") }}
+    <span>{{ t("settings.backup.restore_button") }}</span>
+  </button>
+</div>
+
+<h1>{{ icon("hard-drive") }} {{ t("settings.backup.title") }}</h1>
+<p class="field-hint">{{ t("settings.backup.hint") }}</p>
+
+{% if error %}
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% endif %}
+
+<form id="backup-create-form" method="post" action="/settings/backup/"></form>
+
+<section>
+  <h2>{{ t("settings.backup.retention_heading") }}</h2>
+  <form id="backup-retention-form" method="post" action="/settings/backup/retention" class="service-form">
+    <p class="field-hint">{{ t("settings.backup.retention_hint") }}</p>
+    {{ field("backup_retention_count", t("settings.backup.retention_label"), type="number",
+             value=retention.backup_retention_count, required=true) }}
+  </form>
+</section>
+
+<section>
+  <h2>{{ t("settings.backup.list_heading") }}</h2>
+  {% if not backups %}
+  {{ empty_state(t("settings.backup.empty")) }}
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">{{ t("settings.backup.table.filename") }}</th>
+        <th scope="col">{{ t("settings.backup.table.created_at") }}</th>
+        <th scope="col">{{ t("settings.backup.table.size") }}</th>
+        <th scope="col">{{ t("settings.backup.table.secret_key") }}</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for backup in backups %}
+    <tr>
+      <td>{{ backup.filename }}</td>
+      <td>{{ backup.created_at[:19].replace("T", " ") }}</td>
+      <td>{{ backup.size_bytes | filesizeformat }}</td>
+      <td>
+        {% if backup.secret_key_included %}
+        {{ t("settings.backup.secret_key_included") }}
+        {% else %}
+        {{ t("settings.backup.secret_key_excluded") }}
+        {% endif %}
+      </td>
+      <td>
+        <a href="/settings/backup/{{ backup.filename }}/download" role="button" class="outline">
+          {{ icon("download") }} <span>{{ t("common.download") }}</span>
+        </a>
+        <button
+          type="button"
+          class="outline contrast"
+          hx-post="/settings/backup/{{ backup.filename }}/delete"
+          hx-confirm="{{ t('settings.backup.delete_confirm') }}"
+        >{{ icon("ban") }} <span>{{ t("common.delete") }}</span></button>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section>
+  <h2>{{ t("settings.backup.restore_heading") }}</h2>
+  <p class="field-hint">{{ t("settings.backup.restore_hint") }}</p>
+  <form
+    id="backup-restore-form"
+    hx-post="/settings/backup/restore"
+    hx-encoding="multipart/form-data"
+    hx-target="#restore-result"
+    hx-swap="innerHTML"
+    hx-confirm="{{ t('settings.backup.restore_confirm') }}"
+    hx-disabled-elt="#backup-restore-submit-btn"
+  >
+    <label for="file">{{ t("settings.backup.restore_file_label") }}</label>
+    <input type="file" id="file" name="file" accept=".zip" required>
+  </form>
+  <div id="restore-result" aria-live="polite"></div>
+</section>
+{% endblock %}

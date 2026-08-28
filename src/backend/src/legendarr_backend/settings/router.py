@@ -2,16 +2,19 @@ from fastapi import APIRouter, Request
 
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.settings.manage_settings import (
+    get_backup_settings,
     get_general_settings,
     get_task_settings,
     get_translation_defaults,
     get_webhook_settings,
+    update_backup_settings,
     update_general_settings,
     update_task_settings,
     update_translation_defaults,
     update_webhook_settings,
 )
 from legendarr_backend.settings.schemas import (
+    BackupSettings,
     GeneralSettings,
     TaskSettings,
     TranslationDefaultsSettings,
@@ -66,3 +69,13 @@ def read_general_settings() -> GeneralSettings:
 @router.put("/general")
 def save_general_settings(update: GeneralSettings) -> GeneralSettings:
     return update_general_settings(get_settings(), update)
+
+
+@router.get("/backup-retention")
+def read_backup_settings() -> BackupSettings:
+    return get_backup_settings(get_settings())
+
+
+@router.put("/backup-retention")
+def save_backup_settings(update: BackupSettings) -> BackupSettings:
+    return update_backup_settings(get_settings(), update)

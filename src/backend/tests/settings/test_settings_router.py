@@ -162,3 +162,31 @@ def test_put_general_settings_rejects_unsupported_locale(api_client, tmp_path):
 
     assert response.status_code == 422
     assert (tmp_path / "config.yaml").read_text() == before
+
+
+def test_get_backup_retention_returns_default(api_client):
+    response = api_client.get("/settings/backup-retention")
+
+    assert response.status_code == 200
+    assert response.json() == {"backup_retention_count": 7}
+
+
+def test_put_backup_retention_persists_and_round_trips(api_client, tmp_path):
+    response = api_client.put("/settings/backup-retention", json={"backup_retention_count": 3})
+
+    assert response.status_code == 200
+    assert response.json() == {"backup_retention_count": 3}
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["backup_retention_count"] == 3
+    # A later GET reads the file back — the value survives a restart.
+    assert api_client.get("/settings/backup-retention").json() == {"backup_retention_count": 3}
+
+
+def test_put_backup_retention_rejects_zero(api_client, tmp_path):
+    api_client.get("/settings/backup-retention")
+    before = (tmp_path / "config.yaml").read_text()
+
+    response = api_client.put("/settings/backup-retention", json={"backup_retention_count": 0})
+
+    assert response.status_code == 422
+    assert (tmp_path / "config.yaml").read_text() == before

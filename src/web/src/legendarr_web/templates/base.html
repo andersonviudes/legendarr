@@ -155,7 +155,8 @@
                   request.url.path.startswith("/settings/metadata-source") and not
                   request.url.path.startswith("/settings/media-servers") and not
                   request.url.path.startswith("/settings/tasks") and not
-                  request.url.path.startswith("/settings/general") %}aria-current="page"{% endif %}
+                  request.url.path.startswith("/settings/general") and not
+                  request.url.path.startswith("/settings/backup") %}aria-current="page"{% endif %}
               >{{ icon("languages") }}<span>{{ t("nav.settings.language_profiles") }}</span></a>
             </li>
             <li>
@@ -230,6 +231,12 @@
                 href="/settings/general/"
                 {% if request.url.path.startswith("/settings/general") %}aria-current="page"{% endif %}
               >{{ icon("globe") }}<span>{{ t("nav.settings.general") }}</span></a>
+            </li>
+            <li>
+              <a
+                href="/settings/backup/"
+                {% if request.url.path.startswith("/settings/backup") %}aria-current="page"{% endif %}
+              >{{ icon("hard-drive") }}<span>{{ t("nav.settings.backup") }}</span></a>
             </li>
           </ul>
           <button

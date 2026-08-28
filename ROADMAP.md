@@ -442,9 +442,11 @@ from leftover temp files, and a bad upgrade or a corrupted database isn't a disa
 
 - [x] **Operations** — Cleanup job: remove temporary files left behind by embedded-track
   extraction and stale acquisition/translation requests.
-- [ ] **Operations** — Backup/restore: export the database (language profiles, settings,
+- [x] **Operations** — Backup/restore: export the database (language profiles, settings,
   media/translation history) and configuration to a single archive from the Settings page,
   with basic retention, and restore from one — before upgrades and for moving to a new host.
+  Shipped scoped to `config.yaml` + the Fernet key only, not the SQLite database — see
+  `docs/features/backup-restore.md`.
 
 ## 1.0.0 — Official release
 

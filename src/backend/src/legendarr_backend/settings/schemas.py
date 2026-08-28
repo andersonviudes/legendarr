@@ -59,3 +59,10 @@ class GeneralSettings(BaseModel):
     preference, same posture as `TranslationDefaultsSettings`."""
 
     ui_locale: UiLocale = "en"
+
+
+class BackupSettings(BaseModel):
+    """How many `backup/` archives (`config.yaml` + Fernet key, ROADMAP.md 0.22.0) to
+    keep in `data_dir/backups/` before the oldest are pruned on the next create."""
+
+    backup_retention_count: int = Field(ge=1)

@@ -1,0 +1,10 @@
+{# Swapped into #restore-result by the restore form's htmx submit. Reuses
+   media_library's subtitle-acquire inline-result color classes rather than defining new
+   ones. #}
+{% if error %}
+<p class="subtitle-acquire-result--error">{{ error }}</p>
+<div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>
+{% else %}
+<p class="subtitle-acquire-result--success">{{ message }}</p>
+<div hidden data-toast-message="{{ message }}" data-toast-type="success"></div>
+{% endif %}
