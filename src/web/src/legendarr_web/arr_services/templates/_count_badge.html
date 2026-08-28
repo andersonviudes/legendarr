@@ -1,5 +1,2 @@
-{% if count %}
-<span id="arr-services-count-badge" class="app-nav-badge">{{ count }}</span>
-{% else %}
-<span id="arr-services-count-badge" hidden></span>
-{% endif %}
+{% from "macros.html" import count_badge %}
+{{ count_badge("arr-services-count-badge", count) }}

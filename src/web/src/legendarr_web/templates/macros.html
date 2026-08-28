@@ -9,6 +9,20 @@
 {% endmacro %}
 
 {#
+  Sidebar nav-item count badge — shared shape for every slice's "how many of these are
+  registered" htmx partial (Arr Services, Media Metadata, Media Servers, Subtitle
+  Providers, Subtitle Proxies). `id` is each slice's own placeholder span id in
+  base.html, kept stable across the swap.
+#}
+{% macro count_badge(id, count) %}
+{% if count %}
+<span id="{{ id }}" class="app-nav-badge">{{ count }}</span>
+{% else %}
+<span id="{{ id }}" hidden></span>
+{% endif %}
+{% endmacro %}
+
+{#
   "Sync Now" trigger for the Library pages (Series/Movies) — enqueues an immediate
   library sync via POST /media/sync instead of waiting for the scheduled interval.
 #}
