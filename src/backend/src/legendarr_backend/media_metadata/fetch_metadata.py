@@ -108,6 +108,27 @@ def _enabled_providers(session: Session) -> list[MetadataProviderConfig]:
     ]
 
 
+def cache_poster_now(session: Session, *, media_type: MediaType, media_id: int) -> bool:
+    """On-demand fallback for `legendarr_web`'s poster route: called when a page is
+    about to show an item's poster and it isn't cached on disk yet — before the
+    periodic refresh job has gotten to it, or after a cached file went missing. Fetches
+    and writes it right now instead of waiting for the next scheduled run. Returns
+    whether a poster is cached after this call — `False` if the item has no
+    `MediaMetadata` row, no known `poster_url`, or the download failed.
+    """
+    key_column = MediaMetadata.movie_id if media_type == "movie" else MediaMetadata.series_id
+    metadata = session.exec(select(MediaMetadata).where(key_column == media_id)).first()
+    if metadata is None or metadata.poster_url is None:
+        return False
+    poster_cached_at = _cache_poster(media_type, media_id, metadata.poster_url)
+    if poster_cached_at is None:
+        return False
+    metadata.poster_cached_at = poster_cached_at
+    session.add(metadata)
+    session.commit()
+    return True
+
+
 def _fetch_and_store(
     session: Session,
     providers: list[MetadataProviderConfig],

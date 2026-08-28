@@ -293,6 +293,69 @@ def test_fetch_metadata_for_new_items_sets_poster_cached_at_when_download_succee
     assert stored.poster_cached_at is not None
 
 
+def test_cache_poster_now_returns_false_without_a_metadata_row(in_memory_session):
+    assert (
+        fetch_metadata.cache_poster_now(in_memory_session, media_type="movie", media_id=1) is False
+    )
+
+
+def test_cache_poster_now_returns_false_without_a_poster_url(in_memory_session):
+    session = in_memory_session
+    movie = _seed_movie(session)
+    assert movie.id is not None
+    session.add(
+        MediaMetadata(movie_id=movie.id, fetched_at=fetch_metadata.datetime.now(fetch_metadata.UTC))
+    )
+    session.commit()
+
+    assert fetch_metadata.cache_poster_now(session, media_type="movie", media_id=movie.id) is False
+
+
+def test_cache_poster_now_downloads_and_sets_poster_cached_at(in_memory_session, monkeypatch):
+    session = in_memory_session
+    movie = _seed_movie(session)
+    assert movie.id is not None
+    session.add(
+        MediaMetadata(
+            movie_id=movie.id,
+            poster_url="https://cdn/poster.jpg",
+            fetched_at=fetch_metadata.datetime.now(fetch_metadata.UTC),
+        )
+    )
+    session.commit()
+    monkeypatch.setattr(
+        fetch_metadata,
+        "_cache_poster",
+        lambda *args, **kwargs: fetch_metadata.datetime.now(fetch_metadata.UTC),
+    )
+
+    cached = fetch_metadata.cache_poster_now(session, media_type="movie", media_id=movie.id)
+
+    assert cached is True
+    stored = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).one()
+    assert stored.poster_cached_at is not None
+
+
+def test_cache_poster_now_returns_false_when_download_fails(in_memory_session):
+    # The autouse `_no_real_poster_downloads` fixture already stubs `_cache_poster` to
+    # return `None`, same as a real download failure — no extra monkeypatch needed.
+    session = in_memory_session
+    movie = _seed_movie(session)
+    assert movie.id is not None
+    session.add(
+        MediaMetadata(
+            movie_id=movie.id,
+            poster_url="https://cdn/poster.jpg",
+            fetched_at=fetch_metadata.datetime.now(fetch_metadata.UTC),
+        )
+    )
+    session.commit()
+
+    cached = fetch_metadata.cache_poster_now(session, media_type="movie", media_id=movie.id)
+
+    assert cached is False
+
+
 def test_fetch_metadata_for_movie_refetch_overwrites_the_same_poster_file(
     in_memory_session, monkeypatch, tmp_path
 ):

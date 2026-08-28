@@ -107,6 +107,38 @@ refetch overwrites the same filename in place.
 Full plan/rationale (including the alternatives considered for each of the four confirmed
 decisions above) is in the now-consumed plan file; this memory is the durable record.
 
+**On-demand fallback added same day, same branch**, after a follow-up user message
+("cria o fallback sobre demanda"). Two other things that message raised were confirmed
+*not* to change: `metadata_refresh_interval_minutes`'s default stays 1 day (not 30), and
+the refresh/cleanup jobs stay separate (not merged into one). The fallback itself:
+backend gained `fetch_metadata.cache_poster_now(session, *, media_type, media_id) -> bool`
+(reuses `_cache_poster`, looks the `MediaMetadata` row up itself) behind two thin routes,
+`POST /media/movies/{id}/poster-cache` and `POST /media/series/{id}/poster-cache` (both
+in `media_library/router.py`, not `media_metadata/router.py` — matches where the other
+per-item movie/series actions already live, e.g. `.../scan`). On the web side, this is
+**not** implemented as a smarter `/posters` mount — that mount stayed a plain `StaticFiles`
+directory, unauthenticated, unchanged. A raw `Starlette` sub-app calling the backend on a
+cache miss was the first design (keeps the mount's auth-bypass posture) but was dropped:
+`stub_backend_client`'s `app.dependency_overrides[get_backend_client]` only intercepts
+FastAPI-DI routes, so a mounted sub-app calling the backend itself would be untestable
+with the existing test fixture. Instead, `media_library/service.py` gained
+`ensure_poster_cached`/`ensure_posters_cached`/`ensure_wanted_posters_cached`, called from
+every `media_library/router.py` page handler that renders a poster (`show_movies`,
+`show_series`, `show_wanted*`, `show_movie`, `show_series_item`) right after fetching the
+list/item and before rendering: if `poster_url` is set but `poster_cached` isn't, POST the
+new backend route and flip `poster_cached` on the dict in place before the template sees
+it — same DI path (`Depends(get_backend_client)`) every other call already uses, so
+`stub_backend_client` covers it for free. List pages run every item's fetch concurrently
+via `asyncio.gather` so one page load isn't gated on N sequential round-trips. Templates
+and the `/posters` mount are **completely unchanged** — still gate on `poster_cached`,
+still never hotlink `poster_url` as an `<img src>` (that "no hotlink" decision is
+unaffected by this: the on-demand path still only ever downloads server-side and serves
+the local copy). Failure is silent and broad on purpose —
+`except (httpx.HTTPError, KeyError, ValueError)` in `ensure_poster_cached`, not just
+`httpx.HTTPError` — because the item dict came straight off `response.json()` with no
+schema validation on the web side; a page just shows the placeholder icon, same as before
+this existed.
+
 **Resolved**: the "explicitly out of scope" note this memory used to carry (surfacing
 `poster_url`/`overview` on `/media/movies`/`/media/series`, tracked at
 [[legendarr-media-library-list-ui-not-wired]]) is done — those pages now render a poster-grid

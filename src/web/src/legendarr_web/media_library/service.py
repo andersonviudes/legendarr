@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 
 
@@ -54,6 +56,37 @@ async def get_series_item(client: httpx.AsyncClient, series_id: int) -> dict:
     response = await client.get(f"/media/series/{series_id}")
     response.raise_for_status()
     return response.json()
+
+
+async def ensure_poster_cached(client: httpx.AsyncClient, item: dict, media_type: str) -> None:
+    """On-demand fallback (ROADMAP.md 0.20.0): if `item` has a `poster_url` but isn't
+    cached on disk yet, ask the backend to fetch-and-cache it right now instead of
+    showing nothing while the periodic refresh job hasn't gotten to it yet.
+    Best-effort — a failed backend call just leaves the item without a poster, same as
+    before this existed."""
+    if not item.get("poster_url") or item.get("poster_cached"):
+        return
+    kind = "movies" if media_type == "movie" else "series"
+    try:
+        response = await client.post(f"/media/{kind}/{item['id']}/poster-cache")
+        response.raise_for_status()
+        item["poster_cached"] = response.json()["cached"]
+    except (httpx.HTTPError, KeyError, ValueError):
+        pass
+
+
+async def ensure_posters_cached(
+    client: httpx.AsyncClient, items: list[dict], media_type: str
+) -> None:
+    """Runs `ensure_poster_cached` for every item in `items` concurrently, so a list
+    page with several uncached posters isn't gated on them one at a time."""
+    await asyncio.gather(*(ensure_poster_cached(client, item, media_type) for item in items))
+
+
+async def ensure_wanted_posters_cached(client: httpx.AsyncClient, items: list[dict]) -> None:
+    """Same as `ensure_posters_cached`, for the wanted list where movies and series are
+    mixed together — each item's own `kind` picks its poster-cache route."""
+    await asyncio.gather(*(ensure_poster_cached(client, item, item["kind"]) for item in items))
 
 
 async def trigger_movie_scan(client: httpx.AsyncClient, movie_id: int) -> dict:

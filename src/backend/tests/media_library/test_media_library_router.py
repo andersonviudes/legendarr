@@ -10,6 +10,8 @@ from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.media_metadata import fetch_metadata
+from legendarr_backend.media_metadata.models import MediaMetadata
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
 from legendarr_backend.subtitle_acquisition import (
@@ -127,6 +129,67 @@ def test_get_wanted_returns_empty_list_with_nothing_missing(isolated_database):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_cache_movie_poster_route_downloads_and_returns_true(isolated_database, monkeypatch):
+    monkeypatch.setattr(fetch_metadata, "_cache_poster", lambda *args, **kwargs: datetime.now(UTC))
+
+    with TestClient(create_api_app()) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            session.add(
+                MediaMetadata(
+                    movie_id=movie.id,
+                    poster_url="https://cdn/poster.jpg",
+                    fetched_at=datetime.now(UTC),
+                )
+            )
+            session.commit()
+        response = client.post(f"/media/movies/{movie.id}/poster-cache")
+
+    assert response.status_code == 200
+    assert response.json() == {"cached": True}
+    with get_session() as session:
+        stored = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).one()
+        assert stored.poster_cached_at is not None
+
+
+def test_cache_movie_poster_route_returns_false_without_a_poster_url(isolated_database):
+    with TestClient(create_api_app()) as client:
+        movie = _seed_movie()
+        response = client.post(f"/media/movies/{movie.id}/poster-cache")
+
+    assert response.status_code == 200
+    assert response.json() == {"cached": False}
+
+
+def test_cache_series_poster_route_downloads_and_returns_true(isolated_database, monkeypatch):
+    monkeypatch.setattr(fetch_metadata, "_cache_poster", lambda *args, **kwargs: datetime.now(UTC))
+
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        with get_session() as session:
+            session.add(
+                MediaMetadata(
+                    series_id=series.id,
+                    poster_url="https://cdn/poster.jpg",
+                    fetched_at=datetime.now(UTC),
+                )
+            )
+            session.commit()
+        response = client.post(f"/media/series/{series.id}/poster-cache")
+
+    assert response.status_code == 200
+    assert response.json() == {"cached": True}
+
+
+def test_cache_series_poster_route_returns_false_without_a_poster_url(isolated_database):
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        response = client.post(f"/media/series/{series.id}/poster-cache")
+
+    assert response.status_code == 200
+    assert response.json() == {"cached": False}
 
 
 def test_get_movie_returns_detail_with_files(isolated_database):
