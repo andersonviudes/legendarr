@@ -14,9 +14,10 @@ A page that needs JS loads it by overriding the `scripts` block from
 {% endblock %}
 ```
 
-Exception: `sidebar.js`, `theme.js`, and `toast.js` belong to `base.html` itself (every page
-has the sidebar, the theme toggle, and the toast container), so they're loaded directly in
-`base.html` rather than through the per-page `scripts` block.
+Exception: `sidebar.js`, `theme.js`, `toast.js`, `running-tasks.js`, and `topbar.js` belong to
+`base.html` itself (every page has the sidebar, the theme toggle, the toast container, the
+topbar's notifications/search disclosures, and the running-tasks refresh nudge), so they're
+loaded directly in `base.html` rather than through the per-page `scripts` block.
 
 Exception: `provider-test-connection.js` is shared by any edit-form page whose "Test" button
 has no client-side required fields to validate first (`subtitle_provider_form.html`,
