@@ -17,11 +17,13 @@ from legendarr_backend.subtitle_acquisition import (
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     add_blacklist_entry,
 )
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
     upgrade_subtitle_for_media_file,

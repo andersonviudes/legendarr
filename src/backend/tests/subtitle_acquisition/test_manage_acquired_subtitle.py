@@ -3,11 +3,13 @@ from datetime import UTC, datetime
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 

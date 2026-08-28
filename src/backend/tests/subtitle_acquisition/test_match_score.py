@@ -1,4 +1,7 @@
-from legendarr_backend.subtitle_acquisition.match_score import pick_best_match, score_candidate
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    pick_best_match,
+    score_candidate,
+)
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 
 

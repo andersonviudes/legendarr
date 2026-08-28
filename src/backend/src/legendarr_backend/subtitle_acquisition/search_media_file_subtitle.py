@@ -14,7 +14,9 @@ from legendarr_backend.scheduling.circuit_breaker import (
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
-from legendarr_backend.subtitle_acquisition.match_score import score_candidate
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    score_candidate,
+)
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 

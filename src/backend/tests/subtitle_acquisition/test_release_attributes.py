@@ -1,4 +1,4 @@
-from legendarr_backend.subtitle_acquisition.release_attributes import (
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_attributes import (
     ReleaseAttributes,
     extract_release_attributes,
     normalize_release_text,

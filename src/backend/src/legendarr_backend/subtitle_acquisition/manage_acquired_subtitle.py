@@ -3,7 +3,9 @@ from datetime import UTC, datetime
 from sqlmodel import Session, select
 
 from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_attempt
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin

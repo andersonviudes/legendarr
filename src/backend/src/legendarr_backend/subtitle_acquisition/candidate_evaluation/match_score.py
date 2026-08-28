@@ -8,11 +8,11 @@ attributes the candidate shares with the reference filename.
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 
-from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
-from legendarr_backend.subtitle_acquisition.release_attributes import (
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_attributes import (
     extract_release_attributes,
     strip_known_attribute_tokens,
 )
+from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 
 DEFAULT_CUTOFF = 0.4
 

@@ -4,13 +4,17 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    evaluate_candidate,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
+    passes_quality_gate,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import evaluate_candidate
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
-from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import SubtitleCandidate
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 

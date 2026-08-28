@@ -9,10 +9,12 @@ from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist 
     is_translation_blacklisted,
     list_blacklisted_download_ids,
 )
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
+    CandidateEvaluation,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
-from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select

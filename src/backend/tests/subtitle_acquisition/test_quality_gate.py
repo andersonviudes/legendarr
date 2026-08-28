@@ -1,4 +1,6 @@
-from legendarr_backend.subtitle_acquisition.quality_gate import passes_quality_gate
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
+    passes_quality_gate,
+)
 from legendarr_backend.subtitle_discovery.subtitle_format import SubtitleLine, compose_srt
 
 
