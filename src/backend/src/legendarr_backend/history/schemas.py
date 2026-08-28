@@ -18,3 +18,8 @@ class HistoryEntryRead(BaseModel):
     provider: str | None
     error_message: str | None
     occurred_at: datetime
+    # The winning candidate's match score (0.0-1.0) — only ever set on an acquisition
+    # success, since that's the only source table that scores its candidates
+    # (`AcquisitionAttempt.score`); `None` for a translation row (no such concept) and
+    # for either failure table (no winning candidate to score).
+    score: float | None

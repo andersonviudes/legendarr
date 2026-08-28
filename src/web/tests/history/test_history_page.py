@@ -12,6 +12,7 @@ def _history_entry(**overrides) -> dict:
         "provider": "deepl",
         "error_message": None,
         "occurred_at": "2026-08-28T10:00:00",
+        "score": None,
     }
     entry.update(overrides)
     return entry
@@ -33,6 +34,14 @@ def test_history_page_shows_recorded_entries(stub_backend_client):
                     provider=None,
                     error_message="opensubtitles: 401 Unauthorized",
                 ),
+                _history_entry(
+                    category="acquisition",
+                    status="success",
+                    media_title="Baz",
+                    language="en",
+                    provider="opensubtitles",
+                    score=0.9,
+                ),
             ],
         )
 
@@ -46,6 +55,8 @@ def test_history_page_shows_recorded_entries(stub_backend_client):
     assert "deepl" in response.text
     assert "Bar" in response.text
     assert "opensubtitles: 401 Unauthorized" in response.text
+    assert "Baz" in response.text
+    assert "90%" in response.text
 
 
 def test_history_page_shows_empty_state_with_no_activity(stub_backend_client):

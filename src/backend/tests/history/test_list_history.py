@@ -120,6 +120,7 @@ def test_list_history_includes_translation_success_and_failure(in_memory_session
     assert success.language == "pt-BR"
     assert success.provider == "deepl"
     assert success.error_message is None
+    assert success.score is None
 
     failure = next(entry for entry in entries if entry.status == "failure")
     assert failure.category == "translation"
@@ -127,6 +128,7 @@ def test_list_history_includes_translation_success_and_failure(in_memory_session
     assert failure.language == "es"
     assert failure.provider is None
     assert failure.error_message == "google: quota exceeded"
+    assert failure.score is None
 
 
 def test_list_history_includes_acquisition_success_and_failure(in_memory_session, tmp_path):
@@ -166,11 +168,13 @@ def test_list_history_includes_acquisition_success_and_failure(in_memory_session
     # `Subtitle` row it points at.
     assert success.language == "en"
     assert success.provider == "opensubtitles"
+    assert success.score == 0.9
 
     failure = next(entry for entry in entries if entry.status == "failure")
     assert failure.category == "acquisition"
     assert failure.language == "fr"
     assert failure.error_message == "subdl: 500 Internal Server Error"
+    assert failure.score is None
 
 
 def test_list_history_sorts_newest_first_and_caps_at_limit(in_memory_session, tmp_path):
