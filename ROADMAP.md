@@ -405,17 +405,17 @@ from the Settings page instead of only ever seeing English.*
 
 ## 0.20.0 — Dashboard observability
 
-*Use case: a user can watch a translation happen live, see historical trends, and knows when
-a new legendarr version is available — all without leaving the dashboard.*
+*Use case: a user can watch a translation happen live and see historical trends, all without
+leaving the dashboard.*
 
 - [x] **Dashboard & UI** — Statistics view: subtitles translated/acquired over time, per profile
   and provider.
-- [ ] **Dashboard & UI** — Live progress: push per-line/per-job translation and acquisition
+- [x] **Dashboard & UI** — Live progress: push per-line/per-job translation and acquisition
   progress to the dashboard as it happens, instead of only a final status.
 - [x] **Operations** — Translation/acquisition history and error status surfaced in the
-  dashboard.
-- [ ] **Operations** — Announcements and an update check (is a newer legendarr version
-  available), surfaced in the dashboard.
+  dashboard. Known gap (deferred): announcements and an update check (is a newer legendarr
+  version available) were considered for this milestone too, but pushed past 1.0.0 — not
+  essential to any core use case, and not yet placed on the roadmap.
 - [x] **Media library** — Periodic metadata refresh: a scheduled job re-fetches
   `media_metadata` (overview/poster/year/rating) for movies/series already in the library,
   instead of only on first sync or via the manual "Refetch All" action. Defaults to once a
