@@ -36,6 +36,10 @@ class JobQueue(StrEnum):
     # triggered by the "Refetch All" button; its own queue, same `_BULK` reasoning as
     # `SCAN_BULK`/`TRANSLATE_BULK`/`ACQUIRE_BULK`.
     METADATA_BULK = "metadata_bulk"
+    # Orphaned-temp-file sweep (ROADMAP.md 0.22.0) — filesystem-only work (no subprocess,
+    # no provider API call), unrelated to every job type above; its own queue so it never
+    # competes with (or is throttled by) a bulk scan/translate/acquire/metadata run.
+    MAINTENANCE = "maintenance"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
@@ -48,4 +52,5 @@ QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.ACQUIRE_BULK: 1,
     JobQueue.TIMING_SYNC: 2,
     JobQueue.METADATA_BULK: 1,
+    JobQueue.MAINTENANCE: 1,
 }

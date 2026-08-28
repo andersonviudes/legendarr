@@ -80,6 +80,12 @@ class AppConfigFile(BaseModel):
     poster_cache_cleanup_retry_delay_seconds: float = 5.0
     poster_cache_cleanup_max_instances: int = 1
     poster_cache_cleanup_coalesce: bool = True
+    temp_file_cleanup_interval_minutes: int = 1440
+    temp_file_cleanup_retry_attempts: int = Field(default=3, ge=1)
+    temp_file_cleanup_retry_delay_seconds: float = 5.0
+    temp_file_cleanup_max_instances: int = 1
+    temp_file_cleanup_coalesce: bool = True
+    temp_file_cleanup_min_age_minutes: float = 60.0
     speech_to_text_model_size: str = "base"
     speech_to_text_timeout_seconds: float = 1800.0
     # `auth_password_hash` isn't in `_SECRET_FIELDS` — it's already a one-way PBKDF2 hash
@@ -153,6 +159,12 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         ),
         "poster_cache_cleanup_max_instances": settings.poster_cache_cleanup_max_instances,
         "poster_cache_cleanup_coalesce": settings.poster_cache_cleanup_coalesce,
+        "temp_file_cleanup_interval_minutes": settings.temp_file_cleanup_interval_minutes,
+        "temp_file_cleanup_retry_attempts": settings.temp_file_cleanup_retry_attempts,
+        "temp_file_cleanup_retry_delay_seconds": settings.temp_file_cleanup_retry_delay_seconds,
+        "temp_file_cleanup_max_instances": settings.temp_file_cleanup_max_instances,
+        "temp_file_cleanup_coalesce": settings.temp_file_cleanup_coalesce,
+        "temp_file_cleanup_min_age_minutes": settings.temp_file_cleanup_min_age_minutes,
         "speech_to_text_model_size": settings.speech_to_text_model_size,
         "speech_to_text_timeout_seconds": settings.speech_to_text_timeout_seconds,
         "auth_enabled": settings.auth_enabled,

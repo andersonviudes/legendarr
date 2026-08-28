@@ -85,3 +85,13 @@ proactively:**
    Fix at the test-file import site with `import test_connection as check_connection` (or
    similar), not by renaming the source function — the `test_` prefix there is meaningful
    product naming, not a test artifact.
+3. `in_memory_session` only sees a table if its model module is one of the ones
+   `tests/conftest.py` explicitly imports before `create_all` — confirmed 2026-08-28:
+   `subtitle_proxies/models.py` (`SubtitleProxy`) isn't in that import list, so
+   `subtitle_acquisition.models.SubtitleProviderConfig.proxy_id`'s FK can't resolve and
+   `in_memory_session` raises `NoReferencedTableError` — but *only* when pytest is scoped to a
+   subdirectory that doesn't happen to import `subtitle_proxies` first (e.g. `pytest
+   src/backend/tests/maintenance` or `.../media_metadata/test_poster_cache_cleanup.py` alone).
+   The full `make test`/`uv run pytest` run is unaffected (some other file always imports it
+   first) and is the real signal — don't treat a scoped-directory run's collection error as a
+   regression; rerun the full suite before concluding something broke.
