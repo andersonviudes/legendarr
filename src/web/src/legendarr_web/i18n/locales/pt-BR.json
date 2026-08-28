@@ -236,7 +236,10 @@
   "media_servers.token_label": "Token",
   "media_servers.keep_current_token_placeholder": "Deixe em branco para manter o token atual",
 
-  "history.empty": "Nenhuma atividade de tradução ainda — o histórico vai aparecer aqui assim que legendas forem traduzidas.",
+  "history.subtitle": "Tentativas de tradução e aquisição, da mais recente para a mais antiga.",
+  "history.empty": "Nenhuma atividade de tradução ou aquisição ainda — o histórico vai aparecer aqui assim que uma legenda for traduzida ou adquirida.",
+  "history.category.translation": "Tradução",
+  "history.category.acquisition": "Aquisição",
 
   "statistics.subtitle": "Atividade de tradução e aquisição, ao longo do tempo.",
   "statistics.translated_heading": "Traduzidas",

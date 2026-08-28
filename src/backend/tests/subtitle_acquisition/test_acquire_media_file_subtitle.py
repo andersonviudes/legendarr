@@ -13,7 +13,7 @@ from legendarr_backend.subtitle_acquisition import search_context as search_cont
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
-from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle
+from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle, AcquisitionFailure
 from legendarr_backend.subtitle_acquisition.probe_embedded_audio import EmbeddedAudioTrack
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -260,6 +260,29 @@ def test_acquire_subtitle_skips_when_nothing_clears_the_match_cutoff(
 
     assert result.acquired_language is None
     assert result.skipped_reason == "no_match_found"
+    # No provider raised — a clean "nothing above the cutoff" pass isn't an error.
+    assert list(in_memory_session.exec(select(AcquisitionFailure))) == []
+
+
+def test_acquire_subtitle_records_a_failure_when_a_provider_raises_during_search(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FailingProvider())
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "no_match_found"
+    failures = list(in_memory_session.exec(select(AcquisitionFailure)))
+    assert len(failures) == 1
+    assert failures[0].media_file_id == media_file.id
+    assert failures[0].language == "en"
+    assert "failing" in failures[0].error_message
+    assert "boom" in failures[0].error_message
 
 
 def test_acquire_subtitle_downloads_writes_and_rescans(in_memory_session, tmp_path, monkeypatch):
@@ -424,6 +447,8 @@ def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
     result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
 
     assert result.acquired_language == "en"
+    # A recovered fallback isn't a failure — nothing worth surfacing on the History view.
+    assert list(in_memory_session.exec(select(AcquisitionFailure))) == []
 
 
 def test_acquire_subtitle_falls_back_to_the_next_provider_on_quality_gate_failure(

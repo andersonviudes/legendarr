@@ -3,14 +3,19 @@ from datetime import UTC, datetime
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
-from legendarr_backend.subtitle_acquisition.audit_trail import list_acquisition_attempts
+from legendarr_backend.subtitle_acquisition.audit_trail import (
+    list_acquisition_attempts,
+    record_acquisition_failure,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
 )
 from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
+from legendarr_backend.subtitle_acquisition.models import AcquisitionFailure
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
+from sqlmodel import select
 
 
 def _media_file(session, tmp_path) -> MediaFile:
@@ -133,3 +138,23 @@ def test_record_acquired_subtitle_links_an_upgrade_back_to_the_attempt_it_replac
     metadata = get_acquired_subtitle(in_memory_session, subtitle.id)
     assert metadata is not None
     assert metadata.provider == "new-provider"
+
+
+def test_record_acquisition_failure_appends_a_row(in_memory_session, tmp_path):
+    media_file = _media_file(in_memory_session, tmp_path)
+    assert media_file.id is not None
+
+    record_acquisition_failure(
+        in_memory_session,
+        media_file.id,
+        language="en",
+        error_message="opensubtitles: 401 Unauthorized",
+        failed_at=datetime.now(UTC),
+    )
+    in_memory_session.commit()
+
+    failures = list(in_memory_session.exec(select(AcquisitionFailure)))
+    assert len(failures) == 1
+    assert failures[0].media_file_id == media_file.id
+    assert failures[0].language == "en"
+    assert failures[0].error_message == "opensubtitles: 401 Unauthorized"

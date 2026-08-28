@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlmodel import Session, col, select
 
 from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
-from legendarr_backend.subtitle_acquisition.models import AcquisitionAttempt
+from legendarr_backend.subtitle_acquisition.models import AcquisitionAttempt, AcquisitionFailure
 
 
 def record_acquisition_attempt(
@@ -63,3 +63,25 @@ def get_latest_attempt(session: Session, subtitle_id: int) -> AcquisitionAttempt
         .where(AcquisitionAttempt.subtitle_id == subtitle_id)
         .order_by(col(AcquisitionAttempt.id).desc())
     ).first()
+
+
+def record_acquisition_failure(
+    session: Session,
+    media_file_id: int,
+    *,
+    language: str,
+    error_message: str,
+    failed_at: datetime,
+) -> None:
+    """Append one `AcquisitionFailure` row when a source-language search exhausted its
+    provider chain with at least one provider raising — ROADMAP.md 0.20.0's History
+    view data source, the failure counterpart to `record_acquisition_attempt`.
+    """
+    session.add(
+        AcquisitionFailure(
+            media_file_id=media_file_id,
+            language=language,
+            error_message=error_message,
+            failed_at=failed_at,
+        )
+    )

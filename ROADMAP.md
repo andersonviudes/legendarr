@@ -412,7 +412,7 @@ a new legendarr version is available — all without leaving the dashboard.*
   and provider.
 - [ ] **Dashboard & UI** — Live progress: push per-line/per-job translation and acquisition
   progress to the dashboard as it happens, instead of only a final status.
-- [ ] **Operations** — Translation/acquisition history and error status surfaced in the
+- [x] **Operations** — Translation/acquisition history and error status surfaced in the
   dashboard.
 - [ ] **Operations** — Announcements and an update check (is a newer legendarr version
   available), surfaced in the dashboard.

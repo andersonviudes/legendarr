@@ -1,6 +1,32 @@
 {% extends "base.html" %}
+{% from "macros.html" import empty_state %}
 {% block title %}legendarr · {{ t("nav.history") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("history") }} {{ t("nav.history") }}</h1>
-<p>{{ t("history.empty") }}</p>
+<hgroup>
+  <h1>{{ icon("history") }} {{ t("nav.history") }}</h1>
+  <p>{{ t("history.subtitle") }}</p>
+</hgroup>
+
+{% if not entries %}
+{{ empty_state(t("history.empty")) }}
+{% else %}
+<ul class="task-line-list">
+  {% for entry in entries %}
+  <li class="task-line" {% if entry.error_message %}title="{{ entry.error_message }}"{% endif %}>
+    <span class="task-line-status task-line-status--{{ entry.status }}">
+      {{ t("system.tasks.status_" ~ entry.status) }}
+    </span>
+    <span class="task-line-queue">
+      {{ icon("languages") if entry.category == "translation" else icon("captions") }}
+      {{ t("history.category." ~ entry.category) }}
+    </span>
+    <span class="task-line-name">{{ entry.media_title }}</span>
+    <span class="task-line-time">
+      {{ entry.language }}{% if entry.provider %} · {{ entry.provider }}{% endif %}
+    </span>
+    <span class="task-line-time">{{ entry.occurred_at[:19].replace("T", " ") }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}

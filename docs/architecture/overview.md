@@ -40,6 +40,7 @@ src/backend/src/legendarr_backend/
 ├── authentication/          # session-based login (AuthSession) + API key issuance (ROADMAP 0.16.0)
 ├── settings/                # task/translation-default/webhook runtime settings
 ├── statistics/              # translated/acquired subtitle counts, over time, per profile and provider
+├── history/                 # translation/acquisition attempts, successes and failures, merged into one feed
 ├── system/                  # directory browsing, recent logs, running-task status
 ├── arr_clients/             # shared Radarr/Sonarr API clients (sync + connection test)
 ├── config/                  # env Settings + on-disk config.yaml

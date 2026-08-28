@@ -5,10 +5,13 @@ from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
+from legendarr_backend.subtitle_translation.models import TranslationFailure
 from legendarr_backend.subtitle_translation.translation_history import (
     list_translation_attempts,
     record_translation_attempt,
+    record_translation_failure,
 )
+from sqlmodel import select
 
 
 def _media_file(session, tmp_path) -> MediaFile:
@@ -100,3 +103,25 @@ def test_record_translation_attempt_keeps_history_across_a_retranslation(
 
     attempts = list_translation_attempts(in_memory_session, subtitle.id)
     assert [attempt.provider for attempt in attempts] == ["deepl", "google"]
+
+
+def test_record_translation_failure_appends_a_row(in_memory_session, tmp_path):
+    media_file = _media_file(in_memory_session, tmp_path)
+    assert media_file.id is not None
+
+    record_translation_failure(
+        in_memory_session,
+        media_file.id,
+        source_language="en",
+        target_language="pt-BR",
+        error_message="deepl: invalid API key",
+        failed_at=datetime.now(UTC),
+    )
+    in_memory_session.commit()
+
+    failures = list(in_memory_session.exec(select(TranslationFailure)))
+    assert len(failures) == 1
+    assert failures[0].media_file_id == media_file.id
+    assert failures[0].source_language == "en"
+    assert failures[0].target_language == "pt-BR"
+    assert failures[0].error_message == "deepl: invalid API key"

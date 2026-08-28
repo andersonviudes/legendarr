@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import Session, col, select
 
-from legendarr_backend.subtitle_translation.models import TranslationAttempt
+from legendarr_backend.subtitle_translation.models import TranslationAttempt, TranslationFailure
 
 
 def record_translation_attempt(
@@ -39,4 +39,28 @@ def list_translation_attempts(session: Session, subtitle_id: int) -> list[Transl
             .where(TranslationAttempt.subtitle_id == subtitle_id)
             .order_by(col(TranslationAttempt.id))
         ).all()
+    )
+
+
+def record_translation_failure(
+    session: Session,
+    media_file_id: int,
+    *,
+    source_language: str,
+    target_language: str,
+    error_message: str,
+    failed_at: datetime,
+) -> None:
+    """Append one `TranslationFailure` row when every configured provider raised for
+    one target language — ROADMAP.md 0.20.0's History view data source, the failure
+    counterpart to `record_translation_attempt`.
+    """
+    session.add(
+        TranslationFailure(
+            media_file_id=media_file_id,
+            source_language=source_language,
+            target_language=target_language,
+            error_message=error_message,
+            failed_at=failed_at,
+        )
     )

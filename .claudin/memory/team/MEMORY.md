@@ -26,3 +26,4 @@
 - [legendarr Anime Tosho AniDB key requirement](legendarr-animetosho-anidb-key.md) — confirmed real (matches Bazarr); untaken no-auth q=/aid= search fallback exists
 - [legendarr ffmpeg temp-suffix format gotcha](legendarr-ffmpeg-temp-suffix-format-gotcha.md) — ffmpeg calls writing to a .tmp temp sibling need an explicit -f, or every extraction fails
 - [legendarr statistics slice](legendarr-statistics-slice.md) — TranslationAttempt audit trail (translation had none) + statistics/ slice, zero-filled 30-day trend, test_api.py tag-prefix gotcha
+- [legendarr history slice](legendarr-history-slice.md) — TranslationFailure/AcquisitionFailure tables (neither slice persisted a failure before) + history/ slice merging successes and failures
