@@ -6,6 +6,12 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.scheduling.circuit_breaker import (
+    FAILURE_THRESHOLD,
+    BreakerCategory,
+    is_open,
+    record_failure,
+)
 from legendarr_backend.subtitle_acquisition import (
     acquire_media_file_subtitle as acquire_media_file_subtitle_module,
 )
@@ -66,6 +72,9 @@ class _FakeProvider:
 class _FailingProvider:
     name = "failing"
 
+    def __init__(self):
+        self.search_calls = []
+
     def search(
         self,
         title,
@@ -78,6 +87,7 @@ class _FailingProvider:
         video_path=None,
         tvdb_id=None,
     ):
+        self.search_calls.append({"title": title, "language": language})
         raise RuntimeError("boom")
 
     def download(self, result):
@@ -449,6 +459,40 @@ def test_acquire_subtitle_falls_back_to_the_next_provider_on_failure(
     assert result.acquired_language == "en"
     # A recovered fallback isn't a failure — nothing worth surfacing on the History view.
     assert list(in_memory_session.exec(select(AcquisitionFailure))) == []
+
+
+def test_acquire_subtitle_skips_a_provider_with_an_open_circuit(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    failing = _FailingProvider()
+    working = _FakeProvider()
+    _use_chain(monkeypatch, failing, working)
+    for _ in range(FAILURE_THRESHOLD):
+        record_failure(BreakerCategory.ACQUISITION, failing.name)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    assert failing.search_calls == []
+
+
+def test_acquire_subtitle_opens_the_circuit_after_repeated_failures(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FailingProvider())
+
+    for _ in range(FAILURE_THRESHOLD):
+        acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert is_open(BreakerCategory.ACQUISITION, "failing") is True
 
 
 def test_acquire_subtitle_falls_back_to_the_next_provider_on_quality_gate_failure(

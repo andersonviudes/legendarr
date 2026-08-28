@@ -430,7 +430,7 @@ leaving the dashboard.*
 other job down with it, and a scheduled job failure gets retried instead of silently
 vanishing.*
 
-- [ ] **Operations** — Per-provider throttling/circuit breaker so one failing translation or
+- [x] **Operations** — Per-provider throttling/circuit breaker so one failing translation or
   acquisition provider backs off instead of failing every job.
 - [ ] **Operations** — Retry handling around scheduled jobs, building on the per-job
   retry/concurrency policy established at 0.1.0.

@@ -8,6 +8,12 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.circuit_breaker import (
+    BreakerCategory,
+    is_open,
+    record_failure,
+    record_success,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
@@ -88,6 +94,14 @@ def upgrade_subtitle_for_media_file(
     best_score = metadata.score
     try:
         for provider in chain:
+            if is_open(BreakerCategory.ACQUISITION, provider.name):
+                logger.info(
+                    "subtitle provider %r circuit open, skipping upgrade search for %r (%s)",
+                    provider.name,
+                    context.title,
+                    subtitle.language,
+                )
+                continue
             try:
                 candidates = provider.search(
                     context.title,
@@ -99,7 +113,9 @@ def upgrade_subtitle_for_media_file(
                     video_path=video_path,
                     tvdb_id=context.tvdb_id,
                 )
+                record_success(BreakerCategory.ACQUISITION, provider.name)
             except Exception:
+                record_failure(BreakerCategory.ACQUISITION, provider.name)
                 logger.warning(
                     "subtitle provider %r failed searching %r (%s), trying next",
                     provider.name,

@@ -11,6 +11,12 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.circuit_breaker import (
+    BreakerCategory,
+    is_open,
+    record_failure,
+    record_success,
+)
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     clear_translation_blacklist,
     is_translation_blacklisted,
@@ -340,10 +346,21 @@ def _translate_with_fallback(
     last_error: Exception | None = None
     last_provider_name: str | None = None
     for provider in chain:
+        if is_open(BreakerCategory.TRANSLATION, provider.name):
+            logger.info(
+                "translation provider %r circuit open, skipping for media file %d (%s -> %s)",
+                provider.name,
+                media_file_id,
+                source_language,
+                target_language,
+            )
+            continue
         try:
             translated = translate_subtitle(lines, provider, source_language, target_language)
+            record_success(BreakerCategory.TRANSLATION, provider.name)
             return translated, provider.name
         except Exception as exc:
+            record_failure(BreakerCategory.TRANSLATION, provider.name)
             last_error = exc
             last_provider_name = provider.name
             logger.warning(

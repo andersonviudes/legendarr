@@ -5,6 +5,12 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.scheduling.circuit_breaker import (
+    FAILURE_THRESHOLD,
+    BreakerCategory,
+    is_open,
+    record_failure,
+)
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import add_blacklist_entry
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
@@ -39,6 +45,19 @@ class _FailingProvider:
     def translate_batch(
         self, texts: list[str], source_language: str, target_language: str
     ) -> list[str]:
+        raise RuntimeError("boom")
+
+
+class _CountingFailingProvider:
+    name = "failing"
+
+    def __init__(self):
+        self.calls = 0
+
+    def translate_batch(
+        self, texts: list[str], source_language: str, target_language: str
+    ) -> list[str]:
+        self.calls += 1
         raise RuntimeError("boom")
 
 
@@ -298,6 +317,47 @@ def test_translate_media_file_records_a_failure_when_every_provider_fails(
     assert failures[0].target_language == "pt-BR"
     assert "failing" in failures[0].error_message
     assert "boom" in failures[0].error_message
+
+
+def test_translate_media_file_skips_a_provider_with_an_open_circuit(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    failing_provider = _CountingFailingProvider()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [failing_provider, _UppercaseProvider()],
+    )
+    for _ in range(FAILURE_THRESHOLD):
+        record_failure(BreakerCategory.TRANSLATION, failing_provider.name)
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == ["pt-BR"]
+    assert failing_provider.calls == 0
+
+
+def test_translate_media_file_opens_the_circuit_after_repeated_failures(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_FailingProvider()],
+    )
+
+    for _ in range(FAILURE_THRESHOLD):
+        translate_media_file(in_memory_session, media_file, video)
+
+    assert is_open(BreakerCategory.TRANSLATION, "failing") is True
 
 
 def test_translate_media_file_skips_target_language_already_translated(
