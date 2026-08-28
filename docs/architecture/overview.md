@@ -82,3 +82,31 @@ a sibling of the business-domain folders rather than nested under one shared-cod
 
 When adding a new feature, create a new top-level slice folder named after the business
 capability, in whichever module owns it, rather than adding to an existing generic layer.
+
+### When to extract a subdomain
+
+A slice that piles up loose top-level files is a candidate for grouping some of them into a
+subdomain folder, not for splitting into a whole new top-level slice. `subtitle_acquisition/`
+is the fullest example: alongside its `providers/` subdomain (the provider adapters), it also
+has `blacklist/` (`blacklist_subtitle.py`, `manage_subtitle_blacklist.py`),
+`audio_transcription/` (`transcribe_audio.py`, `probe_embedded_audio.py`), and
+`candidate_evaluation/` (`match_score.py`, `quality_gate.py`, `release_attributes.py`,
+`release_filters.py`). Extract one when:
+
+- **Real coupling, not just a shared topic.** At least 2 files that import each other, or that
+  all revolve around the same model/concept — not "these files are kind of related."
+- **Name it after the concern, not the slice** (`blacklist/`, not
+  `subtitle_blacklist_stuff/`) — the same no-stutter convention `http_client/client.py`
+  already follows.
+- **`models.py`/`schemas.py`/`router.py`/`jobs.py` stay at the slice's top level, never inside
+  a subdomain** — a subdomain holds logic/adapters, not the slice's tables, DTOs, or routes.
+- **A helper used by exactly one member of a subdomain moves in with it** (e.g.
+  `providers/napiprojekt_hash.py`, used only by `providers/napiprojekt.py`); a helper the
+  whole slice depends on stays at the top (e.g. `subtitle_acquisition/opensubtitles_hash.py`,
+  used by `search_context.py` to build a search request before any specific provider is
+  chosen).
+- **Tests don't move.** They stay flat under `tests/<slice>/` with a descriptive name, same as
+  `providers/`'s own tests today — only the import path inside each test file changes.
+- **It's a trigger to consider, not an obligation.** A slice with 20+ loose top-level files
+  and a genuinely cohesive group of 2+ is a candidate; don't force a one-file "subdomain" or
+  group files that only share a topic in name — that's speculative structure, not a real fix.
