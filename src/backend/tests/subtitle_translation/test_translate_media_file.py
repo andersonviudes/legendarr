@@ -13,6 +13,7 @@ from legendarr_backend.subtitle_translation import (
     translate_media_file as translate_media_file_module,
 )
 from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
+from legendarr_backend.subtitle_translation.translation_history import list_translation_attempts
 from sqlmodel import select
 
 SAMPLE_SRT = """1
@@ -188,6 +189,19 @@ def test_translate_media_file_writes_translated_srt_and_reconciles_subtitle_row(
     assert result.translated_languages == ["pt-BR"]
     output = tmp_path / "Foo" / "Foo.pt-br.srt"
     assert "HELLO" in output.read_text(encoding="utf-8")
+
+    translated_row = in_memory_session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.language == "pt-br",
+        )
+    ).one()
+    assert translated_row.id is not None
+    attempts = list_translation_attempts(in_memory_session, translated_row.id)
+    assert len(attempts) == 1
+    assert attempts[0].provider == "uppercase"
+    assert attempts[0].source_language == "en"
+    assert attempts[0].target_language == "pt-BR"
 
 
 def test_translate_media_file_cleans_source_text_before_translating(
@@ -486,6 +500,14 @@ def test_translate_media_file_retranslates_when_source_content_changes(
     assert second.translated_languages == ["pt-BR"]
     output = tmp_path / "Foo" / "Foo.pt-br.srt"
     assert "GOODBYE" in output.read_text(encoding="utf-8")
+
+    # The target subtitle_id stays the same across the in-place rewrite (same convention
+    # as `AcquisitionAttempt`), so both attempts land under one subtitle_id — full history
+    # survives instead of being overwritten.
+    assert translated_row.id is not None
+    attempts = list_translation_attempts(in_memory_session, translated_row.id)
+    assert len(attempts) == 2
+    assert [attempt.provider for attempt in attempts] == ["uppercase", "uppercase"]
 
 
 def test_translate_media_file_falls_back_to_embedded_source_when_no_external_matches(

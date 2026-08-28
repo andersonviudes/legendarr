@@ -408,7 +408,7 @@ from the Settings page instead of only ever seeing English.*
 *Use case: a user can watch a translation happen live, see historical trends, and knows when
 a new legendarr version is available — all without leaving the dashboard.*
 
-- [ ] **Dashboard & UI** — Statistics view: subtitles translated/acquired over time, per profile
+- [x] **Dashboard & UI** — Statistics view: subtitles translated/acquired over time, per profile
   and provider.
 - [ ] **Dashboard & UI** — Live progress: push per-line/per-job translation and acquisition
   progress to the dashboard as it happens, instead of only a final status.

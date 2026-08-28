@@ -19,6 +19,7 @@ _TAG_BY_PREFIX = {
     "/subtitle-proxies": "Subtitle Proxies",
     "/translation-providers": "Translation Providers",
     "/system": "System",
+    "/statistics": "Statistics",
 }
 
 

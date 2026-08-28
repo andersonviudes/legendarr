@@ -1,6 +1,6 @@
 ---
 name: legendarr-playwright-mcp-numeric-param-schema-bug
-description: Playwright MCP tools with number/boolean params (browser_resize, browser_wait_for, browser_network_requests, browser_console_messages, browser_handle_dialog) intermittently fail schema validation even with correctly-typed arguments — retry once then fall back to browser_run_code_unsafe
+description: Playwright MCP tools intermittently fail schema validation — number/boolean params fail per-field, and a session's first call(s) can fail with a schema-compile error regardless of param shape; retry once then fall back to browser_run_code_unsafe
 type: feedback
 ---
 
@@ -30,3 +30,11 @@ on an *already-open* dialog: register the handler *before* the action that opens
 script — `page.once('dialog', d => d.accept()); await page.getByRole('button', {name:
 '...'}).click();` — rather than clicking first and trying to handle the dialog reactively
 afterward, which does not reliably resolve it once the native dialog is already blocking.
+
+Confirmed 2026-08-28: a different symptom of the same underlying flakiness — `Failed to compile
+JSON schema for validation: Error: no schema with key or ref
+"https://json-schema.org/draft/2020-12/schema"` on the *first* call of a fresh session, hitting
+`browser_navigate` (single string param), `browser_snapshot` (no required params), and
+`browser_take_screenshot` (has a boolean `fullPage`) alike — so this one isn't specific to
+number/boolean fields, just an early-session glitch. A plain retry of the identical call fixed it
+every time, no `browser_run_code_unsafe` fallback needed for this particular error shape.

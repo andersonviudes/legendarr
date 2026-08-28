@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal, get_args
 
 from sqlalchemy import Column
@@ -90,3 +91,25 @@ class TranslationProviderConfig(SQLModel, table=True):
         )
 
         return provider_credential_fields(self.kind)
+
+
+class TranslationAttempt(SQLModel, table=True):
+    """Append-only record of one successful translation — the Statistics view's data
+    source for "translated ... over time, per profile and provider" (ROADMAP.md 0.20.0),
+    mirroring `subtitle_acquisition.models.AcquisitionAttempt`'s shape and role for the
+    acquisition side.
+
+    Written by `translate_media_file.translate_media_file` once per target language it
+    successfully translates — never for a skipped/failed target, same as
+    `AcquisitionAttempt` only records the winning candidate, not every rejected one.
+    `subtitle_id` points at the target `Subtitle` row (not unique — a target can be
+    retranslated later, e.g. after its source changes, so its full history survives
+    instead of being overwritten).
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    subtitle_id: int = Field(foreign_key="subtitle.id", index=True, ondelete="CASCADE")
+    provider: str
+    source_language: str
+    target_language: str
+    translated_at: datetime

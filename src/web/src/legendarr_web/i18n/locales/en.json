@@ -66,6 +66,7 @@
   "nav.series": "Series",
   "nav.wanted": "Wanted",
   "nav.history": "History",
+  "nav.statistics": "Statistics",
   "nav.settings": "Settings",
   "nav.settings.language_profiles": "Language profiles",
   "nav.settings.arr_services": "Arr Services",
@@ -236,6 +237,14 @@
   "media_servers.keep_current_token_placeholder": "Leave blank to keep the current token",
 
   "history.empty": "No translation activity yet — history will appear here once subtitles are translated.",
+
+  "statistics.subtitle": "Translation and acquisition activity, over time.",
+  "statistics.translated_heading": "Translated",
+  "statistics.acquired_heading": "Acquired",
+  "statistics.trend_heading": "Last 30 days",
+  "statistics.by_profile_heading": "By profile",
+  "statistics.by_provider_heading": "By provider",
+  "statistics.empty": "No activity recorded yet.",
 
   "settings.auth.show_api_key": "Show API key",
   "settings.auth.copy_api_key": "Copy API key",

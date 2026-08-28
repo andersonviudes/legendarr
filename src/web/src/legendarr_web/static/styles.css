@@ -475,6 +475,84 @@ body {
   color: var(--pico-muted-color);
 }
 
+/* === Statistics: daily trend + breakdown bars ===
+   Plain CSS, no chart library — a day/breakdown bar is just a div sized by an inline
+   `style="height/width: N%"` the template computes from the max value in its series. */
+.trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  height: 6rem;
+  margin-block: 1rem 2rem;
+  max-width: 40rem;
+}
+
+.trend-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background-color: var(--pico-card-background-color);
+  border-radius: 0.15rem;
+  overflow: hidden;
+}
+
+.trend-bar-fill {
+  width: 100%;
+  min-height: 2px;
+  background-color: var(--pico-primary);
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 2rem;
+  max-width: 48rem;
+  margin-block: 1rem 2.5rem;
+}
+
+.breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: var(--lg-font-xs);
+}
+
+.breakdown-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-bar {
+  display: block;
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--pico-card-background-color);
+  overflow: hidden;
+}
+
+.breakdown-bar span {
+  display: block;
+  height: 100%;
+  background-color: var(--pico-primary);
+}
+
+.breakdown-count {
+  text-align: right;
+  color: var(--pico-muted-color);
+}
+
 /* === Poster grid: media library, Sonarr/Radarr-style ===
    auto-fit (not auto-fill) collapses the empty tracks a wide viewport would otherwise
    reserve for a handful of items, and the minmax upper bound keeps cards from stretching

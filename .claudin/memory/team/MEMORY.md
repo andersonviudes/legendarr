@@ -18,10 +18,11 @@
 - [legendarr docker-compose dev stack staleness](legendarr-docker-compose-dev-stack-staleness.md) — dev legendarr container silently runs old code until `build` + `up -d` rerun
 - [legendarr i18n conventions](legendarr-i18n-conventions.md) — t() Jinja global, ContextVar (not request.state) for macro support, ui_locale in config.yaml, PR #65
 - [legendarr Playwright cache after rebuild](legendarr-playwright-cache-after-rebuild.md) — bust styles.css/JS with a `?bust=` query after rebuilding the container mid-session
-- [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean params (incl. browser_handle_dialog) intermittently fail validation; retry once then use browser_run_code_unsafe
+- [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean params AND a session's first call(s) intermittently fail schema validation; retry once
 - [legendarr Pico search-input specificity gotcha](legendarr-pico-search-input-specificity-gotcha.md) — Pico's [type=search] padding/height rules silently outrank a bare custom class
 - [legendarr dialog centering inset+margin:auto gotcha](legendarr-dialog-centering-inset-margin-auto-gotcha.md) — native <dialog> with height:auto needs top/left:50%+transform, not inset:0+margin:auto
 - [legendarr OpenSubtitles login auth](legendarr-opensubtitles-login-auth.md) — username/password login like Bazarr, not a user API key; app-level `_APP_API_KEY` is still a placeholder
 - [legendarr apply_patch heading-anchor gotcha](legendarr-apply-patch-heading-anchor-gotcha.md) — trailing context spanning into the next `##` heading rejects a hunk that looks byte-correct
 - [legendarr Anime Tosho AniDB key requirement](legendarr-animetosho-anidb-key.md) — confirmed real (matches Bazarr); untaken no-auth q=/aid= search fallback exists
 - [legendarr ffmpeg temp-suffix format gotcha](legendarr-ffmpeg-temp-suffix-format-gotcha.md) — ffmpeg calls writing to a .tmp temp sibling need an explicit -f, or every extraction fails
+- [legendarr statistics slice](legendarr-statistics-slice.md) — TranslationAttempt audit trail (translation had none) + statistics/ slice, zero-filled 30-day trend, test_api.py tag-prefix gotcha

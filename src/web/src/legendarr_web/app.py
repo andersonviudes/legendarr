@@ -20,6 +20,7 @@ from legendarr_web.media_metadata.router import router as media_metadata_router
 from legendarr_web.media_servers.router import router as media_servers_router
 from legendarr_web.settings.router import general_router as general_settings_router
 from legendarr_web.settings.router import router as settings_router
+from legendarr_web.statistics.router import router as statistics_router
 from legendarr_web.subtitle_acquisition.router import router as subtitle_acquisition_router
 from legendarr_web.subtitle_proxies.router import router as subtitle_proxies_router
 from legendarr_web.subtitle_translation.router import router as translation_provider_router
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(settings_router)
     app.include_router(general_settings_router)
     app.include_router(history_router)
+    app.include_router(statistics_router)
     app.include_router(system_router)
 
     @app.exception_handler(AuthenticationRequiredError)

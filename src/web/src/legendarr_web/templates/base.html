@@ -130,6 +130,12 @@
                 {% if request.url.path.startswith("/history") %}aria-current="page"{% endif %}
               >{{ icon("history") }}<span>{{ t("nav.history") }}</span></a>
             </li>
+            <li>
+              <a
+                href="/statistics/"
+                {% if request.url.path.startswith("/statistics") %}aria-current="page"{% endif %}
+              >{{ icon("chart-column") }}<span>{{ t("nav.statistics") }}</span></a>
+            </li>
           </ul>
           <button
             type="button"

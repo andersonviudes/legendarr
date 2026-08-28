@@ -66,6 +66,7 @@
   "nav.series": "Séries",
   "nav.wanted": "Procurados",
   "nav.history": "Histórico",
+  "nav.statistics": "Estatísticas",
   "nav.settings": "Configurações",
   "nav.settings.language_profiles": "Perfis de idioma",
   "nav.settings.arr_services": "Serviços Arr",
@@ -236,6 +237,14 @@
   "media_servers.keep_current_token_placeholder": "Deixe em branco para manter o token atual",
 
   "history.empty": "Nenhuma atividade de tradução ainda — o histórico vai aparecer aqui assim que legendas forem traduzidas.",
+
+  "statistics.subtitle": "Atividade de tradução e aquisição, ao longo do tempo.",
+  "statistics.translated_heading": "Traduzidas",
+  "statistics.acquired_heading": "Adquiridas",
+  "statistics.trend_heading": "Últimos 30 dias",
+  "statistics.by_profile_heading": "Por perfil",
+  "statistics.by_provider_heading": "Por provedor",
+  "statistics.empty": "Nenhuma atividade registrada ainda.",
 
   "settings.auth.show_api_key": "Mostrar chave de API",
   "settings.auth.copy_api_key": "Copiar chave de API",
