@@ -39,6 +39,7 @@ src/backend/src/legendarr_backend/
 ├── subtitle_timing_sync/    # manual, per-subtitle ffsubsync timing-correction pass
 ├── authentication/          # session-based login (AuthSession) + API key issuance (ROADMAP 0.16.0)
 ├── settings/                # task/translation-default/webhook runtime settings
+├── statistics/              # translated/acquired subtitle counts, over time, per profile and provider
 ├── system/                  # directory browsing, recent logs, running-task status
 ├── arr_clients/             # shared Radarr/Sonarr API clients (sync + connection test)
 ├── config/                  # env Settings + on-disk config.yaml
@@ -58,6 +59,7 @@ src/web/src/legendarr_web/
 ├── subtitle_translation/    # /settings/translation-providers/ routes (enable, credentials, test, default)
 ├── media_library/           # /media/movies, /media/series routes
 ├── history/                 # /history/ route
+├── statistics/              # /statistics/ route
 ├── system/                  # /system/ route
 ├── authentication/          # /login, /logout routes (session cookie set/cleared)
 ├── settings/                # /settings/tasks/, /settings/general/ routes (retry/interval settings, display language + webhook URL + login toggle + API key)

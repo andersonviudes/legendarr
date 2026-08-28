@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session, col, select
@@ -26,6 +27,7 @@ from legendarr_backend.subtitle_discovery.subtitle_format import (
 from legendarr_backend.subtitle_translation.provider_chain import resolve_provider_chain
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
 from legendarr_backend.subtitle_translation.translate_subtitle import translate_subtitle
+from legendarr_backend.subtitle_translation.translation_history import record_translation_attempt
 
 logger = logging.getLogger(__name__)
 
@@ -178,22 +180,28 @@ def translate_media_file(
     lines = clean_subtitle_lines(lines)
 
     translated_languages = []
+    provider_by_target_language: dict[str, str] = {}
     for target_language in missing_targets:
-        translated = _translate_with_fallback(
+        result = _translate_with_fallback(
             chain, lines, source.language, target_language, media_file.id
         )
-        if translated is None:
+        if result is None:
             continue
+        translated_lines, provider_name = result
         # Lowercased to match the suffix `_guess_language_from_filename` will read back
         # on the next scan — otherwise a mixed-case profile code (e.g. `pt-BR`) would
         # never match its own output and get retranslated every run.
         output_path = video_path.with_name(f"{video_path.stem}.{target_language.lower()}.srt")
-        output_path.write_text(compose_srt(translated), encoding="utf-8")
+        output_path.write_text(compose_srt(translated_lines), encoding="utf-8")
         translated_languages.append(target_language)
+        provider_by_target_language[target_language] = provider_name
 
     if translated_languages:
         scan_subtitles_for_media_file(session, media_file, video_path)
         _stamp_translated_from_hash(session, media_file, translated_languages, source.content_hash)
+        _record_translation_attempts(
+            session, media_file, translated_languages, source.language, provider_by_target_language
+        )
         if source_subtitle_id is not None:
             for target_language in translated_languages:
                 clear_translation_blacklist(session, media_file.id, target_language)
@@ -254,6 +262,38 @@ def _stamp_translated_from_hash(
             session.add(row)
 
 
+def _record_translation_attempts(
+    session: Session,
+    media_file: MediaFile,
+    translated_languages: list[str],
+    source_language: str,
+    provider_by_target_language: dict[str, str],
+) -> None:
+    """Append one `TranslationAttempt` per just-translated target — ROADMAP.md 0.20.0's
+    Statistics view data source. Same row lookup as `_stamp_translated_from_hash` (the
+    `Subtitle` row `scan_subtitles_for_media_file` just wrote/updated), since an audit
+    trail row needs the target's own `subtitle_id`, not the source's.
+    """
+    translated_at = datetime.now(UTC)
+    for target_language in translated_languages:
+        row = session.exec(
+            select(Subtitle).where(
+                Subtitle.media_file_id == media_file.id,
+                Subtitle.origin == SubtitleOrigin.EXTERNAL,
+                Subtitle.language == target_language.lower(),
+            )
+        ).first()
+        if row is not None and row.id is not None:
+            record_translation_attempt(
+                session,
+                row.id,
+                provider=provider_by_target_language[target_language],
+                source_language=source_language,
+                target_language=target_language,
+                translated_at=translated_at,
+            )
+
+
 def _pick_source_subtitle(
     profile: LanguageProfile,
     external_subtitles: dict[str, Subtitle],
@@ -282,10 +322,11 @@ def _translate_with_fallback(
     source_language: str,
     target_language: str,
     media_file_id: int,
-) -> list[SubtitleLine] | None:
+) -> tuple[list[SubtitleLine], str] | None:
     for provider in chain:
         try:
-            return translate_subtitle(lines, provider, source_language, target_language)
+            translated = translate_subtitle(lines, provider, source_language, target_language)
+            return translated, provider.name
         except Exception:
             logger.warning(
                 "translation provider %r failed for media file %d (%s -> %s), trying next",

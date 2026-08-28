@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "macros.html" import empty_state %}
+{% block title %}legendarr · {{ t("nav.statistics") }}{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ icon("chart-column") }} {{ t("nav.statistics") }}</h1>
+  <p>{{ t("statistics.subtitle") }}</p>
+</hgroup>
+
+{% for key, icon_name, heading in [
+  ("translated", "languages", t("statistics.translated_heading")),
+  ("acquired", "captions", t("statistics.acquired_heading")),
+] %}
+{% set category = statistics[key] %}
+<section>
+  <h2>{{ icon(icon_name) }} {{ heading }}</h2>
+  <p class="stat-value">{{ category.total }}</p>
+
+  <h3>{{ t("statistics.trend_heading") }}</h3>
+  {% set daily_counts = category.daily | map(attribute="count") | list %}
+  {% set max_daily = daily_counts | max if daily_counts else 0 %}
+  <div class="trend-bars">
+    {% for day in category.daily %}
+    <div class="trend-bar" title="{{ day.date }}: {{ day.count }}">
+      <div
+        class="trend-bar-fill"
+        style="height: {{ ((day.count / max_daily * 100) if max_daily else 0) | round(1) }}%"
+      ></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="breakdown-grid">
+    <div>
+      <h3>{{ t("statistics.by_profile_heading") }}</h3>
+      {% if not category.by_profile %}
+      {{ empty_state(t("statistics.empty")) }}
+      {% else %}
+      {% set max_profile = category.by_profile[0].count %}
+      <ul class="breakdown-list">
+        {% for entry in category.by_profile %}
+        <li class="breakdown-row">
+          <span class="breakdown-label">{{ entry.label }}</span>
+          <span class="breakdown-bar"
+            ><span style="width: {{ (entry.count / max_profile * 100) | round(1) }}%"></span
+          ></span>
+          <span class="breakdown-count">{{ entry.count }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    <div>
+      <h3>{{ t("statistics.by_provider_heading") }}</h3>
+      {% if not category.by_provider %}
+      {{ empty_state(t("statistics.empty")) }}
+      {% else %}
+      {% set max_provider = category.by_provider[0].count %}
+      <ul class="breakdown-list">
+        {% for entry in category.by_provider %}
+        <li class="breakdown-row">
+          <span class="breakdown-label">{{ entry.label }}</span>
+          <span class="breakdown-bar"
+            ><span style="width: {{ (entry.count / max_provider * 100) | round(1) }}%"></span
+          ></span>
+          <span class="breakdown-count">{{ entry.count }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}
