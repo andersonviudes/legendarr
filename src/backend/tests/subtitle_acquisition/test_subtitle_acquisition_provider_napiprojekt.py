@@ -2,12 +2,12 @@ import httpx
 import pytest
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
-from legendarr_backend.subtitle_acquisition.napiprojekt_hash import (
+from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_acquisition.providers.napiprojekt import NapiprojektProvider
+from legendarr_backend.subtitle_acquisition.providers.napiprojekt_hash import (
     compute_napiprojekt_hash,
     napiprojekt_subhash,
 )
-from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
-from legendarr_backend.subtitle_acquisition.providers.napiprojekt import NapiprojektProvider
 
 _SUBTITLE_TEXT = "1\n00:00:00,000 --> 00:00:01,000\nCześć\n\n"
 
