@@ -35,6 +35,7 @@ class _RawEntry:
     provider: str | None
     error_message: str | None
     occurred_at: datetime
+    score: float | None
 
 
 def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEntryRead]:
@@ -91,6 +92,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 provider=win.provider,
                 error_message=None,
                 occurred_at=win.translated_at,
+                score=None,
             )
         )
     for failure in translation_failures:
@@ -103,6 +105,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 provider=None,
                 error_message=failure.error_message,
                 occurred_at=failure.failed_at,
+                score=None,
             )
         )
     for win in acquisition_wins:
@@ -118,6 +121,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 provider=win.provider,
                 error_message=None,
                 occurred_at=win.attempted_at,
+                score=win.score,
             )
         )
     for failure in acquisition_failures:
@@ -130,6 +134,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 provider=None,
                 error_message=failure.error_message,
                 occurred_at=failure.failed_at,
+                score=None,
             )
         )
 
@@ -148,6 +153,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
             provider=entry.provider,
             error_message=entry.error_message,
             occurred_at=entry.occurred_at,
+            score=entry.score,
         )
         for entry in raw_entries
     ]

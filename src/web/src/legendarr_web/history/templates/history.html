@@ -10,23 +10,40 @@
 {% if not entries %}
 {{ empty_state(t("history.empty")) }}
 {% else %}
-<ul class="task-line-list">
+<table>
+  <thead>
+    <tr>
+      <th scope="col">{{ t("history.table.status") }}</th>
+      <th scope="col">{{ t("history.table.category") }}</th>
+      <th scope="col">{{ t("common.table.title") }}</th>
+      <th scope="col">{{ t("history.table.language_provider") }}</th>
+      <th scope="col">{{ t("history.table.score") }}</th>
+      <th scope="col">{{ t("history.table.date") }}</th>
+    </tr>
+  </thead>
+  <tbody>
   {% for entry in entries %}
-  <li class="task-line" {% if entry.error_message %}title="{{ entry.error_message }}"{% endif %}>
-    <span class="task-line-status task-line-status--{{ entry.status }}">
+  <tr {% if entry.error_message %}title="{{ entry.error_message }}"{% endif %}>
+    <td>
+      <span class="task-line-status task-line-status--{{ entry.status }}">
       {{ t("system.tasks.status_" ~ entry.status) }}
-    </span>
-    <span class="task-line-queue">
+      </span>
+    </td>
+    <td>
+      <span class="task-line-queue">
       {{ icon("languages") if entry.category == "translation" else icon("captions") }}
       {{ t("history.category." ~ entry.category) }}
-    </span>
-    <span class="task-line-name">{{ entry.media_title }}</span>
-    <span class="task-line-time">
+      </span>
+    </td>
+    <td>{{ entry.media_title }}</td>
+    <td>
       {{ entry.language }}{% if entry.provider %} · {{ entry.provider }}{% endif %}
-    </span>
-    <span class="task-line-time">{{ entry.occurred_at[:19].replace("T", " ") }}</span>
-  </li>
+    </td>
+    <td>{% if entry.score is not none %}{{ (entry.score * 100) | round | int }}%{% else %}—{% endif %}</td>
+    <td>{{ entry.occurred_at[:19].replace("T", " ") }}</td>
+  </tr>
   {% endfor %}
-</ul>
+  </tbody>
+</table>
 {% endif %}
 {% endblock %}
