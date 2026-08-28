@@ -34,6 +34,7 @@ def test_wanted_page_renders_missing_items(stub_backend_client):
                     "kind": "movie",
                     "title": "Foo",
                     "poster_url": "https://example.test/foo.jpg",
+                    "poster_cached": True,
                     "missing_languages": ["pt-BR"],
                     "missing_files_count": 1,
                 }
@@ -49,7 +50,7 @@ def test_wanted_page_renders_missing_items(stub_backend_client):
     assert response.status_code == 200
     assert "Foo" in response.text
     assert "pt-BR" in response.text
-    assert "https://example.test/foo.jpg" in response.text
+    assert "/posters/movie_1.jpg" in response.text
 
 
 def test_wanted_movies_page_filters_out_series(stub_backend_client):

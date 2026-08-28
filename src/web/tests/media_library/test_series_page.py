@@ -26,6 +26,7 @@ def test_series_page_renders_synced_series_with_episode_ratio(stub_backend_clien
                     "quality_profile_name": "Any",
                     "overview": None,
                     "poster_url": "https://example.test/bar.jpg",
+                    "poster_cached": True,
                     "year": 2024,
                     "imdb_rating": None,
                     "episode_count": 8,
@@ -44,4 +45,4 @@ def test_series_page_renders_synced_series_with_episode_ratio(stub_backend_clien
     assert "Bar" in response.text
     assert "8 / 8" in response.text
     assert "episode-bar--continuing" in response.text
-    assert "https://example.test/bar.jpg" in response.text
+    assert "/posters/series_1.jpg" in response.text

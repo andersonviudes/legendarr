@@ -10,6 +10,7 @@ from legendarr_web.authentication.session_guard import (
     AuthenticationRequiredError,
     require_authenticated_session,
 )
+from legendarr_web.config.settings import get_web_settings
 from legendarr_web.dashboard.router import router as dashboard_router
 from legendarr_web.history.router import router as history_router
 from legendarr_web.i18n.resolve_locale import resolve_locale
@@ -33,6 +34,15 @@ def create_app() -> FastAPI:
         dependencies=[Depends(require_authenticated_session), Depends(resolve_locale)],
     )
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    # Locally-cached poster images (ROADMAP.md 0.20.0), written by `legendarr_backend` to
+    # `data_dir/posters` and served straight from disk here — same shared-filesystem
+    # posture as `Settings.poster_cache_dir` on the backend side, not an HTTP proxy.
+    # `mkdir` first: `StaticFiles` refuses to mount a directory that doesn't exist yet
+    # (e.g. a brand-new install with nothing cached), and this line runs at import time
+    # via the trailing `app = create_app()` below.
+    posters_dir = get_web_settings().data_dir / "posters"
+    posters_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/posters", StaticFiles(directory=str(posters_dir)), name="posters")
     app.include_router(authentication_router)
     app.include_router(dashboard_router)
     app.include_router(media_library_router)

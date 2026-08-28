@@ -1,8 +1,10 @@
 import logging
 from datetime import UTC, datetime
 
+import httpx
 from sqlmodel import Session, select
 
+from legendarr_backend.config.settings import get_settings
 from legendarr_backend.media_library.models import Movie, Series
 from legendarr_backend.media_metadata.client_factory import build_metadata_provider
 from legendarr_backend.media_metadata.manage_metadata_provider import list_metadata_providers
@@ -10,6 +12,10 @@ from legendarr_backend.media_metadata.models import MediaMetadata, MetadataProvi
 from legendarr_backend.media_metadata.providers.base import MediaType, MetadataResult
 
 logger = logging.getLogger(__name__)
+
+# Posters are small (a few hundred KB at most) — a short timeout is enough, and a slow
+# CDN response shouldn't hold up the rest of a bulk metadata-refresh fan-out.
+_POSTER_DOWNLOAD_TIMEOUT_SECONDS = 10.0
 
 
 def fetch_metadata_for_new_items(
@@ -122,6 +128,13 @@ def _fetch_and_store(
             _merge(merged, config.kind, result)
     if not merged:
         return
+    media_id = movie_id if movie_id is not None else series_id
+    assert media_id is not None
+    poster_url = merged.get("poster_url")
+    if poster_url is not None:
+        poster_cached_at = _cache_poster(media_type, media_id, poster_url)
+        if poster_cached_at is not None:
+            merged["poster_cached_at"] = poster_cached_at
     existing = session.exec(
         select(MediaMetadata).where(
             MediaMetadata.movie_id == movie_id, MediaMetadata.series_id == series_id
@@ -161,6 +174,38 @@ def _safe_fetch(
         return None
     finally:
         client.close()
+
+
+def _cache_poster(media_type: MediaType, media_id: int, poster_url: str) -> datetime | None:
+    """Download `poster_url` and write it to `Settings.poster_cache_dir` as
+    `{media_type}_{media_id}.jpg`, so `legendarr_web`'s static mount can serve it locally
+    instead of hotlinking the provider's CDN (ROADMAP.md 0.20.0).
+
+    Always saved with a `.jpg` extension regardless of the response's actual
+    `Content-Type` — TMDb/TheTVDB/OMDb all serve JPEG posters in practice, and
+    `StaticFiles` picks `Content-Type` off the file extension rather than a stored value,
+    so this keeps serving a plain directory instead of a second lookup. A refetch
+    overwrites the same file in place, so there's no orphan from a poster changing, only
+    from an item leaving the library (see `poster_cache_cleanup` in `jobs.py`).
+
+    Never raises — a failed download just leaves the poster unavailable locally, same
+    "never block the others" posture as `_safe_fetch`.
+    """
+    settings = get_settings()
+    try:
+        response = httpx.get(
+            poster_url, timeout=_POSTER_DOWNLOAD_TIMEOUT_SECONDS, follow_redirects=True
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        logger.exception(
+            "poster download failed for %s %d from %r", media_type, media_id, poster_url
+        )
+        return None
+    settings.poster_cache_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.poster_cache_dir / f"{media_type}_{media_id}.jpg"
+    path.write_bytes(response.content)
+    return datetime.now(UTC)
 
 
 def _merge(merged: dict, kind: str, result: MetadataResult) -> None:

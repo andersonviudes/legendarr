@@ -1,4 +1,7 @@
+import httpx
+import pytest
 from legendarr_backend.arr_services.models import ArrService
+from legendarr_backend.config.settings import Settings
 from legendarr_backend.media_library.models import Movie
 from legendarr_backend.media_metadata import fetch_metadata
 from legendarr_backend.media_metadata.manage_metadata_provider import (
@@ -10,6 +13,21 @@ from legendarr_backend.media_metadata.models import MediaMetadata
 from legendarr_backend.media_metadata.providers.base import MetadataResult
 from legendarr_backend.media_metadata.schemas import MetadataProviderConfigInput
 from sqlmodel import select
+
+# Captured before any test monkeypatches `fetch_metadata._cache_poster` (see
+# `_no_real_poster_downloads` below) — the poster-caching tests that want the real
+# implementation call this instead of `fetch_metadata._cache_poster`, which by then
+# points at the autouse no-op stub.
+_real_cache_poster = fetch_metadata._cache_poster
+
+
+@pytest.fixture(autouse=True)
+def _no_real_poster_downloads(monkeypatch):
+    """Never attempt a real poster download by default — same isolation principle as
+    `conftest.py`'s `_no_real_embedded_subtitle_probing`. The dedicated poster-caching
+    tests below restore `_cache_poster` (via `_real_cache_poster`) or monkeypatch it
+    themselves, which simply overrides this default within that test."""
+    monkeypatch.setattr(fetch_metadata, "_cache_poster", lambda *args, **kwargs: None)
 
 
 class _StubProvider:
@@ -217,3 +235,89 @@ def test_fetch_metadata_for_movie_overwrites_an_existing_row_instead_of_duplicat
     assert len(rows) == 1
     assert rows[0].overview == "refetched"
     assert rows[0].year == 2024
+
+
+def _stub_get_settings(monkeypatch, tmp_path):
+    monkeypatch.setattr(fetch_metadata, "get_settings", lambda: Settings(data_dir=tmp_path))
+
+
+def test_cache_poster_downloads_and_writes_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        fetch_metadata.httpx,
+        "get",
+        lambda *args, **kwargs: httpx.Response(
+            200, content=b"jpeg-bytes", request=httpx.Request("GET", "https://cdn/poster.jpg")
+        ),
+    )
+    _stub_get_settings(monkeypatch, tmp_path)
+
+    cached_at = _real_cache_poster("movie", 42, "https://cdn/poster.jpg")
+
+    assert cached_at is not None
+    assert (tmp_path / "posters" / "movie_42.jpg").read_bytes() == b"jpeg-bytes"
+
+
+def test_cache_poster_returns_none_and_writes_nothing_on_failure(tmp_path, monkeypatch):
+    def _raise(*args, **kwargs):
+        raise httpx.ConnectError("boom")
+
+    monkeypatch.setattr(fetch_metadata.httpx, "get", _raise)
+    _stub_get_settings(monkeypatch, tmp_path)
+
+    cached_at = _real_cache_poster("movie", 42, "https://cdn/poster.jpg")
+
+    assert cached_at is None
+    assert not (tmp_path / "posters" / "movie_42.jpg").exists()
+
+
+def test_fetch_metadata_for_new_items_sets_poster_cached_at_when_download_succeeds(
+    in_memory_session, monkeypatch, tmp_path
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(poster_url="https://cdn/poster.jpg")),
+    )
+    monkeypatch.setattr(
+        fetch_metadata,
+        "_cache_poster",
+        lambda media_type, media_id, poster_url: fetch_metadata.datetime.now(fetch_metadata.UTC),
+    )
+
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    stored = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie.id)).one()
+    assert stored.poster_cached_at is not None
+
+
+def test_fetch_metadata_for_movie_refetch_overwrites_the_same_poster_file(
+    in_memory_session, monkeypatch, tmp_path
+):
+    session = in_memory_session
+    _configure_all_providers(session)
+    movie = _seed_movie(session)
+    _stub_get_settings(monkeypatch, tmp_path)
+    monkeypatch.setattr(fetch_metadata, "_cache_poster", _real_cache_poster)
+
+    def _get_returning(content: bytes):
+        return lambda *args, **kwargs: httpx.Response(
+            200, content=content, request=httpx.Request("GET", "https://cdn/poster.jpg")
+        )
+
+    monkeypatch.setattr(fetch_metadata.httpx, "get", _get_returning(b"first-poster"))
+    monkeypatch.setattr(
+        fetch_metadata,
+        "build_metadata_provider",
+        lambda config: _StubProvider(MetadataResult(poster_url="https://cdn/poster.jpg")),
+    )
+    fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
+
+    monkeypatch.setattr(fetch_metadata.httpx, "get", _get_returning(b"second-poster"))
+    fetch_metadata.fetch_metadata_for_movie(session, movie)
+
+    posters_dir = tmp_path / "posters"
+    assert list(posters_dir.iterdir()) == [posters_dir / f"movie_{movie.id}.jpg"]
+    assert (posters_dir / f"movie_{movie.id}.jpg").read_bytes() == b"second-poster"

@@ -2,12 +2,15 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 
 from legendarr_backend.arr_services.models import ArrService
+from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.media_library.models import Movie, Series
 from legendarr_backend.media_metadata import fetch_metadata
 from legendarr_backend.media_metadata import jobs as jobs_module
 from legendarr_backend.media_metadata.jobs import (
     enqueue_media_metadata_fetch,
     enqueue_metadata_refetch,
+    register_metadata_refresh_job,
+    register_poster_cache_cleanup_job,
 )
 from legendarr_backend.media_metadata.manage_metadata_provider import (
     ensure_metadata_providers_seeded,
@@ -196,5 +199,96 @@ def test_enqueued_metadata_fetch_job_tolerates_deleted_item(in_memory_session, m
     enqueue_media_metadata_fetch(scheduler, "movie", 999, retry_attempts=1, retry_delay_seconds=0.0)
     job = scheduler.get_job("media_metadata_fetch:movie:999")
     assert job is not None
+
+
+def test_register_metadata_refresh_job_wires_config_derived_policy():
+    scheduler = build_scheduler()
+    config = AppConfigFile(
+        metadata_refresh_interval_minutes=30,
+        metadata_refresh_retry_attempts=5,
+        metadata_refresh_retry_delay_seconds=2.0,
+        metadata_refresh_max_instances=3,
+        metadata_refresh_coalesce=False,
+    )
+
+    register_metadata_refresh_job(scheduler, config)
+
+    job = scheduler.get_job("media_metadata_refresh_fanout")
+    assert job is not None
+    assert job.executor == JobQueue.METADATA_BULK.value
+    assert job.max_instances == 3
+    assert job.coalesce is False
+    assert job.trigger.interval.total_seconds() == 30 * 60
+
+
+def test_register_poster_cache_cleanup_job_wires_config_derived_policy():
+    scheduler = build_scheduler()
+    config = AppConfigFile(
+        poster_cache_cleanup_interval_minutes=60,
+        poster_cache_cleanup_max_instances=2,
+        poster_cache_cleanup_coalesce=False,
+    )
+
+    register_poster_cache_cleanup_job(scheduler, config)
+
+    job = scheduler.get_job("media_metadata_poster_cache_cleanup")
+    assert job is not None
+    assert job.executor == JobQueue.METADATA_BULK.value
+    assert job.max_instances == 2
+    assert job.coalesce is False
+    assert job.trigger.interval.total_seconds() == 60 * 60
+
+
+def test_metadata_refresh_job_fanout_calls_enqueue_metadata_refetch(monkeypatch):
+    """The registered job's body reuses `enqueue_metadata_refetch` verbatim — this
+    confirms the wiring without re-testing that function's own fan-out behavior, already
+    covered by `test_enqueue_metadata_refetch_enqueues_every_movie_and_series`."""
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        jobs_module,
+        "enqueue_metadata_refetch",
+        lambda scheduler, session, **kwargs: calls.append(kwargs) or (0, 0),
+    )
+
+    @contextmanager
+    def _session():
+        yield None
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    scheduler = build_scheduler()
+    config = AppConfigFile(
+        metadata_refresh_interval_minutes=1,
+        metadata_refresh_retry_attempts=7,
+        metadata_refresh_retry_delay_seconds=1.5,
+    )
+
+    register_metadata_refresh_job(scheduler, config)
+    job = scheduler.get_job("media_metadata_refresh_fanout")
+    assert job is not None
+    job.func()
+
+    assert calls == [{"retry_attempts": 7, "retry_delay_seconds": 1.5}]
+
+
+def test_poster_cache_cleanup_job_sweep_calls_cleanup_orphaned_posters(monkeypatch):
+    calls: list[object] = []
+    monkeypatch.setattr(
+        jobs_module, "cleanup_orphaned_posters", lambda session: calls.append(session) or 3
+    )
+
+    @contextmanager
+    def _session():
+        yield "the-session"
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    scheduler = build_scheduler()
+    config = AppConfigFile(poster_cache_cleanup_interval_minutes=1)
+
+    register_poster_cache_cleanup_job(scheduler, config)
+    job = scheduler.get_job("media_metadata_poster_cache_cleanup")
+    assert job is not None
+    job.func()
+
+    assert calls == ["the-session"]
 
     job.func()  # must not raise

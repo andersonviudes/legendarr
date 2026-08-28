@@ -11,14 +11,14 @@
 - [legendarr language profile provider removal](legendarr-language-profile-provider-removal.md) — translation_provider was removed from LanguageProfile; provider selection is a separate future feature
 - [legendarr OpenSubtitles search options kept despite YAGNI flag](legendarr-opensubtitles-search-options-kept.md) — use_hash/include_ai_translated/include_machine_translated unused but deliberately kept, confirmed 2026-07-22
 - [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — RESOLVED 2026-08-01 by PR #25; kept as history only
-- [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/TMDb/IMDb providers, "Refetch All" bulk job, confirmed no poster-cache/periodic-refresh gap
+- [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/TMDb/IMDb providers, "Refetch All" bulk job, local poster cache + periodic refresh/cleanup jobs
 - [legendarr type-checking rule](legendarr-type-checking-rule.md) — pyright wired up via pyrightconfig.json, run alongside make lint/make test, not yet in CI
 - [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — RESOLVED 2026-08-27: also broke the live app's logs/System page, not just caplog
 - [legendarr VobSub/DVB OCR deferred](legendarr-vobsub-dvb-ocr-deferred.md) — ROADMAP 0.14.0 only covers PGS OCR; VobSub/DVB need their own parser, not on the roadmap yet
 - [legendarr docker-compose dev stack staleness](legendarr-docker-compose-dev-stack-staleness.md) — dev legendarr container silently runs old code until `build` + `up -d` rerun
 - [legendarr i18n conventions](legendarr-i18n-conventions.md) — t() Jinja global, ContextVar (not request.state) for macro support, ui_locale in config.yaml, PR #65
 - [legendarr Playwright cache after rebuild](legendarr-playwright-cache-after-rebuild.md) — bust styles.css/JS with a `?bust=` query after rebuilding the container mid-session
-- [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean tool params intermittently fail validation; retry once then use browser_run_code_unsafe
+- [legendarr Playwright MCP numeric-param schema bug](legendarr-playwright-mcp-numeric-param-schema-bug.md) — number/boolean params (incl. browser_handle_dialog) intermittently fail validation; retry once then use browser_run_code_unsafe
 - [legendarr Pico search-input specificity gotcha](legendarr-pico-search-input-specificity-gotcha.md) — Pico's [type=search] padding/height rules silently outrank a bare custom class
 - [legendarr OpenSubtitles login auth](legendarr-opensubtitles-login-auth.md) — username/password login like Bazarr, not a user API key; app-level `_APP_API_KEY` is still a placeholder
 - [legendarr apply_patch heading-anchor gotcha](legendarr-apply-patch-heading-anchor-gotcha.md) — trailing context spanning into the next `##` heading rejects a hunk that looks byte-correct

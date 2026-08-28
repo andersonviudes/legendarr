@@ -13,8 +13,8 @@
   {% for show in series %}
   <a class="poster-card" href="/media/series/{{ show.id }}">
     <div class="poster-art">
-      {% if show.poster_url %}
-      <img src="{{ show.poster_url }}" alt="" loading="lazy">
+      {% if show.poster_cached %}
+      <img src="/posters/series_{{ show.id }}.jpg" alt="" loading="lazy">
       {% else %}
       {{ icon("image-off") }}
       {% endif %}

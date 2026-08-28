@@ -47,12 +47,14 @@ def list_wanted_media(session: Session) -> list[WantedRead]:
         select(Movie).where(col(Movie.id).in_(missing_languages_by_movie_id.keys()))
     ):
         assert movie.id is not None
+        movie_metadata = metadata_fields(metadata_by_movie_id.get(movie.id))
         rows.append(
             WantedRead(
                 id=movie.id,
                 kind="movie",
                 title=movie.title,
-                poster_url=metadata_fields(metadata_by_movie_id.get(movie.id))["poster_url"],
+                poster_url=movie_metadata["poster_url"],
+                poster_cached=movie_metadata["poster_cached"],
                 missing_languages=sorted(missing_languages_by_movie_id[movie.id]),
                 missing_files_count=missing_files_by_movie_id[movie.id],
             )
@@ -61,12 +63,14 @@ def list_wanted_media(session: Session) -> list[WantedRead]:
         select(Series).where(col(Series.id).in_(missing_languages_by_series_id.keys()))
     ):
         assert series.id is not None
+        series_metadata = metadata_fields(metadata_by_series_id.get(series.id))
         rows.append(
             WantedRead(
                 id=series.id,
                 kind="series",
                 title=series.title,
-                poster_url=metadata_fields(metadata_by_series_id.get(series.id))["poster_url"],
+                poster_url=series_metadata["poster_url"],
+                poster_cached=series_metadata["poster_cached"],
                 missing_languages=sorted(missing_languages_by_series_id[series.id]),
                 missing_files_count=missing_files_by_series_id[series.id],
             )

@@ -60,3 +60,10 @@ class MediaMetadata(SQLModel, table=True):
     year: int | None = Field(default=None)
     imdb_rating: float | None = Field(default=None)
     fetched_at: datetime
+    # Set once `poster_url` has been downloaded and written to `Settings.poster_cache_dir`
+    # as `{kind}_{id}.jpg` (ROADMAP.md 0.20.0) — `None` means either no poster, or a
+    # download that hasn't succeeded yet. `legendarr_web`'s templates use this (surfaced as
+    # `poster_cached` on the read schemas) to decide whether to render the locally-served
+    # image instead of nothing at all; there's no hotlink fallback to `poster_url` by
+    # design, see `media_library/list_media_library.py::metadata_fields`.
+    poster_cached_at: datetime | None = Field(default=None)

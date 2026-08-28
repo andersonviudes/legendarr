@@ -70,6 +70,16 @@ class AppConfigFile(BaseModel):
     # Manual-only, same reasoning as `timing_sync_*` above — no interval/max_instances/coalesce.
     metadata_refetch_retry_attempts: int = Field(default=3, ge=1)
     metadata_refetch_retry_delay_seconds: float = 5.0
+    metadata_refresh_interval_minutes: int = 1440
+    metadata_refresh_retry_attempts: int = Field(default=3, ge=1)
+    metadata_refresh_retry_delay_seconds: float = 5.0
+    metadata_refresh_max_instances: int = 1
+    metadata_refresh_coalesce: bool = True
+    poster_cache_cleanup_interval_minutes: int = 1440
+    poster_cache_cleanup_retry_attempts: int = Field(default=3, ge=1)
+    poster_cache_cleanup_retry_delay_seconds: float = 5.0
+    poster_cache_cleanup_max_instances: int = 1
+    poster_cache_cleanup_coalesce: bool = True
     speech_to_text_model_size: str = "base"
     speech_to_text_timeout_seconds: float = 1800.0
     # `auth_password_hash` isn't in `_SECRET_FIELDS` — it's already a one-way PBKDF2 hash
@@ -131,6 +141,18 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,
         "metadata_refetch_retry_attempts": settings.metadata_refetch_retry_attempts,
         "metadata_refetch_retry_delay_seconds": settings.metadata_refetch_retry_delay_seconds,
+        "metadata_refresh_interval_minutes": settings.metadata_refresh_interval_minutes,
+        "metadata_refresh_retry_attempts": settings.metadata_refresh_retry_attempts,
+        "metadata_refresh_retry_delay_seconds": settings.metadata_refresh_retry_delay_seconds,
+        "metadata_refresh_max_instances": settings.metadata_refresh_max_instances,
+        "metadata_refresh_coalesce": settings.metadata_refresh_coalesce,
+        "poster_cache_cleanup_interval_minutes": settings.poster_cache_cleanup_interval_minutes,
+        "poster_cache_cleanup_retry_attempts": settings.poster_cache_cleanup_retry_attempts,
+        "poster_cache_cleanup_retry_delay_seconds": (
+            settings.poster_cache_cleanup_retry_delay_seconds
+        ),
+        "poster_cache_cleanup_max_instances": settings.poster_cache_cleanup_max_instances,
+        "poster_cache_cleanup_coalesce": settings.poster_cache_cleanup_coalesce,
         "speech_to_text_model_size": settings.speech_to_text_model_size,
         "speech_to_text_timeout_seconds": settings.speech_to_text_timeout_seconds,
         "auth_enabled": settings.auth_enabled,
