@@ -32,3 +32,21 @@ background on that branch, drive it with the Playwright MCP tools, then kill the
 and delete the throwaway dir. Guarantees the code under test instead of whatever the
 container last had baked in. Used 2026-08-26 to manually verify PR #65 (i18n) across
 en/es/pt-BR on every settings page.
+
+**Update (2026-08-28) — stale container caused a false routing-bug investigation:** hit this
+again while manually verifying a brand-new `/settings/backup/` page: `GET /settings/backup/`
+returned a 405 with `Allow: POST`, which looked exactly like a real route-collision bug (real
+effort was spent theorizing about Starlette's `redirect_slashes`/route-registration-order
+semantics against the pre-existing `language_profiles` router's dynamic `/settings/{profile_id}`
+route). The actual cause was this same gotcha: `docker ps` showed `legendarr-legendarr-1`
+`Up 5 hours` on port 8000, serving code from before the backup slice existed at all —
+`curl localhost:8000/api/openapi.json` had zero `backup` paths, confirming it. **How to apply:**
+before debugging *any* unexpected HTTP status on a route that was just added, check `docker ps`
+for a same-project container bound to the port under test first — if its uptime predates the
+change, that's the cause, not a real routing bug; don't reach for route-matching-internals
+theories until that's ruled out. This time the user explicitly wanted to test on the *real* port
+8000 rather than isolate (per [[legendarr-live-test-on-8000-preference]]): `docker stop
+legendarr-legendarr-1` (leaves sibling containers — sonarr/postgres/redis — untouched) then
+`make run` in the background reclaims 8000 with current code — the bootstrap entrypoint
+(`src/bootstrap/src/legendarr_bootstrap/__main__.py`) hardcodes `host="0.0.0.0", port=8000`, so
+no env var is needed to bind it there.
