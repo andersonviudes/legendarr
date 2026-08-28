@@ -18,6 +18,7 @@ from legendarr_backend.media_library import models as _media_library_models  # n
 from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
 from legendarr_backend.scheduling.circuit_breaker import reset_circuit_breakers
 from legendarr_backend.scheduling.running_tasks import reset_running_tasks
+from legendarr_backend.scheduling.scheduled_retry import reset_scheduled_retries
 from legendarr_backend.subtitle_acquisition import (
     models as _subtitle_acquisition_models,  # noqa: F401
 )
@@ -87,6 +88,15 @@ def isolated_circuit_breakers():
     reset_circuit_breakers()
     yield
     reset_circuit_breakers()
+
+
+@pytest.fixture
+def isolated_scheduled_retries():
+    """Reset the in-memory scheduled-retry registry so assertions on it aren't affected
+    by jobs registered by other tests running in the same process."""
+    reset_scheduled_retries()
+    yield
+    reset_scheduled_retries()
 
 
 @pytest.fixture
