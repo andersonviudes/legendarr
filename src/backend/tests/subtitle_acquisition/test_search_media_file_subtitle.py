@@ -4,6 +4,12 @@ from pathlib import Path
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.scheduling.circuit_breaker import (
+    FAILURE_THRESHOLD,
+    BreakerCategory,
+    is_open,
+    record_failure,
+)
 from legendarr_backend.subtitle_acquisition import search_media_file_subtitle as search_module
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
@@ -37,6 +43,9 @@ class _FakeProvider:
 class _FailingProvider:
     name = "failing"
 
+    def __init__(self):
+        self.search_calls = []
+
     def search(
         self,
         title,
@@ -49,6 +58,7 @@ class _FailingProvider:
         video_path=None,
         tvdb_id=None,
     ):
+        self.search_calls.append({"title": title, "language": language})
         raise RuntimeError("boom")
 
     def download(self, result):
@@ -174,3 +184,39 @@ def test_search_skips_a_failing_provider_and_keeps_going(in_memory_session, tmp_
 
     assert len(result) == 1
     assert result[0].provider == "working"
+
+
+def test_search_skips_a_provider_with_an_open_circuit(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+    failing = _FailingProvider()
+    working = _FakeProvider(
+        "working",
+        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")],
+    )
+    _use_chain(monkeypatch, failing, working)
+    for _ in range(FAILURE_THRESHOLD):
+        record_failure(BreakerCategory.ACQUISITION, failing.name)
+
+    result = search_media_file_subtitle_candidates(in_memory_session, media_file, video, "en")
+
+    assert len(result) == 1
+    assert result[0].provider == "working"
+    assert failing.search_calls == []
+
+
+def test_search_opens_the_circuit_after_repeated_failures(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FailingProvider())
+
+    for _ in range(FAILURE_THRESHOLD):
+        search_media_file_subtitle_candidates(in_memory_session, media_file, video, "en")
+
+    assert is_open(BreakerCategory.ACQUISITION, "failing") is True

@@ -5,6 +5,12 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.scheduling.circuit_breaker import (
+    FAILURE_THRESHOLD,
+    BreakerCategory,
+    is_open,
+    record_failure,
+)
 from legendarr_backend.subtitle_acquisition import (
     upgrade_media_file_subtitle as upgrade_media_file_subtitle_module,
 )
@@ -36,6 +42,20 @@ class _FakeProvider:
     def download(self, result):
         self.download_calls.append(result)
         return self.text
+
+
+class _FailingProvider:
+    name = "failing"
+
+    def __init__(self):
+        self.search_calls = []
+
+    def search(self, title, language, **kwargs):
+        self.search_calls.append({"title": title, "language": language})
+        raise RuntimeError("boom")
+
+    def download(self, result):
+        raise RuntimeError("boom")
 
 
 def _movie(session, tmp_path: Path, **overrides) -> Movie:
@@ -236,6 +256,44 @@ def test_upgrade_replaces_when_a_better_candidate_is_found(
     assert metadata.provider == "fake"
     assert metadata.download_id == "new-1"
     assert metadata.score > 0.1
+
+
+def test_upgrade_skips_a_provider_with_an_open_circuit(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _acquired_subtitle(in_memory_session, media_file, score=0.1)
+    failing = _FailingProvider()
+    working = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo", download_id="new-1", language="en")]
+    )
+    _use_chain(monkeypatch, failing, working)
+    for _ in range(FAILURE_THRESHOLD):
+        record_failure(BreakerCategory.ACQUISITION, failing.name)
+
+    result = upgrade_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.upgraded_language == "en"
+    assert failing.search_calls == []
+
+
+def test_upgrade_opens_the_circuit_after_repeated_failures(
+    in_memory_session, tmp_path, monkeypatch, isolated_circuit_breakers
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _acquired_subtitle(in_memory_session, media_file, score=0.1)
+    _use_chain(monkeypatch, _FailingProvider())
+
+    for _ in range(FAILURE_THRESHOLD):
+        upgrade_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert is_open(BreakerCategory.ACQUISITION, "failing") is True
 
 
 def test_upgrade_skips_when_the_best_candidate_fails_the_quality_gate(

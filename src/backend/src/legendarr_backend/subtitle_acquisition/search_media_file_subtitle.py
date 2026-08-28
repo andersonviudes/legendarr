@@ -5,6 +5,12 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.circuit_breaker import (
+    BreakerCategory,
+    is_open,
+    record_failure,
+    record_success,
+)
 from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
@@ -49,6 +55,14 @@ def search_media_file_subtitle_candidates(
     candidates: list[SubtitleCandidate] = []
     try:
         for provider in chain:
+            if is_open(BreakerCategory.ACQUISITION, provider.name):
+                logger.info(
+                    "subtitle provider %r circuit open, skipping search for %r (%s)",
+                    provider.name,
+                    context.title,
+                    language,
+                )
+                continue
             try:
                 results = provider.search(
                     context.title,
@@ -60,7 +74,9 @@ def search_media_file_subtitle_candidates(
                     video_path=video_path,
                     tvdb_id=context.tvdb_id,
                 )
+                record_success(BreakerCategory.ACQUISITION, provider.name)
             except Exception:
+                record_failure(BreakerCategory.ACQUISITION, provider.name)
                 logger.warning(
                     "subtitle provider %r failed searching %r (%s), trying next",
                     provider.name,

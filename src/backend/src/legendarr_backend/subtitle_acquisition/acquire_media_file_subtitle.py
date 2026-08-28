@@ -10,6 +10,12 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.circuit_breaker import (
+    BreakerCategory,
+    is_open,
+    record_failure,
+    record_success,
+)
 from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_failure
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
@@ -321,6 +327,14 @@ def _search_and_download(
     last_error: Exception | None = None
     last_provider_name: str | None = None
     for provider in chain:
+        if is_open(BreakerCategory.ACQUISITION, provider.name):
+            logger.info(
+                "subtitle provider %r circuit open, skipping search for %r (%s)",
+                provider.name,
+                title,
+                language,
+            )
+            continue
         try:
             if on_progress is not None:
                 on_progress(progress_current, progress_total, language, provider.name)
@@ -334,6 +348,7 @@ def _search_and_download(
                 video_path=video_path,
                 tvdb_id=tvdb_id,
             )
+            record_success(BreakerCategory.ACQUISITION, provider.name)
             candidates = [
                 candidate
                 for candidate in candidates
@@ -361,6 +376,7 @@ def _search_and_download(
                 evaluation=evaluate_candidate(best, video_path.stem),
             )
         except Exception as exc:
+            record_failure(BreakerCategory.ACQUISITION, provider.name)
             last_error = exc
             last_provider_name = provider.name
             logger.warning(
