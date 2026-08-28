@@ -440,7 +440,7 @@ vanishing.*
 *Use case: legendarr can be trusted to run unattended for weeks — disk usage doesn't creep up
 from leftover temp files, and a bad upgrade or a corrupted database isn't a disaster.*
 
-- [ ] **Operations** — Cleanup job: remove temporary files left behind by embedded-track
+- [x] **Operations** — Cleanup job: remove temporary files left behind by embedded-track
   extraction and stale acquisition/translation requests.
 - [ ] **Operations** — Backup/restore: export the database (language profiles, settings,
   media/translation history) and configuration to a single archive from the Settings page,

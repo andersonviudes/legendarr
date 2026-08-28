@@ -3,6 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import init_db
+from legendarr_backend.maintenance.jobs import register_temp_file_cleanup_job
 from legendarr_backend.media_library.jobs import (
     register_history_poll_job,
     register_scan_job,
@@ -38,4 +39,5 @@ def build_scheduler() -> BackgroundScheduler:
     register_acquisition_job(scheduler, config)
     register_metadata_refresh_job(scheduler, config)
     register_poster_cache_cleanup_job(scheduler, config)
+    register_temp_file_cleanup_job(scheduler, config)
     return scheduler

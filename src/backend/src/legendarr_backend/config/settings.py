@@ -102,6 +102,18 @@ class Settings(BaseSettings):
     poster_cache_cleanup_retry_delay_seconds: float = Field(default=5.0)
     poster_cache_cleanup_max_instances: int = Field(default=1)
     poster_cache_cleanup_coalesce: bool = Field(default=True)
+    # ROADMAP.md 0.22.0 — periodic sweep of orphaned `.tmp` siblings left behind by a
+    # process killed mid-extraction/OCR/transcription/timing-sync (see
+    # `maintenance.cleanup_temp_files`). Same config/env-only posture as
+    # `poster_cache_cleanup_*` above. `min_age_minutes` must stay above the slowest
+    # legitimate writer (`speech_to_text_timeout_seconds`, default 1800s/30min) so a
+    # file a still-running job is actively writing is never swept as an orphan.
+    temp_file_cleanup_interval_minutes: int = Field(default=1440)
+    temp_file_cleanup_retry_attempts: int = Field(default=3, ge=1)
+    temp_file_cleanup_retry_delay_seconds: float = Field(default=5.0)
+    temp_file_cleanup_max_instances: int = Field(default=1)
+    temp_file_cleanup_coalesce: bool = Field(default=True)
+    temp_file_cleanup_min_age_minutes: float = Field(default=60.0)
     # ROADMAP.md 0.15.0 — speech-to-text fallback (`faster_whisper`), tried only when a
     # `LanguageProfile.speech_to_text_fallback` profile finds nothing via any other
     # acquisition tier. `model_size` is a global instance-wide choice (same posture as
