@@ -432,7 +432,7 @@ vanishing.*
 
 - [x] **Operations** — Per-provider throttling/circuit breaker so one failing translation or
   acquisition provider backs off instead of failing every job.
-- [ ] **Operations** — Retry handling around scheduled jobs, building on the per-job
+- [x] **Operations** — Retry handling around scheduled jobs, building on the per-job
   retry/concurrency policy established at 0.1.0.
 
 ## 0.22.0 — Maintenance & backup

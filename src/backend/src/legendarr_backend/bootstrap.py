@@ -13,6 +13,7 @@ from legendarr_backend.media_metadata.jobs import (
     register_poster_cache_cleanup_job,
 )
 from legendarr_backend.scheduling.running_tasks import attach_running_task_registry
+from legendarr_backend.scheduling.scheduled_retry import attach_scheduled_retry
 from legendarr_backend.scheduling.scheduler import build_scheduler as build_bare_scheduler
 from legendarr_backend.subtitle_acquisition.jobs import register_acquisition_job
 from legendarr_backend.subtitle_discovery.jobs import register_subtitle_scan_job
@@ -28,6 +29,7 @@ def build_scheduler() -> BackgroundScheduler:
     scheduler = build_bare_scheduler()
     attach_running_task_registry(scheduler)
     attach_job_history_recorder(scheduler)
+    attach_scheduled_retry(scheduler)
     register_sync_job(scheduler, config)
     register_scan_job(scheduler, config)
     register_history_poll_job(scheduler, config)
