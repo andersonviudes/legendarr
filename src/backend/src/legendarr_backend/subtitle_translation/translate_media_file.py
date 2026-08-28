@@ -17,7 +17,7 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     clear_translation_blacklist,
     is_translation_blacklisted,
 )

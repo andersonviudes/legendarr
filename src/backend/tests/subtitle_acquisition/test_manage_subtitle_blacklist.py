@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     add_blacklist_entry,
     clear_translation_blacklist,
     is_translation_blacklisted,

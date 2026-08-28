@@ -17,11 +17,11 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_success,
 )
 from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_failure
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
-)
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
-    list_blacklisted_download_ids,
 )
 from legendarr_backend.subtitle_acquisition.match_score import (
     CandidateEvaluation,

@@ -4,13 +4,13 @@ from pathlib import Path
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.media_library.models import MediaFile, Movie
-from legendarr_backend.subtitle_acquisition.blacklist_subtitle import blacklist_subtitle
-from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
-    record_acquired_subtitle,
-)
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+from legendarr_backend.subtitle_acquisition.blacklist.blacklist_subtitle import blacklist_subtitle
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     is_translation_blacklisted,
     list_blacklisted_download_ids,
+)
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
+    record_acquired_subtitle,
 )
 from legendarr_backend.subtitle_acquisition.match_score import CandidateEvaluation
 from legendarr_backend.subtitle_discovery.models import Subtitle

@@ -34,7 +34,7 @@ from legendarr_backend.media_library.schemas import (
 from legendarr_backend.media_metadata.fetch_metadata import cache_poster_now
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.subtitle_acquisition.audit_trail import get_latest_attempt
-from legendarr_backend.subtitle_acquisition.blacklist_subtitle import blacklist_subtitle
+from legendarr_backend.subtitle_acquisition.blacklist.blacklist_subtitle import blacklist_subtitle
 from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
     download_subtitle_candidate,
 )

@@ -14,12 +14,12 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
+    list_blacklisted_download_ids,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     get_acquired_subtitle,
     record_acquired_subtitle,
-)
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
-    list_blacklisted_download_ids,
 )
 from legendarr_backend.subtitle_acquisition.match_score import (
     CandidateEvaluation,

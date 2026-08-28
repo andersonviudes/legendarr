@@ -3,12 +3,12 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
-from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
-from legendarr_backend.subtitle_acquisition.manage_subtitle_blacklist import (
+from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     ACQUIRED,
     TRANSLATED,
     add_blacklist_entry,
 )
+from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
