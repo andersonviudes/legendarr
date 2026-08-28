@@ -53,3 +53,17 @@ def test_dashboard_shows_provider_status(stub_backend_client):
     assert "Providers" in response.text
     assert "1/2" in response.text
     assert "1/1" in response.text
+
+
+def test_dashboard_polls_the_same_running_tasks_endpoint_as_the_tasks_page(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app)
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Live Activity" in response.text
+    assert 'id="dashboard-running-tasks"' in response.text
+    assert 'hx-get="/system/tasks/running"' in response.text
+    assert 'hx-trigger="load, every 3s"' in response.text

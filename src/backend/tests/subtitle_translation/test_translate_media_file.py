@@ -205,6 +205,28 @@ def test_translate_media_file_writes_translated_srt_and_reconciles_subtitle_row(
     assert attempts[0].target_language == "pt-BR"
 
 
+def test_translate_media_file_calls_on_progress_once_per_target_language(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, target_languages="pt-BR,es")
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+    calls: list[tuple[int, int, str]] = []
+
+    result = translate_media_file(
+        in_memory_session, media_file, video, on_progress=lambda *args: calls.append(args)
+    )
+
+    assert result.translated_languages == ["pt-BR", "es"]
+    assert calls == [(1, 2, "pt-BR"), (2, 2, "es")]
+
+
 def test_translate_media_file_cleans_source_text_before_translating(
     in_memory_session, tmp_path, monkeypatch
 ):

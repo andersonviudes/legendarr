@@ -1,5 +1,5 @@
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 
 from apscheduler.events import (
@@ -22,6 +22,15 @@ class RunningTask:
     name: str
     queue: str
     started_at: datetime
+    # Live-progress fields (ROADMAP 0.20.0's "Live progress") — all unset until the
+    # running job's own code reports a checkpoint via `report_progress()`. `phase` is a
+    # domain-defined string ("translating", "searching", ...) the caller picks; this
+    # module has no opinion on what phases exist.
+    phase: str | None = None
+    current_step: int | None = None
+    total_steps: int | None = None
+    language: str | None = None
+    provider: str | None = None
 
 
 class RunningTaskRegistry:
@@ -81,6 +90,34 @@ class RunningTaskRegistry:
         with self._lock:
             self._tasks.pop((event.job_id, event.scheduled_run_time), None)
 
+    def report_progress(
+        self,
+        job_id: str,
+        *,
+        phase: str,
+        current: int,
+        total: int,
+        language: str,
+        provider: str | None = None,
+    ) -> None:
+        """Attach a progress checkpoint to every currently-running task matching
+        `job_id`. A no-op if `job_id` isn't running right now (e.g. it just finished) —
+        same posture as `finish()` on an unknown key, since a stray/late report is
+        harmless to drop.
+        """
+        with self._lock:
+            for key, task in list(self._tasks.items()):
+                if key[0] != job_id:
+                    continue
+                self._tasks[key] = replace(
+                    task,
+                    phase=phase,
+                    current_step=current,
+                    total_steps=total,
+                    language=language,
+                    provider=provider,
+                )
+
     def tasks(self) -> list[RunningTask]:
         with self._lock:
             return list(self._tasks.values())
@@ -112,6 +149,25 @@ def attach_running_task_registry(scheduler: BackgroundScheduler) -> None:
 def get_running_tasks() -> list[RunningTask]:
     """Return the tasks currently handed to an executor, i.e. genuinely running."""
     return _registry.tasks()
+
+
+def report_progress(
+    job_id: str,
+    *,
+    phase: str,
+    current: int,
+    total: int,
+    language: str,
+    provider: str | None = None,
+) -> None:
+    """Report a progress checkpoint for the running task `job_id`, for the topbar/System
+    → Tasks/Dashboard "live progress" UI (ROADMAP 0.20.0). Called by
+    `subtitle_translation.jobs`/`subtitle_acquisition.jobs` — the only slices that know
+    both a job's `job_id` and its domain-specific progress.
+    """
+    _registry.report_progress(
+        job_id, phase=phase, current=current, total=total, language=language, provider=provider
+    )
 
 
 def reset_running_tasks() -> None:

@@ -9,6 +9,18 @@ _TASK = {
     "started_at": "2026-08-24T10:15:30.123456",
 }
 
+_TASK_WITH_PROGRESS = {
+    "job_id": "subtitle_translation:1",
+    "name": "subtitle_translation:1",
+    "queue": "translate",
+    "started_at": "2026-08-24T10:15:30.123456",
+    "phase": "translating",
+    "current_step": 1,
+    "total_steps": 2,
+    "language": "pt-BR",
+    "provider": None,
+}
+
 _SCHEDULED_JOB = {
     "job_id": "media_library_sync",
     "name": "media_library_sync",
@@ -31,6 +43,12 @@ _JOB_RUN = {
 def _tasks_handler(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/system/tasks/running":
         return httpx.Response(200, json=[_TASK])
+    return httpx.Response(200, json=[])
+
+
+def _tasks_with_progress_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/system/tasks/running":
+        return httpx.Response(200, json=[_TASK_WITH_PROGRESS])
     return httpx.Response(200, json=[])
 
 
@@ -104,6 +122,30 @@ def test_running_tasks_partial_lists_tasks(stub_backend_client):
 
     assert response.status_code == 200
     assert "media_library_scan_fanout" in response.text
+
+
+def test_running_tasks_partial_renders_progress_for_a_task_with_a_phase(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_tasks_with_progress_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "Translating to pt-BR (1/2)" in response.text
+    assert 'value="1"' in response.text
+    assert 'max="2"' in response.text
+
+
+def test_running_tasks_partial_renders_no_progress_for_a_task_without_a_phase(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_tasks_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "<progress" not in response.text
 
 
 def test_tasks_count_shows_badge_when_tasks_are_running(stub_backend_client):

@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -85,6 +86,7 @@ def acquire_subtitle_for_media_file(
     speech_to_text_model_size: str = DEFAULT_SPEECH_TO_TEXT_MODEL_SIZE,
     speech_to_text_timeout_seconds: float = DEFAULT_SPEECH_TO_TEXT_TIMEOUT_SECONDS,
     speech_to_text_model_dir: Path = DEFAULT_SPEECH_TO_TEXT_MODEL_DIR,
+    on_progress: Callable[[int, int, str, str | None], None] | None = None,
 ) -> AcquisitionResult:
     """Search and download a source-language subtitle for `media_file` when it has
     none yet (external or embedded), in its `LanguageProfile`'s source-language
@@ -118,6 +120,12 @@ def acquire_subtitle_for_media_file(
     provenance (name, download id, match score), none of which exists for a locally
     generated transcript — same posture as the 0.14.0 OCR pipeline, which also never
     writes one.
+
+    `on_progress`, when given, is called `(current, total, language, provider)` — 1-indexed,
+    `provider=None` — once per source language attempted, and again with `provider` set to
+    each provider's name as `_search_and_download` tries it for that language. ROADMAP.md
+    0.20.0's "Live progress": `subtitle_acquisition.jobs.run_acquisition` is the only caller
+    that passes one, wiring it into `scheduling.running_tasks.report_progress`.
     """
     profile = resolve_media_file_profile(session, media_file)
     if profile is None:
@@ -140,9 +148,12 @@ def acquire_subtitle_for_media_file(
         context = (
             resolve_subtitle_search_context(session, media_file, video_path) if chain else None
         )
-        for language in profile.source_language_list:
+        total_languages = len(profile.source_language_list)
+        for current_language, language in enumerate(profile.source_language_list, start=1):
             if context is None:
                 break
+            if on_progress is not None:
+                on_progress(current_language, total_languages, language, None)
             result = _search_and_download(
                 session,
                 media_file.id,
@@ -157,6 +168,9 @@ def acquire_subtitle_for_media_file(
                 context.tvdb_id,
                 profile.must_contain_terms,
                 profile.must_not_contain_terms,
+                on_progress,
+                current_language,
+                total_languages,
             )
             if result is None:
                 continue
@@ -299,12 +313,17 @@ def _search_and_download(
     tvdb_id: int | None,
     must_contain: list[str],
     must_not_contain: list[str],
+    on_progress: Callable[[int, int, str, str | None], None] | None = None,
+    progress_current: int = 0,
+    progress_total: int = 0,
 ) -> _AcquiredCandidate | None:
     blacklisted = list_blacklisted_download_ids(session, media_file_id, language)
     last_error: Exception | None = None
     last_provider_name: str | None = None
     for provider in chain:
         try:
+            if on_progress is not None:
+                on_progress(progress_current, progress_total, language, provider.name)
             candidates = provider.search(
                 title,
                 language,

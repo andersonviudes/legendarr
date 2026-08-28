@@ -13,6 +13,7 @@ from legendarr_backend.media_servers.notify_media_servers import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import report_progress
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
@@ -143,6 +144,14 @@ def enqueue_acquisition(
                 speech_to_text_model_size=speech_to_text_model_size,
                 speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
                 speech_to_text_model_dir=settings.speech_to_text_model_dir,
+                on_progress=lambda current, total, language, provider: report_progress(
+                    job_id,
+                    phase="searching",
+                    current=current,
+                    total=total,
+                    language=language,
+                    provider=provider,
+                ),
             )
             session.commit()
             logger.info("acquisition finished for media file %d: %s", media_file_id, result)

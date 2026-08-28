@@ -19,6 +19,11 @@ class RunningTaskRead(BaseModel):
     name: str
     queue: str
     started_at: datetime
+    phase: str | None = None
+    current_step: int | None = None
+    total_steps: int | None = None
+    language: str | None = None
+    provider: str | None = None
 
 
 class ScheduledJobRead(BaseModel):

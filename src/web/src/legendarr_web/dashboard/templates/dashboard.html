@@ -51,4 +51,14 @@
     </div>
   </section>
 </div>
+
+<section>
+  <h2>{{ icon("activity") }} {{ t("dashboard.live_activity_heading") }}</h2>
+  <div
+    id="dashboard-running-tasks"
+    hx-get="/system/tasks/running"
+    hx-trigger="load, every 3s"
+    hx-swap="innerHTML"
+  ></div>
+</section>
 {% endblock %}

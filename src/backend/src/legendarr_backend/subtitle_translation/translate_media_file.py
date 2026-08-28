@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -57,6 +58,7 @@ def translate_media_file(
     video_path: Path,
     default_translation_provider: str | None = None,
     source_subtitle_id: int | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> TranslationResult:
     """Translate one `MediaFile` into every target language its `LanguageProfile` is
     still missing, from an already-discovered subtitle in one of its source languages.
@@ -83,6 +85,11 @@ def translate_media_file(
     discovered for this media file, external or embedded, in any language, is a valid manual
     source. Everything past the source pick (missing-target check, provider chain, writing
     output) behaves identically either way.
+
+    `on_progress`, when given, is called once per target language — `(current, total,
+    target_language)`, 1-indexed — right before that language's translation attempt starts.
+    ROADMAP.md 0.20.0's "Live progress": `subtitle_translation.jobs.run_translation` is the
+    only caller that passes one, wiring it into `scheduling.running_tasks.report_progress`.
     """
     profile = resolve_media_file_profile(session, media_file)
     if profile is None:
@@ -184,7 +191,10 @@ def translate_media_file(
 
     translated_languages = []
     provider_by_target_language: dict[str, str] = {}
-    for target_language in missing_targets:
+    total_targets = len(missing_targets)
+    for current_target, target_language in enumerate(missing_targets, start=1):
+        if on_progress is not None:
+            on_progress(current_target, total_targets, target_language)
         result = _translate_with_fallback(
             session, chain, lines, source.language, target_language, media_file.id
         )
