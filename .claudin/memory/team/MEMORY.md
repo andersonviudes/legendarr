@@ -29,3 +29,4 @@
 - [legendarr history slice](legendarr-history-slice.md) — TranslationFailure/AcquisitionFailure tables (neither slice persisted a failure before) + history/ slice merging successes and failures
 - [legendarr htmx nested-poller outerHTML-swap gotcha](legendarr-htmx-nested-poller-outerhtml-swap-gotcha.md) — a fast-polling child inside a periodically self-outerHTML-swapping parent goes empty after the first cycle; keep pollers as siblings
 - [legendarr echo translation provider not wired](legendarr-echo-translation-provider-not-wired.md) — echo.py exists but isn't in provider_chain.py's _PROVIDER_CLASSES or the UI; settings copy is stale
+- [legendarr resilience constants hardcoded](legendarr-resilience-constants-hardcoded.md) — circuit breaker + scheduled-retry backoff thresholds are module constants, not Settings fields
