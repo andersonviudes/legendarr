@@ -2,8 +2,7 @@ import httpx
 from fastapi import Depends, Request
 
 from legendarr_web.authentication import service
-from legendarr_web.authentication.cookies import SESSION_COOKIE_NAME
-from legendarr_web.backend_client.client import get_backend_client
+from legendarr_web.backend_client.client import SESSION_COOKIE_NAME, get_backend_client
 
 # `/login`/`/logout` are the bootstrap paths — checked before calling the backend at
 # all, since a visitor without a session must still be able to reach the login form.

@@ -3,8 +3,11 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.authentication import service
-from legendarr_web.authentication.cookies import SESSION_COOKIE_NAME
-from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.backend_client.client import (
+    SESSION_COOKIE_NAME,
+    error_detail,
+    get_backend_client,
+)
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter()

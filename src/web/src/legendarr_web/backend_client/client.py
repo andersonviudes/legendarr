@@ -3,8 +3,9 @@ from collections.abc import AsyncIterator
 import httpx
 from fastapi import Request
 
-from legendarr_web.authentication.cookies import SESSION_COOKIE_NAME
 from legendarr_web.config.settings import get_web_settings
+
+SESSION_COOKIE_NAME = "legendarr_session"
 
 
 def session_headers(request: Request) -> dict[str, str]:
