@@ -2,10 +2,11 @@ from collections.abc import Iterator
 from dataclasses import asdict
 from pathlib import Path
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlmodel import Session, select
 
-from legendarr_backend.config.config_file import load_or_create_config_file
+from legendarr_backend.config.config_file import AppConfigFile, load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.get_media_detail import get_movie_detail, get_series_detail
@@ -74,6 +75,10 @@ def _get_on_cascade(request: Request):
     return on_cascade
 
 
+def _scheduler_and_config(request: Request) -> tuple[BackgroundScheduler, AppConfigFile]:
+    return _get_scheduler(request), load_or_create_config_file(get_settings())
+
+
 @router.get("/movies", response_model=list[MovieRead])
 def get_movies(session: Session = Depends(_get_session)) -> list[MovieRead]:
     return list_movies(session)
@@ -111,10 +116,7 @@ def trigger_media_sync(request: Request) -> dict[str, str]:
 
     Shared by the web "Sync Now" button and the "sync after adding a connection" hook.
     """
-    scheduler = getattr(request.app.state, "scheduler", None)
-    if scheduler is None:
-        raise HTTPException(status_code=503, detail="Scheduler is not running")
-    config = load_or_create_config_file(get_settings())
+    scheduler, config = _scheduler_and_config(request)
     enqueue_media_sync(
         scheduler,
         retry_attempts=config.sync_retry_attempts,
@@ -128,10 +130,7 @@ def trigger_media_scan(
     request: Request, session: Session = Depends(_get_session)
 ) -> dict[str, int]:
     """Enqueue a full-library scan fan-out — same shape as the periodic scan job."""
-    scheduler = getattr(request.app.state, "scheduler", None)
-    if scheduler is None:
-        raise HTTPException(status_code=503, detail="Scheduler is not running")
-    config = load_or_create_config_file(get_settings())
+    scheduler, config = _scheduler_and_config(request)
     movies, series = enqueue_full_scan(
         scheduler,
         session,
@@ -156,9 +155,8 @@ def _trigger_item_scan(request: Request, kind: MediaKind, item_id: int) -> dict[
     subtitle discovery, acquisition, and translation for every `MediaFile` the item has
     afterward — including a file the scan just discovered on disk.
     """
-    scheduler = _get_scheduler(request)
+    scheduler, config = _scheduler_and_config(request)
     on_cascade = _get_on_cascade(request)
-    config = load_or_create_config_file(get_settings())
     enqueue_media_scan(
         scheduler,
         kind,
@@ -186,14 +184,12 @@ def cache_series_poster_route(
     return {"cached": cache_poster_now(session, media_type="series", media_id=series_id)}
 
 
-@router.post("/files/{media_file_id}/translate", status_code=202)
-def trigger_file_translation(
-    media_file_id: int, request: Request, session: Session = Depends(_get_session)
-) -> dict[str, str]:
-    if session.get(MediaFile, media_file_id) is None:
-        raise HTTPException(status_code=404, detail="Media file not found")
-    scheduler = _get_scheduler(request)
-    config = load_or_create_config_file(get_settings())
+def _enqueue_translation(
+    scheduler: BackgroundScheduler,
+    config: AppConfigFile,
+    media_file_id: int,
+    source_subtitle_id: int | None = None,
+) -> None:
     enqueue_translation(
         scheduler,
         media_file_id,
@@ -201,7 +197,18 @@ def trigger_file_translation(
         retry_attempts=config.translate_retry_attempts,
         retry_delay_seconds=config.translate_retry_delay_seconds,
         default_translation_provider=config.default_translation_provider,
+        source_subtitle_id=source_subtitle_id,
     )
+
+
+@router.post("/files/{media_file_id}/translate", status_code=202)
+def trigger_file_translation(
+    media_file_id: int, request: Request, session: Session = Depends(_get_session)
+) -> dict[str, str]:
+    if session.get(MediaFile, media_file_id) is None:
+        raise HTTPException(status_code=404, detail="Media file not found")
+    scheduler, config = _scheduler_and_config(request)
+    _enqueue_translation(scheduler, config, media_file_id)
     return {"status": "enqueued"}
 
 
@@ -211,8 +218,7 @@ def trigger_subtitle_timing_sync(
 ) -> dict[str, str]:
     if session.get(Subtitle, subtitle_id) is None:
         raise HTTPException(status_code=404, detail="Subtitle not found")
-    scheduler = _get_scheduler(request)
-    config = load_or_create_config_file(get_settings())
+    scheduler, config = _scheduler_and_config(request)
     enqueue_timing_sync(
         scheduler,
         subtitle_id,
@@ -234,17 +240,8 @@ def trigger_subtitle_source_translation(
     subtitle = session.get(Subtitle, subtitle_id)
     if subtitle is None:
         raise HTTPException(status_code=404, detail="Subtitle not found")
-    scheduler = _get_scheduler(request)
-    config = load_or_create_config_file(get_settings())
-    enqueue_translation(
-        scheduler,
-        subtitle.media_file_id,
-        JobQueue.TRANSLATE,
-        retry_attempts=config.translate_retry_attempts,
-        retry_delay_seconds=config.translate_retry_delay_seconds,
-        default_translation_provider=config.default_translation_provider,
-        source_subtitle_id=subtitle_id,
-    )
+    scheduler, config = _scheduler_and_config(request)
+    _enqueue_translation(scheduler, config, subtitle.media_file_id, source_subtitle_id=subtitle_id)
     return {"status": "enqueued"}
 
 
