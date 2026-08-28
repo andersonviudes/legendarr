@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 
-from legendarr_backend.subtitle_acquisition.models import SubtitleProxy
-from legendarr_backend.subtitle_acquisition.schemas import SubtitleProxyInput
+from legendarr_backend.subtitle_proxies.models import SubtitleProxy
+from legendarr_backend.subtitle_proxies.schemas import SubtitleProxyInput
 
 
 def create_subtitle_proxy(session: Session, data: SubtitleProxyInput) -> SubtitleProxy:
