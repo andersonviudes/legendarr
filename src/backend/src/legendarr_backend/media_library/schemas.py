@@ -12,6 +12,10 @@ class MediaRead(BaseModel):
     quality_profile_name: str | None
     overview: str | None = None
     poster_url: str | None = None
+    # Whether a local copy is cached at `/posters/{kind}_{id}.jpg` on `legendarr_web`'s
+    # static mount (ROADMAP.md 0.20.0) — `poster_url` is kept for reference/provenance,
+    # but templates render this instead, with no hotlink fallback while it's `False`.
+    poster_cached: bool = False
     year: int | None = None
     imdb_rating: float | None = None
 
@@ -96,6 +100,7 @@ class WantedRead(BaseModel):
     kind: str
     title: str
     poster_url: str | None = None
+    poster_cached: bool = False
     missing_languages: list[str]
     missing_files_count: int
 

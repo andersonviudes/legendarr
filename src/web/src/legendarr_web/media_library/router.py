@@ -14,12 +14,14 @@ templates = get_templates("media_library")
 @router.get("/movies")
 async def show_movies(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     movies = await service.list_movies(client)
+    await service.ensure_posters_cached(client, movies, "movie")
     return templates.TemplateResponse(request, "movies.html", {"movies": movies})
 
 
 @router.get("/series")
 async def show_series(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     series = await service.list_series(client)
+    await service.ensure_posters_cached(client, series, "series")
     return templates.TemplateResponse(request, "series.html", {"series": series})
 
 
@@ -37,6 +39,7 @@ async def search_media(
 @router.get("/wanted")
 async def show_wanted(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     wanted = await service.list_wanted(client)
+    await service.ensure_wanted_posters_cached(client, wanted)
     return templates.TemplateResponse(request, "wanted.html", {"wanted": wanted})
 
 
@@ -46,6 +49,7 @@ async def show_wanted_movies(
 ):
     wanted = await service.list_wanted(client)
     movies = [item for item in wanted if item["kind"] == "movie"]
+    await service.ensure_posters_cached(client, movies, "movie")
     return templates.TemplateResponse(request, "wanted.html", {"wanted": movies})
 
 
@@ -55,6 +59,7 @@ async def show_wanted_series(
 ):
     wanted = await service.list_wanted(client)
     series = [item for item in wanted if item["kind"] == "series"]
+    await service.ensure_posters_cached(client, series, "series")
     return templates.TemplateResponse(request, "wanted.html", {"wanted": series})
 
 
@@ -68,6 +73,7 @@ async def show_movie(
         if exc.response.status_code != 404:
             raise
         return RedirectResponse("/media/movies", status_code=303)
+    await service.ensure_poster_cached(client, movie, "movie")
     return templates.TemplateResponse(request, "movie_detail.html", {"movie": movie})
 
 
@@ -81,6 +87,7 @@ async def show_series_item(
         if exc.response.status_code != 404:
             raise
         return RedirectResponse("/media/series", status_code=303)
+    await service.ensure_poster_cached(client, series, "series")
     return templates.TemplateResponse(request, "series_detail.html", {"series": series})
 
 

@@ -79,6 +79,29 @@ class Settings(BaseSettings):
     # `enqueue_metadata_refetch` needs.
     metadata_refetch_retry_attempts: int = Field(default=3, ge=1)
     metadata_refetch_retry_delay_seconds: float = Field(default=5.0)
+    # ROADMAP.md 0.20.0 — periodic metadata refresh, same posture as
+    # `translate_interval_minutes`: config/env-only, not yet in the runtime-editable
+    # Settings UI. Deliberately independent from `metadata_refetch_retry_attempts`/
+    # `metadata_refetch_retry_delay_seconds` above (the manual "Refetch All" button's own
+    # policy) rather than sharing them, even though both ultimately call
+    # `enqueue_metadata_refetch` — a periodic job failing repeatedly shouldn't be tuned by
+    # the same knob as an interactive one-off click. Metadata changes far less often than
+    # library contents, so the default is once a day rather than the 15/60 min cadence
+    # `sync_*`/`scan_*` use.
+    metadata_refresh_interval_minutes: int = Field(default=1440)
+    metadata_refresh_retry_attempts: int = Field(default=3, ge=1)
+    metadata_refresh_retry_delay_seconds: float = Field(default=5.0)
+    metadata_refresh_max_instances: int = Field(default=1)
+    metadata_refresh_coalesce: bool = Field(default=True)
+    # ROADMAP.md 0.20.0 — periodic local poster-cache cleanup (see
+    # `Settings.poster_cache_dir`), its own schedule independent of
+    # `metadata_refresh_interval_minutes` above — orphaned files only ever appear when an
+    # item leaves the library, not on every metadata refresh. Same config/env-only posture.
+    poster_cache_cleanup_interval_minutes: int = Field(default=1440)
+    poster_cache_cleanup_retry_attempts: int = Field(default=3, ge=1)
+    poster_cache_cleanup_retry_delay_seconds: float = Field(default=5.0)
+    poster_cache_cleanup_max_instances: int = Field(default=1)
+    poster_cache_cleanup_coalesce: bool = Field(default=True)
     # ROADMAP.md 0.15.0 — speech-to-text fallback (`faster_whisper`), tried only when a
     # `LanguageProfile.speech_to_text_fallback` profile finds nothing via any other
     # acquisition tier. `model_size` is a global instance-wide choice (same posture as
@@ -126,6 +149,14 @@ class Settings(BaseSettings):
         they survive a container recreate instead of being re-downloaded, same volume as
         the sqlite database."""
         return self.data_dir / "whisper_models"
+
+    @property
+    def poster_cache_dir(self) -> Path:
+        """Where locally-cached `media_metadata` poster images live — inside `data_dir`,
+        same posture as `speech_to_text_model_dir`. `legendarr_web` serves this directory
+        directly via its own `StaticFiles` mount (ROADMAP.md 0.20.0), so both processes
+        resolve it from the same `data_dir`."""
+        return self.data_dir / "posters"
 
 
 @lru_cache

@@ -223,6 +223,26 @@ def test_movie_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backen
     assert "/media/files/5/translate" in response.text
 
 
+def test_movie_detail_page_fetches_an_uncached_poster_on_demand(stub_backend_client):
+    """`poster_cached` absent from the backend response (falsy) triggers the on-demand
+    fallback (ROADMAP.md 0.20.0), same as a list page."""
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/media/movies/1/poster-cache":
+            return httpx.Response(200, json={"cached": True})
+        return _movie_detail_handler(request)
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    assert "/posters/movie_1.jpg" in response.text
+    assert "https://example.test/foo.jpg" not in response.text
+
+
 def test_movie_detail_page_redirects_when_missing(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_missing_movie_handler)

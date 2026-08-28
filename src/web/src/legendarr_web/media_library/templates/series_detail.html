@@ -7,8 +7,8 @@
 <div class="media-detail-header">
   <div class="media-detail-poster">
     <div class="poster-art">
-      {% if series.poster_url %}
-      <img src="{{ series.poster_url }}" alt="" loading="lazy">
+      {% if series.poster_cached %}
+      <img src="/posters/series_{{ series.id }}.jpg" alt="" loading="lazy">
       {% else %}
       {{ icon("image-off") }}
       {% endif %}

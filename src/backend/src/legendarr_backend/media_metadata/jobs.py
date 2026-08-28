@@ -4,16 +4,85 @@ from functools import partial
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
+from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.models import MediaKind, Movie, Series
 from legendarr_backend.media_metadata.fetch_metadata import (
     fetch_metadata_for_movie,
     fetch_metadata_for_series,
 )
+from legendarr_backend.media_metadata.poster_cache_cleanup import cleanup_orphaned_posters
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.scheduler import register_job
 
 logger = logging.getLogger(__name__)
+
+
+def register_metadata_refresh_job(
+    scheduler: BackgroundScheduler,
+    config: AppConfigFile,
+) -> None:
+    """Register the periodic metadata-refresh fan-out on the shared scheduler
+    (ROADMAP.md 0.20.0) — wakes up `enqueue_metadata_refetch` on a schedule instead of
+    only via the manual "Refetch All" button, so metadata (and cached posters, see
+    `fetch_metadata._cache_poster`) for items already in the library don't go stale.
+    Own retry/concurrency policy (`metadata_refresh_*`), independent of the manual
+    button's `metadata_refetch_*` — a periodic job failing repeatedly shouldn't be tuned
+    by the same knob as an interactive one-off click.
+    """
+
+    def fan_out() -> None:
+        with get_session() as session:
+            movies, series = enqueue_metadata_refetch(
+                scheduler,
+                session,
+                retry_attempts=config.metadata_refresh_retry_attempts,
+                retry_delay_seconds=config.metadata_refresh_retry_delay_seconds,
+            )
+        logger.info("metadata refresh fan-out enqueued: %d movies, %d series", movies, series)
+
+    register_job(
+        scheduler,
+        fan_out,
+        queue=JobQueue.METADATA_BULK,
+        job_id="media_metadata_refresh_fanout",
+        trigger="interval",
+        minutes=config.metadata_refresh_interval_minutes,
+        retry_attempts=config.metadata_refresh_retry_attempts,
+        retry_delay_seconds=config.metadata_refresh_retry_delay_seconds,
+        max_instances=config.metadata_refresh_max_instances,
+        coalesce=config.metadata_refresh_coalesce,
+    )
+
+
+def register_poster_cache_cleanup_job(
+    scheduler: BackgroundScheduler,
+    config: AppConfigFile,
+) -> None:
+    """Register the periodic poster-cache orphan sweep on the shared scheduler
+    (ROADMAP.md 0.20.0). Its own schedule, independent of the metadata-refresh job
+    above — orphaned files only ever appear when a movie/series leaves the library, not
+    on every metadata refresh, so this doesn't need the same cadence.
+    """
+
+    def sweep() -> None:
+        with get_session() as session:
+            removed = cleanup_orphaned_posters(session)
+        logger.info("poster cache cleanup removed %d orphaned file(s)", removed)
+
+    register_job(
+        scheduler,
+        sweep,
+        queue=JobQueue.METADATA_BULK,
+        job_id="media_metadata_poster_cache_cleanup",
+        trigger="interval",
+        minutes=config.poster_cache_cleanup_interval_minutes,
+        retry_attempts=config.poster_cache_cleanup_retry_attempts,
+        retry_delay_seconds=config.poster_cache_cleanup_retry_delay_seconds,
+        max_instances=config.poster_cache_cleanup_max_instances,
+        coalesce=config.poster_cache_cleanup_coalesce,
+    )
 
 
 def enqueue_metadata_refetch(

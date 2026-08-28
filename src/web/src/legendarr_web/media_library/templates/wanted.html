@@ -12,8 +12,8 @@
   {% for item in wanted %}
   <a class="poster-card" href="/media/{{ 'movies' if item.kind == 'movie' else 'series' }}/{{ item.id }}">
     <div class="poster-art">
-      {% if item.poster_url %}
-      <img src="{{ item.poster_url }}" alt="" loading="lazy">
+      {% if item.poster_cached %}
+      <img src="/posters/{{ item.kind }}_{{ item.id }}.jpg" alt="" loading="lazy">
       {% else %}
       {{ icon("clapperboard") if item.kind == "movie" else icon("tv") }}
       {% endif %}

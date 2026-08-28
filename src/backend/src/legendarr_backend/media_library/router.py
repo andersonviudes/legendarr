@@ -30,6 +30,7 @@ from legendarr_backend.media_library.schemas import (
     SubtitleRead,
     WantedRead,
 )
+from legendarr_backend.media_metadata.fetch_metadata import cache_poster_now
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.subtitle_acquisition.audit_trail import get_latest_attempt
 from legendarr_backend.subtitle_acquisition.blacklist_subtitle import blacklist_subtitle
@@ -169,6 +170,20 @@ def _trigger_item_scan(request: Request, kind: MediaKind, item_id: int) -> dict[
         on_cascade=on_cascade,
     )
     return {"status": "enqueued"}
+
+
+@router.post("/movies/{movie_id}/poster-cache")
+def cache_movie_poster_route(
+    movie_id: int, session: Session = Depends(_get_session)
+) -> dict[str, bool]:
+    return {"cached": cache_poster_now(session, media_type="movie", media_id=movie_id)}
+
+
+@router.post("/series/{series_id}/poster-cache")
+def cache_series_poster_route(
+    series_id: int, session: Session = Depends(_get_session)
+) -> dict[str, bool]:
+    return {"cached": cache_poster_now(session, media_type="series", media_id=series_id)}
 
 
 @router.post("/files/{media_file_id}/translate", status_code=202)

@@ -4,6 +4,7 @@ from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.list_wanted_media import list_wanted_media
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.media_metadata.models import MediaMetadata
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
@@ -48,6 +49,36 @@ def test_list_wanted_media_includes_movie_missing_a_target_language(in_memory_se
     assert wanted[0].title == "Foo"
     assert wanted[0].missing_languages == ["pt-BR"]
     assert wanted[0].missing_files_count == 1
+    assert wanted[0].poster_cached is False
+
+
+def test_list_wanted_media_reports_poster_cached_from_media_metadata(in_memory_session):
+    arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default", source_languages="en", target_languages="pt-BR", is_default=True
+        )
+    )
+    movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    in_memory_session.refresh(movie)
+    in_memory_session.add(
+        MediaFile(
+            movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+        )
+    )
+    in_memory_session.add(
+        MediaMetadata(
+            movie_id=movie.id, poster_cached_at=datetime.now(UTC), fetched_at=datetime.now(UTC)
+        )
+    )
+    in_memory_session.commit()
+
+    wanted = list_wanted_media(in_memory_session)
+
+    assert wanted[0].poster_cached is True
 
 
 def test_list_wanted_media_excludes_movie_with_every_target_language(in_memory_session):

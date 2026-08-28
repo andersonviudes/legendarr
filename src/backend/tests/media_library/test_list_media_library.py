@@ -46,6 +46,7 @@ def test_list_movies_includes_arr_fields_and_no_metadata(in_memory_session):
     assert movies[0].quality_profile_name == "Any"
     assert movies[0].poster_url is None
     assert movies[0].overview is None
+    assert movies[0].poster_cached is False
 
 
 def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
@@ -60,6 +61,7 @@ def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
             movie_id=movie.id,
             overview="A movie.",
             poster_url="https://example.test/poster.jpg",
+            poster_cached_at=datetime.now(UTC),
             year=2024,
             imdb_rating=7.5,
             fetched_at=datetime.now(UTC),
@@ -71,6 +73,7 @@ def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
 
     assert movies[0].overview == "A movie."
     assert movies[0].poster_url == "https://example.test/poster.jpg"
+    assert movies[0].poster_cached is True
     assert movies[0].year == 2024
     assert movies[0].imdb_rating == 7.5
 

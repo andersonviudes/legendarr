@@ -1,6 +1,6 @@
 ---
 name: legendarr media metadata slice
-description: TheTVDB/TMDb/IMDb metadata provider registration, fetch-on-sync, and manual "Refetch All" — media_metadata slice, confirmed poster-cache/periodic-refresh gap
+description: TheTVDB/TMDb/IMDb metadata provider registration, fetch-on-sync/manual/periodic refresh, and the local poster cache + cleanup job — media_metadata slice
 type: project
 ---
 
@@ -65,10 +65,79 @@ covering both (commit `bb1a145`, pushed straight to `main` as a `docs:` change p
 `main`): the bullet now names a concrete default — `metadata_refresh_interval_minutes`, once
 a day, config/env only (same posture as `translate_interval_minutes`), reasoned as "metadata
 changes far less often than library contents" vs. the 15/60 min cadence the sync/scan/
-history-poll jobs use. **This default was picked unilaterally** — an auto-mode "Continue with
-the task" nudge, not an explicit user answer to "quer que eu já defina um valor no ROADMAP,
-ou prefere decidir na hora de implementar?". Treat it as a placeholder to confirm with the
-user, not a settled decision, when this backlog item actually gets implemented.
+history-poll jobs use.
+
+**Implemented 2026-08-27** on `feat/media-poster-cache`, closing the 0.20.0 bullet (checkbox
+now `[x]`). Poster download is wired straight into `fetch_metadata._fetch_and_store` (a new
+private `_cache_poster(media_type, media_id, poster_url)`, plain `httpx.get` — not a
+`ProviderHttpClient`, since that class models one fixed `base_url` per provider, not a
+one-off arbitrary-CDN-host download), so every existing caller (first-sync, manual
+"Refetch All", and the new periodic job) gets caching for free. `MediaMetadata` gained one
+column, `poster_cached_at: datetime | None` — the sole "is this cached" signal, surfaced as
+`poster_cached: bool` on `MediaRead`/`WantedRead` via `list_media_library.metadata_fields()`.
+
+**Serving is a shared static-file mount, not a backend HTTP proxy** — confirmed directly with
+the user over the alternative (proxying poster bytes through `legendarr_web`'s
+`get_backend_client`, which would have stayed inside the auth gate). Backend writes to
+`Settings.poster_cache_dir` (`data_dir/posters/{kind}_{id}.jpg`, always `.jpg` regardless of
+the real `Content-Type` — TMDb/TheTVDB/OMDb all serve JPEG in practice, and Starlette's
+`StaticFiles` sets `Content-Type` from the file extension, not a stored value);
+`legendarr_web/app.py` mounts that same directory at `/posters` (needs `WebSettings.data_dir`,
+a new field mirroring the backend's). **Explicitly accepted trade-offs**, both surfaced and
+confirmed: this mount is unauthenticated-by-ID (same as `/static` today, not behind
+`require_authenticated_session`), and backend+web are now coupled to a shared filesystem path
+instead of talking only over HTTP — a first for this codebase, only safe because
+`legendarr_bootstrap` always runs both in one process/container. Templates
+(`movies.html`/`series.html`/`wanted.html`/`movie_detail.html`/`series_detail.html`) gate the
+`<img>` on `poster_cached` with **no hotlink fallback** to `poster_url` while a poster isn't
+cached yet — also an explicit user choice over the "graceful degrade" alternative.
+
+Two new independent scheduled jobs in `media_metadata/jobs.py`, both on the existing
+`JobQueue.METADATA_BULK` (no new queue — neither needs its own concurrency pool):
+`register_metadata_refresh_job` (`metadata_refresh_interval_minutes`/`_retry_attempts`/
+`_retry_delay_seconds`/`_max_instances`/`_coalesce`, own config fully independent from the
+manual button's `metadata_refetch_*` — also an explicit user choice) just calls the existing
+`enqueue_metadata_refetch` on a schedule; `register_poster_cache_cleanup_job`
+(`poster_cache_cleanup_interval_minutes`/... same 5-field shape, also its own schedule rather
+than folded into the refresh job — third explicit user choice) sweeps `poster_cache_dir` via
+a new `media_metadata/poster_cache_cleanup.py::cleanup_orphaned_posters`, deleting any
+`{kind}_{id}.jpg` with no matching `Movie`/`Series` row — the only way a file orphans, since a
+refetch overwrites the same filename in place.
+
+Full plan/rationale (including the alternatives considered for each of the four confirmed
+decisions above) is in the now-consumed plan file; this memory is the durable record.
+
+**On-demand fallback added same day, same branch**, after a follow-up user message
+("cria o fallback sobre demanda"). Two other things that message raised were confirmed
+*not* to change: `metadata_refresh_interval_minutes`'s default stays 1 day (not 30), and
+the refresh/cleanup jobs stay separate (not merged into one). The fallback itself:
+backend gained `fetch_metadata.cache_poster_now(session, *, media_type, media_id) -> bool`
+(reuses `_cache_poster`, looks the `MediaMetadata` row up itself) behind two thin routes,
+`POST /media/movies/{id}/poster-cache` and `POST /media/series/{id}/poster-cache` (both
+in `media_library/router.py`, not `media_metadata/router.py` — matches where the other
+per-item movie/series actions already live, e.g. `.../scan`). On the web side, this is
+**not** implemented as a smarter `/posters` mount — that mount stayed a plain `StaticFiles`
+directory, unauthenticated, unchanged. A raw `Starlette` sub-app calling the backend on a
+cache miss was the first design (keeps the mount's auth-bypass posture) but was dropped:
+`stub_backend_client`'s `app.dependency_overrides[get_backend_client]` only intercepts
+FastAPI-DI routes, so a mounted sub-app calling the backend itself would be untestable
+with the existing test fixture. Instead, `media_library/service.py` gained
+`ensure_poster_cached`/`ensure_posters_cached`/`ensure_wanted_posters_cached`, called from
+every `media_library/router.py` page handler that renders a poster (`show_movies`,
+`show_series`, `show_wanted*`, `show_movie`, `show_series_item`) right after fetching the
+list/item and before rendering: if `poster_url` is set but `poster_cached` isn't, POST the
+new backend route and flip `poster_cached` on the dict in place before the template sees
+it — same DI path (`Depends(get_backend_client)`) every other call already uses, so
+`stub_backend_client` covers it for free. List pages run every item's fetch concurrently
+via `asyncio.gather` so one page load isn't gated on N sequential round-trips. Templates
+and the `/posters` mount are **completely unchanged** — still gate on `poster_cached`,
+still never hotlink `poster_url` as an `<img src>` (that "no hotlink" decision is
+unaffected by this: the on-demand path still only ever downloads server-side and serves
+the local copy). Failure is silent and broad on purpose —
+`except (httpx.HTTPError, KeyError, ValueError)` in `ensure_poster_cached`, not just
+`httpx.HTTPError` — because the item dict came straight off `response.json()` with no
+schema validation on the web side; a page just shows the placeholder icon, same as before
+this existed.
 
 **Resolved**: the "explicitly out of scope" note this memory used to carry (surfacing
 `poster_url`/`overview` on `/media/movies`/`/media/series`, tracked at
@@ -79,8 +148,9 @@ using `show.poster_url` directly (confirmed via Playwright screenshot, 2026-08-2
 three-way merge policy, or the refetch upsert fix from scratch; the caching/periodic-refresh
 note saves re-investigating the same question if it comes up again in a roadmap discussion.
 
-**How to apply:** when extending metadata fetch (new fields, new sources, periodic refresh,
-or image caching), read `media_metadata/fetch_metadata.py`'s `_merge` function first — it's
-the single place the TVDB-wins/TMDb-fills-gaps/IMDb-rating-only policy lives. If asked to add
-scheduled refresh or local image caching, treat it as new `feat:`-sized scope (own branch/PR)
-since neither exists today.
+**How to apply:** when extending metadata fetch (new fields, new sources), read
+`media_metadata/fetch_metadata.py`'s `_merge` function first — it's the single place the
+TVDB-wins/TMDb-fills-gaps/IMDb-rating-only policy lives. When touching the poster cache
+(new provider, different storage), read `_cache_poster` in that same file and
+`poster_cache_cleanup.py` first — periodic refresh and cleanup are both implemented now (see
+above), not a gap to plan from scratch.

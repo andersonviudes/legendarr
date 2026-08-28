@@ -11,7 +11,7 @@
 - [legendarr language profile provider removal](legendarr-language-profile-provider-removal.md) — translation_provider was removed from LanguageProfile; provider selection is a separate future feature
 - [legendarr OpenSubtitles search options kept despite YAGNI flag](legendarr-opensubtitles-search-options-kept.md) — use_hash/include_ai_translated/include_machine_translated unused but deliberately kept, confirmed 2026-07-22
 - [legendarr media-library list UI not wired](legendarr-media-library-list-ui-not-wired.md) — RESOLVED 2026-08-01 by PR #25; kept as history only
-- [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/TMDb/IMDb providers, "Refetch All" bulk job, confirmed no poster-cache/periodic-refresh gap
+- [legendarr media metadata slice](legendarr-media-metadata-slice.md) — TheTVDB/TMDb/IMDb providers, "Refetch All" bulk job, local poster cache + periodic refresh/cleanup jobs
 - [legendarr type-checking rule](legendarr-type-checking-rule.md) — pyright wired up via pyrightconfig.json, run alongside make lint/make test, not yet in CI
 - [legendarr Alembic fileConfig logging gotcha](legendarr-alembic-filecfg-logging-gotcha.md) — RESOLVED 2026-08-27: also broke the live app's logs/System page, not just caplog
 - [legendarr VobSub/DVB OCR deferred](legendarr-vobsub-dvb-ocr-deferred.md) — ROADMAP 0.14.0 only covers PGS OCR; VobSub/DVB need their own parser, not on the roadmap yet

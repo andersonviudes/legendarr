@@ -32,10 +32,17 @@ def metadata_by_key(session: Session, key_column) -> dict[int, MediaMetadata]:
 
 def metadata_fields(metadata: MediaMetadata | None) -> dict:
     if metadata is None:
-        return {"overview": None, "poster_url": None, "year": None, "imdb_rating": None}
+        return {
+            "overview": None,
+            "poster_url": None,
+            "poster_cached": False,
+            "year": None,
+            "imdb_rating": None,
+        }
     return {
         "overview": metadata.overview,
         "poster_url": metadata.poster_url,
+        "poster_cached": metadata.poster_cached_at is not None,
         "year": metadata.year,
         "imdb_rating": metadata.imdb_rating,
     }
