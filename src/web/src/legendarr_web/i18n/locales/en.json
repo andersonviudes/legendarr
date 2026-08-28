@@ -236,7 +236,10 @@
   "media_servers.token_label": "Token",
   "media_servers.keep_current_token_placeholder": "Leave blank to keep the current token",
 
-  "history.empty": "No translation activity yet — history will appear here once subtitles are translated.",
+  "history.subtitle": "Translation and acquisition attempts, most recent first.",
+  "history.empty": "No translation or acquisition activity yet — history will appear here once a subtitle is translated or acquired.",
+  "history.category.translation": "Translation",
+  "history.category.acquisition": "Acquisition",
 
   "statistics.subtitle": "Translation and acquisition activity, over time.",
   "statistics.translated_heading": "Translated",

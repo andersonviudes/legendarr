@@ -27,7 +27,10 @@ from legendarr_backend.subtitle_discovery.subtitle_format import (
 from legendarr_backend.subtitle_translation.provider_chain import resolve_provider_chain
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
 from legendarr_backend.subtitle_translation.translate_subtitle import translate_subtitle
-from legendarr_backend.subtitle_translation.translation_history import record_translation_attempt
+from legendarr_backend.subtitle_translation.translation_history import (
+    record_translation_attempt,
+    record_translation_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +186,7 @@ def translate_media_file(
     provider_by_target_language: dict[str, str] = {}
     for target_language in missing_targets:
         result = _translate_with_fallback(
-            chain, lines, source.language, target_language, media_file.id
+            session, chain, lines, source.language, target_language, media_file.id
         )
         if result is None:
             continue
@@ -317,17 +320,22 @@ def _pick_source_subtitle(
 
 
 def _translate_with_fallback(
+    session: Session,
     chain: list[TranslationProvider],
     lines: list[SubtitleLine],
     source_language: str,
     target_language: str,
     media_file_id: int,
 ) -> tuple[list[SubtitleLine], str] | None:
+    last_error: Exception | None = None
+    last_provider_name: str | None = None
     for provider in chain:
         try:
             translated = translate_subtitle(lines, provider, source_language, target_language)
             return translated, provider.name
-        except Exception:
+        except Exception as exc:
+            last_error = exc
+            last_provider_name = provider.name
             logger.warning(
                 "translation provider %r failed for media file %d (%s -> %s), trying next",
                 provider.name,
@@ -341,4 +349,13 @@ def _translate_with_fallback(
         source_language,
         target_language,
     )
+    if last_error is not None:
+        record_translation_failure(
+            session,
+            media_file_id,
+            source_language=source_language,
+            target_language=target_language,
+            error_message=f"{last_provider_name}: {last_error}",
+            failed_at=datetime.now(UTC),
+        )
     return None

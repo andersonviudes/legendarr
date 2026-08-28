@@ -12,6 +12,7 @@ from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOr
 from legendarr_backend.subtitle_translation import (
     translate_media_file as translate_media_file_module,
 )
+from legendarr_backend.subtitle_translation.models import TranslationFailure
 from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
 from legendarr_backend.subtitle_translation.translation_history import list_translation_attempts
 from sqlmodel import select
@@ -248,6 +249,33 @@ def test_translate_media_file_falls_back_to_next_provider_on_failure(
     result = translate_media_file(in_memory_session, media_file, video)
 
     assert result.translated_languages == ["pt-BR"]
+    # A recovered fallback isn't a failure — nothing worth surfacing on the History view.
+    assert list(in_memory_session.exec(select(TranslationFailure))) == []
+
+
+def test_translate_media_file_records_a_failure_when_every_provider_fails(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video_and_source_subtitle(tmp_path, in_memory_session, media_file)
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_FailingProvider()],
+    )
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == []
+    failures = list(in_memory_session.exec(select(TranslationFailure)))
+    assert len(failures) == 1
+    assert failures[0].media_file_id == media_file.id
+    assert failures[0].source_language == "en"
+    assert failures[0].target_language == "pt-BR"
+    assert "failing" in failures[0].error_message
+    assert "boom" in failures[0].error_message
 
 
 def test_translate_media_file_skips_target_language_already_translated(

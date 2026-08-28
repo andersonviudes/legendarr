@@ -20,6 +20,7 @@ _TAG_BY_PREFIX = {
     "/translation-providers": "Translation Providers",
     "/system": "System",
     "/statistics": "Statistics",
+    "/history": "History",
 }
 
 

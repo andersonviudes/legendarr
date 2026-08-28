@@ -6,6 +6,7 @@ from legendarr_backend.arr_services.router import router as arr_services_router
 from legendarr_backend.authentication.api_guard import require_api_access
 from legendarr_backend.authentication.router import router as authentication_router
 from legendarr_backend.database.engine import init_db
+from legendarr_backend.history.router import router as history_router
 from legendarr_backend.language_profiles.router import router as language_profiles_router
 from legendarr_backend.media_library.router import router as media_library_router
 from legendarr_backend.media_library.webhooks import router as webhooks_router
@@ -52,4 +53,5 @@ def create_api_app() -> FastAPI:
     app.include_router(translation_provider_router)
     app.include_router(system_router)
     app.include_router(statistics_router)
+    app.include_router(history_router)
     return app

@@ -202,3 +202,24 @@ class SubtitleBlacklistEntry(SQLModel, table=True):
     release_name: str | None = Field(default=None)
     download_id: str | None = Field(default=None)
     blacklisted_at: datetime
+
+
+class AcquisitionFailure(SQLModel, table=True):
+    """Append-only record of one acquisition search where at least one configured
+    provider raised — ROADMAP.md 0.20.0's History view "error status" data source,
+    mirroring `subtitle_translation.models.TranslationFailure`'s shape and role for
+    the translation side.
+
+    Written by `acquire_media_file_subtitle._search_and_download` only when its
+    provider loop is fully exhausted *and* saw at least one exception — a clean "no
+    provider found an above-cutoff match" pass (zero exceptions) is a common,
+    non-error outcome (see `AcquisitionResult.skipped_reason`) and never reaches here.
+    `media_file_id` (not `subtitle_id`, unlike `AcquisitionAttempt`): a failed search
+    never produces an `AcquiredSubtitle`/`Subtitle` row to point at.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    media_file_id: int = Field(foreign_key="mediafile.id", index=True, ondelete="CASCADE")
+    language: str
+    error_message: str
+    failed_at: datetime

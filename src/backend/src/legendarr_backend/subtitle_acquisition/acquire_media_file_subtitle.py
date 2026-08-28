@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session, select
@@ -8,6 +9,7 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisition_failure
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
@@ -299,6 +301,8 @@ def _search_and_download(
     must_not_contain: list[str],
 ) -> _AcquiredCandidate | None:
     blacklisted = list_blacklisted_download_ids(session, media_file_id, language)
+    last_error: Exception | None = None
+    last_provider_name: str | None = None
     for provider in chain:
         try:
             candidates = provider.search(
@@ -337,11 +341,21 @@ def _search_and_download(
                 download_id=best.download_id,
                 evaluation=evaluate_candidate(best, video_path.stem),
             )
-        except Exception:
+        except Exception as exc:
+            last_error = exc
+            last_provider_name = provider.name
             logger.warning(
                 "subtitle provider %r failed searching %r (%s), trying next",
                 provider.name,
                 title,
                 language,
             )
+    if last_error is not None:
+        record_acquisition_failure(
+            session,
+            media_file_id,
+            language=language,
+            error_message=f"{last_provider_name}: {last_error}",
+            failed_at=datetime.now(UTC),
+        )
     return None

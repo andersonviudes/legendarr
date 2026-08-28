@@ -113,3 +113,25 @@ class TranslationAttempt(SQLModel, table=True):
     source_language: str
     target_language: str
     translated_at: datetime
+
+
+class TranslationFailure(SQLModel, table=True):
+    """Append-only record of one translation attempt where every configured provider
+    raised — ROADMAP.md 0.20.0's History view "error status" data source, mirroring
+    `subtitle_acquisition.models.AcquisitionFailure`'s shape and role for the
+    acquisition side.
+
+    Written by `translate_media_file._translate_with_fallback` on full provider-chain
+    exhaustion only — the common, non-error skip reasons (no profile, no provider
+    configured, no source subtitle) never reach here, same as `TranslationAttempt`
+    only records a genuine translation, not a skip. `media_file_id` (not `subtitle_id`,
+    unlike `TranslationAttempt`): a failed attempt never produces a target `Subtitle`
+    row to point at.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    media_file_id: int = Field(foreign_key="mediafile.id", index=True, ondelete="CASCADE")
+    source_language: str
+    target_language: str
+    error_message: str
+    failed_at: datetime
