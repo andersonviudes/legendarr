@@ -109,6 +109,8 @@
   "settings.general.title": "General",
   "settings.general.locale_label": "Idioma de visualización",
   "settings.general.locale_hint": "Idioma usado en todo el panel de legendarr — no afecta los idiomas del contenido de los subtítulos, que se configuran por perfil de idioma.",
+  "settings.general.timezone_label": "Zona horaria",
+  "settings.general.timezone_hint": "Zona horaria usada para mostrar las fechas y horas en todo el panel de legendarr — no afecta cuándo se ejecutan las tareas programadas, que siempre siguen UTC.",
   "settings.general.legendarr_url_label": "URL de Legendarr",
   "settings.general.legendarr_url_hint": "La dirección donde Radarr/Sonarr pueden alcanzar esta instancia de legendarr — se usa para construir la URL del webhook que se muestra en la tarjeta de cada conexión en Arr Services, para que las importaciones activen la traducción de inmediato en lugar de esperar el próximo ciclo programado.",
 

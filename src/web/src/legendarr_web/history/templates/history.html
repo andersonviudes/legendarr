@@ -40,7 +40,7 @@
       {{ entry.language }}{% if entry.provider %} · {{ entry.provider }}{% endif %}
     </td>
     <td>{% if entry.score is not none %}{{ (entry.score * 100) | round | int }}%{% else %}—{% endif %}</td>
-    <td>{{ entry.occurred_at[:19].replace("T", " ") }}</td>
+    <td>{{ entry.occurred_at | local_datetime }}</td>
   </tr>
   {% endfor %}
   </tbody>

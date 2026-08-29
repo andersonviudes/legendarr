@@ -21,6 +21,7 @@ dependencies = [
     "pytesseract>=0.3.10",
     "pillow>=10.0",
     "faster-whisper>=1.0",
+    "tzdata>=2024.1",
 ]
 
 [build-system]

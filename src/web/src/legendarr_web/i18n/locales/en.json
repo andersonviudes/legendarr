@@ -109,6 +109,8 @@
   "settings.general.title": "General",
   "settings.general.locale_label": "Display language",
   "settings.general.locale_hint": "Language used across the legendarr dashboard — has no effect on subtitle content languages, which are set per language profile.",
+  "settings.general.timezone_label": "Timezone",
+  "settings.general.timezone_hint": "Timezone used to display timestamps across the legendarr dashboard — doesn't affect when scheduled tasks run, which always follows UTC.",
   "settings.general.legendarr_url_label": "Legendarr URL",
   "settings.general.legendarr_url_hint": "The address Radarr/Sonarr can reach this legendarr instance at — used to build the webhook URL shown on each connection's card in Arr Services, so imports trigger translation immediately instead of waiting for the next scheduled pass.",
 

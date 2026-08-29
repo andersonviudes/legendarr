@@ -1,6 +1,7 @@
 from typing import Literal, get_args
+from zoneinfo import available_timezones
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from legendarr_backend.subtitle_translation.models import TranslationProviderKind
 
@@ -55,10 +56,21 @@ UI_LOCALES: tuple[UiLocale, ...] = get_args(UiLocale)
 
 
 class GeneralSettings(BaseModel):
-    """The instance-wide UI display language, single shared admin account so this is one
-    preference, same posture as `TranslationDefaultsSettings`."""
+    """The instance-wide UI display language and timezone, single shared admin account so
+    these are one preference each, same posture as `TranslationDefaultsSettings`."""
 
     ui_locale: UiLocale = "en"
+    # IANA name (e.g. "America/Sao_Paulo") — too many valid values for a `Literal` like
+    # `UiLocale` above, so membership in `zoneinfo.available_timezones()` is checked
+    # explicitly instead.
+    timezone: str = "UTC"
+
+    @field_validator("timezone")
+    @classmethod
+    def _validate_timezone(cls, value: str) -> str:
+        if value not in available_timezones():
+            raise ValueError(f"unsupported timezone: {value}")
+        return value
 
 
 class BackupSettings(BaseModel):

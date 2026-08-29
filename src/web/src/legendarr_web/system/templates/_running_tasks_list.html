@@ -5,7 +5,7 @@
   <li class="task-line">
     <span class="task-line-name">{{ task.name }}</span>
     <span class="task-line-queue">{{ task.queue }}</span>
-    <span class="task-line-time">{{ task.started_at[:19].replace("T", " ") }}</span>
+    <span class="task-line-time">{{ task.started_at | local_datetime }}</span>
     {% if task.phase %}
     <div class="task-line-progress">
       <progress value="{{ task.current_step }}" max="{{ task.total_steps }}"></progress>

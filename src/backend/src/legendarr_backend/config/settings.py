@@ -141,6 +141,10 @@ class Settings(BaseSettings):
     # to `SUPPORTED_LANGUAGES` (subtitle content languages). Single shared admin account,
     # so this is one instance-wide preference, same posture as `default_translation_provider`.
     ui_locale: str = Field(default="en")
+    # Instance-wide IANA timezone name used to display timestamps across legendarr_web —
+    # doesn't affect what's stored (always UTC) or when scheduled jobs run, same posture
+    # as `ui_locale` above.
+    timezone: str = Field(default="UTC")
     # ROADMAP.md 0.22.0 — how many `backup/` archives to keep in `data_dir/backups/`
     # before the oldest are pruned on the next create. Backup/restore here covers
     # `config.yaml` + the Fernet key file only, not the SQLite database — see

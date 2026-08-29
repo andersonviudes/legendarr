@@ -96,6 +96,7 @@ class AppConfigFile(BaseModel):
     auth_password_hash: str = ""
     auth_api_key: str = ""
     ui_locale: str = "en"
+    timezone: str = "UTC"
     backup_retention_count: int = Field(default=7, ge=1)
 
 
@@ -173,6 +174,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "auth_password_hash": settings.auth_password_hash,
         "auth_api_key": settings.auth_api_key,
         "ui_locale": settings.ui_locale,
+        "timezone": settings.timezone,
         "backup_retention_count": settings.backup_retention_count,
     }
     merged = {**defaults, **data}

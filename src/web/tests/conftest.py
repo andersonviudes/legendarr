@@ -18,7 +18,7 @@ def _empty_profiles_handler(request: httpx.Request) -> httpx.Response:
 
 
 _AUTH_DISABLED_VALIDATE_RESPONSE = {"authenticated": True, "auth_enabled": False, "session": None}
-_DEFAULT_GENERAL_SETTINGS_RESPONSE = {"ui_locale": "en"}
+_DEFAULT_GENERAL_SETTINGS_RESPONSE = {"ui_locale": "en", "timezone": "UTC"}
 
 
 def _stub_auth_validate(handler):
@@ -38,7 +38,8 @@ def _stub_auth_validate(handler):
 def _stub_general_settings(handler):
     """Wrap `handler` so `GET /settings/general` — called by the web-wide
     `resolve_locale` dependency on every request — always answers with the default
-    locale before reaching `handler`, same reasoning as `_stub_auth_validate` above."""
+    locale/timezone before reaching `handler`, same reasoning as `_stub_auth_validate`
+    above."""
 
     def _wrapped(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/settings/general":
@@ -56,7 +57,7 @@ def stub_backend_client():
     `handler` for tests that need different backend responses. `stub_auth_validate=False`
     opts out of the "auth is off" auto-answer on `/auth/sessions/validate` — for tests
     (`authentication/test_session_guard.py`) that want to drive that response themselves.
-    `stub_general_settings=False` opts out of the default-locale auto-answer on
+    `stub_general_settings=False` opts out of the default-locale/timezone auto-answer on
     `GET /settings/general` — for tests (`settings/test_general_page.py`) that want to
     drive that response themselves.
     """

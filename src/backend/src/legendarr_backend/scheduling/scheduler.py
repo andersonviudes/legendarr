@@ -18,7 +18,11 @@ def build_scheduler() -> BackgroundScheduler:
         queue.value: ThreadPoolExecutor(max_workers=workers)
         for queue, workers in QUEUE_WORKERS.items()
     }
-    return BackgroundScheduler(executors=executors)
+    # Explicit UTC — APScheduler otherwise defaults to the host's local tz (via
+    # `tzlocal`), which would make `next_run_time`/`scheduled_run_time` ambiguous
+    # wherever they're displayed. Every job registered here is `trigger="interval"`, so
+    # this doesn't change *when* anything runs, only the tz label on the result.
+    return BackgroundScheduler(executors=executors, timezone="UTC")
 
 
 def register_job(

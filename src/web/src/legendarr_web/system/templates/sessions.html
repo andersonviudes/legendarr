@@ -36,8 +36,8 @@
         {% if session.id == current_session_id %}<span class="app-nav-badge">{{ t("system.sessions.this_device") }}</span>{% endif %}
       </td>
       <td>{{ session.ip_address or "—" }}</td>
-      <td>{{ session.created_at[:19].replace("T", " ") }}</td>
-      <td>{{ session.last_seen_at[:19].replace("T", " ") }}</td>
+      <td>{{ session.created_at | local_datetime }}</td>
+      <td>{{ session.last_seen_at | local_datetime }}</td>
       <td>
         {% if session.id != current_session_id %}
         <form method="post" action="/system/sessions/{{ session.id }}/revoke">

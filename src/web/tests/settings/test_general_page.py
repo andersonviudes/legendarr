@@ -7,7 +7,9 @@ from legendarr_web.app import create_app
 _AUTH_SETTINGS_DEFAULT = {"enabled": False, "username": "", "api_key": ""}
 
 
-def _general_settings_handler(locale: str, public_url: str = "", auth_settings: dict | None = None):
+def _general_settings_handler(
+    locale: str, timezone: str = "UTC", public_url: str = "", auth_settings: dict | None = None
+):
     auth_settings = _AUTH_SETTINGS_DEFAULT if auth_settings is None else auth_settings
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -15,7 +17,7 @@ def _general_settings_handler(locale: str, public_url: str = "", auth_settings: 
             body = json.loads(request.content)
             return httpx.Response(200, json=body)
         if request.url.path == "/settings/general":
-            return httpx.Response(200, json={"ui_locale": locale})
+            return httpx.Response(200, json={"ui_locale": locale, "timezone": timezone})
         if request.url.path == "/settings/webhooks" and request.method == "PUT":
             body = json.loads(request.content)
             return httpx.Response(200, json=body)
@@ -40,6 +42,21 @@ def test_general_page_renders_the_saved_locale(stub_backend_client):
 
     assert response.status_code == 200
     assert 'value="en" selected' in response.text
+
+
+def test_general_page_renders_the_saved_timezone(stub_backend_client):
+    app = create_app()
+    stub_backend_client(
+        app,
+        handler=_general_settings_handler("en", timezone="America/Sao_Paulo"),
+        stub_general_settings=False,
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/settings/general/")
+
+    assert response.status_code == 200
+    assert 'value="America/Sao_Paulo" selected' in response.text
 
 
 def test_general_page_renders_the_saved_legendarr_url(stub_backend_client):
@@ -90,7 +107,9 @@ def test_save_general_settings_puts_to_backend_and_redirects_with_toast(stub_bac
 
     with TestClient(app) as client:
         response = client.post(
-            "/settings/general/", data={"ui_locale": "es"}, follow_redirects=False
+            "/settings/general/",
+            data={"ui_locale": "es", "timezone": "UTC"},
+            follow_redirects=False,
         )
 
     assert response.status_code == 303
@@ -112,7 +131,9 @@ def test_save_general_settings_renders_error_on_backend_rejection(stub_backend_c
 
     with TestClient(app) as client:
         response = client.post(
-            "/settings/general/", data={"ui_locale": "fr"}, follow_redirects=False
+            "/settings/general/",
+            data={"ui_locale": "fr", "timezone": "UTC"},
+            follow_redirects=False,
         )
 
     assert response.status_code == 422
@@ -134,7 +155,11 @@ def test_save_general_settings_also_saves_legendarr_url(stub_backend_client):
     with TestClient(app) as client:
         response = client.post(
             "/settings/general/",
-            data={"ui_locale": "en", "public_url": "https://legendarr.example.com"},
+            data={
+                "ui_locale": "en",
+                "timezone": "UTC",
+                "public_url": "https://legendarr.example.com",
+            },
             follow_redirects=False,
         )
 
@@ -160,6 +185,7 @@ def test_save_general_settings_also_saves_auth_settings(stub_backend_client):
             "/settings/general/",
             data={
                 "ui_locale": "en",
+                "timezone": "UTC",
                 "enabled": "true",
                 "username": "admin",
                 "password": "hunter2",
@@ -186,7 +212,13 @@ def test_save_general_settings_renders_error_on_auth_rejection(stub_backend_clie
     with TestClient(app) as client:
         response = client.post(
             "/settings/general/",
-            data={"ui_locale": "en", "enabled": "true", "username": "", "password": ""},
+            data={
+                "ui_locale": "en",
+                "timezone": "UTC",
+                "enabled": "true",
+                "username": "",
+                "password": "",
+            },
             follow_redirects=False,
         )
 

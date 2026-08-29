@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
+from legendarr_web.i18n.timezone import to_local
 from legendarr_web.i18n.translator import current_locale, translate
 
 TEMPLATES_ROOT = Path(__file__).resolve().parent.parent
@@ -39,4 +40,5 @@ def get_templates(feature_dir: str) -> Jinja2Templates:
     )
     templates.env.globals["icon"] = _icon
     templates.env.globals["t"] = _t
+    templates.env.filters["local_datetime"] = to_local
     return templates
