@@ -771,6 +771,8 @@ body {
   background-color: transparent;
   color: var(--pico-primary);
   font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
   cursor: pointer;
 }
 
@@ -1292,9 +1294,11 @@ button.page-toolbar-btn {
    themselves, so they're excluded here rather than fought with extra specificity
    elsewhere. `.lang-pill` also gets `role="button"` (it's the subtitle-menu trigger,
    see macros.html::subtitle_pill_list) purely for a11y semantics, not to pick up this
-   rule's button chrome. */
+   rule's button chrome. Same for `.subtitle-file-title-trigger` (episode title / file
+   name, see .subtitle-file-title-trigger below) — it's meant to read as plain link
+   text, not a button. */
 button:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove):not(.subtitle-pill-menu-item),
-[role="button"]:not(.lang-pill),
+[role="button"]:not(.lang-pill):not(.subtitle-file-title-trigger),
 [type="submit"]:not(.page-toolbar-btn),
 [type="button"]:not(.app-nav-toggle):not(.app-icon-btn):not(.page-toolbar-btn):not(.lang-multiselect-tag-remove):not(.subtitle-pill-menu-item) {
   display: inline-block;
