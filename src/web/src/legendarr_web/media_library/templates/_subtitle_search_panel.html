@@ -1,13 +1,16 @@
-{# Loaded into #subtitle-acquire-content by the "Manual search" file-row button, or by a
-   subtitle pill's own "Search" action (pre-selects that subtitle's language below). #}
-{% from "macros.html" import select_field %}
+{# Loaded into #subtitle-acquire-content by the "Manual search" file-row button/pill-menu
+   item (searches every target language of the file's language profile), or by a
+   subtitle pill's own "Search" action (searches just that subtitle's language). No
+   language picker — the languages searched are whatever the caller resolved, not a
+   user choice. #}
+{% from "macros.html" import empty_state, lang_pill_group %}
 <h3>{{ t("media_library.search_providers") }}</h3>
-{{ select_field("language", t("common.language"), languages, selected_language) }}
+{% if languages %}
+<p class="subtitle-search-languages">{{ t("common.language") }}: {{ lang_pill_group(languages|join(",")) }}</p>
 <button
   type="button"
   class="page-toolbar-btn"
-  hx-get="/media/files/{{ media_file_id }}/subtitle-search/results"
-  hx-include="#language"
+  hx-get="/media/files/{{ media_file_id }}/subtitle-search/results?{% for language in languages %}languages={{ language }}{% if not loop.last %}&{% endif %}{% endfor %}"
   hx-target="#subtitle-search-results"
   hx-swap="innerHTML"
   hx-indicator="#subtitle-search-indicator"
@@ -18,3 +21,6 @@
 </button>
 <p id="subtitle-search-indicator" class="test-indicator test-result" role="status">{{ t("common.searching") }}</p>
 <div id="subtitle-search-results"></div>
+{% else %}
+{{ empty_state(t("media_library.no_target_languages")) }}
+{% endif %}

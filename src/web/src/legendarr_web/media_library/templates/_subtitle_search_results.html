@@ -21,7 +21,7 @@
       aria-label="{{ t('a11y.download_subtitle') }}"
       data-tooltip="{{ t('common.download') }}"
       hx-post="/media/files/{{ media_file_id }}/subtitle-candidates/download"
-      hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": language, "page_link": candidate.page_link or ""} | tojson }}'
+      hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": candidate.target_language, "page_link": candidate.page_link or ""} | tojson }}'
       hx-target="#subtitle-acquire-content"
       hx-swap="innerHTML"
       hx-disabled-elt="this"

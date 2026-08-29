@@ -3,6 +3,14 @@ from fastapi.testclient import TestClient
 from legendarr_web.app import create_app
 
 
+def _target_languages_handler(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, json=["pt-BR", "fr"])
+
+
+def _no_target_languages_handler(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, json=[])
+
+
 def _candidates_handler(request: httpx.Request) -> httpx.Response:
     return httpx.Response(
         200,
@@ -38,23 +46,36 @@ def _download_failure_handler(request: httpx.Request) -> httpx.Response:
     return httpx.Response(404, json={"detail": "Media file not found"})
 
 
-def test_subtitle_search_panel_renders_language_select(stub_backend_client):
+def test_subtitle_search_panel_has_no_language_picker(stub_backend_client):
     app = create_app()
-    stub_backend_client(app)
+    stub_backend_client(app, handler=_target_languages_handler)
 
     with TestClient(app) as client:
         response = client.get("/media/files/5/subtitle-search")
 
     assert response.status_code == 200
     assert "Search providers" in response.text
-    assert 'name="language"' in response.text
-    assert "/media/files/5/subtitle-search/results" in response.text
+    assert "<select" not in response.text
+    assert "/media/files/5/subtitle-search/results?languages=pt-BR&languages=fr" in response.text
+
+
+def test_subtitle_search_panel_shows_empty_state_without_target_languages(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_no_target_languages_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search")
+
+    assert response.status_code == 200
+    assert "No target languages configured" in response.text
+    assert "/media/files/5/subtitle-search/results" not in response.text
 
 
 def test_subtitle_search_panel_preselects_the_given_language(stub_backend_client):
     """A subtitle pill's own "Search" action passes its language, matched
     case-insensitively against SUPPORTED_LANGUAGES since the pill's own casing (e.g.
-    "pt-br") isn't guaranteed to match the option's ("pt-BR")."""
+    "pt-br") isn't guaranteed to match the canonical form ("pt-BR") — searches just
+    that one upgrade instead of every target language."""
     app = create_app()
     stub_backend_client(app)
 
@@ -62,18 +83,22 @@ def test_subtitle_search_panel_preselects_the_given_language(stub_backend_client
         response = client.get("/media/files/5/subtitle-search", params={"language": "pt-br"})
 
     assert response.status_code == 200
-    assert '<option value="pt-BR" selected>' in response.text
+    assert "pt-BR" in response.text
+    assert "/media/files/5/subtitle-search/results?languages=pt-BR" in response.text
 
 
-def test_subtitle_search_panel_ignores_an_unrecognized_language(stub_backend_client):
+def test_subtitle_search_panel_falls_back_to_target_languages_for_an_unrecognized_language(
+    stub_backend_client,
+):
     app = create_app()
-    stub_backend_client(app)
+    stub_backend_client(app, handler=_target_languages_handler)
 
     with TestClient(app) as client:
         response = client.get("/media/files/5/subtitle-search", params={"language": "xx-not-real"})
 
     assert response.status_code == 200
-    assert "selected" not in response.text
+    assert "pt-BR" in response.text
+    assert "fr" in response.text
 
 
 def test_subtitle_search_results_renders_candidates(stub_backend_client):
@@ -81,7 +106,9 @@ def test_subtitle_search_results_renders_candidates(stub_backend_client):
     stub_backend_client(app, handler=_candidates_handler)
 
     with TestClient(app) as client:
-        response = client.get("/media/files/5/subtitle-search/results", params={"language": "en"})
+        response = client.get(
+            "/media/files/5/subtitle-search/results", params={"languages": ["en"]}
+        )
 
     assert response.status_code == 200
     assert "Foo.2024.1080p.WEB-DL" in response.text
@@ -92,12 +119,51 @@ def test_subtitle_search_results_renders_candidates(stub_backend_client):
     assert '"target_language": "en"' in response.text
 
 
+def test_subtitle_search_results_merges_multiple_languages(stub_backend_client):
+    calls: list[str] = []
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        language = request.url.params["language"]
+        calls.append(language)
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "provider": "opensubtitles",
+                    "release_name": f"Foo.{language}",
+                    "download_id": language,
+                    "language": language,
+                    "page_link": None,
+                    "score": 0.5,
+                }
+            ],
+        )
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/media/files/5/subtitle-search/results",
+            params={"languages": ["pt-BR", "fr"]},
+        )
+
+    assert response.status_code == 200
+    assert calls == ["pt-BR", "fr"]
+    assert "Foo.pt-BR" in response.text
+    assert "Foo.fr" in response.text
+    assert '"target_language": "pt-BR"' in response.text
+    assert '"target_language": "fr"' in response.text
+
+
 def test_subtitle_search_results_empty_state(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_empty_candidates_handler)
 
     with TestClient(app) as client:
-        response = client.get("/media/files/5/subtitle-search/results", params={"language": "en"})
+        response = client.get(
+            "/media/files/5/subtitle-search/results", params={"languages": ["en"]}
+        )
 
     assert response.status_code == 200
     assert "No subtitles found" in response.text

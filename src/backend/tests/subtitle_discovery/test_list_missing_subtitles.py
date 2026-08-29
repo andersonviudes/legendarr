@@ -9,6 +9,7 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     list_media_files_without_subtitles,
     list_missing_target_languages_by_media_file,
     missing_target_languages_for_media_file,
+    target_languages_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
@@ -180,3 +181,48 @@ def test_missing_target_languages_for_media_file_returns_empty_without_a_profile
     missing = missing_target_languages_for_media_file(in_memory_session, media_file.id)
 
     assert missing == []
+
+
+def test_target_languages_for_media_file_returns_every_target_language(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default",
+            source_languages="en",
+            target_languages="pt-BR,fr",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="pt-br",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo/Foo.pt-br.srt",
+            content_hash="test-hash",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    languages = target_languages_for_media_file(in_memory_session, media_file.id)
+
+    # Every configured target language comes back, including "pt-BR" even though a
+    # subtitle for it already exists — unlike `missing_target_languages_for_media_file`,
+    # presence doesn't filter this list.
+    assert languages == ["pt-BR", "fr"]
+
+
+def test_target_languages_for_media_file_returns_empty_without_a_profile(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+
+    languages = target_languages_for_media_file(in_memory_session, media_file.id)
+
+    assert languages == []

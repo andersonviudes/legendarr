@@ -131,6 +131,12 @@ async def remove_subtitle_style_tags(client: httpx.AsyncClient, subtitle_id: int
     return response.json()
 
 
+async def get_target_languages(client: httpx.AsyncClient, media_file_id: int) -> list[str]:
+    response = await client.get(f"/media/files/{media_file_id}/target-languages")
+    response.raise_for_status()
+    return response.json()
+
+
 async def search_subtitle_candidates(
     client: httpx.AsyncClient, media_file_id: int, language: str
 ) -> list[dict]:

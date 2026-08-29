@@ -48,6 +48,7 @@ from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
 )
 from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     missing_target_languages_for_media_file,
+    target_languages_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.strip_subtitle_style_tags import (
@@ -325,6 +326,13 @@ def _acquisition_result(
         subtitles=subtitle_reads,
         missing_languages=missing_target_languages_for_media_file(session, media_file_id),
     )
+
+
+@router.get("/files/{media_file_id}/target-languages", response_model=list[str])
+def get_target_languages_for_media_file(
+    media_file_id: int, session: Session = Depends(_get_session)
+) -> list[str]:
+    return target_languages_for_media_file(session, media_file_id)
 
 
 @router.get(

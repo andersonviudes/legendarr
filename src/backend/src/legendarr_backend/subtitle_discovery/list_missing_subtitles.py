@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from sqlmodel import Session, col, select
 
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
 )
@@ -81,19 +82,7 @@ def missing_target_languages_for_media_file(session: Session, media_file_id: int
     call sites (the acquire/blacklist routes' pill-list OOB swap) that only need one
     file's answer and shouldn't pay for resolving the whole library's profiles to get it.
     """
-    media_file = session.get(MediaFile, media_file_id)
-    if media_file is None:
-        return []
-    item: Movie | Series | None
-    if media_file.movie_id is not None:
-        item = session.get(Movie, media_file.movie_id)
-    elif media_file.series_id is not None:
-        item = session.get(Series, media_file.series_id)
-    else:
-        item = None
-    if item is None:
-        return []
-    profile = resolve_effective_profile(session, item)
+    profile = _resolve_profile_for_media_file(session, media_file_id)
     if profile is None:
         return []
     present = {
@@ -105,3 +94,29 @@ def missing_target_languages_for_media_file(session: Session, media_file_id: int
     return [
         language for language in profile.target_language_list if language.lower() not in present
     ]
+
+
+def target_languages_for_media_file(session: Session, media_file_id: int) -> list[str]:
+    """Every target language of a media file's effective profile, missing or not — the
+    "Manual search" panel's default search scope when the caller didn't ask for one
+    specific language (see `missing_target_languages_for_media_file` for the "still
+    missing" subset used by the wanted list and the missing-language pills).
+    """
+    profile = _resolve_profile_for_media_file(session, media_file_id)
+    return profile.target_language_list if profile else []
+
+
+def _resolve_profile_for_media_file(session: Session, media_file_id: int) -> LanguageProfile | None:
+    media_file = session.get(MediaFile, media_file_id)
+    if media_file is None:
+        return None
+    item: Movie | Series | None
+    if media_file.movie_id is not None:
+        item = session.get(Movie, media_file.movie_id)
+    elif media_file.series_id is not None:
+        item = session.get(Series, media_file.series_id)
+    else:
+        item = None
+    if item is None:
+        return None
+    return resolve_effective_profile(session, item)

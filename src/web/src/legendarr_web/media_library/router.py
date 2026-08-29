@@ -1,5 +1,7 @@
+from typing import Annotated
+
 import httpx
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import get_backend_client
@@ -202,25 +204,33 @@ async def trigger_subtitle_style_tag_removal(
 
 
 @router.get("/files/{media_file_id}/subtitle-search")
-async def show_subtitle_search(request: Request, media_file_id: int, language: str | None = None):
-    # A subtitle's own "Search" pill action passes its language so the panel opens with
-    # that language pre-picked (search for an upgrade for THIS subtitle) instead of the
-    # blank default the file-level "Manual search" action uses. Matched case-insensitively
-    # against SUPPORTED_LANGUAGES since a subtitle's stored `language` casing isn't
-    # guaranteed to match the option values (`select_field`'s `selected` comparison is
-    # exact-match) — falls back to no pre-selection for an unrecognized code.
-    selected_language = next(
+async def show_subtitle_search(
+    request: Request,
+    media_file_id: int,
+    language: str | None = None,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    # A subtitle's own "Search" pill action passes its language to search just that one
+    # upgrade — matched case-insensitively against SUPPORTED_LANGUAGES since a subtitle's
+    # stored `language` casing isn't guaranteed to match the canonical form providers
+    # expect. No language (the file-level "Manual search" pill item and Actions-column
+    # button) or an unrecognized one falls back to every target language of the file's
+    # language profile — there's no picker for the user to fall back on instead anymore.
+    canonical_language = next(
         (code for code, _ in SUPPORTED_LANGUAGES if language and code.lower() == language.lower()),
-        "",
+        None,
     )
+    if canonical_language:
+        languages = [canonical_language]
+    else:
+        try:
+            languages = await service.get_target_languages(client, media_file_id)
+        except httpx.HTTPStatusError:
+            languages = []
     return templates.TemplateResponse(
         request,
         "_subtitle_search_panel.html",
-        {
-            "media_file_id": media_file_id,
-            "languages": SUPPORTED_LANGUAGES,
-            "selected_language": selected_language,
-        },
+        {"media_file_id": media_file_id, "languages": languages},
     )
 
 
@@ -228,17 +238,22 @@ async def show_subtitle_search(request: Request, media_file_id: int, language: s
 async def show_subtitle_search_results(
     request: Request,
     media_file_id: int,
-    language: str,
+    languages: Annotated[list[str] | None, Query()] = None,
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    try:
-        candidates = await service.search_subtitle_candidates(client, media_file_id, language)
-    except httpx.HTTPStatusError:
-        candidates = []
+    candidates = []
+    for language in languages or []:
+        try:
+            found = await service.search_subtitle_candidates(client, media_file_id, language)
+        except httpx.HTTPStatusError:
+            found = []
+        for candidate in found:
+            candidate["target_language"] = language
+        candidates.extend(found)
     return templates.TemplateResponse(
         request,
         "_subtitle_search_results.html",
-        {"media_file_id": media_file_id, "language": language, "candidates": candidates},
+        {"media_file_id": media_file_id, "candidates": candidates},
     )
 
 

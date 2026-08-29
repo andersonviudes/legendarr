@@ -552,6 +552,38 @@ def test_search_subtitle_candidates_returns_404_when_media_file_missing(isolated
     assert response.status_code == 404
 
 
+def test_get_target_languages_for_media_file_returns_the_profile_target_languages(
+    isolated_database, tmp_path
+):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        with get_session() as session:
+            session.add(
+                LanguageProfile(
+                    name="Default",
+                    source_languages="en",
+                    target_languages="pt-BR,fr",
+                    is_default=True,
+                )
+            )
+            session.commit()
+
+        response = client.get(f"/media/files/{media_file_id}/target-languages")
+
+    assert response.status_code == 200
+    assert response.json() == ["pt-BR", "fr"]
+
+
+def test_get_target_languages_for_media_file_returns_empty_list_when_media_file_missing(
+    isolated_database,
+):
+    with TestClient(create_api_app()) as client:
+        response = client.get("/media/files/1/target-languages")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_download_subtitle_candidate_writes_the_file(isolated_database, tmp_path, monkeypatch):
     monkeypatch.setattr(
         download_media_file_subtitle_module,
