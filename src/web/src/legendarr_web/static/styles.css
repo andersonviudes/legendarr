@@ -729,12 +729,12 @@ body {
 }
 
 /* Subtitles-column pill list — see subtitle_pill_list() in macros.html. A missing-
-   language pill (or the empty-badge placeholder) is its own small actions menu trigger,
-   popped open right under it; the embedded pill instead opens the shared per-file
-   subtitles dialog (.subtitle-file-modal-* below), since it bundles per-subtitle actions
-   that would make a whole row of tiny dropdowns unwieldy. External pills are plain,
-   non-interactive labels — the dialog is also reachable from the row's title/file name
-   (.subtitle-file-title-trigger below), which is where per-subtitle detail belongs. */
+   language pill (or the empty-badge placeholder), and every external pill, are each
+   their own small actions menu trigger, popped open right under them; the embedded
+   pill instead opens the shared per-file subtitles dialog (.subtitle-file-modal-*
+   below), since it bundles per-subtitle actions that would make a whole row of tiny
+   dropdowns unwieldy. That same dialog is also reachable from the row's title/file name
+   (.subtitle-file-title-trigger below), for the detail the quick pill menus don't show. */
 .subtitle-pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -751,13 +751,14 @@ body {
   list-style: none;
 }
 
-/* Only the embedded pill and the missing-language pill are triggers (see the comment on
-   .subtitle-pill-list above) — external pills stay plain labels. */
-.subtitle-pill-item .lang-pill:not(.lang-pill--external) {
+/* Every subtitle_pill_list() pill except the collapsed embedded count carries its own
+   hover affordance here (see the comment on .subtitle-pill-list above); the embedded
+   pill gets the same treatment lower down, next to its dialog-trigger markup. */
+.subtitle-pill-item .lang-pill {
   cursor: pointer;
 }
 
-.subtitle-pill-item .lang-pill:not(.lang-pill--external):hover {
+.subtitle-pill-item .lang-pill:hover {
   filter: brightness(1.2);
 }
 

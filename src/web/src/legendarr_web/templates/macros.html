@@ -207,28 +207,25 @@
 
 {#
   Language/origin pills for the subtitles already discovered on one `MediaFile` — the
-  Subtitles-column half of a movie/series detail row. Missing-language pills still open
-  their own small actions menu right under them, via subtitle-pill-menu.js: just the two
-  file-level actions ("Translate now", "Manual search" — they don't depend on which
-  pill you clicked, just the file). "Upload subtitle" stays in `.file-row-actions`
-  (Actions column) — it doesn't apply to any subtitle, existing or hypothetical, unlike
-  the other two.
+  Subtitles-column half of a movie/series detail row. Missing-language pills and every
+  external subtitle pill each pop open their own small actions menu right under them,
+  via subtitle-pill-menu.js: missing-language pills get the two file-level actions
+  ("Translate now", "Manual search" — they don't depend on which pill you clicked, just
+  the file); external pills get that one subtitle's own actions (Sync timing, Translate
+  from this, Blacklist — sync/blacklist are external-only, an embedded track can't be
+  re-synced or blacklisted independently of its container). "Upload subtitle" stays in
+  `.file-row-actions` (Actions column) since it doesn't apply to any subtitle, existing
+  or hypothetical.
 
-  External and embedded subtitles instead share ONE per-file `<dialog>` (wired by
-  subtitle-file-modal.js) — a file can carry many embedded tracks (one per language
-  baked into the container), which would wrap a row across several lines if each got its
-  own pill+dropdown the way missing languages do, and once that dialog exists it's the
-  more elegant place for the (usually one) external subtitle's actions too rather than
-  splitting them across a separate small dropdown. Every external pill shows its own
-  language; embedded ones collapse into a single count pill; both open the same dialog,
-  which lists every track — external first, then embedded — as a
+  Embedded subtitles collapse into a single count pill instead — a file can carry many
+  embedded tracks (one per language baked into the container), which would wrap a row
+  across several lines if each got its own pill+dropdown. That pill, plus the row's
+  title/file name (.subtitle-file-title-trigger below), open a shared per-file `<dialog>`
+  (subtitle-file-modal.js) listing every track — external first, then embedded — as a
   Language/Provider/Release/Match/Score/Size table (Provider/Release/Match/Score are
   "—" for a subtitle that wasn't downloaded from a provider, see `SubtitleRead`'s
-  docstring) plus Translate from this per row (Sync timing and Blacklist are external
-  only — an embedded track can't be re-synced or blacklisted independently of its
-  container). This dialog is for managing subtitles that already exist; the file-level
-  "Translate now"/"Manual search" actions (queueing a brand new search or translation)
-  live only in the missing-language pill's dropdown, not here.
+  docstring) — the same per-subtitle actions as the external pill's own dropdown, plus
+  the detail the quick dropdown doesn't show.
 #}
 {% macro subtitle_pill_list(subtitles, media_file_id, missing_languages=[], file_name=None) %}
 {% if subtitles or missing_languages %}
@@ -241,7 +238,14 @@
     <span
       class="lang-pill lang-pill--{{ subtitle.origin }}"
       data-tooltip="{{ subtitle.origin }}"
+      data-subtitle-menu-toggle
+      role="button"
+      tabindex="0"
+      aria-haspopup="true"
     >{{ subtitle.language }}</span>
+    <div class="subtitle-pill-menu" hidden>
+      {{ _subtitle_pill_subtitle_actions(subtitle) }}
+    </div>
   </li>
   {% endfor %}
   {% if embedded_subtitles %}
@@ -400,6 +404,33 @@
   hx-target="#subtitle-acquire-content"
   hx-swap="innerHTML"
 >{{ icon("search") }} {{ t("common.manual_search") }}</button>
+{% endmacro %}
+
+{% macro _subtitle_pill_subtitle_actions(subtitle) %}
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  hx-post="/media/subtitles/{{ subtitle.id }}/sync-timing"
+  hx-target="#sync-result-{{ subtitle.id }}"
+  hx-swap="innerHTML"
+  hx-disabled-elt="this"
+>{{ icon("refresh-cw") }} {{ t("common.sync_timing") }}</button>
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  hx-post="/media/subtitles/{{ subtitle.id }}/translate"
+  hx-target="#translate-from-result-{{ subtitle.id }}"
+  hx-swap="innerHTML"
+  hx-disabled-elt="this"
+>{{ icon("languages") }} {{ t("common.translate_from_this") }}</button>
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  hx-post="/media/subtitles/{{ subtitle.id }}/blacklist"
+  hx-target="#blacklist-result-{{ subtitle.id }}"
+  hx-swap="innerHTML"
+  hx-disabled-elt="this"
+>{{ icon("ban") }} {{ t("common.blacklist") }}</button>
 {% endmacro %}
 
 {% macro lang_pill_group(codes) %}

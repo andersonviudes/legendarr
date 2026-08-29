@@ -54,10 +54,17 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "/media/subtitles/9/translate" in response.text
     assert "/media/subtitles/9/blacklist" in response.text
     assert 'class="lang-pill lang-pill--external"' in response.text
-    # The external pill itself is a plain label — only the file name opens the dialog.
+    # The external pill is its own actions-menu trigger (Sync timing, Translate from
+    # this, Blacklist), same subtitle-pill-menu.js mechanism as the missing-language
+    # pill — the file name is a second way to reach the same actions, in the dialog.
     pill_start = response.text.index('class="lang-pill lang-pill--external"')
     pill_end = response.text.index("</li>", pill_start)
-    assert "data-subtitle-file-modal-open" not in response.text[pill_start:pill_end]
+    pill_li = response.text[pill_start:pill_end]
+    assert "data-subtitle-file-modal-open" not in pill_li
+    assert "data-subtitle-menu-toggle" in pill_li
+    assert "/media/subtitles/9/sync-timing" in pill_li
+    assert "/media/subtitles/9/translate" in pill_li
+    assert "/media/subtitles/9/blacklist" in pill_li
     assert 'class="subtitle-file-title-trigger"' in response.text
     assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
 
@@ -132,13 +139,17 @@ def test_movie_detail_page_lists_external_subtitles_in_the_same_dialog(stub_back
         response = client.get("/media/movies/1")
 
     assert response.status_code == 200
-    # The external pill is a plain label, not a dropdown — the file name and the embedded
-    # pill are what open the shared per-file dialog.
+    # The external pill opens its own quick actions menu (not the dialog); the embedded
+    # pill and the file name are what open the shared per-file dialog instead.
     pill_start = response.text.index('class="lang-pill lang-pill--external"')
     pill_end = response.text.index("</li>", pill_start)
-    assert "data-subtitle-file-modal-open" not in response.text[pill_start:pill_end]
+    external_pill_li = response.text[pill_start:pill_end]
+    assert "data-subtitle-file-modal-open" not in external_pill_li
+    assert "data-subtitle-menu-toggle" in external_pill_li
     assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
-    assert "data-subtitle-menu-toggle" not in response.text
+    embedded_pill_start = response.text.index('class="lang-pill lang-pill--embedded"')
+    embedded_pill_end = response.text.index("</li>", embedded_pill_start)
+    assert "data-subtitle-menu-toggle" not in response.text[embedded_pill_start:embedded_pill_end]
     dialog_start = response.text.index('id="subtitle-file-modal-5"')
     dialog = response.text[dialog_start:]
     assert "/media/subtitles/9/blacklist" in dialog
