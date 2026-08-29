@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_pill_list %}
+{% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, missing_lang_pills, subtitle_pill_list %}
 {% block title %}legendarr · {{ series.title }}{% endblock %}
 {% block content %}
 {{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan") }}
@@ -63,6 +63,8 @@
         <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
           {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path) }}
+          {% elif series.target_languages %}
+          {{ missing_lang_pills(series.target_languages) }}
           {% else %}
           <span class="badge-empty">—</span>
           {% endif %}

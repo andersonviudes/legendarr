@@ -410,6 +410,20 @@
 <span class="lang-pill-group">{% for code in codes.split(",") %}<span class="lang-pill">{{ code }}</span>{% endfor %}</span>
 {% endmacro %}
 
+{#
+  For a media item with no file at all yet (nothing to attach a translate/search action
+  to), so unlike subtitle_pill_list()'s own missing-language pills these aren't clickable.
+#}
+{% macro missing_lang_pills(languages) %}
+<ul class="subtitle-pill-list">
+  {% for language in languages %}
+  <li class="subtitle-pill-item">
+    <span class="lang-pill lang-pill--missing" data-tooltip="{{ t('common.missing') }}">{{ language }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
 {% macro profile_card(profile) %}
 <article class="service-card">
   <header class="service-card-header">
