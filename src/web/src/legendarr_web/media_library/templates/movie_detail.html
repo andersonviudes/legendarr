@@ -47,7 +47,19 @@
   <tbody>
     {% for file in movie.files %}
     <tr>
-      <td>{{ file.relative_path }}</td>
+      <td>
+        {% if file.subtitles %}
+        <span
+          class="subtitle-file-title-trigger"
+          data-subtitle-file-modal-open="subtitle-file-modal-{{ file.id }}"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >{{ file.relative_path }}</span>
+        {% else %}
+        {{ file.relative_path }}
+        {% endif %}
+      </td>
       <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path) }}</td>
       <td>
         <div class="file-row-actions">

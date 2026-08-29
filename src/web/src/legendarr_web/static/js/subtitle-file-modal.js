@@ -1,8 +1,10 @@
-// Wires the per-file subtitles <dialog> (movie/series detail pages): every external and
-// embedded pill on a row opens the same dialog, keyed by #subtitle-file-modal-<media_file_id>
-// — see subtitle_pill_list() in macros.html. Content is rendered server-side inline rather
-// than fetched via htmx (unlike subtitle-acquire.js's dialog), since the pill list already
-// has every subtitle in hand when the row is rendered, so there's nothing to fetch. Same
+// Wires the per-file subtitles <dialog> (movie/series detail pages): the embedded pill and
+// the row's title/file name both open the same dialog, keyed by
+// #subtitle-file-modal-<media_file_id> — see subtitle_pill_list() in macros.html and the
+// .subtitle-file-title-trigger cells in series_detail.html/movie_detail.html. Content is
+// rendered server-side inline rather than fetched via htmx (unlike subtitle-acquire.js's
+// dialog), since the pill list already has every subtitle in hand when the row is
+// rendered, so there's nothing to fetch. Same
 // open/close-on-backdrop shape as subtitle-acquire.js otherwise.
 document.addEventListener("click", function (event) {
   var trigger = event.target.closest("[data-subtitle-file-modal-open]");

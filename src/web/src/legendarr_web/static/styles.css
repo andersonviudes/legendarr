@@ -720,7 +720,8 @@ body {
 /* File-level actions that don't apply to any subtitle, existing or hypothetical — just
    Upload subtitle. Translate now/Manual search moved into `.subtitle-pill-menu` below
    (the missing-language pill's dropdown, plus the empty-badge one) or into the per-file
-   subtitles dialog (external/embedded pills), see subtitle_pill_list() in macros.html. */
+   subtitles dialog (embedded pill or the row's title/file name), see subtitle_pill_list()
+   in macros.html. */
 .file-row-actions {
   display: flex;
   gap: 0.4rem;
@@ -729,9 +730,11 @@ body {
 
 /* Subtitles-column pill list — see subtitle_pill_list() in macros.html. A missing-
    language pill (or the empty-badge placeholder) is its own small actions menu trigger,
-   popped open right under it; external/embedded pills instead open the shared per-file
-   subtitles dialog (.subtitle-file-modal-* below), since those carry per-subtitle
-   actions that would make a whole row of tiny dropdowns unwieldy. */
+   popped open right under it; the embedded pill instead opens the shared per-file
+   subtitles dialog (.subtitle-file-modal-* below), since it bundles per-subtitle actions
+   that would make a whole row of tiny dropdowns unwieldy. External pills are plain,
+   non-interactive labels — the dialog is also reachable from the row's title/file name
+   (.subtitle-file-title-trigger below), which is where per-subtitle detail belongs. */
 .subtitle-pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -748,12 +751,24 @@ body {
   list-style: none;
 }
 
-.subtitle-pill-item .lang-pill {
+/* Only the embedded pill and the missing-language pill are triggers (see the comment on
+   .subtitle-pill-list above) — external pills stay plain labels. */
+.subtitle-pill-item .lang-pill:not(.lang-pill--external) {
   cursor: pointer;
 }
 
-.subtitle-pill-item .lang-pill:hover {
+.subtitle-pill-item .lang-pill:not(.lang-pill--external):hover {
   filter: brightness(1.2);
+}
+
+/* Episode title / file name cell, clickable when the file has subtitles to inspect —
+   opens the same .subtitle-file-modal-* dialog as the embedded pill. */
+.subtitle-file-title-trigger {
+  cursor: pointer;
+}
+
+.subtitle-file-title-trigger:hover {
+  color: var(--pico-primary);
 }
 
 .subtitle-pill-menu {

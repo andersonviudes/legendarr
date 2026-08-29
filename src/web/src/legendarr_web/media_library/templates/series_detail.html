@@ -59,7 +59,19 @@
       {% for episode in season_episodes|sort(attribute="episode_number", reverse=True) %}
       <tr>
         <td>{{ episode.episode_number }}</td>
-        <td>{{ episode.title }}</td>
+        <td>
+          {% if episode.media_file and episode.media_file.subtitles %}
+          <span
+            class="subtitle-file-title-trigger"
+            data-subtitle-file-modal-open="subtitle-file-modal-{{ episode.media_file.id }}"
+            role="button"
+            tabindex="0"
+            aria-haspopup="dialog"
+          >{{ episode.title }}</span>
+          {% else %}
+          {{ episode.title }}
+          {% endif %}
+        </td>
         <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
           {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path) }}

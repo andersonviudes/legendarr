@@ -75,6 +75,13 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "/media/subtitles/12/translate" in response.text
     assert "TBA" in response.text
     assert 'class="lang-pill lang-pill--external"' in response.text
+    # Only the episode with a file gets a dialog trigger on its title — the external pill
+    # itself is a plain label, and the fileless "TBA" episode has nothing to open.
+    assert response.text.count('class="subtitle-file-title-trigger"') == 1
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    pill_start = response.text.index('class="lang-pill lang-pill--external"')
+    pill_end = response.text.index("</li>", pill_start)
+    assert "data-subtitle-file-modal-open" not in response.text[pill_start:pill_end]
 
 
 def _series_detail_with_missing_language_handler(request: httpx.Request) -> httpx.Response:

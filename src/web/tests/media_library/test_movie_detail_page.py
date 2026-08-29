@@ -54,6 +54,12 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "/media/subtitles/9/translate" in response.text
     assert "/media/subtitles/9/blacklist" in response.text
     assert 'class="lang-pill lang-pill--external"' in response.text
+    # The external pill itself is a plain label — only the file name opens the dialog.
+    pill_start = response.text.index('class="lang-pill lang-pill--external"')
+    pill_end = response.text.index("</li>", pill_start)
+    assert "data-subtitle-file-modal-open" not in response.text[pill_start:pill_end]
+    assert 'class="subtitle-file-title-trigger"' in response.text
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
 
 
 def _movie_detail_with_embedded_subtitle_handler(request: httpx.Request) -> httpx.Response:
@@ -126,8 +132,11 @@ def test_movie_detail_page_lists_external_subtitles_in_the_same_dialog(stub_back
         response = client.get("/media/movies/1")
 
     assert response.status_code == 200
-    # The external pill opens the very same per-file dialog as the embedded one, not its
-    # own dropdown.
+    # The external pill is a plain label, not a dropdown — the file name and the embedded
+    # pill are what open the shared per-file dialog.
+    pill_start = response.text.index('class="lang-pill lang-pill--external"')
+    pill_end = response.text.index("</li>", pill_start)
+    assert "data-subtitle-file-modal-open" not in response.text[pill_start:pill_end]
     assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
     assert "data-subtitle-menu-toggle" not in response.text
     dialog_start = response.text.index('id="subtitle-file-modal-5"')
@@ -221,6 +230,27 @@ def test_movie_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backen
     assert 'class="lang-pill lang-pill--missing"' in response.text
     assert "fr" in response.text
     assert "/media/files/5/translate" in response.text
+
+
+def _movie_detail_with_no_subtitles_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = []
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_file_name_is_not_clickable_without_subtitles(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_no_subtitles_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    # No subtitle at all means no per-file dialog is rendered, so the file name stays
+    # plain text instead of a dialog trigger.
+    assert 'class="subtitle-file-title-trigger"' not in response.text
+    assert "data-subtitle-file-modal-open" not in response.text
 
 
 def test_movie_detail_page_fetches_an_uncached_poster_on_demand(stub_backend_client):
