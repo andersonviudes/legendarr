@@ -177,7 +177,6 @@
   "media_library.embedded_subtitles_other": "{count} legendas incorporadas",
   "media_library.subtitle_table_provider": "Provedor",
   "media_library.subtitle_table_release": "Versão",
-  "media_library.subtitle_table_match": "Compatibilidade",
   "media_library.subtitle_table_score": "Pontuação",
   "media_library.subtitle_table_size": "Tamanho",
   "media_library.match_resolution": "Resolução",

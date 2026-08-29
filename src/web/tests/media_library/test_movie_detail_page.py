@@ -215,9 +215,11 @@ def test_movie_detail_page_renders_provider_release_match_score_and_size(stub_ba
     assert "Foo.2024.1080p.WEB-DL.DDP5.1.H.264-GROUP" in response.text
     assert "94%" in response.text
     assert "2.0 kB" in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--yes"' in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--no"' in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--na"' in response.text
+    assert 'class="subtitle-match-bar"' in response.text
+    assert '<span class="subtitle-match-bar-label">94%</span>' in response.text
+    assert "Resolution: Matched" in response.text
+    assert "Codec: Not matched" in response.text
+    assert "Release group: Not compared" in response.text
 
 
 def test_movie_detail_page_hides_provider_columns_without_acquisition_data(stub_backend_client):
@@ -230,7 +232,7 @@ def test_movie_detail_page_hides_provider_columns_without_acquisition_data(stub_
     assert response.status_code == 200
     dialog_start = response.text.index('id="subtitle-file-modal-5"')
     dialog = response.text[dialog_start:]
-    assert "subtitle-match-badge" not in dialog
+    assert "subtitle-match-bar" not in dialog
     assert "0 Bytes" in dialog
 
 

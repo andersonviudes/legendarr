@@ -177,7 +177,6 @@
   "media_library.embedded_subtitles_other": "{count} subtítulos incrustados",
   "media_library.subtitle_table_provider": "Proveedor",
   "media_library.subtitle_table_release": "Versión",
-  "media_library.subtitle_table_match": "Coincidencia",
   "media_library.subtitle_table_score": "Puntaje",
   "media_library.subtitle_table_size": "Tamaño",
   "media_library.match_resolution": "Resolución",
