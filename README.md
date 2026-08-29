@@ -74,3 +74,7 @@ Preview it locally with:
 make docs-install
 make docs-serve
 ```
+
+## License
+
+Licensed under the [GNU General Public License v3.0](LICENSE) or later.
