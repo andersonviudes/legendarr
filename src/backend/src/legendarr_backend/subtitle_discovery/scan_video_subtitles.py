@@ -9,6 +9,7 @@ from legendarr_backend.subtitle_discovery.ocr_embedded_subtitles import ocr_pgs_
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
     IMAGE_BASED_SUBTITLE_CODECS,
+    EmbeddedSubtitleTrack,
     extract_embedded_subtitle_track,
     probe_embedded_subtitle_tracks,
 )
@@ -31,6 +32,28 @@ class DiscoveredSubtitle:
     hearing_impaired: bool = False
 
 
+@dataclass(frozen=True)
+class DetectedEmbeddedTrack:
+    """One subtitle track `ffprobe` found in the container, whether or not it was extracted —
+    the full picture `scan_media_subtitles` persists to `EmbeddedTrack`, so the UI can show a
+    track that was skipped (wrong source language, a disabled extraction/OCR toggle, or
+    already covered by an external subtitle) alongside the ones that were extracted.
+    """
+
+    track_index: int
+    codec_name: str
+    language: str
+    forced: bool
+    hearing_impaired: bool
+    extracted: bool
+
+
+@dataclass(frozen=True)
+class SubtitleScanResult:
+    subtitles: list[DiscoveredSubtitle]
+    detected_embedded_tracks: list[DetectedEmbeddedTrack]
+
+
 def scan_video_subtitles(
     video_path: Path,
     *,
@@ -39,7 +62,8 @@ def scan_video_subtitles(
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     known_languages: frozenset[str] = frozenset(),
-) -> list[DiscoveredSubtitle]:
+    source_languages: frozenset[str] = frozenset(),
+) -> SubtitleScanResult:
     """Discover subtitle tracks for a video file.
 
     External sibling files (``*.srt``, ``*.ass``) are always considered. Embedded
@@ -61,22 +85,34 @@ def scan_video_subtitles(
     instead, gated separately on `ocr_embedded` (`LanguageProfile.ocr_embedded_subtitles`)
     — OCR is much heavier than a text-track's direct ffmpeg copy, so a profile can extract
     text tracks without paying for OCR, or vice versa.
+
+    `source_languages` further restricts extraction/OCR to a track whose language is one of
+    the file's effective `LanguageProfile.source_language_list` — empty means unrestricted,
+    so a caller with no profile in hand (most existing tests) still gets the old
+    extract-everything behavior. A track skipped for any reason — a disabled toggle, a
+    language outside `source_languages`, already covered, or a failed extraction — is still
+    reported, just as an unextracted `DetectedEmbeddedTrack`, not a `DiscoveredSubtitle`.
     """
     external = _scan_external_subtitles(video_path)
     subtitles: list[DiscoveredSubtitle] = list(external)
+    detected_embedded_tracks: list[DetectedEmbeddedTrack] = []
     if extract_embedded or ocr_embedded:
         already_covered = {normalize_language_code(language) for language in known_languages} | {
             normalize_language_code(item.language) for item in external
         }
-        subtitles += _scan_embedded_subtitles(
+        embedded, detected_embedded_tracks = _scan_embedded_subtitles(
             video_path,
             probe_timeout_seconds,
             already_covered,
             extract_embedded=extract_embedded,
             ocr_embedded=ocr_embedded,
             ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
+            source_languages=source_languages,
         )
-    return subtitles
+        subtitles += embedded
+    return SubtitleScanResult(
+        subtitles=subtitles, detected_embedded_tracks=detected_embedded_tracks
+    )
 
 
 def _scan_external_subtitles(video_path: Path) -> list[DiscoveredSubtitle]:
@@ -110,15 +146,30 @@ def _scan_embedded_subtitles(
     extract_embedded: bool,
     ocr_embedded: bool,
     ocr_cue_timeout_seconds: float,
-) -> list[DiscoveredSubtitle]:
+    source_languages: frozenset[str],
+) -> tuple[list[DiscoveredSubtitle], list[DetectedEmbeddedTrack]]:
     subtitles: list[DiscoveredSubtitle] = []
+    detected_tracks: list[DetectedEmbeddedTrack] = []
     for track in probe_embedded_subtitle_tracks(video_path, timeout_seconds=probe_timeout_seconds):
+        language = normalize_language_code(track.language)
         is_image_track = track.codec_name in IMAGE_BASED_SUBTITLE_CODECS
         if is_image_track and not ocr_embedded:
+            detected_tracks.append(_skipped_track(track, language))
             continue
         if not is_image_track and not extract_embedded:
+            detected_tracks.append(_skipped_track(track, language))
             continue
-        if normalize_language_code(track.language) in already_covered_languages:
+        if source_languages and language not in source_languages:
+            logger.debug(
+                "embedded track %d (%s) skipped for %s: %s is not a configured source language",
+                track.index,
+                track.codec_name,
+                video_path,
+                track.language,
+            )
+            detected_tracks.append(_skipped_track(track, language))
+            continue
+        if language in already_covered_languages:
             logger.debug(
                 "embedded track %d (%s) skipped for %s: %s is already covered by another subtitle",
                 track.index,
@@ -126,6 +177,7 @@ def _scan_embedded_subtitles(
                 video_path,
                 track.language,
             )
+            detected_tracks.append(_skipped_track(track, language))
             continue
         output_path = video_path.with_name(
             f"{video_path.stem}.embedded.{track.index}.{track.language}.srt"
@@ -149,10 +201,11 @@ def _scan_embedded_subtitles(
             # A missing `ffmpeg` binary, or an OCR pass that produced no usable text, makes
             # extraction a no-op instead of raising (see `extract_embedded_subtitle_track`/
             # `ocr_pgs_track`) — nothing was written, so there's nothing to report.
+            detected_tracks.append(_skipped_track(track, language))
             continue
         subtitles.append(
             DiscoveredSubtitle(
-                language=normalize_language_code(track.language),
+                language=language,
                 origin=SubtitleOrigin.EMBEDDED,
                 source_path=output_path,
                 track_index=track.index,
@@ -160,7 +213,28 @@ def _scan_embedded_subtitles(
                 hearing_impaired=track.hearing_impaired,
             )
         )
-    return subtitles
+        detected_tracks.append(
+            DetectedEmbeddedTrack(
+                track_index=track.index,
+                codec_name=track.codec_name,
+                language=language,
+                forced=track.forced,
+                hearing_impaired=track.hearing_impaired,
+                extracted=True,
+            )
+        )
+    return subtitles, detected_tracks
+
+
+def _skipped_track(track: EmbeddedSubtitleTrack, language: str) -> DetectedEmbeddedTrack:
+    return DetectedEmbeddedTrack(
+        track_index=track.index,
+        codec_name=track.codec_name,
+        language=language,
+        forced=track.forced,
+        hearing_impaired=track.hearing_impaired,
+        extracted=False,
+    )
 
 
 def _guess_language_from_filename(path: Path) -> str:

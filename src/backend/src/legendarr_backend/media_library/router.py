@@ -23,6 +23,7 @@ from legendarr_backend.media_library.list_wanted_media import list_wanted_media
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile, MediaKind, Series
 from legendarr_backend.media_library.schemas import (
+    EmbeddedTrackRead,
     MovieDetailRead,
     MovieRead,
     PendingSubtitleAcquisitionResult,
@@ -61,7 +62,7 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     missing_target_languages_for_media_file,
     target_languages_for_media_file,
 )
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.strip_subtitle_style_tags import (
     strip_subtitle_style_tags,
 )
@@ -335,6 +336,7 @@ def _acquisition_result(
                 language=row.language,
                 origin=row.origin.value,
                 size_bytes=row.size_bytes,
+                track_index=row.track_index,
                 provider=acquired.provider if acquired else None,
                 release_name=acquired.release_name if acquired else None,
                 score=acquired.score if acquired else None,
@@ -345,10 +347,27 @@ def _acquisition_result(
                 edition_matched=attempt.edition_matched if attempt else None,
             )
         )
+    subtitle_read_by_track_index = {
+        subtitle_read.track_index: subtitle_read
+        for subtitle_read in subtitle_reads
+        if subtitle_read.origin == "embedded"
+    }
+    embedded_track_reads = [
+        EmbeddedTrackRead(
+            track_index=track.track_index,
+            language=track.language,
+            extracted=track.extracted,
+            subtitle=subtitle_read_by_track_index.get(track.track_index),
+        )
+        for track in session.exec(
+            select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file_id)
+        ).all()
+    ]
     return SubtitleAcquisitionResult(
         success=success,
         message=message,
         subtitles=subtitle_reads,
+        embedded_tracks=embedded_track_reads,
         missing_languages=missing_target_languages_for_media_file(session, media_file_id),
     )
 

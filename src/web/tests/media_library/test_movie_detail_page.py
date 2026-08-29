@@ -26,6 +26,7 @@ def _movie_detail_handler(request: httpx.Request) -> httpx.Response:
                     "relative_path": "Foo.mkv",
                     "size_bytes": 100,
                     "subtitles": [{"id": 9, "language": "en", "origin": "external"}],
+                    "embedded_tracks": [],
                 }
             ],
         },
@@ -84,6 +85,14 @@ def _movie_detail_with_embedded_subtitle_handler(request: httpx.Request) -> http
     response = _movie_detail_handler(request)
     body = response.json()
     body["files"][0]["subtitles"] = [{"id": 9, "language": "ja", "origin": "embedded"}]
+    body["files"][0]["embedded_tracks"] = [
+        {
+            "track_index": 2,
+            "language": "ja",
+            "extracted": True,
+            "subtitle": {"id": 9, "language": "ja", "origin": "embedded", "size_bytes": 0},
+        }
+    ]
     return httpx.Response(200, json=body)
 
 
@@ -107,6 +116,26 @@ def _movie_detail_with_many_embedded_subtitles_handler(request: httpx.Request) -
         {"id": 9, "language": "en", "origin": "embedded"},
         {"id": 10, "language": "ja", "origin": "embedded"},
         {"id": 11, "language": "fr", "origin": "embedded"},
+    ]
+    body["files"][0]["embedded_tracks"] = [
+        {
+            "track_index": 2,
+            "language": "en",
+            "extracted": True,
+            "subtitle": {"id": 9, "language": "en", "origin": "embedded", "size_bytes": 0},
+        },
+        {
+            "track_index": 3,
+            "language": "ja",
+            "extracted": True,
+            "subtitle": {"id": 10, "language": "ja", "origin": "embedded", "size_bytes": 0},
+        },
+        {
+            "track_index": 4,
+            "language": "fr",
+            "extracted": True,
+            "subtitle": {"id": 11, "language": "fr", "origin": "embedded", "size_bytes": 0},
+        },
     ]
     return httpx.Response(200, json=body)
 
@@ -138,6 +167,20 @@ def _movie_detail_with_external_and_embedded_subtitles_handler(
         {"id": 9, "language": "en", "origin": "external"},
         {"id": 10, "language": "ja", "origin": "embedded"},
         {"id": 11, "language": "fr", "origin": "embedded"},
+    ]
+    body["files"][0]["embedded_tracks"] = [
+        {
+            "track_index": 3,
+            "language": "ja",
+            "extracted": True,
+            "subtitle": {"id": 10, "language": "ja", "origin": "embedded", "size_bytes": 0},
+        },
+        {
+            "track_index": 4,
+            "language": "fr",
+            "extracted": True,
+            "subtitle": {"id": 11, "language": "fr", "origin": "embedded", "size_bytes": 0},
+        },
     ]
     return httpx.Response(200, json=body)
 
@@ -227,6 +270,20 @@ def _movie_detail_with_scored_embedded_subtitle_handler(request: httpx.Request) 
     body = response.json()
     body["files"][0]["subtitles"] = [
         {"id": 9, "language": "en", "origin": "embedded", "size_bytes": 2048, "score": 0.5}
+    ]
+    body["files"][0]["embedded_tracks"] = [
+        {
+            "track_index": 2,
+            "language": "en",
+            "extracted": True,
+            "subtitle": {
+                "id": 9,
+                "language": "en",
+                "origin": "embedded",
+                "size_bytes": 2048,
+                "score": 0.5,
+            },
+        }
     ]
     return httpx.Response(200, json=body)
 
@@ -333,3 +390,60 @@ def test_movie_detail_page_redirects_when_missing(stub_backend_client):
 
     assert response.status_code == 200
     assert response.request.url.path == "/media/movies"
+
+
+def _movie_detail_with_unextracted_embedded_track_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = []
+    body["files"][0]["embedded_tracks"] = [
+        {"track_index": 2, "language": "de", "extracted": False, "subtitle": None}
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_lists_a_detected_but_unextracted_embedded_track(stub_backend_client):
+    """A track outside the profile's Source Languages (or otherwise skipped) still shows
+    up in the dialog, unticked, with no provider/release/score/size/actions to show — and
+    the dialog stays reachable even though there isn't a single real `Subtitle` yet."""
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_unextracted_embedded_track_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    assert 'class="subtitle-file-title-trigger"' in response.text
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    assert 'class="lang-pill lang-pill--embedded"' in response.text
+    assert '<span role="cell" class="subtitle-file-modal-cell-extracted">—</span>' in response.text
+    assert "Embedded tracks are only extracted for languages configured" in response.text
+    assert "/media/subtitles/" not in response.text
+
+
+def _movie_detail_with_extracted_embedded_track_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = [{"id": 9, "language": "ja", "origin": "embedded"}]
+    body["files"][0]["embedded_tracks"] = [
+        {
+            "track_index": 2,
+            "language": "ja",
+            "extracted": True,
+            "subtitle": {"id": 9, "language": "ja", "origin": "embedded", "size_bytes": 0},
+        }
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_ticks_an_extracted_embedded_track(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_extracted_embedded_track_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "lucide-check" in dialog

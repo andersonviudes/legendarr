@@ -16,6 +16,7 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
 from legendarr_backend.media_library.list_media_library import metadata_fields
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.media_library.schemas import (
+    EmbeddedTrackRead,
     EpisodeRead,
     MediaFileRead,
     MovieDetailRead,
@@ -29,7 +30,7 @@ from legendarr_backend.subtitle_acquisition.models import (
     PendingSubtitle,
 )
 from legendarr_backend.subtitle_discovery.embedded_track_score import score_embedded_subtitle
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
 logger = logging.getLogger(__name__)
@@ -184,6 +185,11 @@ def _media_file_reads(
     subtitle_ids = [
         subtitle.id for subtitles in subtitles_by_file_id.values() for subtitle in subtitles
     ]
+    embedded_tracks_by_file_id: dict[int, list[EmbeddedTrack]] = defaultdict(list)
+    for track in session.exec(
+        select(EmbeddedTrack).where(col(EmbeddedTrack.media_file_id).in_(media_file_ids))
+    ).all():
+        embedded_tracks_by_file_id[track.media_file_id].append(track)
     acquired_by_subtitle_id: dict[int, AcquiredSubtitle] = {
         acquired.subtitle_id: acquired
         for acquired in session.exec(
@@ -220,6 +226,7 @@ def _media_file_reads(
                     language=subtitle.language,
                     origin=subtitle.origin.value,
                     size_bytes=subtitle.size_bytes,
+                    track_index=subtitle.track_index,
                     provider=acquired.provider if acquired else None,
                     release_name=acquired.release_name if acquired else None,
                     score=score,
@@ -231,12 +238,27 @@ def _media_file_reads(
                 )
             )
         present = {subtitle.language for subtitle in subtitle_reads}
+        subtitle_read_by_track_index = {
+            subtitle_read.track_index: subtitle_read
+            for subtitle_read in subtitle_reads
+            if subtitle_read.origin == SubtitleOrigin.EMBEDDED.value
+        }
+        embedded_track_reads = [
+            EmbeddedTrackRead(
+                track_index=track.track_index,
+                language=track.language,
+                extracted=track.extracted,
+                subtitle=subtitle_read_by_track_index.get(track.track_index),
+            )
+            for track in embedded_tracks_by_file_id.get(media_file.id, [])
+        ]
         reads.append(
             MediaFileRead(
                 id=media_file.id,
                 relative_path=media_file.relative_path,
                 size_bytes=media_file.size_bytes,
                 subtitles=subtitle_reads,
+                embedded_tracks=embedded_track_reads,
                 missing_languages=[
                     language for language in target_languages if language.lower() not in present
                 ],

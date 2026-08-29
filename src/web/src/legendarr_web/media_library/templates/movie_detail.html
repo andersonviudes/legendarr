@@ -48,7 +48,7 @@
     {% for file in movie.files %}
     <tr>
       <td>
-        {% if file.subtitles %}
+        {% if file.subtitles or file.embedded_tracks %}
         <span
           class="subtitle-file-title-trigger"
           data-subtitle-file-modal-open="subtitle-file-modal-{{ file.id }}"
@@ -60,7 +60,7 @@
         {{ file.relative_path }}
         {% endif %}
       </td>
-      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path) }}</td>
+      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path, file.embedded_tracks) }}</td>
       <td>
         <div class="file-row-actions">
           <button

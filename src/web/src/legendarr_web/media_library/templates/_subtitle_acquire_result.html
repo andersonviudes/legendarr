@@ -6,5 +6,5 @@
 <p class="subtitle-acquire-result subtitle-acquire-result--{{ 'success' if result.success else 'error' }}">{{ result.message }}</p>
 <div hidden data-toast-message="{{ result.message }}" data-toast-type="{{ 'success' if result.success else 'error' }}"></div>
 {% if result.success %}
-<td id="subtitles-cell-{{ media_file_id }}" hx-swap-oob="true">{{ subtitle_pill_list(result.subtitles, media_file_id, result.missing_languages) }}</td>
+<td id="subtitles-cell-{{ media_file_id }}" hx-swap-oob="true">{{ subtitle_pill_list(result.subtitles, media_file_id, result.missing_languages, embedded_tracks=result.embedded_tracks) }}</td>
 {% endif %}

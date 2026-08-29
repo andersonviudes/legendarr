@@ -10,7 +10,7 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
 )
@@ -54,6 +54,12 @@ def scan_subtitles_for_media_file(
     OCR of bitmap-based (PGS) tracks is gated the same way, separately, by
     `LanguageProfile.ocr_embedded_subtitles` — a profile can enable either flag
     independently of the other.
+
+    Extraction/OCR is further restricted to the profile's `source_language_list` — a
+    detected track outside it is recorded (see below) but never extracted. Every track
+    `ffprobe` detects, extracted or not, is reconciled into `EmbeddedTrack` the same
+    add/update/remove-stale way `Subtitle` rows are, so the UI can show what the container
+    has even when most of it was skipped.
     """
     if not video_path.is_file():
         logger.warning("subtitle scan skipped: %s is not a file", video_path)
@@ -74,19 +80,23 @@ def scan_subtitles_for_media_file(
     profile = resolve_media_file_profile(session, media_file)
     extract_embedded = profile is not None and profile.extract_embedded_subtitles
     ocr_embedded = profile is not None and profile.ocr_embedded_subtitles
-    discovered = scan_video_subtitles(
+    source_languages = (
+        frozenset(profile.source_language_list) if profile is not None else frozenset()
+    )
+    scan_result = scan_video_subtitles(
         video_path,
         extract_embedded=extract_embedded,
         ocr_embedded=ocr_embedded,
         probe_timeout_seconds=probe_timeout_seconds,
         ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
         known_languages=known_languages,
+        source_languages=source_languages,
     )
     video_dir = Path(media_file.relative_path).parent
 
     now = datetime.now(UTC)
     added = 0
-    for item in discovered:
+    for item in scan_result.subtitles:
         relative_path = (video_dir / item.source_path.name).as_posix()
         content = item.source_path.read_bytes()
         content_hash = hashlib.sha256(content).hexdigest()
@@ -126,5 +136,35 @@ def scan_subtitles_for_media_file(
     for stale in existing.values():
         session.delete(stale)
         removed += 1
+
+    existing_track_rows = list(
+        session.exec(select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file.id))
+    )
+    existing_tracks = {row.track_index: row for row in existing_track_rows}
+    for track in scan_result.detected_embedded_tracks:
+        track_row = existing_tracks.pop(track.track_index, None)
+        if track_row is None:
+            session.add(
+                EmbeddedTrack(
+                    media_file_id=media_file.id,
+                    track_index=track.track_index,
+                    codec_name=track.codec_name,
+                    language=track.language,
+                    forced=track.forced,
+                    hearing_impaired=track.hearing_impaired,
+                    extracted=track.extracted,
+                    scanned_at=now,
+                )
+            )
+        else:
+            track_row.codec_name = track.codec_name
+            track_row.language = track.language
+            track_row.forced = track.forced
+            track_row.hearing_impaired = track.hearing_impaired
+            track_row.extracted = track.extracted
+            track_row.scanned_at = now
+            session.add(track_row)
+    for stale_track in existing_tracks.values():
+        session.delete(stale_track)
 
     return ScanResult(added=added, removed=removed)

@@ -45,6 +45,9 @@ class SubtitleRead(BaseModel):
     language: str
     origin: str
     size_bytes: int
+    # `None` for an external subtitle — only an embedded one has a container stream index to
+    # join back to its `EmbeddedTrackRead` (see `MediaFileRead.embedded_tracks`).
+    track_index: int | None = None
     provider: str | None = None
     release_name: str | None = None
     score: float | None = None
@@ -55,6 +58,19 @@ class SubtitleRead(BaseModel):
     edition_matched: bool | None = None
 
 
+class EmbeddedTrackRead(BaseModel):
+    """One subtitle track `ffprobe` found in the container, whether or not it was extracted.
+    `subtitle` is the matching `SubtitleRead` (its id, score, actions, ...) when `extracted`
+    is `True`; `None` for a track skipped because its language wasn't in the profile's
+    Source Languages, its codec's extraction/OCR toggle is off, or it's already covered by
+    an external subtitle."""
+
+    track_index: int
+    language: str
+    extracted: bool
+    subtitle: SubtitleRead | None = None
+
+
 class MediaFileRead(BaseModel):
     """A `MediaFile` plus the subtitles discovered for it, for a detail-page row."""
 
@@ -62,6 +78,10 @@ class MediaFileRead(BaseModel):
     relative_path: str
     size_bytes: int
     subtitles: list[SubtitleRead]
+    # Every embedded track the container has, extracted or not — see `EmbeddedTrackRead`.
+    # A track that was extracted also appears in `subtitles` above (as its `SubtitleRead`);
+    # this list is what the subtitles dialog uses to render the full, ticked/unticked table.
+    embedded_tracks: list[EmbeddedTrackRead] = []
     # Profile target languages this file has no subtitle for yet — rendered as extra
     # gray pills alongside the real ones (embedded/external) in subtitle_pill_list().
     missing_languages: list[str] = []
@@ -145,6 +165,7 @@ class SubtitleAcquisitionResult(BaseModel):
     success: bool
     message: str
     subtitles: list[SubtitleRead]
+    embedded_tracks: list[EmbeddedTrackRead] = []
     missing_languages: list[str] = []
 
 
