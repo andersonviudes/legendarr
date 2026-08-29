@@ -9,6 +9,7 @@ from legendarr_backend.arr_clients.base import SeriesLibraryClient
 from legendarr_backend.arr_services.client_factory import build_client
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.http_client.client import ProviderClientError
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
 )
@@ -27,7 +28,9 @@ from legendarr_backend.subtitle_acquisition.models import (
     AcquisitionAttempt,
     PendingSubtitle,
 )
+from legendarr_backend.subtitle_discovery.embedded_track_score import score_embedded_subtitle
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +40,12 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
     if movie is None:
         return None
     assert movie.id is not None
-    profile_name, target_languages = _profile_fields(session, movie)
+    profile, target_languages = _profile_fields(session, movie)
     files = _media_file_reads(
         session,
         session.exec(select(MediaFile).where(MediaFile.movie_id == movie_id)).all(),
         target_languages,
+        profile,
     )
     metadata = session.exec(select(MediaMetadata).where(MediaMetadata.movie_id == movie_id)).first()
     return MovieDetailRead(
@@ -52,7 +56,7 @@ def get_movie_detail(session: Session, movie_id: int) -> MovieDetailRead | None:
         quality_profile_name=movie.quality_profile_name,
         **metadata_fields(metadata),
         remote_path=movie.remote_path,
-        language_profile_name=profile_name,
+        language_profile_name=profile.name if profile else None,
         target_languages=target_languages,
         missing_subtitles_count=_missing_subtitles_count(files),
         files=files,
@@ -64,9 +68,9 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
     if series is None:
         return None
     assert series.id is not None
-    profile_name, target_languages = _profile_fields(session, series)
+    profile, target_languages = _profile_fields(session, series)
     media_files = session.exec(select(MediaFile).where(MediaFile.series_id == series_id)).all()
-    files = _media_file_reads(session, media_files, target_languages)
+    files = _media_file_reads(session, media_files, target_languages, profile)
     files_by_path = {
         media_file.relative_path: file_read
         for media_file, file_read in zip(media_files, files, strict=True)
@@ -88,7 +92,7 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
         episode_file_count=series.episode_file_count,
         **metadata_fields(metadata),
         remote_path=series.remote_path,
-        language_profile_name=profile_name,
+        language_profile_name=profile.name if profile else None,
         target_languages=target_languages,
         missing_subtitles_count=_missing_subtitles_count(files),
         episodes=episodes,
@@ -153,15 +157,20 @@ def _pending_languages_by_episode(
     return by_episode
 
 
-def _profile_fields(session: Session, item: Movie | Series) -> tuple[str | None, list[str]]:
+def _profile_fields(
+    session: Session, item: Movie | Series
+) -> tuple[LanguageProfile | None, list[str]]:
     profile = resolve_effective_profile(session, item)
     if profile is None:
         return None, []
-    return profile.name, profile.target_language_list
+    return profile, profile.target_language_list
 
 
 def _media_file_reads(
-    session: Session, media_files: Sequence[MediaFile], target_languages: list[str]
+    session: Session,
+    media_files: Sequence[MediaFile],
+    target_languages: list[str],
+    profile: LanguageProfile | None,
 ) -> list[MediaFileRead]:
     media_file_ids: list[int] = []
     for media_file in media_files:
@@ -201,6 +210,10 @@ def _media_file_reads(
             assert subtitle.id is not None
             acquired = acquired_by_subtitle_id.get(subtitle.id)
             attempt = attempts_by_subtitle_id.get(subtitle.id)
+            if subtitle.origin == SubtitleOrigin.EMBEDDED:
+                score = score_embedded_subtitle(subtitle, profile) if profile is not None else None
+            else:
+                score = acquired.score if acquired else None
             subtitle_reads.append(
                 SubtitleRead(
                     id=subtitle.id,
@@ -209,7 +222,7 @@ def _media_file_reads(
                     size_bytes=subtitle.size_bytes,
                     provider=acquired.provider if acquired else None,
                     release_name=acquired.release_name if acquired else None,
-                    score=acquired.score if acquired else None,
+                    score=score,
                     resolution_matched=attempt.resolution_matched if attempt else None,
                     source_matched=attempt.source_matched if attempt else None,
                     codec_matched=attempt.codec_matched if attempt else None,

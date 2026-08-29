@@ -660,6 +660,62 @@ def test_translate_media_file_falls_back_to_embedded_source_when_no_external_mat
     assert "HELLO" in output.read_text(encoding="utf-8")
 
 
+def test_translate_media_file_prefers_the_embedded_track_matching_profile_preference(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """Two embedded tracks share the `en` source language; only the hearing-impaired one
+    matches the profile's `hearing_impaired` preference, so `pick_best_embedded_subtitle`
+    (not `scanned_at`/row-fetch order) decides which one becomes the translation source."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    assert media_file.id is not None
+    _profile(in_memory_session, hearing_impaired=True)
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.embedded.3.eng.srt").write_text(SAMPLE_SRT, encoding="utf-8")
+    (tmp_path / "Foo" / "Foo.embedded.4.eng.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nsdh\n\n", encoding="utf-8"
+    )
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EMBEDDED,
+            relative_path="Foo/Foo.embedded.3.eng.srt",
+            track_index=3,
+            hearing_impaired=False,
+            content_hash="test-hash-3",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EMBEDDED,
+            relative_path="Foo/Foo.embedded.4.eng.srt",
+            track_index=4,
+            hearing_impaired=True,
+            content_hash="test-hash-4",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+
+    result = translate_media_file(in_memory_session, media_file, video)
+
+    assert result.translated_languages == ["pt-BR"]
+    output = tmp_path / "Foo" / "Foo.pt-br.srt"
+    assert "SDH" in output.read_text(encoding="utf-8")
+    assert "HELLO" not in output.read_text(encoding="utf-8")
+
+
 def test_translate_media_file_prefers_external_over_higher_priority_embedded_source(
     in_memory_session, tmp_path, monkeypatch
 ):

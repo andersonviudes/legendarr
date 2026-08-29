@@ -222,6 +222,33 @@ def test_movie_detail_page_renders_provider_release_match_score_and_size(stub_ba
     assert "Release group: Not compared" in response.text
 
 
+def _movie_detail_with_scored_embedded_subtitle_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = [
+        {"id": 9, "language": "en", "origin": "embedded", "size_bytes": 2048, "score": 0.5}
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_renders_a_score_for_an_embedded_subtitle_without_a_provider(
+    stub_backend_client,
+):
+    """The Score column's match bar isn't gated on `provider` — an embedded subtitle has
+    none, but still gets a `score` from the backend's embedded-track scoring."""
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_scored_embedded_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert 'class="subtitle-match-bar"' in dialog
+    assert '<span class="subtitle-match-bar-label">50%</span>' in dialog
+
+
 def test_movie_detail_page_hides_provider_columns_without_acquisition_data(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_movie_detail_handler)
