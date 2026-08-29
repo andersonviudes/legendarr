@@ -113,3 +113,25 @@ in a minimal `diff --git`/`---`/`+++` header, and `git apply --cached -` it via 
 with `git diff --cached` before committing. `git add -p` (interactive) is the standard tool for
 this but isn't practical to drive non-interactively; the hand-built-patch approach is the
 scriptable equivalent.
+
+**2026-08-29 — a scratch `fix:` branch is disposable, and `git push origin main` can race with
+a PR merging mid-session:** this round's UI-polish fixes had accumulated on a local-only branch
+`chore/ui-fine-tuning` (6 `fix:` commits, never pushed to `origin`). Once `main` was
+fast-forwarded to its tip (per the pattern above), the branch was deleted since it added nothing
+further — but the user then asked to switch back to it by name ("switcha pra branch
+chore/ui-fine-tuning"). Recreated it fresh at the current `main` tip
+(`git checkout -b chore/ui-fine-tuning main`) rather than treating the name as gone for good.
+**How to apply:** treat a scratch branch used only to stage `fix:` commits before they land on
+`main` as disposable — safe to delete once fully merged, and just as safe to recreate under the
+same name at `main`'s tip if the user asks for it back.
+
+Separately, `git push origin main` was rejected ("the remote contains work you do not have")
+after two small `chore:`/`docs:` commits were made directly on local `main`: a `feat:` PR opened
+earlier the same session had been squash-merged into `origin/main` in the meantime (by the user,
+outside this session), so local and remote `main` had diverged. **Why:** this repo's PRs can get
+merged while other direct-to-main work is still in flight in the same session, especially when a
+session interleaves feature-branch and fix-branch work. **How to apply:** a `git push origin
+main` rejection mid-session isn't necessarily a mistake — `git fetch origin main` and look at
+what landed before assuming anything is wrong. If the new commits touch different files than the
+merged PR (as here — a `ROADMAP.md`/rules-stats chore vs. a feature PR's application code),
+`git rebase origin/main` resolves cleanly with no conflicts; push again after.
