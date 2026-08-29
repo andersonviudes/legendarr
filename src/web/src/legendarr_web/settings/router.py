@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
+from legendarr_web.i18n.timezone import SUPPORTED_TIMEZONES
 from legendarr_web.i18n.translator import SUPPORTED_UI_LOCALES, current_locale, translate
 from legendarr_web.settings import service
 from legendarr_web.templates.loader import get_templates
@@ -99,6 +100,7 @@ async def show_general_settings(
         {
             "settings": general_settings,
             "locales": SUPPORTED_UI_LOCALES,
+            "timezones": [(tz, tz) for tz in SUPPORTED_TIMEZONES],
             "public_url": webhook_settings["public_url"],
             "auth_settings": auth_settings,
         },
@@ -109,13 +111,14 @@ async def show_general_settings(
 async def save_general_settings(
     request: Request,
     ui_locale: str = Form(...),
+    timezone: str = Form(...),
     public_url: str = Form(""),
     enabled: bool = Form(False),
     username: str = Form(""),
     password: str = Form(""),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    data = {"ui_locale": ui_locale}
+    data = {"ui_locale": ui_locale, "timezone": timezone}
     try:
         await service.update_general_settings(client, data)
         await service.update_webhook_settings(client, {"public_url": public_url})
@@ -132,6 +135,7 @@ async def save_general_settings(
             {
                 "settings": data,
                 "locales": SUPPORTED_UI_LOCALES,
+                "timezones": [(tz, tz) for tz in SUPPORTED_TIMEZONES],
                 "public_url": public_url,
                 "auth_settings": {**current_auth, "enabled": enabled, "username": username},
                 "error": error_detail(exc),

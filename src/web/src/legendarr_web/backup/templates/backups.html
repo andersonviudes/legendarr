@@ -54,7 +54,7 @@
     {% for backup in backups %}
     <tr>
       <td>{{ backup.filename }}</td>
-      <td>{{ backup.created_at[:19].replace("T", " ") }}</td>
+      <td>{{ backup.created_at | local_datetime }}</td>
       <td>{{ backup.size_bytes | filesizeformat }}</td>
       <td>
         {% if backup.secret_key_included %}

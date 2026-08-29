@@ -19,6 +19,9 @@
   <p class="field-hint">{{ t("settings.general.locale_hint") }}</p>
   {{ select_field("ui_locale", t("settings.general.locale_label"), locales, selected=settings.ui_locale) }}
 
+  <p class="field-hint">{{ t("settings.general.timezone_hint") }}</p>
+  {{ select_field("timezone", t("settings.general.timezone_label"), timezones, selected=settings.timezone) }}
+
   <p class="field-hint">{{ t("settings.general.legendarr_url_hint") }}</p>
   {{ field("public_url", t("settings.general.legendarr_url_label"), placeholder="https://legendarr.example.com",
            value=public_url, autocomplete="off") }}

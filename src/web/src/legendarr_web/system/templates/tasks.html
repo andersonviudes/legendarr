@@ -25,7 +25,7 @@
       <span class="task-line-queue">{{ job.queue }}</span>
       <span class="task-line-time">
         {{ t("system.tasks.next_run") }}:
-        {% if job.next_run_time %}{{ job.next_run_time[:19].replace("T", " ") }}{% else %}—{% endif %}
+        {% if job.next_run_time %}{{ job.next_run_time | local_datetime }}{% else %}—{% endif %}
       </span>
     </li>
     {% endfor %}
@@ -46,7 +46,7 @@
       </span>
       <span class="task-line-name">{{ run.name }}</span>
       <span class="task-line-queue">{{ run.queue }}</span>
-      <span class="task-line-time">{{ run.finished_at[:19].replace("T", " ") }}</span>
+      <span class="task-line-time">{{ run.finished_at | local_datetime }}</span>
     </li>
     {% endfor %}
   </ul>

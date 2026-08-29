@@ -109,6 +109,8 @@
   "settings.general.title": "Geral",
   "settings.general.locale_label": "Idioma de exibição",
   "settings.general.locale_hint": "Idioma usado em todo o painel do legendarr — não afeta os idiomas do conteúdo das legendas, que são definidos por perfil de idioma.",
+  "settings.general.timezone_label": "Fuso horário",
+  "settings.general.timezone_hint": "Fuso horário usado para exibir datas e horários em todo o painel do legendarr — não afeta quando as tarefas agendadas são executadas, que sempre seguem UTC.",
   "settings.general.legendarr_url_label": "URL do Legendarr",
   "settings.general.legendarr_url_hint": "O endereço pelo qual o Radarr/Sonarr alcançam esta instância do legendarr — usado para montar a URL do webhook mostrada no card de cada conexão em Arr Services, para que importações disparem a tradução imediatamente em vez de esperar a próxima execução agendada.",
 
