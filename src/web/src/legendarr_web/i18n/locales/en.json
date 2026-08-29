@@ -169,6 +169,7 @@
   "media_library.search_no_results": "No results found.",
   "media_library.no_candidates": "No subtitles found for this language.",
   "media_library.no_target_languages": "No target languages configured for this item.",
+  "media_library.pending_episode_notice": "This episode hasn't been downloaded yet — a subtitle found or uploaded here is held until it is.",
   "media_library.upload_heading": "Upload a subtitle file",
   "media_library.subtitle_file_label": "Subtitle file",
   "media_library.embedded_subtitles_one": "{count} embedded subtitle",

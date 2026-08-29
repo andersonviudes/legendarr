@@ -25,6 +25,11 @@ logger = logging.getLogger(__name__)
 # two slices depend on each other — same reasoning as `poll_arr_history`'s `EnqueueScan`.
 OnCascade = Callable[[int], None]
 
+# (series_id,) — same injection reasoning as `OnCascade`: `subtitle_acquisition` owns
+# `PendingSubtitle`/`reconcile_pending_subtitles_for_series`, so the concrete enqueue is
+# wired in from `legendarr_bootstrap` instead of imported here.
+OnReconcilePending = Callable[[int], None]
+
 
 def register_sync_job(
     scheduler: BackgroundScheduler,
@@ -184,6 +189,7 @@ def enqueue_media_scan(
     retry_delay_seconds: float,
     cascade: bool = False,
     on_cascade: OnCascade | None = None,
+    on_reconcile_pending: OnReconcilePending | None = None,
 ) -> None:
     """Enqueue an ad-hoc scan of one media item for immediate execution.
 
@@ -206,6 +212,11 @@ def enqueue_media_scan(
     fan-out, history poll, and full-library manual scan all keep the old behavior and
     never pass `cascade=True`, so `on_cascade` — the concrete subtitle-scan enqueue,
     injected by the caller — is only required when `cascade=True` actually fires.
+
+    `cascade=True` on a series also fires `on_reconcile_pending(media_id)` once —
+    unlike `on_cascade`, silently skipped rather than warned about when not wired,
+    since it's a best-effort follow-up (a subtitle acquired for an episode before it
+    was downloaded), not a step the core pipeline depends on.
     """
     job_id = f"media_scan:{media_kind}:{media_id}"
     pending = scheduler.get_job(job_id)
@@ -231,6 +242,8 @@ def enqueue_media_scan(
             session.commit()
             logger.info("media scan finished for %r: %s", item.title, result)
             if cascade:
+                if media_kind == "series" and on_reconcile_pending is not None:
+                    on_reconcile_pending(media_id)
                 if on_cascade is None:
                     logger.warning(
                         "media scan cascade requested for %s %d but no on_cascade"

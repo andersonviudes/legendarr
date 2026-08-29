@@ -82,8 +82,8 @@
           {% endif %}
         </td>
         <td>
-          {% if episode.media_file %}
           <div class="file-row-actions">
+            {% if episode.media_file %}
             <button
               type="button"
               class="app-icon-btn"
@@ -104,8 +104,29 @@
               hx-target="#subtitle-acquire-content"
               hx-swap="innerHTML"
             >{{ icon("upload") }}</button>
+            {% else %}
+            <button
+              type="button"
+              class="app-icon-btn"
+              aria-label="{{ t('a11y.manual_search') }}"
+              data-tooltip="{{ t('a11y.manual_search') }}"
+              data-subtitle-acquire-open
+              hx-get="/media/series/{{ series.id }}/episodes/{{ episode.season_number }}/{{ episode.episode_number }}/subtitle-search"
+              hx-target="#subtitle-acquire-content"
+              hx-swap="innerHTML"
+            >{{ icon("search") }}</button>
+            <button
+              type="button"
+              class="app-icon-btn"
+              aria-label="{{ t('a11y.upload_subtitle') }}"
+              data-tooltip="{{ t('a11y.upload_subtitle') }}"
+              data-subtitle-acquire-open
+              hx-get="/media/series/{{ series.id }}/episodes/{{ episode.season_number }}/{{ episode.episode_number }}/subtitle-upload"
+              hx-target="#subtitle-acquire-content"
+              hx-swap="innerHTML"
+            >{{ icon("upload") }}</button>
+            {% endif %}
           </div>
-          {% endif %}
         </td>
       </tr>
       {% endfor %}

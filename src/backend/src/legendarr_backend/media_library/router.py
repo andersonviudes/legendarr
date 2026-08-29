@@ -9,6 +9,9 @@ from sqlmodel import Session, select
 from legendarr_backend.config.config_file import AppConfigFile, load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
+from legendarr_backend.language_profiles.resolve_effective_profile import (
+    resolve_effective_profile,
+)
 from legendarr_backend.media_library.get_media_detail import get_movie_detail, get_series_detail
 from legendarr_backend.media_library.jobs import (
     enqueue_full_scan,
@@ -18,10 +21,11 @@ from legendarr_backend.media_library.jobs import (
 from legendarr_backend.media_library.list_media_library import list_movies, list_series
 from legendarr_backend.media_library.list_wanted_media import list_wanted_media
 from legendarr_backend.media_library.locate import resolve_media_file_path
-from legendarr_backend.media_library.models import MediaFile, MediaKind
+from legendarr_backend.media_library.models import MediaFile, MediaKind, Series
 from legendarr_backend.media_library.schemas import (
     MovieDetailRead,
     MovieRead,
+    PendingSubtitleAcquisitionResult,
     SeriesDetailRead,
     SeriesRead,
     SubtitleAcquisitionResult,
@@ -38,14 +42,21 @@ from legendarr_backend.subtitle_acquisition.blacklist.blacklist_subtitle import 
 from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
     download_subtitle_candidate,
 )
+from legendarr_backend.subtitle_acquisition.download_pending_subtitle import (
+    download_pending_subtitle_candidate,
+)
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
     SubtitleCandidate,
     search_media_file_subtitle_candidates,
 )
+from legendarr_backend.subtitle_acquisition.search_pending_subtitle import (
+    search_pending_subtitle_candidates,
+)
 from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
     upload_subtitle_for_media_file,
 )
+from legendarr_backend.subtitle_acquisition.upload_pending_subtitle import upload_pending_subtitle
 from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     missing_target_languages_for_media_file,
     target_languages_for_media_file,
@@ -77,6 +88,12 @@ def _get_on_cascade(request: Request):
     if on_cascade is None:
         raise HTTPException(status_code=503, detail="Scheduler is not running")
     return on_cascade
+
+
+def _get_on_reconcile_pending(request: Request):
+    # Unlike `_get_on_cascade`, not required — best-effort, see
+    # `media_library.jobs.enqueue_media_scan`'s `on_reconcile_pending` docstring.
+    return getattr(request.app.state, "cascade_reconcile_pending", None)
 
 
 def _scheduler_and_config(request: Request) -> tuple[BackgroundScheduler, AppConfigFile]:
@@ -170,6 +187,7 @@ def _trigger_item_scan(request: Request, kind: MediaKind, item_id: int) -> dict[
         retry_delay_seconds=config.scan_retry_delay_seconds,
         cascade=True,
         on_cascade=on_cascade,
+        on_reconcile_pending=_get_on_reconcile_pending(request),
     )
     return {"status": "enqueued"}
 
@@ -295,6 +313,13 @@ def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tupl
     return media_file, video_path
 
 
+def _get_series(session: Session, series_id: int) -> Series:
+    series = session.get(Series, series_id)
+    if series is None:
+        raise HTTPException(status_code=404, detail="Series not found")
+    return series
+
+
 def _acquisition_result(
     session: Session, media_file_id: int, success: bool, message: str
 ) -> SubtitleAcquisitionResult:
@@ -383,3 +408,89 @@ async def upload_subtitle(
     )
     session.commit()
     return _acquisition_result(session, media_file_id, success, message)
+
+
+# === Series episodes with no `MediaFile` yet (Sonarr hasn't downloaded them) ===
+# Same three-endpoint shape as the `/files/{media_file_id}/...` ones above, keyed by
+# season/episode number instead of a media file id — see `PendingSubtitle`'s docstring
+# for why one can't exist yet.
+
+
+@router.get(
+    "/series/{series_id}/episodes/{season_number}/{episode_number}/target-languages",
+    response_model=list[str],
+)
+def get_target_languages_for_pending_episode(
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    session: Session = Depends(_get_session),
+) -> list[str]:
+    series = _get_series(session, series_id)
+    profile = resolve_effective_profile(session, series)
+    return profile.target_language_list if profile else []
+
+
+@router.get(
+    "/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-candidates",
+    response_model=list[SubtitleCandidateRead],
+)
+def search_pending_subtitle_candidates_route(
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    language: str,
+    session: Session = Depends(_get_session),
+) -> list[SubtitleCandidateRead]:
+    series = _get_series(session, series_id)
+    candidates = search_pending_subtitle_candidates(
+        session, series, season_number, episode_number, language
+    )
+    return [SubtitleCandidateRead(**asdict(candidate)) for candidate in candidates]
+
+
+@router.post(
+    "/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-candidates/download",
+    response_model=PendingSubtitleAcquisitionResult,
+)
+def download_pending_subtitle_candidate_route(
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    data: SubtitleCandidateDownloadInput,
+    session: Session = Depends(_get_session),
+) -> PendingSubtitleAcquisitionResult:
+    series = _get_series(session, series_id)
+    candidate = SubtitleCandidate(
+        provider=data.provider,
+        release_name=data.release_name,
+        download_id=data.download_id,
+        language=data.language,
+        page_link=data.page_link,
+    )
+    success, message = download_pending_subtitle_candidate(
+        session, series, season_number, episode_number, candidate, data.target_language
+    )
+    session.commit()
+    return PendingSubtitleAcquisitionResult(success=success, message=message)
+
+
+@router.post(
+    "/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-upload",
+    response_model=PendingSubtitleAcquisitionResult,
+)
+async def upload_pending_subtitle_route(
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    language: str = Form(...),
+    file: UploadFile = File(...),  # noqa: B008 — FastAPI's own multipart dependency idiom
+    session: Session = Depends(_get_session),
+) -> PendingSubtitleAcquisitionResult:
+    series = _get_series(session, series_id)
+    content = await file.read()
+    success, message = upload_pending_subtitle(
+        session, series, season_number, episode_number, language, file.filename or "", content
+    )
+    session.commit()
+    return PendingSubtitleAcquisitionResult(success=success, message=message)

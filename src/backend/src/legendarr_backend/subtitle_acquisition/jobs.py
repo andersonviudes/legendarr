@@ -18,6 +18,9 @@ from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
+from legendarr_backend.subtitle_acquisition.reconcile_pending_subtitles import (
+    reconcile_pending_subtitles_for_series,
+)
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
     upgrade_subtitle_for_media_file,
 )
@@ -184,6 +187,48 @@ def enqueue_acquisition(
         run_acquisition, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds
     )
     setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
+    scheduler.add_job(
+        wrapped,
+        "date",
+        id=job_id,
+        name=job_id,
+        executor=queue.value,
+        max_instances=1,
+        replace_existing=True,
+        misfire_grace_time=None,
+    )
+
+
+def enqueue_pending_subtitle_reconcile(
+    scheduler: BackgroundScheduler,
+    series_id: int,
+    queue: JobQueue,
+    *,
+    retry_attempts: int,
+    retry_delay_seconds: float,
+) -> None:
+    """Enqueue an ad-hoc `reconcile_pending_subtitles_for_series` run for immediate
+    execution — the concrete `on_reconcile_pending` callback `legendarr_bootstrap`
+    wires into `media_library.jobs.enqueue_media_scan`'s series cascade.
+
+    Same one-off `"date"` trigger/`replace_existing` shape as `enqueue_acquisition` —
+    a second scan of the same series racing a still-pending reconcile collapses into
+    one run rather than stacking up.
+    """
+    job_id = f"pending_subtitle_reconcile:{series_id}"
+
+    def run_reconcile() -> None:
+        with get_session() as session:
+            materialized = reconcile_pending_subtitles_for_series(session, series_id)
+            session.commit()
+            if materialized:
+                logger.info(
+                    "materialized %d pending subtitle(s) for series %d", materialized, series_id
+                )
+
+    wrapped = with_retry(
+        run_reconcile, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds
+    )
     scheduler.add_job(
         wrapped,
         "date",

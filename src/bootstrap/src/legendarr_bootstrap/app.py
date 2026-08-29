@@ -15,6 +15,7 @@ from legendarr_backend.media_metadata.manage_metadata_provider import (
 )
 from legendarr_backend.media_servers.manage_media_server import ensure_media_servers_seeded
 from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.subtitle_acquisition.jobs import enqueue_pending_subtitle_reconcile
 from legendarr_backend.subtitle_acquisition.manage_subtitle_provider import (
     ensure_subtitle_providers_seeded,
 )
@@ -64,6 +65,16 @@ def create_app() -> FastAPI:
             probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
             ocr_cue_timeout_seconds=config.ocr_cue_timeout_seconds,
             cascade=True,
+        )
+        # Same reasoning as `cascade_subtitle_scan` above, for the pending-subtitle
+        # reconcile: `media_library.jobs` can't import `subtitle_acquisition` (which
+        # owns `PendingSubtitle`) without the two slices depending on each other.
+        api_app.state.cascade_reconcile_pending = partial(
+            enqueue_pending_subtitle_reconcile,
+            scheduler,
+            queue=JobQueue.SCAN,
+            retry_attempts=config.scan_retry_attempts,
+            retry_delay_seconds=config.scan_retry_delay_seconds,
         )
         scheduler.start()
         yield

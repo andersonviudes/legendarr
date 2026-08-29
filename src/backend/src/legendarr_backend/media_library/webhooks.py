@@ -50,6 +50,9 @@ def receive_arr_webhook(
     on_cascade = getattr(request.app.state, "cascade_subtitle_scan", None)
     if scheduler is None or on_cascade is None:
         raise HTTPException(status_code=503, detail="Scheduler is not running")
+    # Best-effort, unlike `on_cascade` above — see `enqueue_media_scan`'s
+    # `on_reconcile_pending` docstring.
+    on_reconcile_pending = getattr(request.app.state, "cascade_reconcile_pending", None)
 
     arr_service = session.get(ArrService, arr_service_id)
     if arr_service is None:
@@ -107,4 +110,5 @@ def receive_arr_webhook(
         retry_delay_seconds=config.scan_retry_delay_seconds,
         cascade=True,
         on_cascade=on_cascade,
+        on_reconcile_pending=on_reconcile_pending,
     )
