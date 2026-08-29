@@ -3,6 +3,7 @@ from pathlib import Path
 from legendarr_backend.subtitle_discovery import scan_video_subtitles as scan_video_subtitles_module
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import EmbeddedSubtitleTrack
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import (
+    DetectedEmbeddedTrack,
     SubtitleOrigin,
     scan_video_subtitles,
 )
@@ -13,7 +14,7 @@ def test_scan_video_subtitles_finds_external_srt_sibling(tmp_path: Path):
     video.touch()
     (tmp_path / "movie.pt-BR.srt").touch()
 
-    subtitles = scan_video_subtitles(video)
+    subtitles = scan_video_subtitles(video).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].origin == SubtitleOrigin.EXTERNAL
@@ -28,7 +29,7 @@ def test_scan_video_subtitles_finds_external_sibling_with_brackets_in_the_name(t
     video.touch()
     (tmp_path / "Show - S01E01 - Title [Bluray-1080p][10bit][AAC 2.0][EN+JA]-DHD.pt-BR.srt").touch()
 
-    subtitles = scan_video_subtitles(video)
+    subtitles = scan_video_subtitles(video).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].origin == SubtitleOrigin.EXTERNAL
@@ -44,9 +45,10 @@ def test_scan_video_subtitles_skips_embedded_probing_by_default(monkeypatch, tmp
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not probe")),
     )
 
-    subtitles = scan_video_subtitles(video)
+    result = scan_video_subtitles(video)
 
-    assert subtitles == []
+    assert result.subtitles == []
+    assert result.detected_embedded_tracks == []
 
 
 def test_scan_video_subtitles_extracts_embedded_text_based_tracks(monkeypatch, tmp_path: Path):
@@ -68,10 +70,10 @@ def test_scan_video_subtitles_extracts_embedded_text_based_tracks(monkeypatch, t
         scan_video_subtitles_module, "extract_embedded_subtitle_track", _fake_extract
     )
 
-    subtitles = scan_video_subtitles(video, extract_embedded=True)
+    result = scan_video_subtitles(video, extract_embedded=True)
 
-    assert len(subtitles) == 1
-    subtitle = subtitles[0]
+    assert len(result.subtitles) == 1
+    subtitle = result.subtitles[0]
     assert subtitle.origin == SubtitleOrigin.EMBEDDED
     # Persisted normalized (ISO 639-1), unlike ffprobe's raw "jpn" tag — see language_codes.
     assert subtitle.language == "ja"
@@ -80,6 +82,18 @@ def test_scan_video_subtitles_extracts_embedded_text_based_tracks(monkeypatch, t
     assert subtitle.forced is False
     assert subtitle.source_path == video.with_name("movie.embedded.2.jpn.srt")
     assert extracted == [video.with_name("movie.embedded.2.jpn.srt")]
+    # The track is also reported as detected/extracted — the full picture persisted to
+    # `EmbeddedTrack`, not just the `Subtitle`-bound `DiscoveredSubtitle` above.
+    assert result.detected_embedded_tracks == [
+        DetectedEmbeddedTrack(
+            track_index=2,
+            codec_name="subrip",
+            language="ja",
+            forced=False,
+            hearing_impaired=True,
+            extracted=True,
+        )
+    ]
 
 
 def test_scan_video_subtitles_reuses_already_extracted_embedded_file(monkeypatch, tmp_path: Path):
@@ -99,7 +113,7 @@ def test_scan_video_subtitles_reuses_already_extracted_embedded_file(monkeypatch
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not re-extract")),
     )
 
-    subtitles = scan_video_subtitles(video, extract_embedded=True)
+    subtitles = scan_video_subtitles(video, extract_embedded=True).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].source_path == output_path
@@ -123,7 +137,7 @@ def test_scan_video_subtitles_skips_embedded_track_matching_an_external_sibling(
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not extract")),
     )
 
-    subtitles = scan_video_subtitles(video, extract_embedded=True)
+    subtitles = scan_video_subtitles(video, extract_embedded=True).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].origin == SubtitleOrigin.EXTERNAL
@@ -146,11 +160,20 @@ def test_scan_video_subtitles_skips_embedded_track_matching_a_known_language(
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not extract")),
     )
 
-    subtitles = scan_video_subtitles(
-        video, extract_embedded=True, known_languages=frozenset({"en"})
-    )
+    result = scan_video_subtitles(video, extract_embedded=True, known_languages=frozenset({"en"}))
 
-    assert subtitles == []
+    assert result.subtitles == []
+    # Still reported as detected — just not extracted — so the UI can show it unticked.
+    assert result.detected_embedded_tracks == [
+        DetectedEmbeddedTrack(
+            track_index=2,
+            codec_name="subrip",
+            language="en",
+            forced=False,
+            hearing_impaired=False,
+            extracted=False,
+        )
+    ]
 
 
 def test_scan_video_subtitles_extracts_embedded_track_with_no_matching_known_language(
@@ -172,7 +195,7 @@ def test_scan_video_subtitles_extracts_embedded_track_with_no_matching_known_lan
 
     subtitles = scan_video_subtitles(
         video, extract_embedded=True, known_languages=frozenset({"en"})
-    )
+    ).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].origin == SubtitleOrigin.EMBEDDED
@@ -198,9 +221,10 @@ def test_scan_video_subtitles_skips_track_when_extraction_leaves_no_file(
         lambda *a, **k: None,  # doesn't touch output_path, same as a missing-ffmpeg no-op
     )
 
-    subtitles = scan_video_subtitles(video, extract_embedded=True)
+    result = scan_video_subtitles(video, extract_embedded=True)
 
-    assert subtitles == []
+    assert result.subtitles == []
+    assert result.detected_embedded_tracks[0].extracted is False
 
 
 def test_scan_video_subtitles_keeps_multiple_embedded_tracks_in_the_same_language(
@@ -229,7 +253,7 @@ def test_scan_video_subtitles_keeps_multiple_embedded_tracks_in_the_same_languag
         lambda video_path, track, output_path, **k: output_path.touch(),
     )
 
-    subtitles = scan_video_subtitles(video, extract_embedded=True)
+    subtitles = scan_video_subtitles(video, extract_embedded=True).subtitles
 
     assert len(subtitles) == 2
     assert {s.track_index for s in subtitles} == {2, 3}
@@ -257,7 +281,7 @@ def test_scan_video_subtitles_extracts_embedded_track_with_unmapped_language_cod
 
     subtitles = scan_video_subtitles(
         video, extract_embedded=True, known_languages=frozenset({"en", "pt-BR"})
-    )
+    ).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].origin == SubtitleOrigin.EMBEDDED
@@ -283,9 +307,96 @@ def test_scan_video_subtitles_skips_embedded_track_with_unmapped_code_matching_k
 
     subtitles = scan_video_subtitles(
         video, extract_embedded=True, known_languages=frozenset({"wel"})
-    )
+    ).subtitles
 
     assert subtitles == []
+
+
+def test_scan_video_subtitles_skips_embedded_track_outside_source_languages(
+    monkeypatch, tmp_path: Path
+):
+    """A track whose language isn't one of the effective profile's Source Languages is
+    detected but never extracted — the new gate, checked before the "already covered by
+    an external subtitle" one."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="deu", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not extract")),
+    )
+
+    result = scan_video_subtitles(
+        video, extract_embedded=True, source_languages=frozenset({"en", "ja"})
+    )
+
+    assert result.subtitles == []
+    assert result.detected_embedded_tracks == [
+        DetectedEmbeddedTrack(
+            track_index=2,
+            codec_name="subrip",
+            language="de",
+            forced=False,
+            hearing_impaired=False,
+            extracted=False,
+        )
+    ]
+
+
+def test_scan_video_subtitles_extracts_embedded_track_within_source_languages(
+    monkeypatch, tmp_path: Path
+):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="jpn", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(
+        video, extract_embedded=True, source_languages=frozenset({"en", "ja"})
+    )
+
+    assert len(result.subtitles) == 1
+    assert result.subtitles[0].language == "ja"
+    assert result.detected_embedded_tracks[0].extracted is True
+
+
+def test_scan_video_subtitles_empty_source_languages_is_unrestricted(monkeypatch, tmp_path: Path):
+    """An empty `source_languages` (the default) means unrestricted — matches every
+    existing caller/test above that never passes it, so a profile-less caller keeps the
+    old extract-everything behavior."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="deu", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(video, extract_embedded=True, source_languages=frozenset())
+
+    assert len(result.subtitles) == 1
+    assert result.subtitles[0].language == "de"
 
 
 def _pgs_track(index: int = 4, language: str = "por") -> EmbeddedSubtitleTrack:
@@ -320,7 +431,7 @@ def test_scan_video_subtitles_ocrs_embedded_image_tracks_when_enabled(monkeypatc
 
     monkeypatch.setattr(scan_video_subtitles_module, "ocr_pgs_track", _fake_ocr)
 
-    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+    subtitles = scan_video_subtitles(video, ocr_embedded=True).subtitles
 
     assert len(subtitles) == 1
     subtitle = subtitles[0]
@@ -346,7 +457,7 @@ def test_scan_video_subtitles_skips_image_tracks_when_ocr_disabled(monkeypatch, 
 
     # extract_embedded=True doesn't imply ocr_embedded — the image track is skipped, not
     # text-extracted, since ffmpeg can't convert a bitmap codec straight to `srt`.
-    subtitles = scan_video_subtitles(video, extract_embedded=True, ocr_embedded=False)
+    subtitles = scan_video_subtitles(video, extract_embedded=True, ocr_embedded=False).subtitles
 
     assert subtitles == []
 
@@ -366,7 +477,7 @@ def test_scan_video_subtitles_reuses_already_ocrd_embedded_file(monkeypatch, tmp
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not re-OCR")),
     )
 
-    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+    subtitles = scan_video_subtitles(video, ocr_embedded=True).subtitles
 
     assert len(subtitles) == 1
     assert subtitles[0].source_path == output_path
@@ -386,6 +497,6 @@ def test_scan_video_subtitles_skips_image_track_when_ocr_leaves_no_file(
     )
     monkeypatch.setattr(scan_video_subtitles_module, "ocr_pgs_track", lambda *a, **k: None)
 
-    subtitles = scan_video_subtitles(video, ocr_embedded=True)
+    subtitles = scan_video_subtitles(video, ocr_embedded=True).subtitles
 
     assert subtitles == []

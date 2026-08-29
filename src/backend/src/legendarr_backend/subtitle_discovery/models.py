@@ -48,3 +48,32 @@ class Subtitle(SQLModel, table=True):
     # means the source changed and this target is stale.
     translated_from_hash: str | None = Field(default=None)
     scanned_at: datetime
+
+
+class EmbeddedTrack(SQLModel, table=True):
+    """Every subtitle track `ffprobe` detects inside a `MediaFile`'s container, persisted by
+    the subtitle scan job regardless of whether it was actually extracted. `Subtitle` only
+    gets a row for a track that was extracted into a real, usable file; this table is the
+    full picture of what the container has, so the UI can show a track that was skipped —
+    its language isn't one of the effective `LanguageProfile.source_languages`, its codec's
+    extraction is toggled off (`extract_embedded_subtitles`/`ocr_embedded_subtitles`), or its
+    language is already covered by an external subtitle — alongside the ones that were.
+
+    Named `EmbeddedTrack`, not `EmbeddedSubtitleTrack`, to stay distinct from
+    `probe_embedded_subtitles.EmbeddedSubtitleTrack` (one ffprobe stream, not persisted).
+    """
+
+    __table_args__ = (UniqueConstraint("media_file_id", "track_index"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    media_file_id: int = Field(foreign_key="mediafile.id", index=True, ondelete="CASCADE")
+    track_index: int
+    codec_name: str
+    language: str
+    forced: bool = Field(default=False)
+    hearing_impaired: bool = Field(default=False)
+    # Whether this track resulted in a `Subtitle` row — `False` for one skipped by the
+    # source-language gate, an already-covering external subtitle, or a disabled
+    # extraction/OCR toggle.
+    extracted: bool = Field(default=False)
+    scanned_at: datetime

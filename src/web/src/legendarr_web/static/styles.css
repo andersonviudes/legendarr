@@ -1872,7 +1872,7 @@ button.outline.contrast:is(:hover, :focus) {
 
 /* === Per-file subtitles <dialog> (movie/series detail pages) === */
 /* Wider than the base .subtitle-acquire-modal (search/upload) — this one lays its rows
-   out as a Language/Provider/Release/Score/Size/Actions table
+   out as a Language/Extracted/Provider/Release/Score/Size/Actions table
    (.subtitle-file-modal-row's grid-template-columns below), which needs real room for
    a release name to be legible before it gets ellipsis-truncated. */
 .subtitle-file-modal {
@@ -1890,14 +1890,22 @@ button.outline.contrast:is(:hover, :focus) {
   border-radius: 0.5rem;
 }
 
-/* Language | Provider | Release | Score | Size | Actions — shared by the header
+/* Note explaining embedded extraction is limited to the profile's Source Languages —
+   only rendered when the dialog has at least one embedded track (macros.html). */
+.subtitle-file-modal-note {
+  margin: 0 1.25rem 0.75rem;
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+}
+
+/* Language | Extracted | Provider | Release | Score | Size | Actions — shared by the header
    row and every data row so their columns line up. Release is the only flexible column;
    everything else is sized to its content (a lang pill, "opensubtitles", a 2-3-icon
    action cluster — Sync timing/Blacklist only show for external subtitles, see
    subtitle_pill_list() in macros.html). */
 .subtitle-file-modal-row {
   display: grid;
-  grid-template-columns: 4.25rem 9rem 1fr 7.5rem 4.5rem 7.5rem;
+  grid-template-columns: 4.25rem 1.75rem 9rem 1fr 7.5rem 4.5rem 7.5rem;
   align-items: center;
   column-gap: 0.6rem;
   padding: 0.4rem 0.75rem;
@@ -1914,6 +1922,18 @@ button.outline.contrast:is(:hover, :focus) {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* Tick column — a plain "—" for an external subtitle (the concept doesn't apply) or a
+   skipped embedded track, `--pico-ins-color` (this codebase's success color, see
+   .toast--success) for one that was actually extracted. */
+.subtitle-file-modal-cell-extracted {
+  color: var(--pico-ins-color);
+}
+
+.subtitle-file-modal-cell-extracted svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* Provider/Release cells: real values can run long ("opensubtitles",

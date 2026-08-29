@@ -32,6 +32,7 @@ def _series_detail_handler(request: httpx.Request) -> httpx.Response:
                         "relative_path": "Season 01/Bar.S01E01.mkv",
                         "size_bytes": 100,
                         "subtitles": [{"id": 12, "language": "pt-BR", "origin": "external"}],
+                        "embedded_tracks": [],
                     },
                 },
                 {
@@ -152,6 +153,20 @@ def _series_detail_with_many_embedded_subtitles_handler(request: httpx.Request) 
         {"id": 21, "language": "en", "origin": "embedded"},
         {"id": 22, "language": "ja", "origin": "embedded"},
     ]
+    body["episodes"][0]["media_file"]["embedded_tracks"] = [
+        {
+            "track_index": 2,
+            "language": "en",
+            "extracted": True,
+            "subtitle": {"id": 21, "language": "en", "origin": "embedded", "size_bytes": 0},
+        },
+        {
+            "track_index": 3,
+            "language": "ja",
+            "extracted": True,
+            "subtitle": {"id": 22, "language": "ja", "origin": "embedded", "size_bytes": 0},
+        },
+    ]
     return httpx.Response(200, json=body)
 
 
@@ -235,3 +250,31 @@ def test_series_detail_page_redirects_when_missing(stub_backend_client):
 
     assert response.status_code == 200
     assert response.request.url.path == "/media/series"
+
+
+def _series_detail_with_unextracted_embedded_track_handler(
+    request: httpx.Request,
+) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][0]["media_file"]["subtitles"] = []
+    body["episodes"][0]["media_file"]["embedded_tracks"] = [
+        {"track_index": 2, "language": "de", "extracted": False, "subtitle": None}
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_lists_a_detected_but_unextracted_embedded_track(stub_backend_client):
+    """Same as the movie detail page: a skipped track still shows up in the dialog,
+    unticked, and the dialog stays reachable even with zero real `Subtitle` rows."""
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_unextracted_embedded_track_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    assert 'class="lang-pill lang-pill--embedded"' in response.text
+    assert '<span role="cell" class="subtitle-file-modal-cell-extracted">—</span>' in response.text
+    assert "Embedded tracks are only extracted for languages configured" in response.text
