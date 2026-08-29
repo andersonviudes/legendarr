@@ -20,6 +20,9 @@ function initMultiselect(root) {
 
   function sync() {
     hiddenInput.value = selectedCodes().join(",");
+    // Setting .value directly doesn't fire input/change on its own — form-dirty-badge.js
+    // needs one to notice a tag was added or removed.
+    hiddenInput.dispatchEvent(new Event("input", { bubbles: true }));
     // The custom validity message from the submit handler below lives on `search` —
     // hidden inputs are barred from constraint validation, so it can't live on hiddenInput.
     search.setCustomValidity("");

@@ -287,11 +287,29 @@
       </main>
     </div>
     <div id="toast-container" class="toast-container"></div>
+    <dialog id="unsaved-changes-modal" class="unsaved-changes-modal">
+      <header class="unsaved-changes-modal-header">
+        <p>{{ t("common.unsaved_changes_title") }}</p>
+        <button type="button" class="unsaved-changes-close" data-unsaved-changes-close aria-label="{{ t('a11y.close') }}">&times;</button>
+      </header>
+      <div class="unsaved-changes-modal-body">
+        <p
+          id="unsaved-changes-message"
+          data-message-one="{{ t('common.unsaved_changes_message_one', count='{count}') }}"
+          data-message-other="{{ t('common.unsaved_changes_message_other', count='{count}') }}"
+        ></p>
+      </div>
+      <footer class="unsaved-changes-modal-footer">
+        <button type="button" class="outline" data-unsaved-changes-stay>{{ t("common.stay") }}</button>
+        <button type="button" class="contrast" data-unsaved-changes-leave>{{ t("common.leave") }}</button>
+      </footer>
+    </dialog>
     <script src="/static/js/sidebar.js" defer></script>
     <script src="/static/js/theme.js" defer></script>
     <script src="/static/js/toast.js" defer></script>
     <script src="/static/js/running-tasks.js" defer></script>
     <script src="/static/js/topbar.js" defer></script>
+    <script src="/static/js/form-dirty-badge.js" defer></script>
     {# Per-page JS lives in static/js/<page>.js — override this block to load it. #}
     {% block scripts %}{% endblock %}
   </body>
