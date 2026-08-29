@@ -23,6 +23,23 @@ _MOVIE_PAGE = (
     "</table>"
 )
 
+# Same as `_MOVIE_PAGE`, plus a third row (table index 6) carrying the HI icon marker
+# Bazarr's own `query_movie` reads at `row3.contents[1].contents[1]` — a filler `<td>`
+# at index 5 keeps that row landing on index 6, same shape `_MOVIE_PAGE`'s own filler
+# `<td>`s already use to position its two real rows at indices 1 and 4.
+_MOVIE_PAGE_WITH_HI = (
+    '<table align="center" border="0" class="tabel95" width="100%">'
+    "<td></td>"
+    '<tr><td class="NewsTitle">Movie Name</td><td>Version WEB-DL.x264-GROUP, works fine</td></tr>'
+    "<td></td><td></td>"
+    "<tr><td></td><td></td><td></td><td></td>"
+    "<td>English</td><td></td><td>Completed</td><td></td>"
+    '<td><a href="/original/12345/0">download</a></td></tr>'
+    "<td></td>"
+    '<tr><td></td><td><span></span><img src="https://x/hi.jpg"></td></tr>'
+    "</table>"
+)
+
 
 def _config(**overrides) -> SubtitleProviderConfig:
     data = {"kind": "addic7ed", "enabled": True, "username": "user", "password": "pass"}
@@ -85,6 +102,26 @@ def test_addic7ed_search_returns_matching_movie_subtitle(monkeypatch):
     assert results[0].download_id == "original/12345/0"
     assert results[0].language == "English"
     assert results[0].page_link == "https://www.addic7ed.com/movie/12345"
+    # `_MOVIE_PAGE` has no third row to read the HI icon from — unknown, not "not HI".
+    assert results[0].hearing_impaired is None
+
+
+def test_addic7ed_search_reads_the_hi_icon_marker(monkeypatch):
+    def _request(self, method, path, data=None, headers=None, follow_redirects=False):
+        if path in ("/login.php", "/dologin.php"):
+            return _successful_login_request(method, path, data, headers, follow_redirects)
+        if path.startswith("/search.php"):
+            return httpx.Response(200, text=_SEARCH_PAGE, request=httpx.Request("GET", path))
+        if path == "/movie/12345":
+            return httpx.Response(200, text=_MOVIE_PAGE_WITH_HI, request=httpx.Request("GET", path))
+        raise AssertionError(f"unexpected request to {path}")
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+
+    provider = Addic7edProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
 
 
 def test_addic7ed_search_returns_empty_list_when_no_movie_matches(monkeypatch):

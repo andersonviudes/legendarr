@@ -12,12 +12,21 @@ class SubtitleSearchResult:
     result's source page, when a provider's download needs it as a `Referer` to avoid a
     hotlink block (Addic7ed); providers with no such requirement (OpenSubtitles) leave it
     `None`.
+
+    `hash_matched` is `True` only when the provider's own API independently verified this
+    result against a content hash of the local video (OpenSubtitles.com's
+    `moviehash_match`) — every other provider leaves it at the default `False`, same as
+    "no such signal" rather than "verified not a match". `hearing_impaired` is `None` when
+    the provider can't tell (most of them), `True`/`False` when it can — see
+    `candidate_evaluation/match_score.py` for how both feed scoring.
     """
 
     release_name: str
     download_id: str
     language: str
     page_link: str | None = None
+    hash_matched: bool = False
+    hearing_impaired: bool | None = None
 
 
 class SubtitleProvider(Protocol):

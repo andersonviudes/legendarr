@@ -108,6 +108,44 @@ def test_opensubtitles_search_ignores_moviehash_when_use_hash_is_disabled(monkey
     assert "moviehash" not in seen["path"]
 
 
+def test_opensubtitles_search_reads_hash_match_and_hearing_impaired(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        lambda self, path: _search_response(
+            data=[
+                {
+                    "attributes": {
+                        "release": "Movie.Name.2024.1080p.WEB-DL",
+                        "language": "en",
+                        "moviehash_match": True,
+                        "hearing_impaired": True,
+                        "files": [{"file_id": 123}],
+                    }
+                }
+            ]
+        ),
+    )
+
+    provider = OpenSubtitlesProvider(_config())
+    results = provider.search("Movie Name", "en")
+
+    assert results[0].hash_matched is True
+    assert results[0].hearing_impaired is True
+
+
+def test_opensubtitles_search_defaults_hash_match_and_hearing_impaired_to_false(monkeypatch):
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: _search_response())
+
+    provider = OpenSubtitlesProvider(_config())
+    results = provider.search("Movie Name", "en")
+
+    assert results[0].hash_matched is False
+    assert results[0].hearing_impaired is False
+
+
 def test_opensubtitles_search_returns_empty_list_when_no_results(monkeypatch):
     monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
     monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})

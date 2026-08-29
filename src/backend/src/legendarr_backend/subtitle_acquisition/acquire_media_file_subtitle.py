@@ -29,6 +29,9 @@ from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisitio
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.episode_identity import (
+    passes_episode_identity,
+)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     CandidateEvaluation,
     evaluate_candidate,
@@ -182,6 +185,7 @@ def acquire_subtitle_for_media_file(
                 context.tvdb_id,
                 profile.must_contain_terms,
                 profile.must_not_contain_terms,
+                profile.hearing_impaired,
                 cutoff,
                 on_progress,
                 current_language,
@@ -338,6 +342,7 @@ def _search_and_download(
     tvdb_id: int | None,
     must_contain: list[str],
     must_not_contain: list[str],
+    hearing_impaired_preference: bool,
     cutoff: float,
     on_progress: Callable[[int, int, str, str | None], None] | None = None,
     progress_current: int = 0,
@@ -376,8 +381,14 @@ def _search_and_download(
                     candidate.release_name, must_contain, must_not_contain
                 )
                 and (provider.name, candidate.download_id) not in blacklisted
+                and passes_episode_identity(candidate, season, episode)
             ]
-            best = pick_best_match(candidates, video_path.stem, cutoff=cutoff)
+            best = pick_best_match(
+                candidates,
+                video_path.stem,
+                cutoff=cutoff,
+                hearing_impaired_preference=hearing_impaired_preference,
+            )
             if best is None:
                 continue
             content = provider.download(best)

@@ -177,11 +177,20 @@ def _parse_subtitle_row(row: Tag, wanted_name: str) -> SubtitleSearchResult | No
 
     release_name = re.sub(r"^subtitle\s+", "", release_cell.get_text().strip())
     download_id = href.removeprefix("/")
+    # Bazarr's own `_parse_row` reads the same fourth cell for this marker
+    # (`yifysubtitles.py:127`, `/home/viudes/projects/bazarr/custom_libs/
+    # subliminal_patch/providers/yifysubtitles.py`) — optional here (`None` when the row
+    # has fewer than 4 cells) rather than rejecting the whole row over a missing HI cell.
+    hi_cell = cells[3] if len(cells) > 3 else None
+    hearing_impaired = (
+        hi_cell.find("span", class_="hi-subtitle") is not None if isinstance(hi_cell, Tag) else None
+    )
     return SubtitleSearchResult(
         release_name=release_name or "YIFY Subtitles",
         download_id=download_id,
         language=wanted_name,
         page_link=f"{YIFY_SUBTITLES_BASE_URL}/{download_id}",
+        hearing_impaired=hearing_impaired,
     )
 
 

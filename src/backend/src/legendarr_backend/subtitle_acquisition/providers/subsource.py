@@ -8,6 +8,9 @@ from zipfile import ZipFile, is_zipfile
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_acquisition.providers.hearing_impaired_tags import (
+    contains_hearing_impaired_tag,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -223,11 +226,15 @@ def _parse_result(
     else:
         release_name = fallback_title
     link = item.get("link")
+    hearing_impaired = bool(item.get("hearingImpaired", False)) or contains_hearing_impaired_tag(
+        item.get("commentary") or ""
+    )
     return SubtitleSearchResult(
         release_name=release_name,
         download_id=str(subtitle_id),
         language=language,
         page_link=f"{SUBSOURCE_SITE_BASE_URL}{link}" if isinstance(link, str) else None,
+        hearing_impaired=hearing_impaired,
     )
 
 

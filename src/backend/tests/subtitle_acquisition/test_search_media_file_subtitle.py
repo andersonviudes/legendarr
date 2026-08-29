@@ -1,15 +1,17 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from legendarr_backend.arr_clients.base import EpisodeItem
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
-from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.scheduling.circuit_breaker import (
     FAILURE_THRESHOLD,
     BreakerCategory,
     is_open,
     record_failure,
 )
+from legendarr_backend.subtitle_acquisition import search_context as search_context_module
 from legendarr_backend.subtitle_acquisition import search_media_file_subtitle as search_module
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
@@ -109,6 +111,44 @@ def _write_video(tmp_path: Path) -> Path:
     video.parent.mkdir(parents=True, exist_ok=True)
     video.touch()
     return video
+
+
+def _series(session, tmp_path: Path, **overrides) -> Series:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="sonarr",
+            service_type="sonarr",
+            host="sonarr",
+            port=8989,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    data = {
+        "arr_service_id": service.id,
+        "arr_id": 1,
+        "title": "Foo",
+        "remote_path": "/remote/Foo",
+    }
+    data.update(overrides)
+    series = Series(**data)
+    session.add(series)
+    session.commit()
+    return series
+
+
+def _series_media_file(session, series: Series) -> MediaFile:
+    media_file = MediaFile(
+        series_id=series.id,
+        relative_path="Foo/Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
 
 
 def _use_chain(monkeypatch, *providers):
@@ -220,3 +260,35 @@ def test_search_opens_the_circuit_after_repeated_failures(
         search_media_file_subtitle_candidates(in_memory_session, media_file, video, "en")
 
     assert is_open(BreakerCategory.ACQUISITION, "failing") is True
+
+
+def test_search_excludes_a_wrong_episode_candidate(in_memory_session, tmp_path, monkeypatch):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        "provider",
+        results=[
+            SubtitleSearchResult(
+                release_name="Foo.S01E03.WEB-DL", download_id="wrong", language="en"
+            ),
+            SubtitleSearchResult(
+                release_name="Foo.S01E02.WEB-DL", download_id="right", language="en"
+            ),
+        ],
+    )
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        search_context_module,
+        "resolve_media_file_episode",
+        lambda session, media_file: EpisodeItem(
+            season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
+        ),
+    )
+
+    result = search_media_file_subtitle_candidates(in_memory_session, media_file, video, "en")
+
+    # A manual search stays exhaustive for everything else, but a candidate naming a
+    # detectably wrong episode is still excluded — confirmed with the user this gate
+    # applies uniformly, not just to the automatic acquire/upgrade paths.
+    assert [candidate.download_id for candidate in result] == ["right"]

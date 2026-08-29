@@ -31,6 +31,20 @@ _SEARCH_PAGE = """
 
 _SUBTITLE_PAGE = '<a class="download-subtitle" href="/subtitle/12345.zip">Download</a>'
 
+_SEARCH_PAGE_WITH_HI = """
+<table class="other-subs">
+<tbody>
+<tr>
+<td>10</td>
+<td>English</td>
+<td><a href="/subtitles/movie-name-english-yify-12345">subtitle Movie.Name.2024.WEB-DL</a></td>
+<td><span class="hi-subtitle">HI</span></td>
+<td>uploader1</td>
+</tr>
+</tbody>
+</table>
+"""
+
 
 def _config(**overrides) -> SubtitleProviderConfig:
     data = {"kind": "yify_subtitles", "enabled": True}
@@ -100,6 +114,20 @@ def test_yify_subtitles_search_returns_matching_language_subtitle(monkeypatch):
     assert (
         results[0].page_link == "https://yifysubtitles.ch/subtitles/movie-name-english-yify-12345"
     )
+    assert results[0].hearing_impaired is False
+
+
+def test_yify_subtitles_search_reads_the_hi_marker(monkeypatch):
+    def _request(self, method, path, data=None, headers=None, follow_redirects=False):
+        return httpx.Response(200, text=_SEARCH_PAGE_WITH_HI, request=httpx.Request("GET", path))
+
+    monkeypatch.setattr(ProviderHttpClient, "request", _request)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = YifySubtitlesProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
 
 
 def test_yify_subtitles_download_extracts_srt_from_zip_archive(monkeypatch):

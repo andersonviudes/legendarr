@@ -8,6 +8,9 @@ from zipfile import ZipFile, is_zipfile
 from legendarr_backend.http_client.client import ProviderClientError, ProviderHttpClient
 from legendarr_backend.subtitle_acquisition.models import SubtitleProviderConfig
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_acquisition.providers.hearing_impaired_tags import (
+    contains_hearing_impaired_tag,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,11 +166,15 @@ def _parse_result(item: dict[str, Any], title: str) -> SubtitleSearchResult | No
         return None
     release_name = ", ".join(item.get("releases") or []) or item.get("name") or title
     page = item.get("subtitlePage")
+    hearing_impaired = bool(item.get("hi", False)) or contains_hearing_impaired_tag(
+        item.get("comment") or "", item.get("name") or "", *(item.get("releases") or [])
+    )
     return SubtitleSearchResult(
         release_name=release_name,
         download_id=url,
         language=item.get("language", ""),
         page_link=urljoin("https://subdl.com", page) if page else None,
+        hearing_impaired=hearing_impaired,
     )
 
 

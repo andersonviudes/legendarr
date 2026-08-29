@@ -117,8 +117,63 @@ def test_subsource_search_returns_matching_movie_subtitle(monkeypatch):
             download_id="999",
             language="en",
             page_link="https://subsource.net/subtitles/movie-name-english",
+            hearing_impaired=False,
         )
     ]
+
+
+def test_subsource_search_reads_the_hearing_impaired_field(monkeypatch):
+    seen: dict = {}
+    subtitles_response = {
+        "success": True,
+        "data": [
+            {
+                "subtitleId": 999,
+                "releaseInfo": ["Movie.Name.2024.WEB-DL"],
+                "language": "english",
+                "link": "/subtitles/movie-name-english",
+                "hearingImpaired": True,
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        _dispatch_get_json(seen, [_MOVIE_SEARCH_RESPONSE], subtitles_response),
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = SubsourceProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
+
+
+def test_subsource_search_falls_back_to_the_commentary_tag_heuristic(monkeypatch):
+    seen: dict = {}
+    subtitles_response = {
+        "success": True,
+        "data": [
+            {
+                "subtitleId": 999,
+                "releaseInfo": ["Movie.Name.2024.WEB-DL"],
+                "language": "english",
+                "link": "/subtitles/movie-name-english",
+                "commentary": "Includes SDH track",
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        _dispatch_get_json(seen, [_MOVIE_SEARCH_RESPONSE], subtitles_response),
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = SubsourceProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
 
 
 def test_subsource_search_returns_matching_tv_subtitle(monkeypatch):

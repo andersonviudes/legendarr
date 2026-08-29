@@ -40,6 +40,8 @@ def record_acquisition_attempt(
             codec_matched=evaluation.attribute_matches.get("codec"),
             release_group_matched=evaluation.attribute_matches.get("release_group"),
             edition_matched=evaluation.attribute_matches.get("edition"),
+            hash_matched=evaluation.hash_matched,
+            hearing_impaired_matched=evaluation.hearing_impaired_matched,
             replaced_attempt_id=previous.id if previous is not None else None,
             attempted_at=attempted_at,
         )
