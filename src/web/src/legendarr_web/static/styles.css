@@ -1339,6 +1339,15 @@ button.page-toolbar-btn {
   height: 1rem;
 }
 
+/* Groups the label with the unsaved-changes count badge form-dirty-badge.js injects,
+   so the badge sits next to "Save" instead of stacking under it in this button's
+   column layout. */
+.page-toolbar-btn-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .page-toolbar-btn:hover {
   color: var(--pico-primary);
   background-color: var(--lg-neutral-hover-background-color);
@@ -1406,6 +1415,26 @@ button.outline.contrast:is(:hover, :focus) {
   --pico-background-color: var(--pico-del-color);
   --pico-border-color: var(--pico-del-color);
   --pico-color: var(--pico-primary-inverse);
+}
+
+/* Solid/filled danger variant (Pico's `.contrast` alone, no `.outline`) — used by the
+   "Leave" button in .unsaved-changes-modal below. The compound `.outline.contrast`
+   selectors above are more specific, so a button carrying both classes still resolves
+   to the outlined style regardless of the order these rules appear in. */
+[role="button"].contrast,
+button.contrast,
+[type="submit"].contrast,
+[type="button"].contrast {
+  --pico-background-color: var(--pico-del-color);
+  --pico-border-color: var(--pico-del-color);
+  --pico-color: var(--pico-primary-inverse);
+}
+
+[role="button"].contrast:is(:hover, :focus),
+button.contrast:is(:hover, :focus),
+[type="submit"].contrast:is(:hover, :focus),
+[type="button"].contrast:is(:hover, :focus) {
+  filter: brightness(1.15);
 }
 
 .test-result {
@@ -2174,4 +2203,78 @@ button.outline.contrast:is(:hover, :focus) {
 .api-key-field-control input {
   flex: 1;
   min-width: 0;
+}
+
+/* === Unsaved-changes confirm <dialog> (templates/base.html) — shared shell-wide, wired
+   by static/js/form-dirty-badge.js when a dirty form's link click is intercepted. === */
+.unsaved-changes-modal {
+  /* Same Pico dialog{} override as .dir-browser-modal above — see that comment. */
+  display: block;
+  position: fixed;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  min-width: auto;
+  height: auto;
+  min-height: auto;
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  color: var(--pico-color);
+}
+
+.unsaved-changes-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.unsaved-changes-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--lg-neutral-dim-background-color);
+}
+
+.unsaved-changes-modal-header p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.unsaved-changes-close {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--pico-muted-color);
+}
+
+.unsaved-changes-close:hover {
+  background-color: var(--lg-neutral-hover-background-color);
+  color: var(--pico-color);
+}
+
+.unsaved-changes-modal-body {
+  padding: 1rem 1.25rem;
+}
+
+.unsaved-changes-modal-body p {
+  margin: 0;
+}
+
+.unsaved-changes-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--lg-neutral-dim-background-color);
 }

@@ -47,6 +47,7 @@
            value=(profile.release_name_must_not_contain if profile else ""),
            placeholder=t("language_profiles.must_not_contain_placeholder")) }}
 
+  <h2>{{ t("language_profiles.score_threshold_heading") }}</h2>
   {{ match_score_field("movie_match_score", t("language_profiles.movie_match_score"),
                         value=(profile.movie_match_score if profile else 40),
                         hint=t("language_profiles.match_score_hint")) }}

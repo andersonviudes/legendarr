@@ -14,10 +14,13 @@ A page that needs JS loads it by overriding the `scripts` block from
 {% endblock %}
 ```
 
-Exception: `sidebar.js`, `theme.js`, `toast.js`, `running-tasks.js`, and `topbar.js` belong to
-`base.html` itself (every page has the sidebar, the theme toggle, the toast container, the
-topbar's notifications/search disclosures, and the running-tasks refresh nudge), so they're
-loaded directly in `base.html` rather than through the per-page `scripts` block.
+Exception: `sidebar.js`, `theme.js`, `toast.js`, `running-tasks.js`, `topbar.js`, and
+`form-dirty-badge.js` belong to `base.html` itself (every page has the sidebar, the theme
+toggle, the toast container, the topbar's notifications/search disclosures, the running-tasks
+refresh nudge, and — on pages with a form — a Save button that should flag unsaved changes
+and, if the user tries to navigate away while dirty, the shared `#unsaved-changes-modal`
+confirm dialog), so they're loaded directly in `base.html` rather than through the per-page
+`scripts` block.
 
 Exception: `provider-test-connection.js` is shared by any edit-form page whose "Test" button
 has no client-side required fields to validate first (`subtitle_provider_form.html`,
