@@ -212,8 +212,10 @@
   via subtitle-pill-menu.js: missing-language pills get the two file-level actions
   ("Translate now", "Manual search" — they don't depend on which pill you clicked, just
   the file); external pills get that one subtitle's own actions (Sync timing, Translate
-  from this, Blacklist — sync/blacklist are external-only, an embedded track can't be
-  re-synced or blacklisted independently of its container). "Upload subtitle" stays in
+  from this, Remove style tags, Search, Blacklist — sync/style-tags/blacklist are
+  external-only, an embedded track can't be re-synced, rewritten, or blacklisted
+  independently of its container; "Search" pre-picks this subtitle's own language in the
+  panel, unlike the file-level "Manual search"). "Upload subtitle" stays in
   `.file-row-actions` (Actions column) since it doesn't apply to any subtitle, existing
   or hypothetical.
 
@@ -244,7 +246,7 @@
       aria-haspopup="true"
     >{{ subtitle.language }}</span>
     <div class="subtitle-pill-menu" hidden>
-      {{ _subtitle_pill_subtitle_actions(subtitle) }}
+      {{ _subtitle_pill_subtitle_actions(subtitle, media_file_id) }}
     </div>
   </li>
   {% endfor %}
@@ -406,7 +408,7 @@
 >{{ icon("search") }} {{ t("common.manual_search") }}</button>
 {% endmacro %}
 
-{% macro _subtitle_pill_subtitle_actions(subtitle) %}
+{% macro _subtitle_pill_subtitle_actions(subtitle, media_file_id) %}
 <button
   type="button"
   class="subtitle-pill-menu-item"
@@ -423,6 +425,23 @@
   hx-swap="innerHTML"
   hx-disabled-elt="this"
 >{{ icon("languages") }} {{ t("common.translate_from_this") }}</button>
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  hx-post="/media/subtitles/{{ subtitle.id }}/remove-style-tags"
+  hx-target="#remove-style-tags-result-{{ subtitle.id }}"
+  hx-swap="innerHTML"
+  hx-disabled-elt="this"
+>{{ icon("code") }} {{ t("common.remove_style_tags") }}</button>
+<span id="remove-style-tags-result-{{ subtitle.id }}"></span>
+<button
+  type="button"
+  class="subtitle-pill-menu-item"
+  data-subtitle-acquire-open
+  hx-get="/media/files/{{ media_file_id }}/subtitle-search?language={{ subtitle.language }}"
+  hx-target="#subtitle-acquire-content"
+  hx-swap="innerHTML"
+>{{ icon("search") }} {{ t("common.search") }}</button>
 <button
   type="button"
   class="subtitle-pill-menu-item"

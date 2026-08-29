@@ -657,6 +657,43 @@ def test_blacklist_subtitle_returns_404_when_missing(isolated_database):
     assert response.status_code == 404
 
 
+def test_remove_subtitle_style_tags_cleans_the_file(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        sidecar = tmp_path / "Foo" / "Foo.en.srt"
+        sidecar.write_text(
+            '1\n00:00:00,000 --> 00:00:01,000\n<font color="yellow">Hi</font>\n\n',
+            encoding="utf-8",
+        )
+        with get_session() as session:
+            subtitle = Subtitle(
+                media_file_id=media_file_id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            subtitle_id = subtitle.id
+
+        response = client.post(f"/media/subtitles/{subtitle_id}/remove-style-tags")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "cleaned"}
+        assert "<font" not in sidecar.read_text(encoding="utf-8")
+        assert "Hi" in sidecar.read_text(encoding="utf-8")
+
+
+def test_remove_subtitle_style_tags_returns_404_when_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/media/subtitles/1/remove-style-tags")
+
+    assert response.status_code == 404
+
+
 def test_upload_subtitle_writes_the_file(isolated_database, tmp_path):
     with TestClient(create_api_app()) as client:
         media_file_id = _seed_movie_with_video(tmp_path)

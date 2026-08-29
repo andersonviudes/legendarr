@@ -1,7 +1,8 @@
-{# Loaded into #subtitle-acquire-content by the "Manual search" file-row button. #}
+{# Loaded into #subtitle-acquire-content by the "Manual search" file-row button, or by a
+   subtitle pill's own "Search" action (pre-selects that subtitle's language below). #}
 {% from "macros.html" import select_field %}
 <h3>{{ t("media_library.search_providers") }}</h3>
-{{ select_field("language", t("common.language"), languages) }}
+{{ select_field("language", t("common.language"), languages, selected_language) }}
 <button
   type="button"
   class="page-toolbar-btn"

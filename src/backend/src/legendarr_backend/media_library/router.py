@@ -50,6 +50,9 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     missing_target_languages_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.strip_subtitle_style_tags import (
+    strip_subtitle_style_tags,
+)
 from legendarr_backend.subtitle_timing_sync.jobs import enqueue_timing_sync
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
 
@@ -262,6 +265,23 @@ def blacklist_subtitle_route(
     session.commit()
     result = _acquisition_result(session, subtitle.media_file_id, success, message)
     return SubtitleBlacklistResult(media_file_id=subtitle.media_file_id, **result.model_dump())
+
+
+@router.post("/subtitles/{subtitle_id}/remove-style-tags")
+def remove_subtitle_style_tags_route(
+    subtitle_id: int, session: Session = Depends(_get_session)
+) -> dict[str, str]:
+    """Strip HTML/ASS-style formatting tags from this subtitle's file, in place — the
+    on-demand sibling of the automatic pre-translation cleanup pass (0.13.0). Synchronous,
+    same posture as blacklist above: a local regex rewrite, nothing to enqueue.
+    """
+    subtitle = session.get(Subtitle, subtitle_id)
+    if subtitle is None:
+        raise HTTPException(status_code=404, detail="Subtitle not found")
+    _, video_path = _get_media_file_and_video_path(session, subtitle.media_file_id)
+    subtitle_path = video_path.parent / Path(subtitle.relative_path).name
+    cleaned = strip_subtitle_style_tags(subtitle_path)
+    return {"status": "cleaned" if cleaned else "unsupported"}
 
 
 def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:

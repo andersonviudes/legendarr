@@ -55,8 +55,9 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "/media/subtitles/9/blacklist" in response.text
     assert 'class="lang-pill lang-pill--external"' in response.text
     # The external pill is its own actions-menu trigger (Sync timing, Translate from
-    # this, Blacklist), same subtitle-pill-menu.js mechanism as the missing-language
-    # pill — the file name is a second way to reach the same actions, in the dialog.
+    # this, Remove style tags, Search, Blacklist), same subtitle-pill-menu.js mechanism
+    # as the missing-language pill — the file name is a second way to reach the same
+    # actions, in the dialog.
     pill_start = response.text.index('class="lang-pill lang-pill--external"')
     pill_end = response.text.index("</li>", pill_start)
     pill_li = response.text[pill_start:pill_end]
@@ -64,6 +65,8 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "data-subtitle-menu-toggle" in pill_li
     assert "/media/subtitles/9/sync-timing" in pill_li
     assert "/media/subtitles/9/translate" in pill_li
+    assert "/media/subtitles/9/remove-style-tags" in pill_li
+    assert "/media/files/5/subtitle-search?language=en" in pill_li
     assert "/media/subtitles/9/blacklist" in pill_li
     assert 'class="subtitle-file-title-trigger"' in response.text
     assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text

@@ -184,12 +184,43 @@ async def trigger_subtitle_blacklist(
     )
 
 
+@router.post("/subtitles/{subtitle_id}/remove-style-tags")
+async def trigger_subtitle_style_tag_removal(
+    request: Request,
+    subtitle_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        response = await service.remove_subtitle_style_tags(client, subtitle_id)
+        if response.get("status") == "cleaned":
+            result = {"success": True, "message": "Style tags removed."}
+        else:
+            result = {"success": False, "message": "This subtitle's format isn't supported yet."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't remove style tags."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
 @router.get("/files/{media_file_id}/subtitle-search")
-async def show_subtitle_search(request: Request, media_file_id: int):
+async def show_subtitle_search(request: Request, media_file_id: int, language: str | None = None):
+    # A subtitle's own "Search" pill action passes its language so the panel opens with
+    # that language pre-picked (search for an upgrade for THIS subtitle) instead of the
+    # blank default the file-level "Manual search" action uses. Matched case-insensitively
+    # against SUPPORTED_LANGUAGES since a subtitle's stored `language` casing isn't
+    # guaranteed to match the option values (`select_field`'s `selected` comparison is
+    # exact-match) — falls back to no pre-selection for an unrecognized code.
+    selected_language = next(
+        (code for code, _ in SUPPORTED_LANGUAGES if language and code.lower() == language.lower()),
+        "",
+    )
     return templates.TemplateResponse(
         request,
         "_subtitle_search_panel.html",
-        {"media_file_id": media_file_id, "languages": SUPPORTED_LANGUAGES},
+        {
+            "media_file_id": media_file_id,
+            "languages": SUPPORTED_LANGUAGES,
+            "selected_language": selected_language,
+        },
     )
 
 
