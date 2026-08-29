@@ -85,6 +85,11 @@ class EpisodeRead(BaseModel):
     episode_number: int
     title: str
     media_file: MediaFileRead | None = None
+    # Target languages with a `PendingSubtitle` already held for this episode — rendered
+    # as a distinct pill from a plain "missing" one so a search/upload the user just did
+    # doesn't look like it had no effect (see `PendingSubtitle`'s docstring for why there's
+    # no `MediaFile`/`Subtitle` row to reflect it in yet).
+    pending_languages: list[str] = []
 
 
 class SeriesDetailRead(SeriesRead, MediaDetailRead):

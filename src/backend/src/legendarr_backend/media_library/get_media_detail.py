@@ -22,7 +22,11 @@ from legendarr_backend.media_library.schemas import (
     SubtitleRead,
 )
 from legendarr_backend.media_metadata.models import MediaMetadata
-from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle, AcquisitionAttempt
+from legendarr_backend.subtitle_acquisition.models import (
+    AcquiredSubtitle,
+    AcquisitionAttempt,
+    PendingSubtitle,
+)
 from legendarr_backend.subtitle_discovery.models import Subtitle
 
 logger = logging.getLogger(__name__)
@@ -70,7 +74,10 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
     metadata = session.exec(
         select(MediaMetadata).where(MediaMetadata.series_id == series_id)
     ).first()
-    episodes, episodes_unavailable = _episode_reads(session, series, files_by_path)
+    pending_by_episode = _pending_languages_by_episode(session, series_id)
+    episodes, episodes_unavailable = _episode_reads(
+        session, series, files_by_path, pending_by_episode
+    )
     return SeriesDetailRead(
         id=series.id,
         title=series.title,
@@ -90,7 +97,10 @@ def get_series_detail(session: Session, series_id: int) -> SeriesDetailRead | No
 
 
 def _episode_reads(
-    session: Session, series: Series, files_by_path: dict[str, MediaFileRead]
+    session: Session,
+    series: Series,
+    files_by_path: dict[str, MediaFileRead],
+    pending_by_episode: dict[tuple[int, int], list[str]],
 ) -> tuple[list[EpisodeRead], bool]:
     """Live-fetched from Sonarr — no `Episode` entity is persisted (see `ROADMAP.md`).
 
@@ -123,9 +133,24 @@ def _episode_reads(
             episode_number=episode.episode_number,
             title=episode.title,
             media_file=files_by_path.get(episode.relative_path) if episode.relative_path else None,
+            pending_languages=pending_by_episode.get(
+                (episode.season_number, episode.episode_number), []
+            ),
         )
         for episode in episodes
     ], False
+
+
+def _pending_languages_by_episode(
+    session: Session, series_id: int
+) -> dict[tuple[int, int], list[str]]:
+    pending = session.exec(
+        select(PendingSubtitle).where(PendingSubtitle.series_id == series_id)
+    ).all()
+    by_episode: dict[tuple[int, int], list[str]] = defaultdict(list)
+    for row in pending:
+        by_episode[(row.season_number, row.episode_number)].append(row.language)
+    return by_episode
 
 
 def _profile_fields(session: Session, item: Movie | Series) -> tuple[str | None, list[str]]:

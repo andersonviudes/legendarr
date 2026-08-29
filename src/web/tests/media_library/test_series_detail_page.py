@@ -39,6 +39,7 @@ def _series_detail_handler(request: httpx.Request) -> httpx.Response:
                     "episode_number": 2,
                     "title": "TBA",
                     "media_file": None,
+                    "pending_languages": [],
                 },
             ],
         },
@@ -124,6 +125,24 @@ def test_series_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backe
     assert response.status_code == 200
     assert 'class="lang-pill lang-pill--missing"' in response.text
     assert "fr" in response.text
+
+
+def _series_detail_with_pending_subtitle_handler(request: httpx.Request) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][1]["pending_languages"] = ["pt-BR"]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_renders_a_pending_subtitle_as_a_distinct_pill(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_pending_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    assert 'class="lang-pill lang-pill--pending"' in response.text
 
 
 def _series_detail_with_many_embedded_subtitles_handler(request: httpx.Request) -> httpx.Response:

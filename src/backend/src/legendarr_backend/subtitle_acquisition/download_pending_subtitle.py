@@ -71,7 +71,7 @@ def download_pending_subtitle_candidate(
             PendingSubtitle.series_id == series.id,
             PendingSubtitle.season_number == season_number,
             PendingSubtitle.episode_number == episode_number,
-            PendingSubtitle.language == language.lower(),
+            PendingSubtitle.language == language,
         )
     ).first()
     now = datetime.now(UTC)
@@ -81,7 +81,7 @@ def download_pending_subtitle_candidate(
                 series_id=series.id,
                 season_number=season_number,
                 episode_number=episode_number,
-                language=language.lower(),
+                language=language,
                 filename=f"{language.lower()}.srt",
                 content=content.encode("utf-8"),
                 provider=candidate.provider,

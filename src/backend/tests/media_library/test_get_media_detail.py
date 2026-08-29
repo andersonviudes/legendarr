@@ -6,6 +6,7 @@ from legendarr_backend.http_client.client import ProviderClientError
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.get_media_detail import get_movie_detail, get_series_detail
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
+from legendarr_backend.subtitle_acquisition.models import PendingSubtitle
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
@@ -231,8 +232,60 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
     assert detail.episodes[0].media_file is not None
     assert detail.episodes[0].media_file.subtitles[0].language == "pt-BR"
     assert detail.episodes[1].media_file is None
+    assert detail.episodes[1].pending_languages == []
     assert detail.missing_subtitles_count == 0
     assert detail.episodes_unavailable is False
+
+
+def test_get_series_detail_includes_pending_subtitle_languages_for_episode_without_file(
+    in_memory_session, monkeypatch
+):
+    arr_service = _seed_arr_service(in_memory_session, "sonarr")
+    assert arr_service.id is not None
+    series = Series(
+        arr_service_id=arr_service.id,
+        arr_id=7,
+        title="Bar",
+        remote_path="/tv/Bar",
+        monitored=True,
+        status="continuing",
+        episode_count=2,
+        episode_file_count=1,
+    )
+    in_memory_session.add(series)
+    in_memory_session.commit()
+    in_memory_session.refresh(series)
+    assert series.id is not None
+    in_memory_session.add(
+        PendingSubtitle(
+            series_id=series.id,
+            season_number=1,
+            episode_number=2,
+            language="pt-BR",
+            filename="Bar.S01E02.pt-BR.srt",
+            content=b"pending",
+            created_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    class _FakeClient:
+        def list_episodes(self, series_id):
+            return [EpisodeItem(season_number=1, episode_number=2, title="TBA", relative_path=None)]
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(
+        "legendarr_backend.media_library.get_media_detail.build_client",
+        lambda arr_service: _FakeClient(),
+    )
+
+    detail = get_series_detail(in_memory_session, series.id)
+
+    assert detail is not None
+    assert detail.episodes[0].media_file is None
+    assert detail.episodes[0].pending_languages == ["pt-BR"]
 
 
 def test_get_series_detail_degrades_when_sonarr_is_unreachable(in_memory_session, monkeypatch):

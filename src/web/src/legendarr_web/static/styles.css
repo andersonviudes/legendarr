@@ -57,6 +57,8 @@ svg.lucide {
   --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
   --lg-warn-color: #d9b23c;
   --lg-warn-dim-background-color: rgba(217, 178, 60, 0.12);
+  --lg-pending-color: #3f8fd9;
+  --lg-pending-dim-background-color: rgba(63, 143, 217, 0.12);
   --lg-status-ended-color: #3fae6a;
   --lg-status-continuing-color: #3f8fd9;
 }
@@ -1008,6 +1010,14 @@ body {
 .lang-pill--missing {
   background-color: var(--lg-neutral-dim-background-color);
   color: var(--pico-muted-color);
+}
+
+/* A subtitle already found/uploaded for an episode with no MediaFile yet (see
+   PendingSubtitle) — distinct from --missing so the row visibly changes once the user
+   has acted on it, instead of looking untouched until a later scan reconciles it. */
+.lang-pill--pending {
+  background-color: var(--lg-pending-dim-background-color);
+  color: var(--lg-pending-color);
 }
 
 /* The collapsed "N embedded" trigger pill (subtitle_pill_list() in macros.html) packs

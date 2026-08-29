@@ -76,7 +76,7 @@
           {% if episode.media_file %}
           {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path) }}
           {% elif series.target_languages %}
-          {{ missing_lang_pills(series.target_languages) }}
+          {{ missing_lang_pills(series.target_languages, episode.pending_languages) }}
           {% else %}
           <span class="badge-empty">—</span>
           {% endif %}
