@@ -42,3 +42,17 @@ the href-swap trick above: call `Network.clearBrowserCache()` on that CDP sessio
 `setCacheDisabled` and the `page.goto`. Either technique is fine; `clearBrowserCache` is
 less surgical (drops the whole browser cache, not just one asset) but is a single call with
 no per-file wiring.
+
+**Refinement (2026-08-29, Save-button dirty-badge feature):** this one wasn't the browser's
+own HTTP cache at all — `Network.setCacheDisabled` + a brand-new `page.goto` (not just a
+reload of an already-open tab) still returned the pre-rebuild bytes for `/static/js/*.js`,
+confirmed by reading the raw network response body (`browser_network_request` with
+`part: "response-body"`), while a plain host-side `curl` against the same URL at the same
+moment returned the fixed file — so the staleness lives somewhere in the Playwright MCP
+browser's own request path, not in Chromium's cache heuristics. What worked: register a
+`page.route('**/static/js/*.js', ...)` handler (via `browser_run_code_unsafe`) that rewrites
+the request URL to append `?bust=<Date.now()>` via `route.continue({ url })`, installed
+*before* `page.goto`. Reach for this whenever a `<script src>` fix doesn't seem to take
+effect even after the `clearBrowserCache` refinement above — confirm with the
+network-response-body check first, since that's the only way to tell this apart from an
+ordinary stale-cache case.

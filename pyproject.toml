@@ -3,6 +3,8 @@ name = "legendarr"
 version = "0.1.0"
 description = "Self-hosted subtitle translation companion for Radarr and Sonarr"
 requires-python = ">=3.12"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 
 [tool.uv]
 package = false
