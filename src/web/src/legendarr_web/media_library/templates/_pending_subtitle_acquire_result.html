@@ -1,0 +1,6 @@
+{# Shared by the pending-episode download-candidate and upload-subtitle routes. Unlike
+   _subtitle_acquire_result.html, there's no file row's subtitle pills to refresh — no
+   `MediaFile` exists yet, so the episode row starts reflecting this once a later scan
+   reconciles it onto the real file (see `reconcile_pending_subtitles_for_series`). #}
+<p class="subtitle-acquire-result subtitle-acquire-result--{{ 'success' if result.success else 'error' }}">{{ result.message }}</p>
+<div hidden data-toast-message="{{ result.message }}" data-toast-type="{{ 'success' if result.success else 'error' }}"></div>

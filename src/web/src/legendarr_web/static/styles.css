@@ -1744,6 +1744,11 @@ button.outline.contrast:is(:hover, :focus) {
   padding: 1rem 1.25rem 1.25rem;
 }
 
+.subtitle-search-pending-notice {
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-sm);
+}
+
 .subtitle-acquire-result--success {
   color: var(--pico-ins-color);
 }

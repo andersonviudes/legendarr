@@ -143,6 +143,17 @@ class SubtitleAcquisitionResult(BaseModel):
     missing_languages: list[str] = []
 
 
+class PendingSubtitleAcquisitionResult(BaseModel):
+    """Outcome of a manual download/upload for a series episode Sonarr hasn't
+    downloaded yet — no `subtitles`/`missing_languages` refresh like
+    `SubtitleAcquisitionResult`'s, since there's no `MediaFile` row (and so no
+    Subtitles-column badge) to refresh: the episode row starts reflecting it once a
+    later scan reconciles the pending subtitle onto the real file."""
+
+    success: bool
+    message: str
+
+
 class SubtitleBlacklistResult(SubtitleAcquisitionResult):
     """Same shape as `SubtitleAcquisitionResult`, plus `media_file_id` — the blacklist
     route is addressed by `subtitle_id` (like sync-timing/translate), not

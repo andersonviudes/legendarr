@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import Column
+from sqlalchemy import Column, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from legendarr_backend.security.encrypted_string import EncryptedString
@@ -207,3 +207,30 @@ class AcquisitionFailure(SQLModel, table=True):
     language: str
     error_message: str
     failed_at: datetime
+
+
+class PendingSubtitle(SQLModel, table=True):
+    """A subtitle acquired (manual search or upload) for a series episode Sonarr
+    hasn't downloaded yet — no `MediaFile` row exists to attach it to, since
+    `MediaFile.relative_path` is only known once the video is actually on disk (see
+    `arr_clients.base.EpisodeItem.relative_path`, `None` until then).
+
+    Keyed by season/episode number rather than a file path for that reason. Held here
+    — content and all — until `reconcile_pending_subtitles_for_series` finds a
+    matching `MediaFile` after a scan and moves it into place as a real external
+    `Subtitle`, at which point this row is deleted.
+    """
+
+    __table_args__ = (UniqueConstraint("series_id", "season_number", "episode_number", "language"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    series_id: int = Field(foreign_key="series.id", index=True, ondelete="CASCADE")
+    season_number: int
+    episode_number: int
+    language: str
+    filename: str
+    content: bytes
+    provider: str | None = Field(default=None)
+    release_name: str | None = Field(default=None)
+    download_id: str | None = Field(default=None)
+    created_at: datetime

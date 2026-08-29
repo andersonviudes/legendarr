@@ -317,3 +317,145 @@ async def upload_subtitle(
         "_subtitle_acquire_result.html",
         {"media_file_id": media_file_id, "result": result},
     )
+
+
+# === Series episodes with no `MediaFile` yet — same shape as the routes above, keyed
+# by series/season/episode instead of a media file id. See `PendingSubtitle`'s
+# backend docstring for why.
+
+
+@router.get("/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-search")
+async def show_pending_subtitle_search(
+    request: Request,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        languages = await service.get_pending_episode_target_languages(
+            client, series_id, season_number, episode_number
+        )
+    except httpx.HTTPStatusError:
+        languages = []
+    return templates.TemplateResponse(
+        request,
+        "_pending_subtitle_search_panel.html",
+        {
+            "series_id": series_id,
+            "season_number": season_number,
+            "episode_number": episode_number,
+            "languages": languages,
+        },
+    )
+
+
+@router.get("/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-search/results")
+async def show_pending_subtitle_search_results(
+    request: Request,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    languages: Annotated[list[str] | None, Query()] = None,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    candidates = []
+    for language in languages or []:
+        try:
+            found = await service.search_pending_subtitle_candidates(
+                client, series_id, season_number, episode_number, language
+            )
+        except httpx.HTTPStatusError:
+            found = []
+        for candidate in found:
+            candidate["target_language"] = language
+        candidates.extend(found)
+    return templates.TemplateResponse(
+        request,
+        "_pending_subtitle_search_results.html",
+        {
+            "series_id": series_id,
+            "season_number": season_number,
+            "episode_number": episode_number,
+            "candidates": candidates,
+        },
+    )
+
+
+@router.post(
+    "/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-candidates/download"
+)
+async def download_pending_subtitle_candidate(
+    request: Request,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    provider: str = Form(...),
+    release_name: str = Form(...),
+    download_id: str = Form(...),
+    language: str = Form(...),
+    target_language: str = Form(...),
+    page_link: str = Form(""),
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    candidate = {
+        "provider": provider,
+        "release_name": release_name,
+        "download_id": download_id,
+        "language": language,
+        "target_language": target_language,
+        "page_link": page_link or None,
+    }
+    try:
+        result = await service.download_pending_subtitle_candidate(
+            client, series_id, season_number, episode_number, candidate
+        )
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't download the subtitle."}
+    return templates.TemplateResponse(
+        request, "_pending_subtitle_acquire_result.html", {"result": result}
+    )
+
+
+@router.get("/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-upload")
+async def show_pending_subtitle_upload(
+    request: Request, series_id: int, season_number: int, episode_number: int
+):
+    return templates.TemplateResponse(
+        request,
+        "_pending_subtitle_upload_panel.html",
+        {
+            "series_id": series_id,
+            "season_number": season_number,
+            "episode_number": episode_number,
+            "languages": SUPPORTED_LANGUAGES,
+        },
+    )
+
+
+@router.post("/series/{series_id}/episodes/{season_number}/{episode_number}/subtitle-upload")
+async def upload_pending_subtitle(
+    request: Request,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    language: str = Form(...),
+    file: UploadFile = File(...),  # noqa: B008 — FastAPI's own multipart dependency idiom
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    content = await file.read()
+    try:
+        result = await service.upload_pending_subtitle(
+            client,
+            series_id,
+            season_number,
+            episode_number,
+            language,
+            file.filename or "subtitle",
+            content,
+        )
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't upload the subtitle."}
+    return templates.TemplateResponse(
+        request, "_pending_subtitle_acquire_result.html", {"result": result}
+    )

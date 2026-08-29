@@ -18,7 +18,13 @@ from legendarr_backend.subtitle_acquisition import (
     download_media_file_subtitle as download_media_file_subtitle_module,
 )
 from legendarr_backend.subtitle_acquisition import (
+    download_pending_subtitle as download_pending_subtitle_module,
+)
+from legendarr_backend.subtitle_acquisition import (
     search_media_file_subtitle as search_media_file_subtitle_module,
+)
+from legendarr_backend.subtitle_acquisition import (
+    search_pending_subtitle as search_pending_subtitle_module,
 )
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     CandidateEvaluation,
@@ -26,6 +32,7 @@ from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score imp
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
+from legendarr_backend.subtitle_acquisition.models import PendingSubtitle
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -761,6 +768,153 @@ def test_upload_subtitle_returns_404_when_media_file_missing(isolated_database):
     with TestClient(create_api_app()) as client:
         response = client.post(
             "/media/files/1/subtitle-upload",
+            data={"language": "en"},
+            files={"file": ("uploaded.srt", b"content", "text/plain")},
+        )
+
+    assert response.status_code == 404
+
+
+# === Series episodes with no `MediaFile` yet ===
+
+
+def test_get_target_languages_for_pending_episode_returns_the_profile_target_languages(
+    isolated_database,
+):
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        with get_session() as session:
+            session.add(
+                LanguageProfile(
+                    name="Default",
+                    source_languages="en",
+                    target_languages="pt-BR,fr",
+                    is_default=True,
+                )
+            )
+            session.commit()
+
+        response = client.get(f"/media/series/{series.id}/episodes/1/1/target-languages")
+
+    assert response.status_code == 200
+    assert response.json() == ["pt-BR", "fr"]
+
+
+def test_get_target_languages_for_pending_episode_returns_404_when_series_missing(
+    isolated_database,
+):
+    with TestClient(create_api_app()) as client:
+        response = client.get("/media/series/1/episodes/1/1/target-languages")
+
+    assert response.status_code == 404
+
+
+def test_search_pending_subtitle_candidates_returns_candidates_from_the_provider_chain(
+    isolated_database, monkeypatch
+):
+    monkeypatch.setattr(
+        search_pending_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        response = client.get(
+            f"/media/series/{series.id}/episodes/1/1/subtitle-candidates",
+            params={"language": "en"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["provider"] == "fake"
+
+
+def test_search_pending_subtitle_candidates_returns_404_when_series_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.get(
+            "/media/series/1/episodes/1/1/subtitle-candidates", params={"language": "en"}
+        )
+
+    assert response.status_code == 404
+
+
+def test_download_pending_subtitle_candidate_stages_it(isolated_database, monkeypatch):
+    monkeypatch.setattr(
+        download_pending_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        response = client.post(
+            f"/media/series/{series.id}/episodes/1/1/subtitle-candidates/download",
+            json={
+                "provider": "fake",
+                "release_name": "Bar.S01E01",
+                "download_id": "1",
+                "language": "pt",
+                "target_language": "pt-BR",
+                "page_link": None,
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    with get_session() as session:
+        pending = session.exec(
+            select(PendingSubtitle).where(PendingSubtitle.series_id == series.id)
+        ).all()
+    assert len(pending) == 1
+    assert pending[0].season_number == 1
+    assert pending[0].episode_number == 1
+    assert pending[0].language == "pt-br"
+
+
+def test_download_pending_subtitle_candidate_returns_404_when_series_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post(
+            "/media/series/1/episodes/1/1/subtitle-candidates/download",
+            json={
+                "provider": "fake",
+                "release_name": "Bar.S01E01",
+                "download_id": "1",
+                "language": "pt",
+                "target_language": "pt-BR",
+                "page_link": None,
+            },
+        )
+
+    assert response.status_code == 404
+
+
+def test_upload_pending_subtitle_stages_it(isolated_database):
+    with TestClient(create_api_app()) as client:
+        series = _seed_series()
+        response = client.post(
+            f"/media/series/{series.id}/episodes/1/1/subtitle-upload",
+            data={"language": "en"},
+            files={"file": ("uploaded.srt", b"content", "text/plain")},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    with get_session() as session:
+        pending = session.exec(
+            select(PendingSubtitle).where(PendingSubtitle.series_id == series.id)
+        ).all()
+    assert len(pending) == 1
+    assert pending[0].content == b"content"
+
+
+def test_upload_pending_subtitle_returns_404_when_series_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post(
+            "/media/series/1/episodes/1/1/subtitle-upload",
             data={"language": "en"},
             files={"file": ("uploaded.srt", b"content", "text/plain")},
         )

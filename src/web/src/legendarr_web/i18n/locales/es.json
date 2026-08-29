@@ -169,6 +169,7 @@
   "media_library.search_no_results": "No se encontraron resultados.",
   "media_library.no_candidates": "No se encontraron subtítulos para este idioma.",
   "media_library.no_target_languages": "No hay idiomas de destino configurados para este elemento.",
+  "media_library.pending_episode_notice": "Este episodio aún no se ha descargado — un subtítulo encontrado o subido aquí se conserva hasta entonces.",
   "media_library.upload_heading": "Subir un archivo de subtítulo",
   "media_library.subtitle_file_label": "Archivo de subtítulo",
   "media_library.embedded_subtitles_one": "{count} subtítulo incrustado",

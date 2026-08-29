@@ -171,3 +171,66 @@ async def upload_subtitle(
     )
     response.raise_for_status()
     return response.json()
+
+
+def _pending_episode_path(series_id: int, season_number: int, episode_number: int) -> str:
+    return f"/media/series/{series_id}/episodes/{season_number}/{episode_number}"
+
+
+async def get_pending_episode_target_languages(
+    client: httpx.AsyncClient, series_id: int, season_number: int, episode_number: int
+) -> list[str]:
+    response = await client.get(
+        f"{_pending_episode_path(series_id, season_number, episode_number)}/target-languages"
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def search_pending_subtitle_candidates(
+    client: httpx.AsyncClient,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    language: str,
+) -> list[dict]:
+    response = await client.get(
+        f"{_pending_episode_path(series_id, season_number, episode_number)}/subtitle-candidates",
+        params={"language": language},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def download_pending_subtitle_candidate(
+    client: httpx.AsyncClient,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    candidate: dict,
+) -> dict:
+    response = await client.post(
+        f"{_pending_episode_path(series_id, season_number, episode_number)}"
+        "/subtitle-candidates/download",
+        json=candidate,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+async def upload_pending_subtitle(
+    client: httpx.AsyncClient,
+    series_id: int,
+    season_number: int,
+    episode_number: int,
+    language: str,
+    filename: str,
+    content: bytes,
+) -> dict:
+    response = await client.post(
+        f"{_pending_episode_path(series_id, season_number, episode_number)}/subtitle-upload",
+        data={"language": language},
+        files={"file": (filename, content)},
+    )
+    response.raise_for_status()
+    return response.json()

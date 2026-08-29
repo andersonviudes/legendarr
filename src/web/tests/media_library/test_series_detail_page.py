@@ -91,8 +91,16 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "/media/files/5/subtitle-search?language=pt-BR" in pill_li
     # The Actions column's own "Search" button opens the same manual-search panel as
     # the pill's "Search" action, but with no language pre-selected — it's file-level,
-    # not tied to one already-downloaded subtitle.
-    actions_start = response.text.index('class="file-row-actions"')
+    # not tied to one already-downloaded subtitle. Episode 2 ("TBA", no media file)
+    # renders first — episodes are sorted by episode_number descending — so its
+    # pending-episode Actions div comes before episode 1's ("Pilot") file-based one.
+    pending_actions_start = response.text.index('class="file-row-actions"')
+    pending_actions_end = response.text.index("</div>", pending_actions_start)
+    pending_actions_html = response.text[pending_actions_start:pending_actions_end]
+    assert "/media/series/1/episodes/1/2/subtitle-search" in pending_actions_html
+    assert "/media/series/1/episodes/1/2/subtitle-upload" in pending_actions_html
+
+    actions_start = response.text.index('class="file-row-actions"', pending_actions_end)
     actions_end = response.text.index("</div>", actions_start)
     actions_html = response.text[actions_start:actions_end]
     assert 'hx-get="/media/files/5/subtitle-search"' in actions_html
