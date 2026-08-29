@@ -79,3 +79,18 @@ def test_create_returns_422_on_blank_name(isolated_database):
         response = client.post("/language-profiles/", json=_payload(name=""))
 
     assert response.status_code == 422
+
+
+def test_create_defaults_movie_and_series_match_score_to_forty(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload())
+
+    assert response.json()["movie_match_score"] == 40
+    assert response.json()["series_match_score"] == 40
+
+
+def test_create_returns_422_when_match_score_is_out_of_range(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload(movie_match_score=101))
+
+    assert response.status_code == 422

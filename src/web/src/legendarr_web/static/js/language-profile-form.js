@@ -143,3 +143,27 @@ document.addEventListener("submit", function (event) {
     form.reportValidity();
   }
 });
+
+// Match-score sliders (Edit Language Profile): a native range input has no built-in
+// live value display, and no cross-browser way to paint the track filled up to the
+// current value (accent-color alone doesn't reliably do it here — see styles.css) —
+// both are done by hand instead.
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".match-score-slider").forEach(function (slider) {
+    var output = slider.closest(".match-score-field").querySelector("output");
+
+    function paint() {
+      var percent = slider.value;
+      slider.style.background =
+        "linear-gradient(to right, var(--pico-primary) " +
+        percent +
+        "%, var(--pico-form-element-background-color) " +
+        percent +
+        "%)";
+      output.textContent = percent + "%";
+    }
+
+    paint();
+    slider.addEventListener("input", paint);
+  });
+});

@@ -13,3 +13,5 @@ class LanguageProfileInput(BaseModel):
     is_default: bool = False
     release_name_must_contain: str = ""
     release_name_must_not_contain: str = ""
+    movie_match_score: int = Field(default=40, ge=0, le=100)
+    series_match_score: int = Field(default=40, ge=0, le=100)
