@@ -110,6 +110,24 @@
 </label>
 {% endmacro %}
 
+{#
+  Match-quality slider (0-100): the minimum score a subtitle search candidate must
+  clear to be automatically accepted — see language_profiles' movie_match_score/
+  series_match_score. Live value shown in the <output>, wired up in
+  language-profile-form.js.
+#}
+{% macro match_score_field(name, label, value=40, hint="") %}
+<div class="match-score-field">
+  <label for="{{ name }}">{{ label }}: <output for="{{ name }}">{{ value }}%</output></label>
+  <input type="range" id="{{ name }}" name="{{ name }}" class="match-score-slider"
+    min="0" max="100" value="{{ value }}">
+  <div class="match-score-range-labels"><span>0</span><span>100</span></div>
+  {% if hint %}
+  <p class="field-hint">{{ hint }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
 {% macro select_field(name, label, options, selected="") %}
 <label for="{{ name }}">{{ label }}</label>
 <select id="{{ name }}" name="{{ name }}">

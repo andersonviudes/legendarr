@@ -725,3 +725,38 @@ check needs to consider pending as a distinct third bucket from missing/acquired
 into either — and if a new per-language state is ever added to `PendingSubtitle` or a sibling
 table, store/compare it with its original casing, not lowercased, or it'll silently fail the
 same string-match the way this one did.
+
+**Update (2026-08-29, PR #83 — first `<input type="range">` in the app, Edit Language
+Profile's new match-score sliders):** the user pasted a generic reference screenshot (a purple
+slider, filled track + circular thumb, `0`/`100` labels) asking for per-media-type subtitle
+match-cutoff configurability — confirmed via `AskUserQuestion` this meant the existing hardcoded
+`DEFAULT_CUTOFF = 0.4` in `subtitle_acquisition/candidate_evaluation/match_score.py`, and that the
+*color* in the reference was illustrative (this app's own gold `--pico-primary` was used, not a
+new purple token — consistent with this file's own established restrained-accent taste, not a
+literal copy of the pasted mockup). New `match_score_field()` macro
+(`templates/macros.html`), `.match-score-field`/`.match-score-slider`/`-range-labels` in
+`styles.css`.
+- **New gotcha, not a specificity issue this time:** `accent-color: var(--pico-primary)` alone
+  (the simplest modern way to theme a native range input) computed correctly
+  (`getComputedStyle(...).accentColor` really was `rgb(201, 151, 79)`) but *painted* as a
+  washed-out gray-blue in this sandbox's headless Chromium under this app's `color-scheme: dark`
+  — confirmed by sampling actual rendered pixels (`(82, 95, 122)`, not the gold token) after the
+  computed-style check falsely looked fine. Root cause not fully isolated (headless/software
+  rendering path for native form controls vs. a real Chromium quirk), so `accent-color` was
+  abandoned rather than trusted. Fix: fully custom rendering — `appearance: none` on the
+  `<input>`, `::-webkit-slider-thumb`/`::-moz-range-thumb` for the gold thumb, and the filled
+  portion of the track painted by hand as an inline `linear-gradient(to right, var(--pico-primary)
+  {value}%, var(--pico-form-element-background-color) {value}%)` — set once on load and again on
+  every `input` event (`language-profile-form.js`), alongside the same live `<output>` text update
+  a native range input doesn't give you for free. **How to apply:** don't reach for bare
+  `accent-color` to theme a range input in this app based on `getComputedStyle` alone — verify
+  against actual rendered pixels (sample the screenshot, don't just trust the computed style) or
+  default straight to the manual gradient-paint approach above, which is now the proven pattern.
+- Verified end-to-end with Playwright against the rebuilt dev container (`docker compose -f
+  docker-compose.dev.yml build legendarr && ... up -d legendarr`, per
+  [[legendarr-docker-compose-dev-stack-staleness]]): dragging (simulated via `.value` +
+  dispatching a real `input` event, not just setting the attribute) live-updates the `<output>`
+  and the gradient fill, the two sliders are independent, and Save → reload round-trips both
+  fields through the backend correctly. Needed a CDP `Network.clearBrowserCache` +
+  `setCacheDisabled` session (`browser_run_code_unsafe`, not a plain reload) to see the rebuilt
+  JS/CSS, per the browser-cache gotcha logged earlier in this file — still applies, still bites.

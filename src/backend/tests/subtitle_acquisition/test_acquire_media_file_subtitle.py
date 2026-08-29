@@ -276,6 +276,54 @@ def test_acquire_subtitle_skips_when_nothing_clears_the_match_cutoff(
     assert list(in_memory_session.exec(select(AcquisitionFailure))) == []
 
 
+def test_acquire_subtitle_passes_the_profiles_movie_match_score_as_cutoff_for_a_movie(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, movie_match_score=77, series_match_score=11)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
+    )
+    _use_chain(monkeypatch, provider)
+    captured: dict = {}
+
+    def _spy_pick_best_match(candidates, reference_filename, cutoff=0.4):
+        captured["cutoff"] = cutoff
+        return candidates[0] if candidates else None
+
+    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["cutoff"] == 0.77
+
+
+def test_acquire_subtitle_passes_the_profiles_series_match_score_as_cutoff_for_a_series(
+    in_memory_session, tmp_path, monkeypatch
+):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series)
+    _profile(in_memory_session, movie_match_score=77, series_match_score=11)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
+    )
+    _use_chain(monkeypatch, provider)
+    captured: dict = {}
+
+    def _spy_pick_best_match(candidates, reference_filename, cutoff=0.4):
+        captured["cutoff"] = cutoff
+        return candidates[0] if candidates else None
+
+    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert captured["cutoff"] == 0.11
+
+
 def test_acquire_subtitle_records_a_failure_when_a_provider_raises_during_search(
     in_memory_session, tmp_path, monkeypatch
 ):

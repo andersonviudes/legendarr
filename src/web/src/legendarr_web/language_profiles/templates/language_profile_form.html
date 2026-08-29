@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import field, checkbox_field, language_multiselect %}
+{% from "macros.html" import field, checkbox_field, language_multiselect, match_score_field %}
 {% block title %}legendarr · {{ t("language_profiles.edit_title") if profile else t("language_profiles.add_title") }}{% endblock %}
 {% block content %}
 <div class="page-toolbar">
@@ -46,6 +46,12 @@
   {{ field("release_name_must_not_contain", t("language_profiles.must_not_contain"),
            value=(profile.release_name_must_not_contain if profile else ""),
            placeholder=t("language_profiles.must_not_contain_placeholder")) }}
+
+  {{ match_score_field("movie_match_score", t("language_profiles.movie_match_score"),
+                        value=(profile.movie_match_score if profile else 40),
+                        hint=t("language_profiles.match_score_hint")) }}
+  {{ match_score_field("series_match_score", t("language_profiles.series_match_score"),
+                        value=(profile.series_match_score if profile else 40)) }}
 </form>
 {% endblock %}
 {% block scripts %}

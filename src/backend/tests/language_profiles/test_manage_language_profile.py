@@ -49,6 +49,8 @@ def test_update_language_profile_replaces_fields(in_memory_session):
             hearing_impaired=True,
             ocr_embedded_subtitles=True,
             speech_to_text_fallback=True,
+            movie_match_score=70,
+            series_match_score=20,
         ),
     )
 
@@ -58,6 +60,8 @@ def test_update_language_profile_replaces_fields(in_memory_session):
     assert updated.hearing_impaired is True
     assert updated.ocr_embedded_subtitles is True
     assert updated.speech_to_text_fallback is True
+    assert updated.movie_match_score == 70
+    assert updated.series_match_score == 20
 
 
 def test_update_language_profile_replaces_release_name_filters(in_memory_session):

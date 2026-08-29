@@ -60,3 +60,10 @@ def test_speech_to_text_fallback_defaults_to_false():
     profile = _profile()
 
     assert profile.speech_to_text_fallback is False
+
+
+def test_movie_and_series_match_score_default_to_forty():
+    profile = _profile()
+
+    assert profile.movie_match_score == 40
+    assert profile.series_match_score == 40

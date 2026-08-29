@@ -26,6 +26,8 @@ async def _language_profile_form(
     is_default: bool = Form(False),
     release_name_must_contain: str = Form(""),
     release_name_must_not_contain: str = Form(""),
+    movie_match_score: int = Form(40),
+    series_match_score: int = Form(40),
 ) -> dict:
     return {
         "name": name,
@@ -39,6 +41,8 @@ async def _language_profile_form(
         "is_default": is_default,
         "release_name_must_contain": release_name_must_contain,
         "release_name_must_not_contain": release_name_must_not_contain,
+        "movie_match_score": movie_match_score,
+        "series_match_score": series_match_score,
     }
 
 

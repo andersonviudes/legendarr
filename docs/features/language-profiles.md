@@ -15,6 +15,7 @@ It lets you say, for example: "for anime, translate embedded Japanese subs to `p
 | `forced` | Whether this profile only wants forced subtitles. Defaults to `false`. |
 | `hearing_impaired` | Whether this profile only wants hearing-impaired (HI) subtitles. Defaults to `false`. |
 | `is_default` | Whether this is the profile applied when a movie or series has no override. Defaults to `false`. |
+| `movie_match_score` / `series_match_score` | Minimum match quality (0-100) a subtitle search candidate must score to be automatically accepted, set separately for movies and series since the same profile can be assigned to either. Defaults to `40`. |
 
 ## Managing profiles
 

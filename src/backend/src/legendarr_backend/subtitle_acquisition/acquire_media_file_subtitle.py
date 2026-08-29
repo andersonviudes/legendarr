@@ -6,6 +6,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
@@ -157,6 +158,7 @@ def acquire_subtitle_for_media_file(
         return AcquisitionResult(skipped_reason="no_provider_configured")
 
     try:
+        cutoff = _match_cutoff_for_media_file(profile, media_file)
         context = (
             resolve_subtitle_search_context(session, media_file, video_path) if chain else None
         )
@@ -180,6 +182,7 @@ def acquire_subtitle_for_media_file(
                 context.tvdb_id,
                 profile.must_contain_terms,
                 profile.must_not_contain_terms,
+                cutoff,
                 on_progress,
                 current_language,
                 total_languages,
@@ -237,6 +240,16 @@ def _has_source_language_subtitle(
         session.exec(select(Subtitle.language).where(Subtitle.media_file_id == media_file.id)).all()
     )
     return any(language.lower() in existing_languages for language in source_languages)
+
+
+def _match_cutoff_for_media_file(profile: LanguageProfile, media_file: MediaFile) -> float:
+    """The profile's per-media-type match score (0-100), as the 0.0-1.0 fraction
+    `pick_best_match` expects — movies and series can be given a different minimum
+    match quality since the same profile can be assigned to either."""
+    percent = (
+        profile.movie_match_score if media_file.movie_id is not None else profile.series_match_score
+    )
+    return percent / 100
 
 
 def _attempt_speech_to_text_fallback(
@@ -325,6 +338,7 @@ def _search_and_download(
     tvdb_id: int | None,
     must_contain: list[str],
     must_not_contain: list[str],
+    cutoff: float,
     on_progress: Callable[[int, int, str, str | None], None] | None = None,
     progress_current: int = 0,
     progress_total: int = 0,
@@ -363,7 +377,7 @@ def _search_and_download(
                 )
                 and (provider.name, candidate.download_id) not in blacklisted
             ]
-            best = pick_best_match(candidates, video_path.stem)
+            best = pick_best_match(candidates, video_path.stem, cutoff=cutoff)
             if best is None:
                 continue
             content = provider.download(best)

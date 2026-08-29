@@ -209,6 +209,34 @@ def test_create_language_profile_forwards_speech_to_text_fallback_when_checked(
     assert captured["speech_to_text_fallback"] is True
 
 
+def test_create_language_profile_forwards_match_score_fields(stub_backend_client):
+    app = create_app()
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/language-profiles/":
+            captured.update(json.loads(request.content))
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(200, json=[])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.post(
+            "/settings/",
+            data={
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+                "movie_match_score": "70",
+                "series_match_score": "20",
+            },
+        )
+
+    assert captured["movie_match_score"] == 70
+    assert captured["series_match_score"] == 20
+
+
 def test_edit_language_profile_form_prefills_release_name_filters(stub_backend_client):
     app = create_app()
 
@@ -238,6 +266,39 @@ def test_edit_language_profile_form_prefills_release_name_filters(stub_backend_c
     assert response.status_code == 200
     assert 'value="PROPER"' in response.text
     assert 'value="CAM"' in response.text
+
+
+def test_edit_language_profile_form_prefills_match_score_fields(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": 3,
+                "name": "anime",
+                "source_languages": "ja",
+                "target_languages": "pt-BR,en",
+                "extract_embedded_subtitles": True,
+                "ocr_embedded_subtitles": True,
+                "forced": False,
+                "hearing_impaired": False,
+                "is_default": False,
+                "movie_match_score": 70,
+                "series_match_score": 20,
+            },
+        )
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/3/edit")
+
+    assert response.status_code == 200
+    assert 'id="movie_match_score"' in response.text
+    assert 'value="70"' in response.text
+    assert 'id="series_match_score"' in response.text
+    assert 'value="20"' in response.text
 
 
 def test_edit_language_profile_form_checks_ocr_embedded_subtitles_when_enabled(stub_backend_client):

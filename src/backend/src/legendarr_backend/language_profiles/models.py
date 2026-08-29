@@ -28,6 +28,12 @@ class LanguageProfile(SQLModel, table=True):
     is_default: bool = Field(default=False)
     release_name_must_contain: str = Field(default="")
     release_name_must_not_contain: str = Field(default="")
+    # Minimum match quality (0-100) a subtitle search candidate must score to be
+    # automatically accepted — see subtitle_acquisition/candidate_evaluation/match_score.py's
+    # DEFAULT_CUTOFF (0.4, i.e. 40 here). Split by media type since the same profile can be
+    # assigned to both movies and series, and how strict the match needs to be can differ.
+    movie_match_score: int = Field(default=40)
+    series_match_score: int = Field(default=40)
 
     @property
     def source_language_list(self) -> list[str]:
