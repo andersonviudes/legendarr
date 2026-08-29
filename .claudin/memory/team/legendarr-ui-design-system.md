@@ -643,3 +643,66 @@ only ones before assuming a plain 2-arg call is safe. Live-verified by creating 
 `LanguageProfile` (ja→pt-BR,en,fr, default) in the dev container's UI, since the seeded dev
 Sonarr/Radarr fixture data ships with **no** language profile configured at all — left that demo
 profile in place afterward (trivially deletable, low-risk on a local dev stack).
+
+**Update (2026-08-27→2026-08-29 — per-file modal added, external pill's dropdown lost then
+restored):** commit `61ee03c` (2026-08-27, "show acquisition detail and file size for every
+subtitle") replaced each external subtitle pill's own dropdown (the one documented in the
+2026-08-24 entries above) with a shared per-file `<dialog>` (`subtitle-file-modal.js`) listing
+every external+embedded subtitle as a Language/Provider/Release/Match/Score/Size table — the
+embedded pill (now a single collapsed count) opens it. The next morning, `f0e0e56` additionally
+stopped the external pill from opening that dialog at all (made it a plain, inert label; a new
+`.subtitle-file-title-trigger` on the row's title/file name became the other way in), and two
+follow-up commits (`35b4c5f`, `a5b290e`) fixed that trigger's own Pico-button-chrome look
+(gold-filled box) and font-size mismatch. Later the same day the user asked for the per-badge
+dropdown back specifically for external/downloaded subtitles (pasted a Bazarr "Tools" menu
+screenshot as a *shape* reference, confirmed via `AskUserQuestion` they wanted the existing
+Sync timing/Translate from this/Blacklist trio in a pill dropdown, not a new subtitle-editing
+feature set) — `4afe5a7` brought it back by reusing the exact same `subtitle-pill-menu.js` +
+`.subtitle-pill-menu`/`data-subtitle-menu-toggle` mechanism the missing-language pill already
+used (zero JS changes needed, it was already generic), via a new `_subtitle_pill_subtitle_actions(subtitle)`
+macro. **Current (as of `4afe5a7`) state, both exist side by side:** the external pill's own
+dropdown for quick single-subtitle actions, and the per-file dialog (title or embedded pill) for
+the full acquisition-detail table — not a straight revert, the modal from `61ee03c` stayed.
+**4th instance of the Pico-shadowing gotcha class** (see `--pico-color`/`.lang-pill`-exclusion
+entries above): the app's own generic "content buttons" rule
+(`button:not(...), [role="button"]:not(.lang-pill):..., styles.css` ~line 1300) resets every
+`[role="button"]` to `font-size: var(--lg-font-xs)`, at higher specificity than a bare
+`.subtitle-file-title-trigger` class rule — needed adding to that `:not()` exclusion list (same
+place `.lang-pill` already is) *and* `font-size: inherit`/`line-height: inherit` locally to also
+beat Pico's own `[role=button]{font-size:1rem}`. **How to apply:** any future element that gains
+`role="button"` for a11y/menu-trigger reasons only (not to opt into Pico's or this app's button
+chrome) needs adding to *both* exclusion points — Pico's shadowed custom properties (per the
+gotcha above) AND this app's own `[role="button"]:not(...)` content-buttons rule — checking only
+one is not enough, as this round found out the hard way via a live-screenshot pixel comparison.
+
+**Update (2026-08-29, same day, PR #80 `feat/subtitle-pill-search-and-cleanup`) — the external
+pill's dropdown grew from 3 to 5 items.** User pasted the same Bazarr Tools-menu screenshot again
+and asked which of those items legendarr's backend already had, cross-referenced by grepping the
+whole backend rather than guessing: only Sync/Translate/Search/Delete mapped to existing
+capabilities (Search and Delete existed but as *file-level* actions — manual-search panel,
+Blacklist), plus one more, Remove Style Tags, whose regex existed
+(`clean_subtitle_text.py`/`_TAG_PATTERN`) but only ran automatically pre-translation, never as a
+standalone action on an already-downloaded subtitle. Everything else on Bazarr's list (Remove HI
+tags, Remove emoji, OCR fixes, Common fixes, Fix uppercase, Reverse RTL, Add color, Change frame
+rate, Adjust times, Two-point fit) had zero backend code — filed as **ROADMAP 0.23.0**, not
+built. The two "we have it" items landed in `_subtitle_pill_subtitle_actions(subtitle,
+media_file_id)` (macro signature grew a `media_file_id` param for this): **Search** reuses the
+*existing* file-level manual-search panel (`_subtitle_search_panel.html`,
+`GET /files/{id}/subtitle-search`) rather than building a second one — the only change was an
+optional `?language=` query param the pill passes (that subtitle's own language) so
+`select_field()` pre-picks it, matched case-insensitively against `SUPPORTED_LANGUAGES` since a
+subtitle's stored casing ("pt-br") isn't guaranteed to match the option value ("pt-BR"). **Remove
+style tags** is new backend surface: `subtitle_discovery/strip_subtitle_style_tags.py` calls the
+same `clean_subtitle_lines()` against an existing `.srt` file's parsed/composed content and
+overwrites it in place (a no-op returning `False`, not an error, for `.ass`/`.ssa`/`.vtt` —
+`subtitle_format.py` only parses SRT), wired through a new **synchronous** `POST
+/subtitles/{id}/remove-style-tags` route (unlike sync-timing/translate, no scheduler job — it's
+a local regex rewrite with nothing to wait on, same posture as the existing synchronous
+blacklist route). New icon vendored: `code.svg` (`</>` glyph, matches Bazarr's own icon for this
+exact action) — sourced from a local `lucide-react@0.577.0` install found under
+`/home/viudes/projects/aargau/aargau-app/node_modules/...` per [[legendarr-lucide-icon-source]],
+unpkg still blocked. **Branch-convention note:** this round's earlier fix commits had
+accumulated on a non-main branch (`chore/ui-fine-tuning`, 6 `fix:` commits, no divergence from
+main otherwise) — fast-forwarded straight into `main` (fix commits don't need a PR per
+`AGENTS.md`) before branching this genuinely-new feature off the now-updated `main`, so the PR
+diff wouldn't include unrelated prior fixes.
