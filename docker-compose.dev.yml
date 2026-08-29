@@ -38,6 +38,9 @@ services:
 
   legendarr:
     build: .
+    environment:
+      - PUID=1000
+      - PGID=1000
     volumes:
       - ./dev/legendarr-config:/config
       - ./dev/media/tv:/media/tv
