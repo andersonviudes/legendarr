@@ -762,13 +762,20 @@ body {
 }
 
 /* Episode title / file name cell, clickable when the file has subtitles to inspect —
-   opens the same .subtitle-file-modal-* dialog as the embedded pill. */
+   opens the same .subtitle-file-modal-* dialog as the embedded pill. Reset Pico's
+   `[role=button]` look (gold fill, padding, bold) down to a plain link — this is text in
+   a table row, not a button. */
 .subtitle-file-title-trigger {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--pico-primary);
+  font-weight: inherit;
   cursor: pointer;
 }
 
 .subtitle-file-title-trigger:hover {
-  color: var(--pico-primary);
+  text-decoration: underline;
 }
 
 .subtitle-pill-menu {
