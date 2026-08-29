@@ -448,6 +448,41 @@ from leftover temp files, and a bad upgrade or a corrupted database isn't a disa
   Shipped scoped to `config.yaml` + the Fernet key only, not the SQLite database — see
   `docs/features/backup-restore.md`.
 
+## 0.23.0 — Subtitle cleanup & editing tools
+
+*Use case: an already-downloaded subtitle has fixable quality issues (HI tags, wrong case,
+reversed RTL text, a frame-rate mismatch) — clean it up in place from the per-subtitle actions
+menu instead of blacklisting and re-searching for a different release.*
+
+Gap analysis against Bazarr's per-subtitle "Tools" menu (2026-08-29): Sync, Translate, Search,
+Delete, and Remove style tags already exist as per-subtitle actions as of this same round
+(Sync timing/Translate from this/Blacklist since 0.7.0–0.12.0; Search and Remove style tags
+newly exposed there, the latter reusing 0.13.0's existing tag-stripping pass). The items below
+are what Bazarr also offers that legendarr doesn't yet.
+
+- [ ] **Subtitle discovery** — Remove HI tags: strip bracketed/parenthetical non-dialogue text
+  and speaker-name prefixes (`[door creaks]`, `(music playing)`, `MAN:`) from an existing
+  subtitle's lines, on demand.
+- [ ] **Subtitle discovery** — Remove emoji from an existing subtitle's lines, on demand.
+- [ ] **Subtitle discovery** — OCR fixes: a post-OCR correction pass (a common
+  character-substitution table, e.g. `l`/`I`/`1` confusion) for PGS/VobSub-derived subtitles,
+  distinct from the raw OCR pass itself (0.14.0).
+- [ ] **Subtitle discovery** — Common fixes: a broader cleanup pass (punctuation/spacing/quote
+  normalization) beyond the existing tag-stripping + whitespace-collapse pass from 0.13.0.
+- [ ] **Subtitle discovery** — Fix uppercase: convert ALL-CAPS lines to sentence case.
+- [ ] **Subtitle discovery** — Reverse RTL: fix visually-reversed right-to-left text (Hebrew,
+  Arabic) in a subtitle's lines.
+- [ ] **Subtitle discovery** — Add color: wrap HI/SDH cues (or a chosen line pattern) in color
+  tags for readability, matching Bazarr's equivalent action.
+- [ ] **Subtitle timing sync** — Change frame rate: convert a subtitle's cue timings between
+  two frame rates (e.g. 23.976→25fps), for a subtitle authored against a different release's
+  frame rate than the local video file.
+- [ ] **Subtitle timing sync** — Adjust times: shift every cue by a fixed manual offset (ms),
+  as a manual alternative to the existing ffsubsync-based automatic sync (0.7.0).
+- [ ] **Subtitle timing sync** — Two-point fit: linear-stretch a subtitle's timings between two
+  user-picked anchor points (a known correct timestamp early and late in the file) — the other
+  manual sync method Bazarr offers alongside a fixed offset.
+
 ## 1.0.0 — Official release
 
 - [ ] Publish the Docker image to a container registry (CI currently only builds it to

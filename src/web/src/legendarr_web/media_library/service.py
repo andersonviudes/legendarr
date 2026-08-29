@@ -125,6 +125,12 @@ async def blacklist_subtitle(client: httpx.AsyncClient, subtitle_id: int) -> dic
     return response.json()
 
 
+async def remove_subtitle_style_tags(client: httpx.AsyncClient, subtitle_id: int) -> dict:
+    response = await client.post(f"/media/subtitles/{subtitle_id}/remove-style-tags")
+    response.raise_for_status()
+    return response.json()
+
+
 async def search_subtitle_candidates(
     client: httpx.AsyncClient, media_file_id: int, language: str
 ) -> list[dict]:

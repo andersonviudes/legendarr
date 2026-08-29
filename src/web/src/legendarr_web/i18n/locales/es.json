@@ -19,6 +19,7 @@
   "common.sync_timing": "Sincronizar tiempo",
   "common.translate_now": "Traducir ahora",
   "common.translate_from_this": "Traducir desde este",
+  "common.remove_style_tags": "Quitar etiquetas de estilo",
   "common.manual_search": "Búsqueda manual",
   "common.blacklist": "Lista negra",
   "common.noun.service": "servicio",

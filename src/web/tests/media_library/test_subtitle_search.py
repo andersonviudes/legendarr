@@ -51,6 +51,31 @@ def test_subtitle_search_panel_renders_language_select(stub_backend_client):
     assert "/media/files/5/subtitle-search/results" in response.text
 
 
+def test_subtitle_search_panel_preselects_the_given_language(stub_backend_client):
+    """A subtitle pill's own "Search" action passes its language, matched
+    case-insensitively against SUPPORTED_LANGUAGES since the pill's own casing (e.g.
+    "pt-br") isn't guaranteed to match the option's ("pt-BR")."""
+    app = create_app()
+    stub_backend_client(app)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search", params={"language": "pt-br"})
+
+    assert response.status_code == 200
+    assert '<option value="pt-BR" selected>' in response.text
+
+
+def test_subtitle_search_panel_ignores_an_unrecognized_language(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search", params={"language": "xx-not-real"})
+
+    assert response.status_code == 200
+    assert "selected" not in response.text
+
+
 def test_subtitle_search_results_renders_candidates(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_candidates_handler)
