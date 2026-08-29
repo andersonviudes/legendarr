@@ -92,6 +92,7 @@
   "a11y.webhook_url": "URL do webhook",
   "a11y.copy_webhook_url": "Copiar URL do webhook",
   "a11y.upload_subtitle": "Enviar legenda",
+  "a11y.manual_search": "Busca manual",
   "a11y.download_subtitle": "Baixar esta legenda",
   "a11y.close": "Fechar",
   "a11y.toggle_navigation": "Alternar navegação",

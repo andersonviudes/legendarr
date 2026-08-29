@@ -70,6 +70,14 @@ def test_movie_detail_page_renders_files_and_subtitles(stub_backend_client):
     assert "/media/subtitles/9/blacklist" in pill_li
     assert 'class="subtitle-file-title-trigger"' in response.text
     assert 'data-subtitle-file-modal-open="subtitle-file-modal-5"' in response.text
+    # The Actions column's own "Search" button opens the same manual-search panel as
+    # the pill's "Search" action, but with no language pre-selected — it's file-level,
+    # not tied to one already-downloaded subtitle.
+    actions_start = response.text.index('class="file-row-actions"')
+    actions_end = response.text.index("</div>", actions_start)
+    actions_html = response.text[actions_start:actions_end]
+    assert 'hx-get="/media/files/5/subtitle-search"' in actions_html
+    assert "/media/files/5/subtitle-upload" in actions_html
 
 
 def _movie_detail_with_embedded_subtitle_handler(request: httpx.Request) -> httpx.Response:

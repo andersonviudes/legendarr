@@ -87,6 +87,16 @@
             <button
               type="button"
               class="app-icon-btn"
+              aria-label="{{ t('a11y.manual_search') }}"
+              data-tooltip="{{ t('a11y.manual_search') }}"
+              data-subtitle-acquire-open
+              hx-get="/media/files/{{ episode.media_file.id }}/subtitle-search"
+              hx-target="#subtitle-acquire-content"
+              hx-swap="innerHTML"
+            >{{ icon("search") }}</button>
+            <button
+              type="button"
+              class="app-icon-btn"
               aria-label="{{ t('a11y.upload_subtitle') }}"
               data-tooltip="{{ t('a11y.upload_subtitle') }}"
               data-subtitle-acquire-open

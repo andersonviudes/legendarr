@@ -92,6 +92,7 @@
   "a11y.webhook_url": "Webhook URL",
   "a11y.copy_webhook_url": "Copy webhook URL",
   "a11y.upload_subtitle": "Upload subtitle",
+  "a11y.manual_search": "Manual search",
   "a11y.download_subtitle": "Download this subtitle",
   "a11y.close": "Close",
   "a11y.toggle_navigation": "Toggle navigation",

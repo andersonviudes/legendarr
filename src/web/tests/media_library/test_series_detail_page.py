@@ -89,6 +89,14 @@ def test_series_detail_page_renders_episodes_grouped_by_season(stub_backend_clie
     assert "/media/subtitles/12/translate" in pill_li
     assert "/media/subtitles/12/remove-style-tags" in pill_li
     assert "/media/files/5/subtitle-search?language=pt-BR" in pill_li
+    # The Actions column's own "Search" button opens the same manual-search panel as
+    # the pill's "Search" action, but with no language pre-selected — it's file-level,
+    # not tied to one already-downloaded subtitle.
+    actions_start = response.text.index('class="file-row-actions"')
+    actions_end = response.text.index("</div>", actions_start)
+    actions_html = response.text[actions_start:actions_end]
+    assert 'hx-get="/media/files/5/subtitle-search"' in actions_html
+    assert "/media/files/5/subtitle-upload" in actions_html
 
 
 def _series_detail_with_missing_language_handler(request: httpx.Request) -> httpx.Response:
