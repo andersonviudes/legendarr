@@ -30,14 +30,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-deu \
     tesseract-ocr-ita \
     tesseract-ocr-jpn \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /app /app
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENV PATH="/app/.venv/bin:$PATH" \
-    LEGENDARR_DATA_DIR=/config
+    LEGENDARR_DATA_DIR=/config \
+    PUID=1000 \
+    PGID=1000
 
 VOLUME ["/config", "/media"]
 EXPOSE 8000
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "-m", "legendarr_bootstrap"]
