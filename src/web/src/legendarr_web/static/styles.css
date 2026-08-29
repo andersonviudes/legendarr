@@ -339,7 +339,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   margin: 0.15rem 0 0.1rem;
-  padding: 0.35rem 0.9rem;
+  padding: 0.35rem 0.75rem;
   font-size: var(--lg-font-sm);
   font-weight: 600;
   color: var(--pico-muted-color);
