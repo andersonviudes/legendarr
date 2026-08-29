@@ -3,6 +3,14 @@ text-similarity cutoff, extended by 0.12.0 into per-attribute weighting: `score_
 combines a title-only similarity ratio (release name with resolution/source/codec/
 release-group/edition tokens stripped out) with a weighted bonus for each of those
 attributes the candidate shares with the reference filename.
+
+Also folds in two Bazarr-inspired signals: a verified content-hash match
+(`candidate.hash_matched`) short-circuits straight to the max score, and
+hearing-impaired status is a further weighted attribute compared against the caller's
+profile preference rather than the reference filename — there's no "expected HI" value
+to extract from a filename the way there is for resolution/source/codec. Season/episode
+identity deliberately isn't here at all — see `episode_identity.py`'s module docstring
+for why that's a hard gate instead of a weight.
 """
 
 from dataclasses import dataclass
@@ -32,6 +40,14 @@ ATTRIBUTE_WEIGHTS = {
     "edition": 10,
 }
 
+# Same tier as the five attributes above, and still preserves the invariant in the
+# comment above: worst case (all six matched, zero title similarity) becomes
+# 60/160 = 0.375, still under DEFAULT_CUTOFF. Kept out of ATTRIBUTE_WEIGHTS since its
+# "reference value" is the caller-supplied `LanguageProfile.hearing_impaired`
+# preference, not something `extract_release_attributes` finds in the reference
+# filename — the generic `getattr(reference_attributes, field)` loop below doesn't fit it.
+HEARING_IMPAIRED_WEIGHT = 10
+
 
 @dataclass(frozen=True)
 class CandidateEvaluation:
@@ -40,17 +56,26 @@ class CandidateEvaluation:
     reference filename had a detectable value for (same exclusion `score_candidate`
     itself applies), `True`/`False` for whether the candidate matched it; a key that's
     missing means "nothing to compare", not "didn't match".
+
+    `hash_matched` mirrors `SubtitleSearchResult.hash_matched`. `hearing_impaired_matched`
+    is `None` when either side (the candidate's own HI signal, or the caller's profile
+    preference) is unknown, `True`/`False` otherwise — same "nothing to compare" shape as
+    an `attribute_matches` entry, just tracked separately since its reference value isn't
+    filename-derived.
     """
 
     score: float
     title_similarity: float
     attribute_matches: dict[str, bool]
+    hash_matched: bool = False
+    hearing_impaired_matched: bool | None = None
 
 
 def pick_best_match(
     candidates: list[SubtitleSearchResult],
     reference_filename: str,
     cutoff: float = DEFAULT_CUTOFF,
+    hearing_impaired_preference: bool | None = None,
 ) -> SubtitleSearchResult | None:
     """The candidate with the highest `score_candidate` weighted score against
     `reference_filename` (typically the local video's own filename or stem — callers
@@ -62,14 +87,18 @@ def pick_best_match(
     best_candidate = None
     best_score = cutoff
     for candidate in candidates:
-        score = score_candidate(candidate, reference_filename)
+        score = score_candidate(candidate, reference_filename, hearing_impaired_preference)
         if score >= best_score:
             best_candidate = candidate
             best_score = score
     return best_candidate
 
 
-def score_candidate(candidate: SubtitleSearchResult, reference_filename: str) -> float:
+def score_candidate(
+    candidate: SubtitleSearchResult,
+    reference_filename: str,
+    hearing_impaired_preference: bool | None = None,
+) -> float:
     """The same weighted score `pick_best_match` ranks candidates by, exposed
     standalone so a caller that wants every candidate's score (not just the best one
     above cutoff) — manual search's results list — doesn't reimplement it.
@@ -80,16 +109,23 @@ def score_candidate(candidate: SubtitleSearchResult, reference_filename: str) ->
     actually has a detectable value for — nothing to compare an undetectable attribute
     against, so it's excluded from both the raw score and the normalizing total.
     """
-    return evaluate_candidate(candidate, reference_filename).score
+    return evaluate_candidate(candidate, reference_filename, hearing_impaired_preference).score
 
 
 def evaluate_candidate(
-    candidate: SubtitleSearchResult, reference_filename: str
+    candidate: SubtitleSearchResult,
+    reference_filename: str,
+    hearing_impaired_preference: bool | None = None,
 ) -> CandidateEvaluation:
     """`score_candidate`'s full breakdown: the weighted score plus the title
     similarity and per-attribute match results it was computed from — what
     `manage_acquired_subtitle.record_acquired_subtitle` persists as an
     `AcquisitionAttempt` for the winning candidate.
+
+    A `candidate.hash_matched` result short-circuits `score` straight to `1.0`
+    (the breakdown below is still computed for audit-trail transparency, just not what
+    the score is based on) — a verified content-hash match is a stronger identity
+    signal than any text comparison, mirroring Bazarr's own "hash overrides everything".
     """
     reference_attributes = extract_release_attributes(reference_filename)
     candidate_attributes = extract_release_attributes(candidate.release_name)
@@ -111,8 +147,18 @@ def evaluate_candidate(
         attribute_matches[field] = matched
         if matched:
             raw_score += weight
+
+    hearing_impaired_matched: bool | None = None
+    if hearing_impaired_preference is not None and candidate.hearing_impaired is not None:
+        max_score += HEARING_IMPAIRED_WEIGHT
+        hearing_impaired_matched = candidate.hearing_impaired == hearing_impaired_preference
+        if hearing_impaired_matched:
+            raw_score += HEARING_IMPAIRED_WEIGHT
+
     return CandidateEvaluation(
-        score=raw_score / max_score,
+        score=1.0 if candidate.hash_matched else raw_score / max_score,
         title_similarity=title_similarity,
         attribute_matches=attribute_matches,
+        hash_matched=candidate.hash_matched,
+        hearing_impaired_matched=hearing_impaired_matched,
     )

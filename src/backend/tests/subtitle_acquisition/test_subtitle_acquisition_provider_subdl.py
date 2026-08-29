@@ -103,7 +103,56 @@ def test_subdl_search_sends_the_expected_query_and_parses_results(monkeypatch):
         download_id="/subtitle/12345.zip",
         language="EN",
         page_link="https://subdl.com/subtitles/movie-name-english",
+        hearing_impaired=False,
     )
+
+
+def test_subdl_search_reads_the_hi_field(monkeypatch):
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        lambda self, path: {
+            "status": True,
+            "subtitles": [
+                {
+                    "releases": ["Movie.Name.2024.WEB-DL"],
+                    "url": "/subtitle/1.zip",
+                    "language": "EN",
+                    "hi": True,
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = SubdlProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
+
+
+def test_subdl_search_falls_back_to_the_comment_tag_heuristic(monkeypatch):
+    monkeypatch.setattr(
+        ProviderHttpClient,
+        "get_json",
+        lambda self, path: {
+            "status": True,
+            "subtitles": [
+                {
+                    "releases": ["Movie.Name.2024.WEB-DL"],
+                    "url": "/subtitle/1.zip",
+                    "language": "EN",
+                    "comment": "includes SDH captions",
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    provider = SubdlProvider(_config())
+    results = provider.search("Movie Name", "en", imdb_id="tt1234567")
+
+    assert results[0].hearing_impaired is True
 
 
 def test_subdl_download_extracts_srt_from_zip_archive(monkeypatch):

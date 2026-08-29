@@ -137,7 +137,13 @@ class AcquisitionAttempt(SQLModel, table=True):
     `*_matched` is `None` when the reference filename had no detectable value for that
     attribute (nothing to compare, excluded from `score`/`title_similarity` the same
     way `match_score.evaluate_candidate` excludes it), `True`/`False` otherwise —
-    mirrors `match_score.ATTRIBUTE_WEIGHTS`'s five attributes.
+    mirrors `match_score.ATTRIBUTE_WEIGHTS`'s five attributes. `hash_matched` mirrors
+    `SubtitleSearchResult.hash_matched` instead (never `None`: a provider that doesn't
+    support it is simply `False`, same as the field it's read from).
+    `hearing_impaired_matched` is `None` when either the candidate's own HI signal or the
+    profile's `hearing_impaired` preference was unknown — same shape as the other
+    `*_matched` fields, just not one of `ATTRIBUTE_WEIGHTS`'s five (see
+    `match_score.HEARING_IMPAIRED_WEIGHT`'s comment for why).
 
     `replaced_attempt_id` points at the previous attempt for the same `subtitle_id`
     (`None` on a subtitle's first-ever acquisition) — the link from an upgraded
@@ -156,6 +162,8 @@ class AcquisitionAttempt(SQLModel, table=True):
     codec_matched: bool | None = Field(default=None)
     release_group_matched: bool | None = Field(default=None)
     edition_matched: bool | None = Field(default=None)
+    hash_matched: bool = Field(default=False)
+    hearing_impaired_matched: bool | None = Field(default=None)
     replaced_attempt_id: int | None = Field(
         default=None, foreign_key="acquisitionattempt.id", ondelete="SET NULL"
     )

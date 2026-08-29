@@ -177,7 +177,6 @@
   "media_library.embedded_subtitles_other": "{count} embedded subtitles",
   "media_library.subtitle_table_provider": "Provider",
   "media_library.subtitle_table_release": "Release",
-  "media_library.subtitle_table_match": "Match",
   "media_library.subtitle_table_score": "Score",
   "media_library.subtitle_table_size": "Size",
   "media_library.match_resolution": "Resolution",

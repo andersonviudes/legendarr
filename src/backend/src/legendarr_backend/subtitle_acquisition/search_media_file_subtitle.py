@@ -4,6 +4,9 @@ from pathlib import Path
 
 from sqlmodel import Session
 
+from legendarr_backend.language_profiles.resolve_effective_profile import (
+    resolve_media_file_profile,
+)
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.circuit_breaker import (
     BreakerCategory,
@@ -13,6 +16,9 @@ from legendarr_backend.scheduling.circuit_breaker import (
 )
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
+)
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.episode_identity import (
+    passes_episode_identity,
 )
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     score_candidate,
@@ -52,6 +58,8 @@ def search_media_file_subtitle_candidates(
     """
     assert media_file.id is not None
     context = resolve_subtitle_search_context(session, media_file, video_path)
+    profile = resolve_media_file_profile(session, media_file)
+    hearing_impaired_preference = profile.hearing_impaired if profile is not None else None
     chain = resolve_subtitle_provider_chain(session)
     blacklisted = list_blacklisted_download_ids(session, media_file.id, language)
     candidates: list[SubtitleCandidate] = []
@@ -93,10 +101,11 @@ def search_media_file_subtitle_candidates(
                     download_id=result.download_id,
                     language=result.language,
                     page_link=result.page_link,
-                    score=score_candidate(result, video_path.stem),
+                    score=score_candidate(result, video_path.stem, hearing_impaired_preference),
                 )
                 for result in results
                 if (provider.name, result.download_id) not in blacklisted
+                and passes_episode_identity(result, context.season_number, context.episode_number)
             )
     finally:
         # Same close-what-needs-closing shape as `acquire_subtitle_for_media_file` —

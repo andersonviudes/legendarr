@@ -3,6 +3,11 @@ release group, edition) — ROADMAP 0.12.0's per-attribute score weighting. A sm
 vocabulary is enough for the five attributes `match_score.py` weights, so this stays a
 hand-rolled parser rather than pulling in a heavier third-party lib (guessit/subliminal)
 for a narrow need — the same call `napiprojekt_hash.py`/`opensubtitles_hash.py` made.
+
+Also extracts season/episode (`S01E02`-style), added for `episode_identity.py`'s gate —
+unlike the five weighted attributes above, a season/episode mismatch is rejected outright
+rather than scored lower, so these two fields are deliberately absent from
+`match_score.ATTRIBUTE_WEIGHTS`.
 """
 
 import re
@@ -16,6 +21,9 @@ class ReleaseAttributes:
     """Attributes detected in one release name/filename, `None` for whichever weren't
     found — `match_score.py`'s weighted scoring only compares an attribute when the
     reference (the local video's filename) has a value for it.
+
+    `season`/`episode` follow the same "`None` means not detected" shape but aren't part
+    of that weighted scoring — see `episode_identity.py`.
     """
 
     resolution: str | None = None
@@ -23,6 +31,8 @@ class ReleaseAttributes:
     codec: str | None = None
     release_group: str | None = None
     edition: str | None = None
+    season: int | None = None
+    episode: int | None = None
 
 
 _RESOLUTION_ALIASES = {"4k": "2160p"}
@@ -41,6 +51,10 @@ _VOCABULARY_PATTERNS = {
         re.IGNORECASE,
     ),
 }
+
+# Two capture groups (season, episode), so it can't share `_VOCABULARY_PATTERNS`'s
+# single-group shape — kept separate rather than forcing that dict to handle both.
+_EPISODE_PATTERN = re.compile(r"\bs(\d{1,2})e(\d{1,2})\b", re.IGNORECASE)
 
 # The release group isn't a vocabulary word — it's whatever trails the *last* matched
 # vocabulary token, once that trailing text starts with a dash. Anchoring on the last
@@ -67,12 +81,15 @@ def extract_release_attributes(value: str) -> ReleaseAttributes:
     resolution = matches.get("resolution")
     if resolution is not None:
         resolution = _RESOLUTION_ALIASES.get(resolution, resolution)
+    season, episode = _find_episode(value)
     return ReleaseAttributes(
         resolution=resolution,
         source=matches.get("source"),
         codec=matches.get("codec"),
         release_group=group,
         edition=matches.get("edition"),
+        season=season,
+        episode=episode,
     )
 
 
@@ -109,6 +126,17 @@ def _find_vocabulary_matches(value: str) -> tuple[dict[str, str], list[tuple[int
         matches[field] = found.group(1).lower()
         spans.append(found.span())
     return matches, spans
+
+
+def _find_episode(value: str) -> tuple[int | None, int | None]:
+    """The last `S01E02`-style season/episode pair found in `value`, `(None, None)` if
+    none — "last match wins" mirrors `_find_vocabulary_matches`'s own tie-breaking."""
+    found = None
+    for match in _EPISODE_PATTERN.finditer(value):
+        found = match
+    if found is None:
+        return None, None
+    return int(found.group(1)), int(found.group(2))
 
 
 def _find_release_group(

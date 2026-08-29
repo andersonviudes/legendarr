@@ -17,6 +17,9 @@ from legendarr_backend.scheduling.circuit_breaker import (
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
+from legendarr_backend.subtitle_acquisition.candidate_evaluation.episode_identity import (
+    passes_episode_identity,
+)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     CandidateEvaluation,
     evaluate_candidate,
@@ -136,7 +139,13 @@ def upgrade_subtitle_for_media_file(
                     continue
                 if (provider.name, candidate.download_id) in blacklisted:
                     continue
-                evaluation = evaluate_candidate(candidate, video_path.stem)
+                if not passes_episode_identity(
+                    candidate, context.season_number, context.episode_number
+                ):
+                    continue
+                evaluation = evaluate_candidate(
+                    candidate, video_path.stem, hearing_impaired_preference=profile.hearing_impaired
+                )
                 if evaluation.score > best_score:
                     best, best_provider, best_score = candidate, provider, evaluation.score
                     best_evaluation = evaluation

@@ -114,6 +114,8 @@ class OpenSubtitlesProvider:
                 release_name=attributes.get("release") or title,
                 download_id=str(file["file_id"]),
                 language=attributes.get("language", language),
+                hash_matched=bool(attributes.get("moviehash_match", False)),
+                hearing_impaired=bool(attributes.get("hearing_impaired", False)),
             )
             for entry in response.get("data", [])
             for attributes in [entry["attributes"]]

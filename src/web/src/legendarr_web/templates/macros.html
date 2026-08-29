@@ -307,7 +307,6 @@
       <span role="columnheader">{{ t('common.language') }}</span>
       <span role="columnheader">{{ t('media_library.subtitle_table_provider') }}</span>
       <span role="columnheader">{{ t('media_library.subtitle_table_release') }}</span>
-      <span role="columnheader">{{ t('media_library.subtitle_table_match') }}</span>
       <span role="columnheader">{{ t('media_library.subtitle_table_score') }}</span>
       <span role="columnheader">{{ t('media_library.subtitle_table_size') }}</span>
       <span role="columnheader">{{ t('common.table.actions') }}</span>
@@ -320,26 +319,26 @@
       ("G", "media_library.match_release_group", subtitle.release_group_matched),
       ("E", "media_library.match_edition", subtitle.edition_matched),
     ] %}
+    {% set score = subtitle.score | default(none) %}
+    {% set pct = (score * 100) | round | int if score is not none else none %}
+    {% set match_breakdown = [] %}
+    {% for letter, label_key, matched in match_attributes %}
+    {% set _ = match_breakdown.append(t(label_key) ~ ": " ~ (t('common.matched') if matched else (t('common.not_matched') if matched is not none else t('common.not_compared')))) %}
+    {% endfor %}
     <li class="subtitle-file-modal-row" role="row">
       <span role="cell"><span class="lang-pill lang-pill--{{ subtitle.origin }}">{{ subtitle.language }}</span></span>
       <span role="cell" class="subtitle-file-modal-cell-truncate"{% if subtitle.provider %} data-tooltip="{{ subtitle.provider }}"{% endif %}>{{ subtitle.provider or "—" }}</span>
       <span role="cell" class="subtitle-file-modal-cell-truncate"{% if subtitle.release_name %} data-tooltip="{{ subtitle.release_name }}"{% endif %}>{{ subtitle.release_name or "—" }}</span>
       <span role="cell">
-        {% if subtitle.provider %}
-        <span class="subtitle-file-modal-match">
-          {% for letter, label_key, matched in match_attributes %}
-          <span
-            class="subtitle-match-badge {{ 'subtitle-match-badge--yes' if matched else ('subtitle-match-badge--no' if matched is not none else 'subtitle-match-badge--na') }}"
-            data-tooltip="{{ t(label_key) }}: {{ t('common.matched') if matched else (t('common.not_matched') if matched is not none else t('common.not_compared')) }}"
-          >{{ letter }}</span>
-          {% endfor %}
+        {% if subtitle.provider and pct is not none %}
+        <span class="subtitle-match-bar" data-tooltip="{{ match_breakdown | join(' · ') }}">
+          <span class="subtitle-match-bar-fill" style="width: {{ pct }}%"></span>
+          <span class="subtitle-match-bar-label">{{ pct }}%</span>
         </span>
         {% else %}
         —
         {% endif %}
       </span>
-      {% set score = subtitle.score | default(none) %}
-      <span role="cell">{% if score is not none %}{{ (score * 100) | round | int }}%{% else %}—{% endif %}</span>
       <span role="cell">{{ subtitle.size_bytes | default(0) | filesizeformat }}</span>
       <span role="cell" class="subtitle-file-modal-row-actions">
         {% if subtitle.origin == "external" %}

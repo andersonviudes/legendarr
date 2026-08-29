@@ -205,9 +205,11 @@ def test_series_detail_page_renders_provider_release_match_score_and_size(stub_b
     assert "Bar.S01E01.1080p.WEB-DL-GROUP" in response.text
     assert "87%" in response.text
     assert "2.0 kB" in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--yes"' in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--no"' in response.text
-    assert 'class="subtitle-match-badge subtitle-match-badge--na"' in response.text
+    assert 'class="subtitle-match-bar"' in response.text
+    assert '<span class="subtitle-match-bar-label">87%</span>' in response.text
+    assert "Resolution: Matched" in response.text
+    assert "Source: Not matched" in response.text
+    assert "Codec: Not compared" in response.text
 
 
 def test_series_detail_page_shows_unavailable_message_when_sonarr_unreachable(

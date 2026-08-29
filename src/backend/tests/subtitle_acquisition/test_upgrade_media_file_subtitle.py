@@ -1,16 +1,18 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from legendarr_backend.arr_clients.base import EpisodeItem
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
-from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.scheduling.circuit_breaker import (
     FAILURE_THRESHOLD,
     BreakerCategory,
     is_open,
     record_failure,
 )
+from legendarr_backend.subtitle_acquisition import search_context as search_context_module
 from legendarr_backend.subtitle_acquisition import (
     upgrade_media_file_subtitle as upgrade_media_file_subtitle_module,
 )
@@ -92,6 +94,44 @@ def _movie(session, tmp_path: Path, **overrides) -> Movie:
 def _media_file(session, movie: Movie) -> MediaFile:
     media_file = MediaFile(
         movie_id=movie.id,
+        relative_path="Foo/Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    session.add(media_file)
+    session.commit()
+    return media_file
+
+
+def _series(session, tmp_path: Path, **overrides) -> Series:
+    service = create_arr_service(
+        session,
+        ArrServiceInput(
+            name="sonarr",
+            service_type="sonarr",
+            host="sonarr",
+            port=8989,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    data = {
+        "arr_service_id": service.id,
+        "arr_id": 1,
+        "title": "Foo",
+        "remote_path": "/remote/Foo",
+    }
+    data.update(overrides)
+    series = Series(**data)
+    session.add(series)
+    session.commit()
+    return series
+
+
+def _series_media_file(session, series: Series) -> MediaFile:
+    media_file = MediaFile(
+        series_id=series.id,
         relative_path="Foo/Foo.mkv",
         size_bytes=1,
         scanned_at=datetime.now(UTC),
@@ -348,5 +388,37 @@ def test_upgrade_excludes_a_blacklisted_candidate(in_memory_session, tmp_path, m
 
     result = upgrade_subtitle_for_media_file(in_memory_session, media_file, video)
 
+    assert result.skipped_reason == "no_upgrade_found"
+    assert provider.download_calls == []
+
+
+def test_upgrade_excludes_a_wrong_episode_candidate_before_scoring(
+    in_memory_session, tmp_path, monkeypatch
+):
+    series = _series(in_memory_session, tmp_path)
+    media_file = _series_media_file(in_memory_session, series)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    _acquired_subtitle(in_memory_session, media_file, score=0.1)
+    provider = _FakeProvider(
+        results=[
+            SubtitleSearchResult(
+                release_name="Foo.S01E03.WEB-DL", download_id="wrong", language="en"
+            )
+        ]
+    )
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        search_context_module,
+        "resolve_media_file_episode",
+        lambda session, media_file: EpisodeItem(
+            season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
+        ),
+    )
+
+    result = upgrade_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    # The candidate names episode 3 — the resolved episode is 2 — so it never reaches
+    # `evaluate_candidate` even though it would otherwise easily beat the 0.1 baseline.
     assert result.skipped_reason == "no_upgrade_found"
     assert provider.download_calls == []

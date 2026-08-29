@@ -281,12 +281,36 @@ def _parse_movie_subtitle_row(
     if not isinstance(href, str):
         return None
 
+    row3 = rows[6] if len(rows) > 6 else None
+    hearing_impaired = _parse_hearing_impaired_icon(row3) if isinstance(row3, Tag) else None
+
     return SubtitleSearchResult(
         release_name=release_name,
         download_id=href.removeprefix("/"),
         language=language_name,
         page_link=page_link,
+        hearing_impaired=hearing_impaired,
     )
+
+
+def _parse_hearing_impaired_icon(row: Tag) -> bool | None:
+    """Addic7ed's movie-page HI marker: an `<img>` two levels into the row's third cell
+    whose `src` ends `hi.jpg` — the same positional read Bazarr's own `query_movie`
+    trusts (`row3.contents[1].contents[1]`,
+    `/home/viudes/projects/bazarr/custom_libs/subliminal_patch/providers/
+    addic7ed.py:548`), the confirmed-working reference for this undocumented markup
+    `_scrape_movie_subtitles`'s docstring already cites. `None` (not `False`) when the
+    expected structure isn't there — same "unknown" tolerance as everywhere else, since
+    the row's own layout could shift.
+    """
+    contents = row.contents
+    if len(contents) <= 1 or not isinstance(contents[1], Tag):
+        return None
+    inner = contents[1].contents
+    if len(inner) <= 1 or not isinstance(inner[1], Tag):
+        return None
+    src = inner[1].get("src")
+    return src.endswith("hi.jpg") if isinstance(src, str) else None
 
 
 def _normalize_title(title: str) -> str:

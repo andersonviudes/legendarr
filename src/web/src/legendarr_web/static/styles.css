@@ -1872,7 +1872,7 @@ button.outline.contrast:is(:hover, :focus) {
 
 /* === Per-file subtitles <dialog> (movie/series detail pages) === */
 /* Wider than the base .subtitle-acquire-modal (search/upload) — this one lays its rows
-   out as a Language/Provider/Release/Match/Score/Size/Actions table
+   out as a Language/Provider/Release/Score/Size/Actions table
    (.subtitle-file-modal-row's grid-template-columns below), which needs real room for
    a release name to be legible before it gets ellipsis-truncated. */
 .subtitle-file-modal {
@@ -1890,14 +1890,14 @@ button.outline.contrast:is(:hover, :focus) {
   border-radius: 0.5rem;
 }
 
-/* Language | Provider | Release | Match | Score | Size | Actions — shared by the header
+/* Language | Provider | Release | Score | Size | Actions — shared by the header
    row and every data row so their columns line up. Release is the only flexible column;
    everything else is sized to its content (a lang pill, "opensubtitles", a 2-3-icon
    action cluster — Sync timing/Blacklist only show for external subtitles, see
    subtitle_pill_list() in macros.html). */
 .subtitle-file-modal-row {
   display: grid;
-  grid-template-columns: 4.25rem 9rem 1fr 7.5rem 3.25rem 4.5rem 7.5rem;
+  grid-template-columns: 4.25rem 9rem 1fr 7.5rem 4.5rem 7.5rem;
   align-items: center;
   column-gap: 0.6rem;
   padding: 0.4rem 0.75rem;
@@ -1925,40 +1925,40 @@ button.outline.contrast:is(:hover, :focus) {
   text-overflow: ellipsis;
 }
 
-.subtitle-file-modal-match {
-  display: flex;
-  gap: 0.15rem;
-}
-
-/* One letter per matched release attribute (Resolution/Source/Codec/release Group/
-   Edition) — a compact stand-in for a 5-icon row since none of the vendored Lucide
-   icons fit that meaning and hand-drawing five new ones isn't worth it here. Color
-   alone (not the letter) carries matched/unmatched; --na is the "nothing to compare"
-   case (see `AcquisitionAttempt`'s docstring), styled halfway between so it doesn't
-   read as a hard miss. */
-.subtitle-match-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.1rem;
+/* Overall match score as a filled bar with the percentage centered inside, replacing
+   the old per-attribute letter-badge row — the R/S/C/G/E breakdown moves into this
+   element's own `data-tooltip` instead (built in macros.html's `match_breakdown`) so
+   none of that detail is lost, just no longer five separate cells. */
+.subtitle-match-bar {
+  position: relative;
+  display: inline-block;
+  width: 4.5rem;
   height: 1.1rem;
   border-radius: 0.25rem;
+  overflow: hidden;
   background-color: var(--lg-neutral-dim-background-color);
-  font-size: 0.65rem;
-  font-weight: 600;
   cursor: default;
 }
 
-.subtitle-match-badge--yes {
-  color: var(--pico-ins-color);
+.subtitle-match-bar-fill {
+  position: absolute;
+  inset: 0;
+  background-color: var(--pico-primary);
 }
 
-.subtitle-match-badge--no {
-  color: var(--pico-del-color);
-}
-
-.subtitle-match-badge--na {
-  color: var(--pico-muted-color);
+/* Light text, not `--pico-primary-inverse` — the fill only covers `pct`% of the bar's
+   width (a low score leaves most of it as the dark track behind the centered label), so
+   the label needs a color that reads on both the fill and the track, not just the fill. */
+.subtitle-match-bar-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--pico-color);
 }
 
 .subtitle-file-modal-row-actions {
