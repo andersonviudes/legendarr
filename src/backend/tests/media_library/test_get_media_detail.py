@@ -160,6 +160,70 @@ def test_get_movie_detail_missing_count_is_zero_without_a_language_profile(in_me
     assert detail.missing_subtitles_count == 0
 
 
+def test_get_movie_detail_scores_an_embedded_subtitle_against_profile_preference(
+    in_memory_session,
+):
+    """`SubtitleRead.score` for an embedded row comes from `score_embedded_subtitle`
+    against the movie's effective profile, the embedded-track counterpart to how an
+    externally-acquired row's score comes from its `AcquiredSubtitle`."""
+    arr_service = _seed_arr_service(in_memory_session, "radarr")
+    assert arr_service.id is not None
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default",
+            source_languages="en",
+            target_languages="en",
+            hearing_impaired=True,
+            is_default=True,
+        )
+    )
+    movie = Movie(arr_service_id=arr_service.id, arr_id=1, title="Foo", remote_path="/p")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    in_memory_session.refresh(movie)
+    assert movie.id is not None
+    media_file = MediaFile(
+        movie_id=movie.id, relative_path="Foo.mkv", size_bytes=100, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    in_memory_session.refresh(media_file)
+    assert media_file.id is not None
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EMBEDDED,
+            relative_path="Foo.embedded.3.eng.srt",
+            track_index=3,
+            hearing_impaired=True,
+            content_hash="test-hash-3",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="ja",
+            origin=SubtitleOrigin.EMBEDDED,
+            relative_path="Foo.embedded.4.jpn.srt",
+            track_index=4,
+            hearing_impaired=False,
+            content_hash="test-hash-4",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    detail = get_movie_detail(in_memory_session, movie.id)
+
+    assert detail is not None
+    scores_by_language = {
+        subtitle.language: subtitle.score for subtitle in detail.files[0].subtitles
+    }
+    assert scores_by_language == {"en": 1.0, "ja": 0.5}
+
+
 def test_get_series_detail_returns_none_when_missing(in_memory_session):
     assert get_series_detail(in_memory_session, 1) is None
 

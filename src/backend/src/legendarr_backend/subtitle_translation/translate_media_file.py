@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -22,6 +23,7 @@ from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist 
     is_translation_blacklisted,
 )
 from legendarr_backend.subtitle_discovery.clean_subtitle_text import clean_subtitle_lines
+from legendarr_backend.subtitle_discovery.embedded_track_score import pick_best_embedded_subtitle
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
@@ -121,19 +123,22 @@ def translate_media_file(
     # Keyed by the already-normalized language `scan_video_subtitles` persists for an
     # embedded row (`language_codes.normalize_language_code`, e.g. ffprobe's "por" ->
     # "pt") — region-blind, same as the target-satisfaction check below, since ffprobe has
-    # no way to tell e.g. Brazilian from European Portuguese. Same oldest-first ordering as
-    # `external_subtitles`.
-    embedded_subtitles = {
-        subtitle.language: subtitle
-        for subtitle in session.exec(
-            select(Subtitle)
-            .where(
-                Subtitle.media_file_id == media_file.id,
-                Subtitle.origin == SubtitleOrigin.EMBEDDED,
-            )
-            .order_by(col(Subtitle.scanned_at))
+    # no way to tell e.g. Brazilian from European Portuguese. A language with more than one
+    # embedded row (several tracks in the same language) is resolved by
+    # `pick_best_embedded_subtitle` instead of an arbitrary row-fetch order.
+    embedded_subtitles_by_language: dict[str, list[Subtitle]] = defaultdict(list)
+    for subtitle in session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.origin == SubtitleOrigin.EMBEDDED,
         )
-    }
+    ):
+        embedded_subtitles_by_language[subtitle.language].append(subtitle)
+    embedded_subtitles: dict[str, Subtitle] = {}
+    for language, subtitles in embedded_subtitles_by_language.items():
+        best = pick_best_embedded_subtitle(subtitles, profile)
+        assert best is not None  # subtitles is never empty for a grouped-by-language entry
+        embedded_subtitles[language] = best
 
     if source_subtitle_id is None:
         source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
