@@ -706,3 +706,22 @@ accumulated on a non-main branch (`chore/ui-fine-tuning`, 6 `fix:` commits, no d
 main otherwise) — fast-forwarded straight into `main` (fix commits don't need a PR per
 `AGENTS.md`) before branching this genuinely-new feature off the now-updated `main`, so the PR
 diff wouldn't include unrelated prior fixes.
+
+**Update (2026-08-29, next round — 4th `lang-pill` state, `--pending`, blue):** the
+`PendingSubtitle` staging feature (PR #81, "search and upload subtitles for episodes Sonarr
+hasn't downloaded yet") had a real bug hiding its own result: a language searched/downloaded for
+an undownloaded episode still rendered the plain gray `.lang-pill--missing` pill, looking
+untouched even right after a successful download. Root cause was backend, not CSS —
+`download_pending_subtitle.py`/`upload_pending_subtitle.py` lowercased the target language
+before storing it on `PendingSubtitle` (`"pt-BR"` → `"pt-br"`), so it never string-matched
+`series.target_languages` and the read model never saw the episode as covered. Fixed by keeping
+the original casing in the DB `language` column (matching the sibling file-based download path's
+existing behavior — only the on-disk filename segment still gets lowercased) and adding a real
+`pending_languages` field to the per-file/episode read model (`get_media_detail.py`). CSS-side,
+this is now a genuine 4th `.lang-pill` state (`--missing` gray / `--embedded` yellow /
+`--external` orange / new `--pending` blue) alongside the 3 documented in the 2026-08-24 entry
+above. **How to apply:** any future "does this file/episode have a subtitle for language X yet"
+check needs to consider pending as a distinct third bucket from missing/acquired, not fold it
+into either — and if a new per-language state is ever added to `PendingSubtitle` or a sibling
+table, store/compare it with its original casing, not lowercased, or it'll silently fail the
+same string-match the way this one did.

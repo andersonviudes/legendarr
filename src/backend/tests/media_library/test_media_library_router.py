@@ -871,7 +871,10 @@ def test_download_pending_subtitle_candidate_stages_it(isolated_database, monkey
     assert len(pending) == 1
     assert pending[0].season_number == 1
     assert pending[0].episode_number == 1
-    assert pending[0].language == "pt-br"
+    # Keeps `target_language`'s casing, not `language`'s (the candidate's own reported
+    # language) — has to match `series.target_languages` for the series-detail page's
+    # pending pill to recognize it.
+    assert pending[0].language == "pt-BR"
 
 
 def test_download_pending_subtitle_candidate_returns_404_when_series_missing(isolated_database):

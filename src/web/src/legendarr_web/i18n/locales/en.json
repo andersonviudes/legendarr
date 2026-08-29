@@ -10,6 +10,7 @@
   "common.forced": "Forced",
   "common.hi": "HI",
   "common.missing": "missing",
+  "common.pending": "pending",
   "common.log_out": "Log out",
   "common.sync": "Sync",
   "common.sync_now": "Sync Now",

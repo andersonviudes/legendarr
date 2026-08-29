@@ -41,6 +41,21 @@ def test_upload_stages_a_pending_subtitle(in_memory_session, suffix):
     assert rows[0].provider is None
 
 
+def test_upload_keeps_the_target_language_case_for_pill_matching(in_memory_session):
+    # Same reasoning as download_pending_subtitle's equivalent test: `series.target_languages`
+    # keeps its configured casing ("pt-BR"), so `PendingSubtitle.language` has to match it.
+    series = _series(in_memory_session)
+
+    upload_pending_subtitle(in_memory_session, series, 1, 4, "pt-BR", "uploaded.srt", b"content")
+
+    rows = in_memory_session.exec(
+        select(PendingSubtitle).where(PendingSubtitle.series_id == series.id)
+    ).all()
+    assert len(rows) == 1
+    assert rows[0].language == "pt-BR"
+    assert rows[0].filename == "pt-br.srt"
+
+
 def test_upload_rejects_a_disallowed_extension_without_staging_anything(in_memory_session):
     series = _series(in_memory_session)
 

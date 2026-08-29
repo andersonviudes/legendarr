@@ -459,12 +459,18 @@
 {#
   For a media item with no file at all yet (nothing to attach a translate/search action
   to), so unlike subtitle_pill_list()'s own missing-language pills these aren't clickable.
+  `pending_languages` (a series episode's PendingSubtitle languages) renders those as a
+  distinct pill instead of a plain missing one.
 #}
-{% macro missing_lang_pills(languages) %}
+{% macro missing_lang_pills(languages, pending_languages=[]) %}
 <ul class="subtitle-pill-list">
   {% for language in languages %}
   <li class="subtitle-pill-item">
+    {% if language in pending_languages %}
+    <span class="lang-pill lang-pill--pending" data-tooltip="{{ t('common.pending') }}">{{ language }}</span>
+    {% else %}
     <span class="lang-pill lang-pill--missing" data-tooltip="{{ t('common.missing') }}">{{ language }}</span>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>

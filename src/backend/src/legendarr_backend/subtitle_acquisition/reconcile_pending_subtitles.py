@@ -86,7 +86,7 @@ def reconcile_pending_subtitles_for_series(session: Session, series_id: int) -> 
 
         assert media_file.id is not None
         suffix = pending.filename.rsplit(".", 1)[-1]
-        output_path = video_path.with_name(f"{video_path.stem}.{pending.language}.{suffix}")
+        output_path = video_path.with_name(f"{video_path.stem}.{pending.language.lower()}.{suffix}")
         output_path.write_bytes(pending.content)
         scan_subtitles_for_media_file(session, media_file, video_path)
         if pending.provider is not None and pending.download_id is not None:

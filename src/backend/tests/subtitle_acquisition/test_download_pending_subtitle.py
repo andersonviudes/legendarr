@@ -87,6 +87,23 @@ def test_download_stages_a_pending_subtitle(in_memory_session, monkeypatch):
     assert rows[0].download_id == "1"
 
 
+def test_download_keeps_the_target_language_case_for_pill_matching(in_memory_session, monkeypatch):
+    # `PendingSubtitle.language` has to match `series.target_languages`'s casing
+    # ("pt-BR", not "pt-br") for the series-detail page's pending pill to recognize it
+    # — only the on-disk filename lowercases the language segment.
+    series = _series(in_memory_session)
+    _use_chain(monkeypatch, _FakeProvider("provider"))
+
+    download_pending_subtitle_candidate(in_memory_session, series, 1, 4, _candidate(), "pt-BR")
+
+    rows = in_memory_session.exec(
+        select(PendingSubtitle).where(PendingSubtitle.series_id == series.id)
+    ).all()
+    assert len(rows) == 1
+    assert rows[0].language == "pt-BR"
+    assert rows[0].filename == "pt-br.srt"
+
+
 def test_download_replaces_an_existing_pending_subtitle_for_the_same_episode_and_language(
     in_memory_session, monkeypatch
 ):

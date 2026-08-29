@@ -36,7 +36,7 @@ def upload_pending_subtitle(
             PendingSubtitle.series_id == series.id,
             PendingSubtitle.season_number == season_number,
             PendingSubtitle.episode_number == episode_number,
-            PendingSubtitle.language == language.lower(),
+            PendingSubtitle.language == language,
         )
     ).first()
     now = datetime.now(UTC)
@@ -46,7 +46,7 @@ def upload_pending_subtitle(
                 series_id=series.id,
                 season_number=season_number,
                 episode_number=episode_number,
-                language=language.lower(),
+                language=language,
                 filename=f"{language.lower()}{suffix}",
                 content=content,
                 created_at=now,
