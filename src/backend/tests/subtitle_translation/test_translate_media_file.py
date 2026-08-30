@@ -384,6 +384,42 @@ def test_translate_media_file_skips_target_language_already_translated(
     assert result.skipped_reason is None
 
 
+def test_translate_media_file_never_translates_target_matching_source_language(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A target language equal to the source's own language is never queued for
+    translation — not even when the source subtitle was itself produced by an earlier
+    translation, whose `translated_from_hash` then mismatches its own `content_hash` and
+    would otherwise look like a stale target needing retranslation."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    profile = _profile(in_memory_session, source_languages="ja", target_languages="en")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True, exist_ok=True)
+    video.touch()
+    (tmp_path / "Foo" / "Foo.ja.srt").write_text(SAMPLE_SRT, encoding="utf-8")
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+    monkeypatch.setattr(
+        translate_media_file_module,
+        "resolve_provider_chain",
+        lambda session, default_kind=None: [_UppercaseProvider()],
+    )
+    first = translate_media_file(in_memory_session, media_file, video)
+    assert first.translated_languages == ["en"]
+
+    # Reconfigure the profile so "en" — now itself a previously-translated subtitle — is
+    # both the source and one of the target languages.
+    profile.source_languages = "en"
+    profile.target_languages = "en,pt-BR"
+    in_memory_session.add(profile)
+    in_memory_session.commit()
+
+    second = translate_media_file(in_memory_session, media_file, video)
+
+    assert second.translated_languages == ["pt-BR"]
+
+
 def test_translate_media_file_uses_manually_picked_external_source(
     in_memory_session, tmp_path, monkeypatch
 ):

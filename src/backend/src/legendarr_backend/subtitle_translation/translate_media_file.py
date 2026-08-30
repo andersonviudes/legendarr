@@ -251,6 +251,13 @@ def _missing_targets(
     """
     missing = []
     for language in profile.target_language_list:
+        if language.lower() == source.language.lower():
+            # A target can't be translated into itself. Without this, a source that was
+            # itself produced by an earlier translation (`translated_from_hash` set) would
+            # fail the staleness check below against its own `content_hash` and get queued
+            # for a same-language "translation" — a misconfigured profile (source and
+            # target lists overlapping) is the only way this language even reaches here.
+            continue
         existing = external_subtitles.get(language.lower())
         if existing is not None:
             if existing.translated_from_hash is not None and (
