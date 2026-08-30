@@ -624,7 +624,7 @@ body {
    to fill that reclaimed space instead of just leaving it as margin. */
 .poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 12.5rem));
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 10rem));
   gap: 1.75rem;
   margin-block: 1.5rem 2.5rem;
 }
