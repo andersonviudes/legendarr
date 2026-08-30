@@ -85,6 +85,24 @@ def test_google_translate_batch_returns_translated_texts(monkeypatch):
     }
 
 
+def test_google_translate_batch_chunks_requests_over_the_segment_limit(monkeypatch):
+    seen_chunks = []
+
+    def _post_json(self, path, json):
+        seen_chunks.append(json["q"])
+        return {"data": {"translations": [{"translatedText": f"t{text}"} for text in json["q"]]}}
+
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _post_json)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    texts = [str(i) for i in range(150)]
+    provider = GoogleTranslationProvider(_config(kind="google", api_key="a-key"))
+    result = provider.translate_batch(texts, "en", "pt")
+
+    assert result == [f"t{text}" for text in texts]
+    assert [len(chunk) for chunk in seen_chunks] == [128, 22]
+
+
 def test_libretranslate_translate_batch_returns_translated_texts(monkeypatch):
     seen = {}
 
