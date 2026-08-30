@@ -712,17 +712,18 @@ body {
   z-index: 0;
   display: flex;
   gap: 1.5rem;
-  margin: 0 -1.5rem 2rem;
-  padding: 2rem 1.5rem 1.5rem;
+  margin: 0 0 2rem;
+  padding: 2rem 0 1.5rem;
   overflow: hidden;
 }
 
-/* The cached poster, blown up and blurred into a Jellyfin/Plex-style hero backdrop behind
-   the header. `transform: scale()` grows the image well past the clipped box so the blur
-   samples from further into the art instead of its own hard edge, and the ::after gradient
-   fades it into the page background at the bottom. Reuses the poster (no separate backdrop
-   image is fetched from TMDb/TheTVDB today) via an inline `background-image`, since Jinja
-   has no other way to hand a per-item URL to this pseudo-element. */
+/* The cached poster, blown up and blurred into a hero backdrop behind the header, inset
+   to the same padding as the rest of the page (no edge-to-edge bleed). `transform: scale()`
+   grows the image well past the clipped box so the blur samples from further into the art
+   instead of its own hard edge, and the ::after gradient fades it into the page background
+   at the bottom. Reuses the poster (no separate backdrop image is fetched from TMDb/TheTVDB
+   today) via an inline `background-image`, since Jinja has no other way to hand a per-item
+   URL to this pseudo-element. */
 .media-detail-backdrop {
   position: absolute;
   z-index: -1;
@@ -1722,11 +1723,6 @@ button.contrast:is(:hover, :focus),
 
   .page-toolbar {
     margin-top: -0.75rem;
-  }
-
-  .media-detail-header {
-    margin-inline: -1.25rem;
-    padding-inline: 1.25rem;
   }
 
   .app-topbar-actions {
