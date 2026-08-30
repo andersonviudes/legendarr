@@ -1,5 +1,5 @@
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.scheduler import build_scheduler, register_job
+from legendarr_backend.scheduling.scheduler import JOB_JITTER_SECONDS, build_scheduler, register_job
 
 
 def _noop() -> None:
@@ -27,6 +27,49 @@ def test_register_job_applies_queue_and_concurrency_policy():
     assert job.executor == JobQueue.SYNC.value
     assert job.max_instances == 2
     assert job.coalesce is False
+
+
+def test_register_job_defaults_to_a_jitter():
+    scheduler = build_scheduler()
+
+    register_job(
+        scheduler,
+        _noop,
+        queue=JobQueue.SYNC,
+        job_id="test_job",
+        trigger="interval",
+        minutes=1,
+        retry_attempts=1,
+        retry_delay_seconds=0,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    job = scheduler.get_job("test_job")
+    assert job is not None
+    assert job.trigger.jitter == JOB_JITTER_SECONDS
+
+
+def test_register_job_lets_caller_override_jitter():
+    scheduler = build_scheduler()
+
+    register_job(
+        scheduler,
+        _noop,
+        queue=JobQueue.SYNC,
+        job_id="test_job",
+        trigger="interval",
+        minutes=1,
+        jitter=5,
+        retry_attempts=1,
+        retry_delay_seconds=0,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    job = scheduler.get_job("test_job")
+    assert job is not None
+    assert job.trigger.jitter == 5
 
 
 def test_register_job_with_same_id_replaces_existing_job():

@@ -7,6 +7,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 
+# Every periodic job is left to APScheduler's default first-fire (registration time +
+# interval), so jobs registered back-to-back at boot with the same interval (several are
+# 60 minutes, see each slice's `jobs.py`) would otherwise wake up in the exact same
+# instant forever. A small random jitter desyncs them without changing their nominal
+# schedule, so they don't all queue up behind each other on a shared executor.
+JOB_JITTER_SECONDS = 60
+
 
 def build_scheduler() -> BackgroundScheduler:
     """Construct a scheduler with one executor per named queue.
@@ -44,7 +51,11 @@ def register_job(
     queue with a concurrency-dedup policy (`max_instances`/`coalesce`) — so every job
     follows the same shape instead of each caller configuring `add_job` from scratch.
     Re-registering the same `job_id` replaces the existing job rather than duplicating it.
+
+    Defaults to a `JOB_JITTER_SECONDS` jitter unless the caller passes its own `jitter`
+    trigger arg — both `IntervalTrigger` and `CronTrigger` support it natively.
     """
+    trigger_args.setdefault("jitter", JOB_JITTER_SECONDS)
     scheduler.add_job(
         with_retry(func, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
         trigger,
