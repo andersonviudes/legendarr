@@ -1415,6 +1415,13 @@ body {
   border-bottom: 1px solid var(--pico-card-border-color);
 }
 
+/* Extra breathing room below the divider before the media-detail backdrop starts —
+   the default 0.9rem reads as barely-there since both the plain page background and
+   the (darkened, blurred) backdrop are near-black. */
+.page-toolbar--media-detail {
+  margin-bottom: 1.8rem;
+}
+
 /* Element-qualified so this beats Pico's `button[type=submit] { width: 100% }`
    (same 0,1,1 specificity, later in source) — the Save button in this toolbar is
    type="submit" but must stay content-width like its type="button" siblings. */
