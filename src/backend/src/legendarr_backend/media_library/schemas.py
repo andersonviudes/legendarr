@@ -130,6 +130,14 @@ class WantedRead(BaseModel):
     missing_files_count: int
 
 
+class SubtitleSearchResourceRead(BaseModel):
+    """The manual-search panel's "Resource" info box — the searched file's on-disk
+    path and a display-only, reconstructed scene-style release name for it."""
+
+    path: str
+    release_name: str
+
+
 class SubtitleCandidateRead(BaseModel):
     """One manual-search result — everything the UI needs to display it and, on
     download, everything `SubtitleCandidateDownloadInput` needs to re-locate it."""
@@ -140,6 +148,7 @@ class SubtitleCandidateRead(BaseModel):
     language: str
     page_link: str | None = None
     score: float
+    uploader: str | None = None
 
 
 class SubtitleCandidateDownloadInput(BaseModel):

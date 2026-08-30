@@ -155,10 +155,11 @@ class AnimeToshoProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """See the class docstring for why `tvdb_id`/`season`/`episode` are all
         required — unlike every other provider here, there's no title-only fallback.
-        `imdb_id`/`moviehash`/`video_path` are ignored."""
+        `imdb_id`/`moviehash`/`video_path`/`series_imdb_id` are ignored."""
         if tvdb_id is None or season is None or episode is None:
             logger.debug(
                 "animetosho search skipped for %r: no tvdb_id/season/episode resolved", title

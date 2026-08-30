@@ -4,6 +4,11 @@ from legendarr_web.app import create_app
 
 
 def _target_languages_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/subtitle-providers/":
+        return httpx.Response(
+            200,
+            json=[{"kind": "opensubtitles", "enabled": True}, {"kind": "subdl", "enabled": False}],
+        )
     return httpx.Response(200, json=["pt-BR", "fr"])
 
 
@@ -53,6 +58,22 @@ def test_pending_subtitle_search_panel_has_no_language_picker(stub_backend_clien
         "/media/series/1/episodes/1/4/subtitle-search/results?languages=pt-BR&languages=fr"
         in response.text
     )
+
+
+def test_pending_subtitle_search_panel_auto_triggers_the_search_and_lists_providers(
+    stub_backend_client,
+):
+    app = create_app()
+    stub_backend_client(app, handler=_target_languages_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1/episodes/1/4/subtitle-search")
+
+    assert response.status_code == 200
+    assert "page-toolbar-btn" not in response.text
+    assert 'hx-trigger="load"' in response.text
+    assert "Searching OpenSubtitles" in response.text
+    assert "Subdl" not in response.text
 
 
 def test_pending_subtitle_search_panel_shows_empty_state_without_target_languages(

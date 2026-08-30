@@ -117,8 +117,10 @@ def acquire_subtitle_for_media_file(
     number instead, via `media_library.locate.resolve_media_file_episode` (a live
     Sonarr lookup, `None` when it can't be resolved) — most providers still ignore it
     and search title-only, so `pick_best_match`'s cutoff is still what keeps a wrong
-    episode's subtitle from being accepted for those; TVsubtitles is the first
-    provider that actually anchors its search on it.
+    episode's subtitle from being accepted for those; TVsubtitles and OpenSubtitles are
+    the first providers that actually anchor their search on it — OpenSubtitles via
+    `Series.imdb_id`, passed through as `series_imdb_id` (not `imdb_id`, which its API
+    treats as a direct episode/movie lookup rather than a series).
     `SubtitleProviderConfig.use_hash` (OpenSubtitles' own `moviehash`, computed from
     `video_path` when reachable) applies to either media type. Series also carry
     `Series.tvdb_id` straight through as `tvdb_id` — every provider but Anime Tosho
@@ -183,6 +185,7 @@ def acquire_subtitle_for_media_file(
                 context.episode_number,
                 video_path,
                 context.tvdb_id,
+                context.series_imdb_id,
                 profile.must_contain_terms,
                 profile.must_not_contain_terms,
                 profile.hearing_impaired,
@@ -340,6 +343,7 @@ def _search_and_download(
     episode: int | None,
     video_path: Path,
     tvdb_id: int | None,
+    series_imdb_id: str | None,
     must_contain: list[str],
     must_not_contain: list[str],
     hearing_impaired_preference: bool,
@@ -372,6 +376,7 @@ def _search_and_download(
                 episode=episode,
                 video_path=video_path,
                 tvdb_id=tvdb_id,
+                series_imdb_id=series_imdb_id,
             )
             record_success(BreakerCategory.ACQUISITION, provider.name)
             candidates = [

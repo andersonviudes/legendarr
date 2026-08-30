@@ -59,10 +59,11 @@ class NapiprojektProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`title`/`imdb_id`/`season`/`episode` are ignored — the hash is the only
-        signal this provider searches on. `moviehash` is ignored too: it's OpenSubtitles'
-        own algorithm, not Napiprojekt's (see `napiprojekt_hash.py`)."""
+        """`title`/`imdb_id`/`season`/`episode`/`series_imdb_id` are ignored — the hash
+        is the only signal this provider searches on. `moviehash` is ignored too: it's
+        OpenSubtitles' own algorithm, not Napiprojekt's (see `napiprojekt_hash.py`)."""
         if language.strip().lower() != "pl":
             return []
         if video_path is None or not video_path.is_file():

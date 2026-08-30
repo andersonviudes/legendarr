@@ -35,7 +35,12 @@ def search_pending_subtitle_candidates(
     assert series.id is not None
     context = SubtitleSearchContext(
         title=series.title,
-        imdb_id=series.imdb_id,
+        # `imdb_id` stays unset here the same way `resolve_subtitle_search_context` keeps
+        # it unset for a series `MediaFile` — several providers (Addic7ed, subdl, Yify)
+        # read a set `imdb_id` as "this is a movie search". The show's own id travels as
+        # `series_imdb_id` instead, which OpenSubtitles sends as `parent_imdb_id`.
+        imdb_id=None,
+        series_imdb_id=series.imdb_id,
         tvdb_id=series.tvdb_id,
         moviehash=None,
         season_number=season_number,
@@ -64,6 +69,7 @@ def search_pending_subtitle_candidates(
                     episode=context.episode_number,
                     video_path=None,
                     tvdb_id=context.tvdb_id,
+                    series_imdb_id=context.series_imdb_id,
                 )
                 record_success(BreakerCategory.ACQUISITION, provider.name)
             except Exception:
@@ -83,6 +89,7 @@ def search_pending_subtitle_candidates(
                     language=result.language,
                     page_link=result.page_link,
                     score=score_candidate(result, reference_filename),
+                    uploader=result.uploader,
                 )
                 for result in results
             )

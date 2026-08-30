@@ -35,6 +35,7 @@ class _FakeProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         return self.results
 
@@ -59,6 +60,7 @@ class _FailingProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         self.search_calls.append({"title": title, "language": language})
         raise RuntimeError("boom")

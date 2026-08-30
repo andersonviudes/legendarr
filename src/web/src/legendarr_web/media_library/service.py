@@ -101,6 +101,18 @@ async def trigger_series_scan(client: httpx.AsyncClient, series_id: int) -> dict
     return response.json()
 
 
+async def trigger_movie_subtitle_search(client: httpx.AsyncClient, movie_id: int) -> dict:
+    response = await client.post(f"/media/movies/{movie_id}/search-subtitles")
+    response.raise_for_status()
+    return response.json()
+
+
+async def trigger_series_subtitle_search(client: httpx.AsyncClient, series_id: int) -> dict:
+    response = await client.post(f"/media/series/{series_id}/search-subtitles")
+    response.raise_for_status()
+    return response.json()
+
+
 async def trigger_file_translation(client: httpx.AsyncClient, media_file_id: int) -> dict:
     response = await client.post(f"/media/files/{media_file_id}/translate")
     response.raise_for_status()
@@ -133,6 +145,12 @@ async def remove_subtitle_style_tags(client: httpx.AsyncClient, subtitle_id: int
 
 async def get_target_languages(client: httpx.AsyncClient, media_file_id: int) -> list[str]:
     response = await client.get(f"/media/files/{media_file_id}/target-languages")
+    response.raise_for_status()
+    return response.json()
+
+
+async def get_subtitle_search_resource(client: httpx.AsyncClient, media_file_id: int) -> dict:
+    response = await client.get(f"/media/files/{media_file_id}/subtitle-search/resource")
     response.raise_for_status()
     return response.json()
 

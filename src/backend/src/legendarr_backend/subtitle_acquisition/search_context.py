@@ -19,6 +19,7 @@ class SubtitleSearchContext:
 
     title: str
     imdb_id: str | None
+    series_imdb_id: str | None
     tvdb_id: int | None
     moviehash: str | None
     season_number: int | None
@@ -40,6 +41,12 @@ def resolve_subtitle_search_context(
     assert owner is not None
 
     imdb_id = owner.imdb_id if isinstance(owner, Movie) else None
+    # `Series.imdb_id` travels separately from `imdb_id` — OpenSubtitles' own API treats
+    # `imdb_id` as a direct episode/movie lookup, so a series' id needs the distinct
+    # `series_imdb_id` field (sent as `parent_imdb_id`) instead of overloading `imdb_id`,
+    # which several other providers (Addic7ed, subdl, Yify) already read as "this is a
+    # movie search" on its own.
+    series_imdb_id = owner.imdb_id if isinstance(owner, Series) else None
     tvdb_id = owner.tvdb_id if isinstance(owner, Series) else None
     moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
     episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
@@ -49,6 +56,7 @@ def resolve_subtitle_search_context(
     return SubtitleSearchContext(
         title=owner.title,
         imdb_id=imdb_id,
+        series_imdb_id=series_imdb_id,
         tvdb_id=tvdb_id,
         moviehash=moviehash,
         season_number=season_number,

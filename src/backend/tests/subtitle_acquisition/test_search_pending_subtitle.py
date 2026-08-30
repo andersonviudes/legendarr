@@ -25,8 +25,17 @@ class _FakeProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
-        self.search_calls.append({"season": season, "episode": episode, "video_path": video_path})
+        self.search_calls.append(
+            {
+                "season": season,
+                "episode": episode,
+                "video_path": video_path,
+                "imdb_id": imdb_id,
+                "series_imdb_id": series_imdb_id,
+            }
+        )
         return self.results
 
     def download(self, result):
@@ -77,7 +86,15 @@ def test_search_never_probes_a_video_file(in_memory_session, monkeypatch):
     result = search_pending_subtitle_candidates(in_memory_session, series, 1, 4, "en")
 
     assert len(result) == 1
-    assert provider.search_calls == [{"season": 1, "episode": 4, "video_path": None}]
+    assert provider.search_calls == [
+        {
+            "season": 1,
+            "episode": 4,
+            "video_path": None,
+            "imdb_id": None,
+            "series_imdb_id": "tt1234567",
+        }
+    ]
 
 
 def test_search_aggregates_and_scores_candidates(in_memory_session, monkeypatch):

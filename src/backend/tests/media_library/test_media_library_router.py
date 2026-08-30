@@ -339,6 +339,64 @@ def test_trigger_movie_scan_without_cascade_callback_returns_503(isolated_databa
     assert response.status_code == 503
 
 
+def test_trigger_movie_subtitle_search_enqueues_acquisition_for_its_files(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            media_file_id = media_file.id
+        response = client.post(f"/media/movies/{movie.id}/search-subtitles")
+
+    assert response.status_code == 202
+    assert response.json() == {"media_files_enqueued": 1}
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file_id}") is not None
+
+
+def test_trigger_series_subtitle_search_enqueues_acquisition_for_its_files(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        series = _seed_series()
+        with get_session() as session:
+            media_file = MediaFile(
+                series_id=series.id,
+                relative_path="Bar.S01E01.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            media_file_id = media_file.id
+        response = client.post(f"/media/series/{series.id}/search-subtitles")
+
+    assert response.status_code == 202
+    assert response.json() == {"media_files_enqueued": 1}
+    assert scheduler.get_job(f"subtitle_acquisition:{media_file_id}") is not None
+
+
+def test_trigger_movie_subtitle_search_without_scheduler_returns_503(isolated_database):
+    with TestClient(create_api_app()) as client:
+        movie = _seed_movie()
+        response = client.post(f"/media/movies/{movie.id}/search-subtitles")
+
+    assert response.status_code == 503
+
+
 def test_trigger_file_translation_enqueues_translation(isolated_database):
     app = create_api_app()
     scheduler = build_scheduler()
@@ -589,6 +647,26 @@ def test_get_target_languages_for_media_file_returns_empty_list_when_media_file_
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_subtitle_search_resource_returns_the_path_and_a_guessed_release_name(
+    isolated_database, tmp_path
+):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        response = client.get(f"/media/files/{media_file_id}/subtitle-search/resource")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["path"] == str(tmp_path / "Foo" / "Foo.mkv")
+    assert body["release_name"] == "Foo"
+
+
+def test_get_subtitle_search_resource_returns_404_when_media_file_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.get("/media/files/1/subtitle-search/resource")
+
+    assert response.status_code == 404
 
 
 def test_download_subtitle_candidate_writes_the_file(isolated_database, tmp_path, monkeypatch):

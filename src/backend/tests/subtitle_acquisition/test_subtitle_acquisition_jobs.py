@@ -5,7 +5,7 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.language_profiles.models import LanguageProfile
-from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
 from legendarr_backend.subtitle_acquisition import (
@@ -22,6 +22,7 @@ from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score imp
 from legendarr_backend.subtitle_acquisition.jobs import (
     enqueue_acquisition,
     enqueue_full_acquisition_scan,
+    enqueue_item_acquisition_scan,
     register_acquisition_job,
 )
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
@@ -47,6 +48,7 @@ class _FakeProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         return [SubtitleSearchResult(release_name="Foo", download_id="1", language=language)]
 
@@ -68,6 +70,7 @@ class _NoMatchProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         return []
 
@@ -612,6 +615,91 @@ def test_enqueue_full_acquisition_scan_enqueues_every_known_media_file(
     ids = {kwargs["id"] for _, kwargs in added}
     assert ids == {f"subtitle_acquisition:{first.id}", f"subtitle_acquisition:{second.id}"}
     assert all(kwargs["executor"] == JobQueue.ACQUIRE_BULK.value for _, kwargs in added)
+
+
+def test_enqueue_item_acquisition_scan_enqueues_only_that_movies_media_files(
+    in_memory_session, tmp_path, monkeypatch
+):
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    target = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    other = Movie(arr_service_id=service.id, arr_id=2, title="Bar", remote_path="/remote/Bar")
+    in_memory_session.add(target)
+    in_memory_session.add(other)
+    in_memory_session.commit()
+    wanted = MediaFile(
+        movie_id=target.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    unrelated = MediaFile(
+        movie_id=other.id, relative_path="Bar.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(wanted)
+    in_memory_session.add(unrelated)
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueued = enqueue_item_acquisition_scan(
+        scheduler,
+        in_memory_session,
+        "movie",
+        target.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+    )
+
+    assert enqueued == 1
+    ids = {kwargs["id"] for _, kwargs in added}
+    assert ids == {f"subtitle_acquisition:{wanted.id}"}
+    assert all(kwargs["executor"] == JobQueue.ACQUIRE.value for _, kwargs in added)
+
+
+def test_enqueue_item_acquisition_scan_enqueues_only_that_series_media_files(
+    in_memory_session, tmp_path, monkeypatch
+):
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    target = Series(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    other = Series(arr_service_id=service.id, arr_id=2, title="Bar", remote_path="/remote/Bar")
+    in_memory_session.add(target)
+    in_memory_session.add(other)
+    in_memory_session.commit()
+    wanted = MediaFile(
+        series_id=target.id,
+        relative_path="Foo.S01E01.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    unrelated = MediaFile(
+        series_id=other.id,
+        relative_path="Bar.S01E01.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(wanted)
+    in_memory_session.add(unrelated)
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueued = enqueue_item_acquisition_scan(
+        scheduler,
+        in_memory_session,
+        "series",
+        target.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+    )
+
+    assert enqueued == 1
+    ids = {kwargs["id"] for _, kwargs in added}
+    assert ids == {f"subtitle_acquisition:{wanted.id}"}
 
 
 def test_enqueued_acquisition_job_notifies_media_servers_after_download(

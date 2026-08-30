@@ -4,6 +4,11 @@ from legendarr_web.app import create_app
 
 
 def _target_languages_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/subtitle-providers/":
+        return httpx.Response(
+            200,
+            json=[{"kind": "opensubtitles", "enabled": True}, {"kind": "subdl", "enabled": False}],
+        )
     return httpx.Response(200, json=["pt-BR", "fr"])
 
 
@@ -57,6 +62,62 @@ def test_subtitle_search_panel_has_no_language_picker(stub_backend_client):
     assert "Search providers" in response.text
     assert "<select" not in response.text
     assert "/media/files/5/subtitle-search/results?languages=pt-BR&languages=fr" in response.text
+
+
+def test_subtitle_search_panel_auto_triggers_the_search_and_lists_providers(
+    stub_backend_client,
+):
+    app = create_app()
+    stub_backend_client(app, handler=_target_languages_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search")
+
+    assert response.status_code == 200
+    # No more "Search" button — the results request fires as soon as the panel loads.
+    assert "page-toolbar-btn" not in response.text
+    assert 'hx-trigger="load"' in response.text
+    # Only the enabled provider is named in the loading state.
+    assert "Searching OpenSubtitles" in response.text
+    assert "Subdl" not in response.text
+
+
+def test_subtitle_search_panel_shows_the_resource_box(stub_backend_client):
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/media/files/5/subtitle-search/resource":
+            return httpx.Response(
+                200,
+                json={"path": "/movies/Foo/Foo.2024.mkv", "release_name": "Foo.1080p.WEB-DL"},
+            )
+        return _target_languages_handler(request)
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search")
+
+    assert response.status_code == 200
+    assert "/movies/Foo/Foo.2024.mkv" in response.text
+    assert "Foo.1080p.WEB-DL" in response.text
+
+
+def test_subtitle_search_panel_omits_the_resource_box_when_the_backend_call_fails(
+    stub_backend_client,
+):
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/media/files/5/subtitle-search/resource":
+            return httpx.Response(404, json={"detail": "Media file not found"})
+        return _target_languages_handler(request)
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/files/5/subtitle-search")
+
+    assert response.status_code == 200
+    assert "subtitle-search-resource" not in response.text
 
 
 def test_subtitle_search_panel_shows_empty_state_without_target_languages(stub_backend_client):

@@ -79,10 +79,11 @@ class SupersubtitlesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`moviehash`/`video_path`/`tvdb_id` are ignored — not used here. See the class
-        docstring for how `imdb_id`/`season`/`episode` pick a movie search, a TV
-        search, or a skip."""
+        """`moviehash`/`video_path`/`tvdb_id`/`series_imdb_id` are ignored — not used
+        here. See the class docstring for how `imdb_id`/`season`/`episode` pick a movie
+        search, a TV search, or a skip."""
         site_language = _LANGUAGE_NAMES.get(language.strip().lower())
         if site_language is None:
             return []

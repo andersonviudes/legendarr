@@ -1,31 +1,39 @@
 {# Rendered into #subtitle-search-results by the search panel's "Search" button. #}
 {% from "macros.html" import empty_state %}
 {% if candidates %}
-<ul class="subtitle-candidate-list">
+<ul class="subtitle-candidate-list" role="table">
+  <li class="subtitle-candidate-row subtitle-candidate-row--header" role="row">
+    <span role="columnheader">{{ t('media_library.subtitle_table_provider') }}</span>
+    <span role="columnheader">{{ t('media_library.subtitle_table_release') }}</span>
+    <span role="columnheader">{{ t('media_library.subtitle_table_score') }}</span>
+    <span role="columnheader">{{ t('media_library.subtitle_table_uploader') }}</span>
+    <span role="columnheader">{{ t('common.download') }}</span>
+  </li>
   {% for candidate in candidates %}
-  <li class="subtitle-candidate-row">
-    <div class="subtitle-candidate-info">
-      <span class="subtitle-candidate-release">
-        {% if candidate.page_link %}
-        <a href="{{ candidate.page_link }}" target="_blank" rel="noopener">{{ candidate.release_name }}</a>
-        {% else %}
-        {{ candidate.release_name }}
-        {% endif %}
-      </span>
-      <span class="subtitle-candidate-provider">{{ candidate.provider }} · {{ candidate.language }}</span>
-    </div>
-    <span class="subtitle-candidate-score">{{ (candidate.score * 100) | round | int }}%</span>
-    <button
-      type="button"
-      class="app-icon-btn"
-      aria-label="{{ t('a11y.download_subtitle') }}"
-      data-tooltip="{{ t('common.download') }}"
-      hx-post="/media/files/{{ media_file_id }}/subtitle-candidates/download"
-      hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": candidate.target_language, "page_link": candidate.page_link or ""} | tojson }}'
-      hx-target="#subtitle-acquire-content"
-      hx-swap="innerHTML"
-      hx-disabled-elt="this"
-    >{{ icon("download") }}</button>
+  <li class="subtitle-candidate-row" role="row">
+    <span role="cell" class="subtitle-candidate-cell-truncate" data-tooltip="{{ candidate.provider }} · {{ candidate.language }}">{{ candidate.provider }}</span>
+    <span role="cell" class="subtitle-candidate-cell-truncate" data-tooltip="{{ candidate.release_name }}">
+      {% if candidate.page_link %}
+      <a href="{{ candidate.page_link }}" target="_blank" rel="noopener">{{ candidate.release_name }}</a>
+      {% else %}
+      {{ candidate.release_name }}
+      {% endif %}
+    </span>
+    <span role="cell" class="subtitle-candidate-score">{{ (candidate.score * 100) | round | int }}%</span>
+    <span role="cell" class="subtitle-candidate-cell-truncate">{{ candidate.uploader or "—" }}</span>
+    <span role="cell">
+      <button
+        type="button"
+        class="app-icon-btn"
+        aria-label="{{ t('a11y.download_subtitle') }}"
+        data-tooltip="{{ t('common.download') }}"
+        hx-post="/media/files/{{ media_file_id }}/subtitle-candidates/download"
+        hx-vals='{{ {"provider": candidate.provider, "release_name": candidate.release_name, "download_id": candidate.download_id, "language": candidate.language, "target_language": candidate.target_language, "page_link": candidate.page_link or ""} | tojson }}'
+        hx-target="#subtitle-acquire-content"
+        hx-swap="innerHTML"
+        hx-disabled-elt="this"
+      >{{ icon("download") }}</button>
+    </span>
   </li>
   {% endfor %}
 </ul>

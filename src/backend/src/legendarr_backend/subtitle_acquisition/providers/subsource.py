@@ -104,10 +104,11 @@ class SubsourceProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`moviehash`/`video_path` are ignored — not used here. See the class
-        docstring for how `imdb_id`/`season`/`episode` pick a movie search, a TV
-        search, or a skip."""
+        """`moviehash`/`video_path`/`series_imdb_id` are ignored — not used here. See
+        the class docstring for how `imdb_id`/`season`/`episode` pick a movie search, a
+        TV search, or a skip."""
         language_name = _SUBSOURCE_LANGUAGE_NAMES.get(language.strip().lower())
         if language_name is None:
             return []

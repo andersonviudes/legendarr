@@ -52,6 +52,7 @@ class _FakeProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         self.search_calls.append(
             {
@@ -63,6 +64,7 @@ class _FakeProvider:
                 "episode": episode,
                 "video_path": video_path,
                 "tvdb_id": tvdb_id,
+                "series_imdb_id": series_imdb_id,
             }
         )
         return self.results
@@ -88,6 +90,7 @@ class _FailingProvider:
         episode=None,
         video_path=None,
         tvdb_id=None,
+        series_imdb_id=None,
     ):
         self.search_calls.append({"title": title, "language": language})
         raise RuntimeError("boom")
@@ -424,6 +427,29 @@ def test_acquire_subtitle_passes_series_season_episode_to_the_provider(
     assert provider.search_calls[0]["tvdb_id"] == 389597
 
 
+def test_acquire_subtitle_passes_series_imdb_id_as_series_imdb_id_not_imdb_id(
+    in_memory_session, tmp_path, monkeypatch
+):
+    series = _series(in_memory_session, tmp_path, imdb_id="tt13622776")
+    media_file = _series_media_file(in_memory_session, series)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+    monkeypatch.setattr(
+        search_context_module,
+        "resolve_media_file_episode",
+        lambda session, media_file: EpisodeItem(
+            season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
+        ),
+    )
+
+    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert provider.search_calls[0]["series_imdb_id"] == "tt13622776"
+    assert provider.search_calls[0]["imdb_id"] is None
+
+
 def test_acquire_subtitle_passes_none_season_episode_when_resolution_fails(
     in_memory_session, tmp_path, monkeypatch
 ):
@@ -587,6 +613,7 @@ def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_m
             episode=None,
             video_path=None,
             tvdb_id=None,
+            series_imdb_id=None,
         ):
             if language != "ja":
                 return []
@@ -648,6 +675,7 @@ def test_acquire_subtitle_calls_on_progress_for_each_source_language_tried(
             episode=None,
             video_path=None,
             tvdb_id=None,
+            series_imdb_id=None,
         ):
             if language != "ja":
                 return []
