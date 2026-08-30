@@ -196,6 +196,13 @@ body {
   height: 1.2em;
 }
 
+/* legendarr-mark.svg carries its own white-screen artwork (same design as
+   favicon-screen.svg) instead of relying on the tile background + currentColor
+   the rest of .app-brand-mark uses. */
+.app-brand .app-brand-mark {
+  background-color: transparent;
+}
+
 .app-brand a:hover {
   color: var(--pico-primary);
 }
