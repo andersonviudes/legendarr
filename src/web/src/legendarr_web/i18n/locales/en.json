@@ -288,6 +288,7 @@
   "history.empty": "No translation or acquisition activity yet — history will appear here once a subtitle is translated or acquired.",
   "history.category.translation": "Translation",
   "history.category.acquisition": "Acquisition",
+  "history.category.upgrade": "Upgrade",
   "history.table.status": "Status",
   "history.table.category": "Category",
   "history.table.language_provider": "Language / Provider",

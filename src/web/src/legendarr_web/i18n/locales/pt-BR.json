@@ -288,6 +288,7 @@
   "history.empty": "Nenhuma atividade de tradução ou aquisição ainda — o histórico vai aparecer aqui assim que uma legenda for traduzida ou adquirida.",
   "history.category.translation": "Tradução",
   "history.category.acquisition": "Aquisição",
+  "history.category.upgrade": "Upgrade",
   "history.table.status": "Status",
   "history.table.category": "Categoria",
   "history.table.language_provider": "Idioma / Provedor",

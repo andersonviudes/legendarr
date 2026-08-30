@@ -13,6 +13,7 @@ def _history_entry(**overrides) -> dict:
         "error_message": None,
         "occurred_at": "2026-08-28T10:00:00",
         "score": None,
+        "previous_score": None,
     }
     entry.update(overrides)
     return entry
@@ -42,6 +43,15 @@ def test_history_page_shows_recorded_entries(stub_backend_client):
                     provider="opensubtitles",
                     score=0.9,
                 ),
+                _history_entry(
+                    category="upgrade",
+                    status="success",
+                    media_title="Qux",
+                    language="en",
+                    provider="opensubtitles",
+                    score=0.8,
+                    previous_score=0.45,
+                ),
             ],
         )
 
@@ -57,6 +67,8 @@ def test_history_page_shows_recorded_entries(stub_backend_client):
     assert "opensubtitles: 401 Unauthorized" in response.text
     assert "Baz" in response.text
     assert "90%" in response.text
+    assert "Qux" in response.text
+    assert "45% → 80%" in response.text
 
 
 def test_history_page_shows_empty_state_with_no_activity(stub_backend_client):

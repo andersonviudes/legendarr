@@ -169,12 +169,58 @@ def test_list_history_includes_acquisition_success_and_failure(in_memory_session
     assert success.language == "en"
     assert success.provider == "opensubtitles"
     assert success.score == 0.9
+    assert success.previous_score is None
 
     failure = next(entry for entry in entries if entry.status == "failure")
     assert failure.category == "acquisition"
     assert failure.language == "fr"
     assert failure.error_message == "subdl: 500 Internal Server Error"
     assert failure.score is None
+
+
+def test_list_history_marks_a_replacement_attempt_as_upgrade(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie=movie)
+    subtitle = _subtitle(in_memory_session, media_file, "en")
+    assert subtitle.id is not None
+
+    original = AcquisitionAttempt(
+        subtitle_id=subtitle.id,
+        provider="opensubtitles",
+        release_name="Foo.WEB-DL",
+        download_id="1",
+        score=0.45,
+        title_similarity=0.45,
+        attempted_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    in_memory_session.add(original)
+    in_memory_session.commit()
+    assert original.id is not None
+
+    in_memory_session.add(
+        AcquisitionAttempt(
+            subtitle_id=subtitle.id,
+            provider="opensubtitles",
+            release_name="Foo.Bluray",
+            download_id="2",
+            score=0.8,
+            title_similarity=0.8,
+            replaced_attempt_id=original.id,
+            attempted_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    entries = list_history(in_memory_session)
+
+    assert len(entries) == 2
+    upgrade = next(entry for entry in entries if entry.score == 0.8)
+    assert upgrade.category == "upgrade"
+    assert upgrade.previous_score == 0.45
+
+    first = next(entry for entry in entries if entry.score == 0.45)
+    assert first.category == "acquisition"
+    assert first.previous_score is None
 
 
 def test_list_history_sorts_newest_first_and_caps_at_limit(in_memory_session, tmp_path):
