@@ -34,3 +34,4 @@
 - [legendarr dev DB direct inspection](legendarr-dev-db-direct-inspection.md) — dev/legendarr-config/legendarr.db is bind-mounted, query it with host sqlite3 instead of exec'ing in
 - [legendarr scheduled-retry e2e test flaky in CI](legendarr-scheduled-retry-e2e-flaky-in-ci.md) — real-scheduler polling test fails intermittently under CI runner contention, unrelated to the diff
 - [legendarr .app-brand-mark shared class gotcha](legendarr-app-brand-mark-shared-class-gotcha.md) — same class styles both the topbar logo and the login page's lock icon; scope overrides narrowly
+- [legendarr brand asset propagation check](legendarr-brand-asset-propagation-check.md) — rebranding a mark? grep README/docs/BRANDING.md too, not just the CSS-driven in-app usages

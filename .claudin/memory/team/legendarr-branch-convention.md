@@ -125,6 +125,21 @@ chore/ui-fine-tuning"). Recreated it fresh at the current `main` tip
 `main` as disposable — safe to delete once fully merged, and just as safe to recreate under the
 same name at `main`'s tip if the user asks for it back.
 
+**2026-08-30 — "abre um pr" asked reflexively when there's nothing to PR:** after a `fix:` commit
+was already pushed straight to `main` per the convention above, the user asked "abre um pr" again
+with a clean working tree and no new commits since — not a new request, just the same habitual
+phrase. Rather than reverting the already-pushed fix to redo it on a feature branch, or silently
+ignoring the request, asked via `AskUserQuestion` whether to leave it as-is (recommended — a PR
+against an unchanged `main` has no diff to review), revert-and-redo via branch+PR, or that
+something else was intended; the user picked "already correct." **Why:** "abre um pr" is
+sometimes just this user's shorthand for "wrap this up properly," not a literal instruction to
+override the branch convention or a sign that something is actually pending — treating it as an
+unconditional command risks an unnecessary, disruptive rewrite of an already-verified fix.
+**How to apply:** before opening a PR or reverting/rebranching a `fix:` already on `main`, check
+`git status`/`git log` first — if there's no pending diff and the last change already followed
+the fix-direct-to-main convention correctly, clarify intent instead of assuming a revert is
+wanted.
+
 Separately, `git push origin main` was rejected ("the remote contains work you do not have")
 after two small `chore:`/`docs:` commits were made directly on local `main`: a `feat:` PR opened
 earlier the same session had been squash-merged into `origin/main` in the meantime (by the user,
