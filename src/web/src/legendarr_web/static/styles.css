@@ -1403,11 +1403,14 @@ body {
    heading (Save, Test, ...), first thing in `.app-main`'s content block — `.app-main`
    already pads the top, so this only needs bottom spacing. Buttons live outside the
    <form> element and target it via the `form` attribute, so the toolbar can sit above
-   the page while the form itself renders below. */
+   the page while the form itself renders below. The negative margin-top claws back
+   half of .app-main's own top padding, which otherwise reads as an odd empty gap
+   above the buttons — most visibly on the media-detail toolbar below, where a
+   colorful backdrop starts immediately after it. */
 .page-toolbar {
   display: flex;
   gap: 0.5rem;
-  margin: 0 0 0.9rem;
+  margin: -0.6rem 0 0.9rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--pico-card-border-color);
 }
@@ -1415,11 +1418,8 @@ body {
 /* The media-detail header's backdrop (see .media-detail-backdrop) reads as its own
    section, so the divider that separates the toolbar from an ordinary form page below
    it is dropped here, and the gap is closed to let the backdrop start right under the
-   toolbar buttons instead of past an empty strip. The negative margin-top claws back
-   half of .app-main's own top padding, since that padding reads as an odd empty gap
-   above the buttons once the colorful backdrop starts immediately below them. */
+   toolbar buttons instead of past an empty strip. */
 .page-toolbar--media-detail {
-  margin-top: -0.6rem;
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
@@ -1720,7 +1720,7 @@ button.contrast:is(:hover, :focus),
     padding: 1.5rem 1.25rem;
   }
 
-  .page-toolbar--media-detail {
+  .page-toolbar {
     margin-top: -0.75rem;
   }
 
