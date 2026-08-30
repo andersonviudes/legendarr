@@ -5,6 +5,9 @@
 {{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan", "/media/series/" ~ series.id ~ "/search-subtitles") }}
 
 <div class="media-detail-header">
+  {% if series.poster_cached %}
+  <div class="media-detail-backdrop" style="background-image: url('/posters/series_{{ series.id }}.jpg')"></div>
+  {% endif %}
   <div class="media-detail-poster">
     <div class="poster-art">
       {% if series.poster_cached %}
