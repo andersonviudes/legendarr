@@ -1415,8 +1415,11 @@ body {
 /* The media-detail header's backdrop (see .media-detail-backdrop) reads as its own
    section, so the divider that separates the toolbar from an ordinary form page below
    it is dropped here, and the gap is closed to let the backdrop start right under the
-   toolbar buttons instead of past an empty strip. */
+   toolbar buttons instead of past an empty strip. The negative margin-top claws back
+   half of .app-main's own top padding, since that padding reads as an odd empty gap
+   above the buttons once the colorful backdrop starts immediately below them. */
 .page-toolbar--media-detail {
+  margin-top: -0.6rem;
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
@@ -1715,6 +1718,10 @@ button.contrast:is(:hover, :focus),
 
   .app-main {
     padding: 1.5rem 1.25rem;
+  }
+
+  .page-toolbar--media-detail {
+    margin-top: -0.75rem;
   }
 
   .media-detail-header {
