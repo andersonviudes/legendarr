@@ -48,3 +48,11 @@ error on the unchanged call — three total failures before giving up, without e
 CSS breakpoint rendered correctly at a narrow viewport) wasn't essential to the task, so abandoning
 it outright turned out fine — but that should have been a deliberate choice made after one retry,
 not a fallback for having burned three calls on a structurally-doomed one.
+
+Recurred yet again later the same day (2026-08-30), same call (`browser_resize`), different
+params (`{width: 900, height: 700}`) — identical failure shape, identical outcome: three attempts,
+no `browser_run_code_unsafe` fallback, abandoned because the check was non-essential. This is
+frequent enough within a single session that `browser_resize` specifically should be treated as
+close to guaranteed-broken — go straight to `page.setViewportSize(...)` via
+`browser_run_code_unsafe` on the first failure rather than spending a "free" retry on it, unless
+the resize is genuinely disposable to the task at hand.
