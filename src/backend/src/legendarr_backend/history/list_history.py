@@ -28,7 +28,7 @@ class _RawEntry:
     `statistics.compute_statistics._AttemptRecord`.
     """
 
-    category: Literal["translation", "acquisition"]
+    category: Literal["translation", "acquisition", "upgrade"]
     status: Literal["success", "failure"]
     media_file_id: int
     language: str
@@ -36,6 +36,9 @@ class _RawEntry:
     error_message: str | None
     occurred_at: datetime
     score: float | None
+    # The replaced attempt's score, for an "upgrade" row only — what the new `score`
+    # improved from. `None` on every other row, including a first-ever acquisition.
+    previous_score: float | None
 
 
 def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEntryRead]:
@@ -77,6 +80,10 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
         win.subtitle_id for win in acquisition_wins
     }
     subtitles_by_id = _subtitles_by_id(session, subtitle_ids)
+    replaced_attempt_ids = {
+        win.replaced_attempt_id for win in acquisition_wins if win.replaced_attempt_id is not None
+    }
+    previous_scores_by_attempt_id = _previous_scores(session, replaced_attempt_ids)
 
     raw_entries: list[_RawEntry] = []
     for win in translation_wins:
@@ -93,6 +100,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 error_message=None,
                 occurred_at=win.translated_at,
                 score=None,
+                previous_score=None,
             )
         )
     for failure in translation_failures:
@@ -106,6 +114,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 error_message=failure.error_message,
                 occurred_at=failure.failed_at,
                 score=None,
+                previous_score=None,
             )
         )
     for win in acquisition_wins:
@@ -114,7 +123,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
             continue
         raw_entries.append(
             _RawEntry(
-                category="acquisition",
+                category="upgrade" if win.replaced_attempt_id is not None else "acquisition",
                 status="success",
                 media_file_id=subtitle.media_file_id,
                 language=subtitle.language,
@@ -122,6 +131,11 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 error_message=None,
                 occurred_at=win.attempted_at,
                 score=win.score,
+                previous_score=(
+                    previous_scores_by_attempt_id.get(win.replaced_attempt_id)
+                    if win.replaced_attempt_id is not None
+                    else None
+                ),
             )
         )
     for failure in acquisition_failures:
@@ -135,6 +149,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
                 error_message=failure.error_message,
                 occurred_at=failure.failed_at,
                 score=None,
+                previous_score=None,
             )
         )
 
@@ -154,6 +169,7 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
             error_message=entry.error_message,
             occurred_at=entry.occurred_at,
             score=entry.score,
+            previous_score=entry.previous_score,
         )
         for entry in raw_entries
     ]
@@ -164,6 +180,19 @@ def _subtitles_by_id(session: Session, subtitle_ids: set[int]) -> dict[int, Subt
         return {}
     subtitles = session.exec(select(Subtitle).where(col(Subtitle.id).in_(subtitle_ids))).all()
     return {subtitle.id: subtitle for subtitle in subtitles if subtitle.id is not None}
+
+
+def _previous_scores(session: Session, attempt_ids: set[int]) -> dict[int, float]:
+    """The `score` of each `AcquisitionAttempt` in `attempt_ids` — looked up for the
+    `replaced_attempt_id` of every upgrade row in the current page, the same
+    batch-fetch shape as `_subtitles_by_id`.
+    """
+    if not attempt_ids:
+        return {}
+    attempts = session.exec(
+        select(AcquisitionAttempt).where(col(AcquisitionAttempt.id).in_(attempt_ids))
+    ).all()
+    return {attempt.id: attempt.score for attempt in attempts if attempt.id is not None}
 
 
 def _media_titles_by_file_id(session: Session, media_file_ids: set[int]) -> dict[int, str]:

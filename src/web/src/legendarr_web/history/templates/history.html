@@ -31,7 +31,10 @@
     </td>
     <td>
       <span class="task-line-queue">
-      {{ icon("languages") if entry.category == "translation" else icon("captions") }}
+      {% if entry.category == "translation" %}{{ icon("languages") }}
+      {% elif entry.category == "upgrade" %}{{ icon("refresh-cw") }}
+      {% else %}{{ icon("captions") }}
+      {% endif %}
       {{ t("history.category." ~ entry.category) }}
       </span>
     </td>
@@ -39,7 +42,11 @@
     <td>
       {{ entry.language }}{% if entry.provider %} · {{ entry.provider }}{% endif %}
     </td>
-    <td>{% if entry.score is not none %}{{ (entry.score * 100) | round | int }}%{% else %}—{% endif %}</td>
+    <td>
+    {% if entry.score is not none %}
+      {% if entry.previous_score is not none %}{{ (entry.previous_score * 100) | round | int }}% → {% endif %}{{ (entry.score * 100) | round | int }}%
+    {% else %}—{% endif %}
+    </td>
     <td>{{ entry.occurred_at | local_datetime }}</td>
   </tr>
   {% endfor %}

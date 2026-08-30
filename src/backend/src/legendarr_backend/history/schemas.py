@@ -11,7 +11,7 @@ class HistoryEntryRead(BaseModel):
     doesn't apply: a success has no error, a failure has no single winning provider.
     """
 
-    category: Literal["translation", "acquisition"]
+    category: Literal["translation", "acquisition", "upgrade"]
     status: Literal["success", "failure"]
     media_title: str
     language: str
@@ -23,3 +23,7 @@ class HistoryEntryRead(BaseModel):
     # (`AcquisitionAttempt.score`); `None` for a translation row (no such concept) and
     # for either failure table (no winning candidate to score).
     score: float | None
+    # The replaced subtitle's score (0.0-1.0), set only when `category` is "upgrade" —
+    # what the new `score` improved from. `None` on every other row, including a
+    # first-ever acquisition.
+    previous_score: float | None

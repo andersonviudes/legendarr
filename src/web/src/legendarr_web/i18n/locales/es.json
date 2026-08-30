@@ -288,6 +288,7 @@
   "history.empty": "Aún no hay actividad de traducción ni adquisición — el historial aparecerá aquí una vez que se traduzca o adquiera un subtítulo.",
   "history.category.translation": "Traducción",
   "history.category.acquisition": "Adquisición",
+  "history.category.upgrade": "Actualización",
   "history.table.status": "Estado",
   "history.table.category": "Categoría",
   "history.table.language_provider": "Idioma / Proveedor",
