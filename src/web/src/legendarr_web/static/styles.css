@@ -175,6 +175,11 @@ body {
   gap: 0.75rem;
   font-size: 0.9875rem;
   font-weight: 700;
+  /* Without this, the label's line box uses the page's inherited line-height, whose
+     font-metric-based ascent/descent split can center noticeably off from the glyphs'
+     visual ink — making app-brand-mark look misaligned against it even though both are
+     flex-centered on the same cross axis. */
+  line-height: 1;
   color: var(--pico-h1-color);
   text-decoration: none;
 }
