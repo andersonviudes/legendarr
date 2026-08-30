@@ -19,6 +19,8 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
                 "status": "continuing",
                 "qualityProfileId": 4,
                 "statistics": {"episodeCount": 8, "episodeFileCount": 8},
+                "genres": ["Anime", "Adventure"],
+                "previousAiring": "2018-06-10T01:00:00Z",
             }
         ]
 
@@ -39,6 +41,23 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].quality_profile_name == "Any"
     assert items[0].episode_count == 8
     assert items[0].episode_file_count == 8
+    assert items[0].genres == ["Anime", "Adventure"]
+    assert items[0].last_aired == datetime(2018, 6, 10, 1, 0, tzinfo=UTC)
+
+
+def test_list_items_defaults_genres_and_last_aired_when_absent(monkeypatch):
+    def _get_json(self, path):
+        if path == "/api/v3/qualityprofile":
+            return []
+        return [{"id": 1, "title": "Series", "path": "/series/series"}]
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+    client = SonarrClient("http://sonarr.local", "api-key")
+
+    items = client.list_items()
+
+    assert items[0].genres == []
+    assert items[0].last_aired is None
 
 
 def test_system_status_requests_system_status(monkeypatch):

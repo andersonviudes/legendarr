@@ -29,11 +29,21 @@
       <p>{{ series.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
-      <span>{{ t("media_library.episode_progress", file_count=series.episode_file_count, episode_count=series.episode_count) }}</span>
-      <span>{{ t("media_library.missing_subtitles_count", count=series.missing_subtitles_count) }}</span>
+      <span>{{ icon("files") }} {{ t("media_library.episode_progress", file_count=series.episode_file_count, episode_count=series.episode_count) }}</span>
+      <span>{{ icon("triangle-alert") }} {{ t("media_library.missing_subtitles_count", count=series.missing_subtitles_count) }}</span>
       <span>{{ t("common.monitored") if series.monitored else t("common.unmonitored") }}</span>
-      {% if series.status %}<span>{{ series.status }}</span>{% endif %}
+      {% if series.status == "ended" %}
+      <span>{{ icon("square") }} {{ t("media_library.series_status_ended") }}</span>
+      {% elif series.status == "continuing" %}
+      <span>{{ icon("square") }} {{ t("media_library.series_status_continuing") }}</span>
+      {% elif series.status %}
+      <span>{{ series.status }}</span>
+      {% endif %}
       {% if series.quality_profile_name %}<span>{{ series.quality_profile_name }}</span>{% endif %}
+      {% if series.last_aired %}
+      <span>{{ icon("calendar") }} {{ t("media_library.last_aired_on", date=(series.last_aired|local_datetime)[:10]) }}</span>
+      {% endif %}
+      {% if series.genres %}<span>{{ icon("tag") }} {{ series.genres|join(", ") }}</span>{% endif %}
     </p>
     {% if series.language_profile_name %}
     <p class="media-detail-facts">

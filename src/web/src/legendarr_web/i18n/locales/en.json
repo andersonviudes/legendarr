@@ -173,6 +173,7 @@
   "media_library.episode_progress": "{file_count} / {episode_count} episodes",
   "media_library.series_status_ended": "Series ended",
   "media_library.series_status_continuing": "Series continuing",
+  "media_library.last_aired_on": "Last aired on: {date}",
   "media_library.season": "Season {number}",
   "media_library.sonarr_unavailable": "Couldn't reach Sonarr — episodes are unavailable right now.",
   "media_library.no_episodes_yet": "No episodes found for this series yet.",

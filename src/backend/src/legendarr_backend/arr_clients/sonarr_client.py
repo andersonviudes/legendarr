@@ -43,6 +43,8 @@ class SonarrClient:
                 quality_profile_name=quality_profile_names.get(item.get("qualityProfileId")),
                 episode_count=item.get("statistics", {}).get("episodeCount"),
                 episode_file_count=item.get("statistics", {}).get("episodeFileCount"),
+                genres=item.get("genres") or [],
+                last_aired=_parse_previous_airing(item.get("previousAiring")),
             )
             for item in self._http.get_json("/api/v3/series")
         ]
@@ -88,3 +90,7 @@ class SonarrClient:
 
     def close(self) -> None:
         self._http.close()
+
+
+def _parse_previous_airing(previous_airing: str | None) -> datetime | None:
+    return datetime.fromisoformat(previous_airing) if previous_airing else None

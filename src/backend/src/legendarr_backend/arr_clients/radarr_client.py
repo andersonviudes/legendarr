@@ -39,6 +39,7 @@ class RadarrClient:
                 status=item.get("status"),
                 quality_profile_id=item.get("qualityProfileId"),
                 quality_profile_name=quality_profile_names.get(item.get("qualityProfileId")),
+                genres=item.get("genres") or [],
             )
             for item in self._http.get_json("/api/v3/movie")
         ]

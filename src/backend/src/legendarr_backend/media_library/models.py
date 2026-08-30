@@ -35,6 +35,14 @@ class Movie(SQLModel, table=True):
     status: str | None = Field(default=None)
     quality_profile_id: int | None = Field(default=None)
     quality_profile_name: str | None = Field(default=None)
+    # Comma-joined, same storage convention as `LanguageProfile.target_languages` —
+    # split via `genre_list` below.
+    genres: str | None = Field(default=None)
+
+    @property
+    def genre_list(self) -> list[str]:
+        """`genres` split into names, comma order preserved."""
+        return [genre.strip() for genre in (self.genres or "").split(",") if genre.strip()]
 
 
 class Series(SQLModel, table=True):
@@ -64,6 +72,14 @@ class Series(SQLModel, table=True):
     # Sonarr-only episode counts, from the series' `statistics` object.
     episode_count: int | None = Field(default=None)
     episode_file_count: int | None = Field(default=None)
+    genres: str | None = Field(default=None)
+    # Date the most recently aired episode aired (Sonarr's `previousAiring`).
+    last_aired: datetime | None = Field(default=None)
+
+    @property
+    def genre_list(self) -> list[str]:
+        """`genres` split into names, comma order preserved."""
+        return [genre.strip() for genre in (self.genres or "").split(",") if genre.strip()]
 
 
 class MediaFile(SQLModel, table=True):

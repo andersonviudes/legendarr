@@ -173,6 +173,7 @@
   "media_library.episode_progress": "{file_count} / {episode_count} episódios",
   "media_library.series_status_ended": "Série encerrada",
   "media_library.series_status_continuing": "Série em andamento",
+  "media_library.last_aired_on": "Última exibição em: {date}",
   "media_library.season": "Temporada {number}",
   "media_library.sonarr_unavailable": "Não foi possível conectar ao Sonarr — os episódios estão indisponíveis no momento.",
   "media_library.no_episodes_yet": "Nenhum episódio encontrado para esta série ainda.",

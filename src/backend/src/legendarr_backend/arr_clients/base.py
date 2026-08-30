@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Protocol
 
@@ -26,6 +26,11 @@ class MediaItem:
     # for a movie — Radarr has no equivalent per-item metric.
     episode_count: int | None = None
     episode_file_count: int | None = None
+    # Reported by both apps' item payloads.
+    genres: list[str] = field(default_factory=list)
+    # Sonarr-only: date the most recently aired episode aired (its `previousAiring`).
+    # Always `None` for a movie — Radarr has no equivalent per-item field.
+    last_aired: datetime | None = None
 
 
 class MediaLibraryClient(Protocol):

@@ -29,11 +29,12 @@
       <p>{{ movie.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
-      <span>{{ t("media_library.file_count_one" if movie.files|length == 1 else "media_library.file_count_other", count=movie.files|length) }}</span>
-      <span>{{ t("media_library.missing_subtitles_count", count=movie.missing_subtitles_count) }}</span>
+      <span>{{ icon("files") }} {{ t("media_library.file_count_one" if movie.files|length == 1 else "media_library.file_count_other", count=movie.files|length) }}</span>
+      <span>{{ icon("triangle-alert") }} {{ t("media_library.missing_subtitles_count", count=movie.missing_subtitles_count) }}</span>
       <span>{{ t("common.monitored") if movie.monitored else t("common.unmonitored") }}</span>
       {% if movie.status %}<span>{{ movie.status }}</span>{% endif %}
       {% if movie.quality_profile_name %}<span>{{ movie.quality_profile_name }}</span>{% endif %}
+      {% if movie.genres %}<span>{{ icon("tag") }} {{ movie.genres|join(", ") }}</span>{% endif %}
     </p>
     {% if movie.language_profile_name %}
     <p class="media-detail-facts">

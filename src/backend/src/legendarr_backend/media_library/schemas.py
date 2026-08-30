@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -18,6 +20,7 @@ class MediaRead(BaseModel):
     poster_cached: bool = False
     year: int | None = None
     imdb_rating: float | None = None
+    genres: list[str] = []
 
 
 class MovieRead(MediaRead):
@@ -28,6 +31,8 @@ class SeriesRead(MediaRead):
     # Sonarr-only episode counts — no equivalent for a movie.
     episode_count: int | None = None
     episode_file_count: int | None = None
+    # Sonarr-only: date the most recently aired episode aired. No equivalent for a movie.
+    last_aired: datetime | None = None
 
 
 class SubtitleRead(BaseModel):

@@ -636,6 +636,7 @@ def test_enqueue_item_acquisition_scan_enqueues_only_that_movies_media_files(
     in_memory_session.add(wanted)
     in_memory_session.add(unrelated)
     in_memory_session.commit()
+    assert target.id is not None
 
     scheduler = build_scheduler()
     added = []
@@ -682,6 +683,7 @@ def test_enqueue_item_acquisition_scan_enqueues_only_that_series_media_files(
     in_memory_session.add(wanted)
     in_memory_session.add(unrelated)
     in_memory_session.commit()
+    assert target.id is not None
 
     scheduler = build_scheduler()
     added = []

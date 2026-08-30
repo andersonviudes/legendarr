@@ -97,10 +97,12 @@ def _row_fields(model: type[Movie] | type[Series], item: MediaItem) -> dict:
         "status": item.status,
         "quality_profile_id": item.quality_profile_id,
         "quality_profile_name": item.quality_profile_name,
+        "genres": ",".join(item.genres) if item.genres else None,
     }
     if model is Series:
         fields["episode_count"] = item.episode_count
         fields["episode_file_count"] = item.episode_file_count
+        fields["last_aired"] = item.last_aired
     return fields
 
 
