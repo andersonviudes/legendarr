@@ -1,79 +1,41 @@
-# legendarr
+<h1 align="center">
+  <img src="branding/legendarr-512.png" alt="legendarr" width="32" height="32">
+  legendarr
+</h1>
+
+## About
 
 Self-hosted companion for **Radarr** and **Sonarr** that automatically translates
 subtitles, with flexible language profiles and the ability to translate any subtitle,
 including tracks embedded inside the video.
 
-Full documentation: **https://andersonviudes.github.io/legendarr** — see [ROADMAP.md](ROADMAP.md)
-for what's planned.
+Full documentation: **[andersonviudes.github.io/legendarr](https://andersonviudes.github.io/legendarr/)**.
 
-## Architecture
+## Features
 
-The project is a Python monorepo with two modules, packaged into a single build (one
-Docker image, one `uv.lock`):
-
-- **`src/backend`** (`legendarr_backend`) — domain: Radarr/Sonarr integration,
-  subtitle discovery and extraction, translation, language profiles, and the scheduler
-  that runs all of it periodically.
-- **`src/web`** (`legendarr_web`) — web UI (FastAPI + Jinja2/HTMX), consumes the
-  backend services directly and starts the backend's scheduler in its own process.
-
-Inside each module, the code is organized using **Screaming Architecture + Vertical
-Slice Architecture**: top-level folders are named after business capabilities
-(`media_library`, `subtitle_discovery`, `subtitle_translation`, `language_profiles`, ...),
-not technical layers. Each slice contains what it needs to work end to end; genuinely
-shared code lives in its own top-level folder (`config/`, `database/`, `logging/`,
-`templates/`, ...), a sibling of the business-domain folders.
-
-## Running locally
-
-Prerequisites: [uv](https://docs.astral.sh/uv/), Python 3.12+, and `ffmpeg` (provides
-`ffprobe`, used for embedded subtitle track discovery).
-
-```bash
-make install   # uv sync --all-packages
-make run       # starts the web app (and the backend scheduler) at http://localhost:8000
-```
-
-Configuration is done via environment variables (see `.env.example`), prefix `LEGENDARR_`:
-Radarr/Sonarr URLs and API keys, sync interval, data directory, etc.
-
-## Tests and lint
-
-```bash
-make test
-make lint
-```
-
-## Docker
-
-A single `Dockerfile` builds both modules and runs the web app (which starts the
-backend's scheduler internally):
-
-```bash
-make docker-build
-docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media legendarr:local
-```
-
-Mount your media library into the container (the `/media` above is just a convention —
-any path works). If Radarr/Sonarr see the same files under a different path, set a path
-mapping on each connection in **Settings → Servers**.
-
-## CI
-
-The workflow in `.github/workflows/ci.yml` runs lint + tests, then validates that the
-Docker image builds, on every PR and push to `main`. It does not publish the image.
-
-## Documentation
-
-The docs site lives in `docs/` (MkDocs + Material) and is deployed to GitHub Pages by
-`.github/workflows/docs.yml` on every push to `main` that touches `docs/` or `mkdocs.yml`.
-Preview it locally with:
-
-```bash
-make docs-install
-make docs-serve
-```
+- [Language Profiles](https://andersonviudes.github.io/legendarr/features/language-profiles/) —
+  named source/target language and translation-preference sets, e.g. "translate embedded
+  Japanese to `pt-BR` and `en` for anime".
+- [Media Library Sync](https://andersonviudes.github.io/legendarr/features/media-library/) —
+  keeps track of every movie and series in your Radarr/Sonarr library on a background schedule.
+- [Subtitle Discovery](https://andersonviudes.github.io/legendarr/features/subtitle-discovery/) —
+  finds every subtitle a video already has, external or embedded.
+- [Subtitle Acquisition](https://andersonviudes.github.io/legendarr/features/subtitle-acquisition/) —
+  downloads subtitles from your configured provider sites when none exist yet.
+- [Subtitle Translation](https://andersonviudes.github.io/legendarr/features/subtitle-translation/) —
+  pluggable translation backends behind a single provider interface.
+- [Subtitle Timing Sync](https://andersonviudes.github.io/legendarr/features/subtitle-timing-sync/) —
+  re-aligns a subtitle's cues against the video with `ffsubsync`.
+- [Authentication](https://andersonviudes.github.io/legendarr/features/authentication/) —
+  optional single-admin login for self-hosted deployments.
+- [External API](https://andersonviudes.github.io/legendarr/features/external-api/) —
+  the same REST API the dashboard uses, documented for scripts and other tools.
+- [Media-Server Integration](https://andersonviudes.github.io/legendarr/features/media-server-integration/) —
+  notifies Plex/Jellyfin automatically after a subtitle is written.
+- [Internationalization](https://andersonviudes.github.io/legendarr/features/internationalization/) —
+  pick your own UI language from Settings.
+- [Backup & Restore](https://andersonviudes.github.io/legendarr/features/backup-restore/) —
+  snapshot legendarr's configuration before an upgrade or a move to a new host.
 
 ## License
 

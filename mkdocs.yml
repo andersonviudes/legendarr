@@ -10,9 +10,8 @@ exclude_docs: |
 
 theme:
   name: material
-  icon:
-    logo: material/subtitles-outline
-  favicon: material/subtitles-outline
+  logo: assets/legendarr-icon.svg
+  favicon: assets/favicon-32.png
   palette:
     - scheme: slate
       primary: teal

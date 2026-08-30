@@ -21,46 +21,106 @@ svg.lucide {
   vertical-align: -0.125em;
 }
 
-/* === Theme: neutral graphite palette, muted gold accent === */
-[data-theme="dark"] {
-  --pico-background-color: #202020;
-  --pico-color: #b3b3b3;
-  --pico-h1-color: #b3b3b3;
+/* === Theme: graphite palette, brass "Caption Stack" accent (branding/BRANDING.md) === */
+/* `:root[data-theme=...]` rather than the plain attribute selector: pico.min.css's own
+   light palette also matches via `:root:not([data-theme=dark])` (specificity 0-2-0), which
+   would otherwise outrank a plain `[data-theme="light"]` (0-1-0) regardless of source order
+   and silently win. Matching that specificity here lets cascade order (this file loads
+   after pico.min.css) decide, so these overrides always apply. */
+:root[data-theme="dark"] {
+  --pico-background-color: #0f1011;
+  --pico-color: #f0ece6;
+  --pico-h1-color: #f0ece6;
   /* Dimmer than h1 so the two heading levels read as an actual hierarchy instead of
      identical text at two sizes. */
-  --pico-h2-color: #8f8f8f;
-  --pico-muted-color: #b3b3b3;
-  --pico-muted-border-color: #9a9a9a;
-  --pico-primary: #c9974f;
-  --pico-primary-background: #a97c3e;
+  --pico-h2-color: #b8b2aa;
+  --pico-muted-color: #b8b2aa;
+  --pico-muted-border-color: #26282c;
+  --pico-primary: #d9b98a;
+  --pico-primary-background: #d9b98a;
   --pico-primary-border: var(--pico-primary-background);
-  --pico-primary-underline: rgba(201, 151, 79, 0.5);
-  --pico-primary-hover: #d9a962;
-  --pico-primary-hover-background: #bd8b47;
+  --pico-primary-underline: rgba(217, 185, 138, 0.5);
+  --pico-primary-hover: #c9a672;
+  --pico-primary-hover-background: #c9a672;
   --pico-primary-hover-border: var(--pico-primary-hover-background);
   --pico-primary-hover-underline: var(--pico-primary-hover);
-  --pico-primary-focus: rgba(201, 151, 79, 0.3);
-  --pico-primary-inverse: #17130a;
-  --pico-card-background-color: #16181c;
-  --pico-card-border-color: #9a9a9a;
+  --pico-primary-focus: rgba(217, 185, 138, 0.3);
+  --pico-primary-inverse: #14100b;
+  --pico-card-background-color: #16171a;
+  --pico-card-border-color: #26282c;
+  --pico-del-color: #c97a6d;
+  --pico-ins-color: #7fae8a;
 
-  --pico-form-element-background-color: #333333;
-  --pico-form-element-border-color: #9a9a9a;
-  --pico-form-element-color: #b3b3b3;
-  --pico-form-element-active-background-color: #333333;
+  --pico-form-element-background-color: #1c1e22;
+  --pico-form-element-border-color: #383b40;
+  --pico-form-element-color: #f0ece6;
+  --pico-form-element-active-background-color: #1c1e22;
   --pico-form-element-active-border-color: var(--pico-primary);
   --pico-form-element-focus-color: var(--pico-primary);
 
-  --lg-sidebar-background-color: #2a2a2a;
-  --lg-primary-dim-background-color: rgba(201, 151, 79, 0.12);
+  --lg-sidebar-background-color: #1c1e22;
+  --lg-primary-dim-background-color: rgba(217, 185, 138, 0.12);
   --lg-neutral-dim-background-color: rgba(255, 255, 255, 0.06);
   --lg-neutral-hover-background-color: rgba(255, 255, 255, 0.05);
-  --lg-warn-color: #d9b23c;
-  --lg-warn-dim-background-color: rgba(217, 178, 60, 0.12);
-  --lg-pending-color: #3f8fd9;
-  --lg-pending-dim-background-color: rgba(63, 143, 217, 0.12);
-  --lg-status-ended-color: #3fae6a;
-  --lg-status-continuing-color: #3f8fd9;
+  --lg-warn-color: #d9b98a;
+  --lg-warn-dim-background-color: rgba(217, 185, 138, 0.12);
+  --lg-pending-color: #8aa2b8;
+  --lg-pending-dim-background-color: rgba(138, 162, 184, 0.12);
+  --lg-status-ended-color: #7fae8a;
+  --lg-status-continuing-color: #8aa2b8;
+}
+
+/* Light theme — same var set as [data-theme="dark"] above, BRANDING.md §3 values.
+   Sidebar keeps a distinct, slightly lighter tone than cards, mirroring the dark theme's
+   depth ordering instead of collapsing everything to one surface color. */
+:root[data-theme="light"] {
+  --pico-background-color: #faf8f5;
+  --pico-color: #16171a;
+  --pico-h1-color: #16171a;
+  --pico-h2-color: #4f4a44;
+  --pico-muted-color: #4f4a44;
+  --pico-muted-border-color: #e2dcd3;
+  --pico-primary: #b8873f;
+  --pico-primary-background: #b8873f;
+  --pico-primary-border: var(--pico-primary-background);
+  --pico-primary-underline: rgba(184, 135, 63, 0.5);
+  --pico-primary-hover: #8a6224;
+  --pico-primary-hover-background: #8a6224;
+  --pico-primary-hover-border: var(--pico-primary-hover-background);
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(184, 135, 63, 0.3);
+  --pico-primary-inverse: #14100b;
+  --pico-card-background-color: #ffffff;
+  --pico-card-border-color: #e2dcd3;
+  --pico-del-color: #a8483a;
+  --pico-ins-color: #3f7a52;
+
+  --pico-form-element-background-color: #ffffff;
+  --pico-form-element-border-color: #e2dcd3;
+  --pico-form-element-color: #16171a;
+  --pico-form-element-active-background-color: #ffffff;
+  --pico-form-element-active-border-color: var(--pico-primary);
+  --pico-form-element-focus-color: var(--pico-primary);
+
+  --lg-sidebar-background-color: #f2eee8;
+  --lg-primary-dim-background-color: rgba(184, 135, 63, 0.1);
+  --lg-neutral-dim-background-color: rgba(22, 23, 26, 0.05);
+  --lg-neutral-hover-background-color: rgba(22, 23, 26, 0.04);
+  --lg-warn-color: #8a6224;
+  --lg-warn-dim-background-color: rgba(138, 98, 36, 0.12);
+  --lg-pending-color: #3f6480;
+  --lg-pending-dim-background-color: rgba(63, 100, 128, 0.12);
+  --lg-status-ended-color: #3f7a52;
+  --lg-status-continuing-color: #3f6480;
+}
+
+/* Light theme "sombra em vez de borda pesada" (BRANDING.md §3): the two bordered card
+   shapes get a soft shadow on top of their existing border so they read as raised, not
+   just a slightly different fill against the page bg. Not needed in dark, where the
+   background-color step already does that job. */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .service-card {
+  box-shadow: 0 1px 2px rgba(22, 23, 26, 0.06);
 }
 
 /* === App shell: full-width topbar over a fixed sidebar + scrolling content === */
