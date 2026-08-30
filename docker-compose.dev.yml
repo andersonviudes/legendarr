@@ -20,6 +20,22 @@
 #      Connect → legendarr, target http://legendarr:8000/api/webhooks/arr/<id>) or
 #      wait for the scheduled sync/scan/history-poll jobs to pick the file up.
 #
+# Plex/Jellyfin (optional, for exercising media_servers/notify_media_servers.py):
+#   - Both mount dev/media/tv at the exact same /media/tv path legendarr uses, since
+#     both providers match/resolve library items by that path — Plex by prefix-matching
+#     a section's root folder, Jellyfin by looking the path up directly.
+#   - Disabled by default (profile "media-servers") so a plain `docker compose up` doesn't
+#     pull them in — opt in with `docker compose -f docker-compose.dev.yml --profile
+#     media-servers up --build`.
+#   - Plex: open http://localhost:32400/web, sign in with a Plex account to claim the
+#     server, add a library pointing at /media/tv, then grab a token from Settings →
+#     (a synced device's) "X-Plex-Token" — see https://support.plex.tv for the current
+#     way to find it. In legendarr Settings → Media Servers, use base_url
+#     "http://plex:32400".
+#   - Jellyfin: open http://localhost:8096, finish the setup wizard, add a library
+#     pointing at /media/tv, then create an API key under Dashboard → Advanced → API
+#     Keys. In legendarr Settings → Media Servers, use base_url "http://jellyfin:8096".
+#
 # `dev/` is gitignored — it holds Sonarr's config and whatever media you drop in.
 
 services:
@@ -34,6 +50,37 @@ services:
       - ./dev/media/tv:/tv
     ports:
       - "8989:8989"
+    restart: unless-stopped
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    profiles:
+      - media-servers
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - VERSION=docker
+    volumes:
+      - ./dev/plex-config:/config
+      - ./dev/media/tv:/media/tv
+    ports:
+      - "32400:32400"
+    restart: unless-stopped
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    profiles:
+      - media-servers
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./dev/jellyfin-config:/config
+      - ./dev/media/tv:/media/tv
+    ports:
+      - "8096:8096"
     restart: unless-stopped
 
   legendarr:
