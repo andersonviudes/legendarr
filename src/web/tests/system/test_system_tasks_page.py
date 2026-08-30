@@ -156,7 +156,7 @@ def test_tasks_count_shows_badge_when_tasks_are_running(stub_backend_client):
         response = client.get("/system/tasks/count")
 
     assert response.status_code == 200
-    assert ">1<" in response.text
+    assert response.text.strip() == "1"
 
 
 def test_tasks_count_is_empty_with_no_tasks(stub_backend_client):
