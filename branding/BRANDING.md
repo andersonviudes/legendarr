@@ -14,10 +14,11 @@ Accent: **brass `#d9b98a`** over graphite `#0f1011`.
 | `legendarr-icon-onlight.svg` | graphite version for light backgrounds / README |
 | `legendarr-icon-small.svg` | simplified, without the dots — mandatory at ≤ 24px |
 | `legendarr-tile.svg` | tile with graphite background and rounded corners |
+| `legendarr-mark.svg` `legendarr-mark-512.png` | white-screen mark — same design as the favicon, self-contained on any background — README header |
 | `favicon.ico` | 16 + 32 + 48 embedded |
 | `favicon-16.png` `favicon-32.png` `favicon-48.png` | individual PNGs |
 | `apple-touch-icon-180.png` | iOS / PWA |
-| `legendarr-512.png` `legendarr-1024.png` | Docker Hub, Unraid CA, GitHub social preview, README |
+| `legendarr-512.png` `legendarr-1024.png` | Docker Hub, Unraid CA, GitHub social preview |
 
 ### Installation in `index.html`
 
