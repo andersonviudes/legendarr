@@ -20,7 +20,8 @@ on a tool call that structurally can't succeed wastes the session. `browser_resi
 `browser_handle_dialog` in particular have been observed to never recover no matter how many
 times they're retried.
 
-**How to apply:** retry an affected call at most once. If it fails again, switch to
+**How to apply:** retry an affected call **at most once — no third attempt, ever**, even under
+pressure to get a "real" verification result. If it fails again, immediately either switch to
 `mcp__playwright__browser_run_code_unsafe` and do the same thing with raw Playwright code instead
 — e.g. `page.setViewportSize({width, height})` in place of `browser_resize`, or
 `page.waitForTimeout(ms)` in place of `browser_wait_for`. That tool takes a single code-string
@@ -38,3 +39,12 @@ JSON schema for validation: Error: no schema with key or ref
 `browser_take_screenshot` (has a boolean `fullPage`) alike — so this one isn't specific to
 number/boolean fields, just an early-session glitch. A plain retry of the identical call fixed it
 every time, no `browser_run_code_unsafe` fallback needed for this particular error shape.
+
+Recurred 2026-08-30, and this time the "retry at most once" rule below was **not** followed:
+`browser_resize({width: 600, height: 800})` hit the early-session glitch, then failed twice more
+in a row with the identical `data/width must be number, data/height must be number` per-field
+error on the unchanged call — three total failures before giving up, without ever trying the
+`browser_run_code_unsafe` fallback this memory already prescribes. The check itself (confirming a
+CSS breakpoint rendered correctly at a narrow viewport) wasn't essential to the task, so abandoning
+it outright turned out fine — but that should have been a deliberate choice made after one retry,
+not a fallback for having burned three calls on a structurally-doomed one.
