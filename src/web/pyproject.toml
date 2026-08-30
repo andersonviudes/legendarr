@@ -1,6 +1,6 @@
 [project]
 name = "legendarr-web"
-version = "0.1.0"
+version = "0.22.0"
 description = "Web UI (FastAPI + HTMX) for legendarr"
 requires-python = ">=3.12"
 dependencies = [

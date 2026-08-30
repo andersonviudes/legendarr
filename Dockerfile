@@ -20,6 +20,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.12-slim-bookworm AS runtime
 
+ARG VERSION=0.0.0-dev
+LABEL org.opencontainers.image.title="legendarr" \
+      org.opencontainers.image.description="Self-hosted subtitle translation companion for Radarr and Sonarr" \
+      org.opencontainers.image.source="https://github.com/andersonviudes/legendarr" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later" \
+      org.opencontainers.image.version="${VERSION}"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     tesseract-ocr \
