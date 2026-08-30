@@ -32,3 +32,4 @@
 - [legendarr resilience constants hardcoded](legendarr-resilience-constants-hardcoded.md) — circuit breaker + scheduled-retry backoff thresholds are module constants, not Settings fields
 - [legendarr match score configurable](legendarr-match-score-configurable.md) — LanguageProfile.movie_match_score/series_match_score (0-100) replace the hardcoded DEFAULT_CUTOFF, PR #83
 - [legendarr dev DB direct inspection](legendarr-dev-db-direct-inspection.md) — dev/legendarr-config/legendarr.db is bind-mounted, query it with host sqlite3 instead of exec'ing in
+- [legendarr scheduled-retry e2e test flaky in CI](legendarr-scheduled-retry-e2e-flaky-in-ci.md) — real-scheduler polling test fails intermittently under CI runner contention, unrelated to the diff
