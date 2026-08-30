@@ -35,4 +35,4 @@
 - [legendarr scheduled-retry e2e test flaky in CI](legendarr-scheduled-retry-e2e-flaky-in-ci.md) — real-scheduler polling test fails intermittently under CI runner contention, unrelated to the diff
 - [legendarr .app-brand-mark shared class gotcha](legendarr-app-brand-mark-shared-class-gotcha.md) — same class styles both the topbar logo and the login page's lock icon; scope overrides narrowly
 - [legendarr brand asset propagation check](legendarr-brand-asset-propagation-check.md) — rebranding a mark? grep README/docs/BRANDING.md too, not just the CSS-driven in-app usages
-- [legendarr versioning & release pipeline](legendarr-versioning-release-pipeline.md) — one version across the workspace, make bump-version + Release workflow, Docker publish still off (1.0.0 gate)
+- [legendarr versioning & release pipeline](legendarr-versioning-release-pipeline.md) — one version across the workspace; Release workflow builds+smoke-tests+pushes to GHCR+tags+releases

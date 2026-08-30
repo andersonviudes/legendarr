@@ -23,28 +23,42 @@ make docker-build  # docker build -t legendarr:local .
 make docs-serve    # preview the MkDocs site locally (needs `make docs-install` first)
 ```
 
-Always run `make lint` and `make test` before considering a change done — CI (`.github/workflows/ci.yml`)
-enforces both on every push/PR to `main`. The Docker image is only built (to validate it, not
-pushed anywhere) when a GitHub Release is published, not on every push/PR — publishing it to a
-registry is a `1.0.0` roadmap milestone, not wired up yet (see `ROADMAP.md`).
+Always run `make lint` and `make test` before considering a change done — CI
+(`.github/workflows/ci.yml`, via the shared `.github/workflows/reusable-test.yml`) enforces both
+on every push/PR to `main`. The Docker image itself is published on every release (see below),
+not on every push/PR.
 
 ## Versioning & releases
 
 One version, shared by the root `pyproject.toml` and every workspace member (`src/backend`,
 `src/web`, `src/bootstrap`) — they must always match, since they ship as one Docker image, not
 separate published packages. It follows `ROADMAP.md`'s `0.x.0` milestones (bumped when a
-milestone's items are fully checked off), climbing to `1.0.0` once every roadmap use case works
-together and the image is published.
+milestone's items are fully checked off); `1.0.0` is about the remaining feature-parity/auth
+gates, not the publishing mechanism (see `ROADMAP.md`'s `1.0.0` section).
 
 - Bump locally with `make bump-version part=patch|minor|major` (wraps
-  `scripts/bump_version.sh`, which re-locks `uv.lock` too).
-- Or trigger the `Release` workflow (`.github/workflows/release.yml`) from the Actions tab,
-  which bumps the version, commits and pushes straight to `main` (mechanical `chore:` commit,
-  same exception as `fix:`/`docs:` — see `.claudin/memory/team/legendarr-branch-convention.md`),
-  tags it `vX.Y.Z`, and creates the GitHub Release. That publish event is what `ci.yml`'s
-  `docker-build` job listens for.
-- The workflow needs repo Settings → Actions → General → Workflow permissions set to "Read and
-  write permissions" for the default `GITHUB_TOKEN` to be able to push/tag/release.
+  `scripts/bump_version.sh`, which re-locks `uv.lock` too) — for local testing only, this
+  doesn't publish anything.
+- Real releases go through the `Release` workflow (`.github/workflows/release.yml`,
+  `workflow_dispatch`, pick `bump: patch|minor|major` from the Actions tab). Order: run the
+  shared test job → bump the version (working tree only) → build a `linux/amd64` image and
+  smoke-test it locally (`docker run` + poll `GET /`) → push a multi-arch
+  (`linux/amd64,linux/arm64`) image to `ghcr.io/andersonviudes/legendarr` tagged with both the
+  version and `latest` → regenerate `docs/changelog.md` and the release notes with
+  [git-cliff](https://git-cliff.org) (`cliff.toml`, grouped by the commit types
+  `.github/workflows/pr-title.yml` enforces) → commit the version bump + changelog as
+  `chore: bump version to vX.Y.Z [skip ci]` straight to `main` (mechanical commit, same
+  exception as `fix:`/`docs:` — see `.claudin/memory/team/legendarr-branch-convention.md`; the
+  `[skip ci]` is why the image build/push happens *before* this commit, using the not-yet-
+  committed version) → tag `vX.Y.Z` → create the GitHub Release (categorized changelog + compare
+  link, `image-digest.txt`, `docker-compose.example.yml` as assets) → manually re-trigger
+  `docs.yml` (`[skip ci]` also skips its push-triggered deploy, so the refreshed changelog page
+  wouldn't otherwise go live until some unrelated docs change).
+- Two one-time manual repo settings this depends on: (1) Settings → Actions → General →
+  Workflow permissions → "Read and write permissions", for the default `GITHUB_TOKEN` to
+  push/tag/release *and* push to GHCR (`packages: write`); (2) after the very first successful
+  push, flip the new `legendarr` package's visibility to public under the repo's Packages tab —
+  GHCR creates a package pushed via `GITHUB_TOKEN` as private by default.
 
 ## Architecture
 

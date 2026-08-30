@@ -25,11 +25,14 @@ Mount your media library into the container so legendarr can see the actual file
 same files under a different path than legendarr sees them (typical when they run in
 separate containers), set a path mapping on each connection in **Settings → Servers**.
 
-!!! note
-    legendarr's CI currently only builds and tests the image; it does not publish it to a
-    registry yet. Until an image is published, build it locally instead — see below.
+Prefer Compose? [`docker-compose.example.yml`](https://github.com/andersonviudes/legendarr/blob/main/docker-compose.example.yml)
+in the repo root is the same setup in Compose form — copy it to `docker-compose.yml`,
+adjust the paths/env vars, then `docker compose up -d`.
 
 ## Build the image locally
+
+Only needed to test an unreleased change — the published image above already covers regular
+use.
 
 ```bash
 git clone https://github.com/andersonviudes/legendarr.git
