@@ -18,13 +18,33 @@ make test          # uv run pytest
 make run           # runs legendarr-bootstrap (web UI + backend API + scheduler) at http://localhost:8000
 make db-revision message="..."  # generate an Alembic migration (use the `db-migration` skill)
 make db-upgrade    # apply pending Alembic migrations
+make bump-version part=patch  # bump version across the workspace (patch|minor|major)
 make docker-build  # docker build -t legendarr:local .
 make docs-serve    # preview the MkDocs site locally (needs `make docs-install` first)
 ```
 
 Always run `make lint` and `make test` before considering a change done — CI (`.github/workflows/ci.yml`)
-enforces both on every push/PR to `main`. The Docker image is only built when a GitHub Release is
-published, not on every push/PR.
+enforces both on every push/PR to `main`. The Docker image is only built (to validate it, not
+pushed anywhere) when a GitHub Release is published, not on every push/PR — publishing it to a
+registry is a `1.0.0` roadmap milestone, not wired up yet (see `ROADMAP.md`).
+
+## Versioning & releases
+
+One version, shared by the root `pyproject.toml` and every workspace member (`src/backend`,
+`src/web`, `src/bootstrap`) — they must always match, since they ship as one Docker image, not
+separate published packages. It follows `ROADMAP.md`'s `0.x.0` milestones (bumped when a
+milestone's items are fully checked off), climbing to `1.0.0` once every roadmap use case works
+together and the image is published.
+
+- Bump locally with `make bump-version part=patch|minor|major` (wraps
+  `scripts/bump_version.sh`, which re-locks `uv.lock` too).
+- Or trigger the `Release` workflow (`.github/workflows/release.yml`) from the Actions tab,
+  which bumps the version, commits and pushes straight to `main` (mechanical `chore:` commit,
+  same exception as `fix:`/`docs:` — see `.claudin/memory/team/legendarr-branch-convention.md`),
+  tags it `vX.Y.Z`, and creates the GitHub Release. That publish event is what `ci.yml`'s
+  `docker-build` job listens for.
+- The workflow needs repo Settings → Actions → General → Workflow permissions set to "Read and
+  write permissions" for the default `GITHUB_TOKEN` to be able to push/tag/release.
 
 ## Architecture
 
