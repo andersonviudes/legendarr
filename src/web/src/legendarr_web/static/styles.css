@@ -1415,16 +1415,6 @@ body {
   border-bottom: 1px solid var(--pico-card-border-color);
 }
 
-/* The media-detail header's backdrop (see .media-detail-backdrop) reads as its own
-   section, so the divider that separates the toolbar from an ordinary form page below
-   it is dropped here, and the gap is closed to let the backdrop start right under the
-   toolbar buttons instead of past an empty strip. */
-.page-toolbar--media-detail {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
 /* Element-qualified so this beats Pico's `button[type=submit] { width: 100% }`
    (same 0,1,1 specificity, later in source) — the Save button in this toolbar is
    type="submit" but must stay content-width like its type="button" siblings. */
