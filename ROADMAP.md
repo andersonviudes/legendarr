@@ -12,8 +12,8 @@ constrained by anything already shipped. Every item is tagged with the subject i
 (mirroring the project's slice architecture — `media_library`, `subtitle_discovery`,
 `subtitle_translation`, `language_profiles`, plus the acquisition, settings, and operations
 areas still to come), so items for the same subject can still be traced across versions.
-`1.0.0` is reached once every use case below works together and the image is published. Items
-are checked off (`[x]`) as they land on `main`.
+`1.0.0` is reached once every use case below works together. Items are checked off (`[x]`) as
+they land on `main`.
 
 ## 0.1.0 — Architecture, layout, and infrastructure
 
@@ -485,12 +485,13 @@ are what Bazarr also offers that legendarr doesn't yet.
 
 ## 1.0.0 — Official release
 
-- [ ] Publish the Docker image to a container registry (CI currently only builds it to
-  validate, without pushing it anywhere), gated behind authentication with an external API
-  available. Every use case above works together: external, embedded, provider-downloaded,
-  and transcribed subtitles, synced timing, quality-checked content, pluggable
-  multi-provider/multi-language translation, unattended scheduling, media-server
-  integration, and a configurable, backed-up, multi-language, observable UI.
+- [ ] Every use case above works together, gated behind authentication with an external API
+  available: external, embedded, provider-downloaded, and transcribed subtitles, synced
+  timing, quality-checked content, pluggable multi-provider/multi-language translation,
+  unattended scheduling, media-server integration, and a configurable, backed-up,
+  multi-language, observable UI. (The Docker image itself is already published on every
+  release at [`andersonviudes/legendarr`](https://hub.docker.com/r/andersonviudes/legendarr) on Docker Hub — what's still missing for `1.0.0` is the
+  feature set above, not the publishing mechanism.)
 
 Have a feature request? Open an issue on
 [GitHub](https://github.com/andersonviudes/legendarr/issues).

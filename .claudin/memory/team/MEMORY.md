@@ -35,4 +35,6 @@
 - [legendarr scheduled-retry e2e test flaky in CI](legendarr-scheduled-retry-e2e-flaky-in-ci.md) — real-scheduler polling test fails intermittently under CI runner contention, unrelated to the diff
 - [legendarr .app-brand-mark shared class gotcha](legendarr-app-brand-mark-shared-class-gotcha.md) — same class styles both the topbar logo and the login page's lock icon; scope overrides narrowly
 - [legendarr brand asset propagation check](legendarr-brand-asset-propagation-check.md) — rebranding a mark? grep README/docs/BRANDING.md too, not just the CSS-driven in-app usages
-- [legendarr versioning & release pipeline](legendarr-versioning-release-pipeline.md) — one version across the workspace, make bump-version + Release workflow, Docker publish still off (1.0.0 gate)
+- [legendarr versioning & release pipeline](legendarr-versioning-release-pipeline.md) — one version across the workspace; Release workflow builds+smoke-tests+pushes to Docker Hub+tags+releases
+- [legendarr dev Plex/Jellyfin webhook test](legendarr-dev-plex-jellyfin-webhook-test.md) — gated behind "media-servers" compose profile (opt-in); Jellyfin verified end-to-end, Plex needs a plex.tv claim
+- [legendarr translation provider batch-limit followup](legendarr-translation-provider-batch-limit-followup.md) — Google's 128-segment cap hit on a real subtitle, fixed via chunking; DeepL/LibreTranslate/LLM unverified

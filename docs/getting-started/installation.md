@@ -9,7 +9,7 @@ docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media \
   -e LEGENDARR_SONARR_URL=http://sonarr:8989 \
   -e LEGENDARR_SONARR_API_KEY=your-sonarr-api-key \
   -e PUID=1000 -e PGID=1000 \
-  ghcr.io/andersonviudes/legendarr:latest
+  andersonviudes/legendarr:latest
 ```
 
 The dashboard is then available at `http://localhost:8000`.
@@ -25,11 +25,14 @@ Mount your media library into the container so legendarr can see the actual file
 same files under a different path than legendarr sees them (typical when they run in
 separate containers), set a path mapping on each connection in **Settings → Servers**.
 
-!!! note
-    legendarr's CI currently only builds and tests the image; it does not publish it to a
-    registry yet. Until an image is published, build it locally instead — see below.
+Prefer Compose? [`docker-compose.example.yml`](https://github.com/andersonviudes/legendarr/blob/main/docker-compose.example.yml)
+in the repo root is the same setup in Compose form — copy it to `docker-compose.yml`,
+adjust the paths/env vars, then `docker compose up -d`.
 
 ## Build the image locally
+
+Only needed to test an unreleased change — the published image above already covers regular
+use.
 
 ```bash
 git clone https://github.com/andersonviudes/legendarr.git

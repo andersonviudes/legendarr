@@ -1,34 +1,61 @@
 ---
 name: legendarr-versioning-release-pipeline
-description: One version across root + workspace pyproject.toml files, ROADMAP-driven; make bump-version + Release workflow tag/release; Docker publish intentionally still off
+description: One version across root + workspace pyproject.toml files, ROADMAP-driven; full Release workflow builds+smoke-tests+pushes to Docker Hub+tags+creates the GitHub Release
 type: project
 ---
 
-Set up in the `feat/release-versioning` branch (2026-08-30): one version, shared by the root
-`pyproject.toml` and all three workspace members (`src/backend`, `src/web`, `src/bootstrap`),
-kept in lockstep via `scripts/bump_version.sh` (`make bump-version part=patch|minor|major`,
-wraps `uv version --bump`/`uv version --package`, which also re-locks `uv.lock`). Version
-follows `ROADMAP.md`'s `0.x.0` milestones rather than commit-type-driven semver — bumped by hand
-when a milestone's items are fully checked off. The stale placeholder `0.1.0` (never bumped
-since project inception) was realigned to `0.22.0` to match the last fully-checked-off
-milestone (`0.23.0` is in progress).
+Set up in the `feat/release-versioning` branch/PR #100 (2026-08-30, extended same day once the
+user asked for the full CI/CD pipeline). One version, shared by the root `pyproject.toml` and
+all three workspace members (`src/backend`, `src/web`, `src/bootstrap`), kept in lockstep via
+`scripts/bump_version.sh` (`make bump-version part=patch|minor|major`, wraps `uv version
+--bump`/`uv version --package`, also re-locks `uv.lock`). Version follows `ROADMAP.md`'s `0.x.0`
+milestones rather than commit-type-driven semver — bumped by hand when a milestone's items are
+fully checked off. The stale placeholder `0.1.0` (never bumped since project inception) was
+realigned to `0.22.0` to match the last fully-checked-off milestone.
 
-Added `.github/workflows/release.yml` (`workflow_dispatch`, `bump: patch|minor|major`): bumps
-the version, commits+pushes straight to `main` (mechanical `chore:`, same exception as
-`fix:`/`docs:` per [[legendarr-branch-convention]]), tags `vX.Y.Z`, and `gh release create`s
-it — that publish event is what `ci.yml`'s existing `docker-build` job (release-triggered,
-`push: false`) already listens for. **Not yet enabled: it needs repo Settings → Actions →
-General → Workflow permissions set to "Read and write permissions"** — the org/repo default is
-currently "read", which silently caps what a workflow's `permissions:` block can request; I did
-not flip this myself since it's a security-relevant repo setting, not a code change.
+**`.github/workflows/ci.yml`** now just calls a new reusable `.github/workflows/reusable-
+test.yml` (`on: workflow_call`) on push/PR to `main` — the old build-only `docker-build` job
+(gated on `release: types: [published]`) was deleted, since `release.yml` now does a real,
+smoke-tested, pushed build itself and building the image twice was redundant.
 
-**Docker registry publish deliberately NOT wired up.** `ROADMAP.md`'s `1.0.0` milestone
-explicitly gates "publish the Docker image to a container registry" behind every other roadmap
-item being done, including `0.23.0` (Subtitle cleanup & editing tools, still has ~10 unchecked
-items) — `docs/getting-started/installation.md` already documents this ("CI currently only
-builds and tests the image... build it locally instead"). The target registry/name
-(`ghcr.io/andersonviudes/legendarr`) is already decided in that doc, just not live. Added OCI
-labels to the Dockerfile (`ARG VERSION` + `org.opencontainers.image.*`, defaulting to
-`0.0.0-dev` for local builds) and threaded the release tag into `ci.yml`'s validation build as
-that ARG, but left `push: false` — flipping it to push (plus `packages: write` + GHCR login) is
-the actual `1.0.0` step, intentionally left for when that milestone is reached.
+**`.github/workflows/release.yml`** (`workflow_dispatch`, `bump: patch|minor|major`) does, in
+order: call the shared test job → `scripts/bump_version.sh` (working tree only, not committed
+yet — this is how the pipeline gets the *next* version before deciding to publish anything) →
+build `linux/amd64` only with `--load` and smoke-test it (`docker run` + poll `GET /` up to 30s,
+verified locally against the real Dockerfile — boots and returns HTTP 200 in ~7s, no env vars
+required since Radarr/Sonarr connections are configured post-boot via the UI) → push a
+multi-arch (`linux/amd64,linux/arm64`, via `docker/setup-qemu-action`) image to
+[Docker Hub](https://hub.docker.com/r/andersonviudes/legendarr) (`andersonviudes/legendarr`,
+the user's personal account — this was originally GHCR, switched 2026-08-30 same day at the
+user's request since it's a personal project), tagged both `vX.Y.Z` and `latest` → regenerate
+`docs/changelog.md` and the release notes with [git-cliff](https://git-cliff.org)
+(`cliff.toml` at repo root, `taiki-e/install-action@git-cliff` in CI; `--tag vX.Y.Z` works
+against the not-yet-created tag) → commit the version bump + changelog together as
+`chore: bump version to vX.Y.Z [skip ci]` straight to `main` (same exception as `fix:`/`docs:`,
+see [[legendarr-branch-convention]]) → tag `vX.Y.Z` → `gh release create` with the categorized
+changelog + a `**Full Changelog**: vPREV...vNEW` compare link, plus `image-digest.txt` and
+`docker-compose.example.yml` as assets → `gh workflow run docs.yml` manually, because `[skip
+ci]` also blocks `docs.yml`'s own push-triggered deploy and the changelog page would otherwise
+stay stale until some unrelated docs change.
+
+**Docker registry publish is now live**, reversing the earlier deferral. `ROADMAP.md`'s `1.0.0`
+bullet and `docs/getting-started/installation.md` were both reworded (with the user's explicit
+sign-off) to stop saying publishing is blocked — `1.0.0` is now about the remaining feature-
+parity/auth gates only, not the publishing mechanism. `docs/changelog.md` (previously a stale,
+hand-maintained page frozen since the bootstrap era) is now fully regenerated by git-cliff on
+every release.
+
+Needs two one-time manual setup steps, neither doable from this session: (1) repo Settings →
+Actions → General → Workflow permissions → "Read and write permissions" (`contents: write`,
+for the version-bump push/tag/release — carried over from the original PR #100 note; no longer
+needs `packages: write` now that the registry is Docker Hub, not GHCR); (2) a Docker Hub access
+token (Docker Hub → Account Settings → Security → New Access Token) stored as the
+`DOCKERHUB_TOKEN` repo secret, plus a `DOCKERHUB_USERNAME` secret — unlike GHCR, Docker Hub
+doesn't accept `GITHUB_TOKEN`.
+
+**Not verified end-to-end**: the Docker Hub push + `gh release create` can't be rehearsed outside GitHub
+Actions. Also couldn't run `git-cliff` locally in this sandbox to sanity-check `cliff.toml`'s
+output — both `cargo install git-cliff` (global tool install) and downloading+running a
+prebuilt binary were denied by this environment's permission policy (download-and-execute
+pattern). First real confidence in the changelog formatting and the full pipeline comes from an
+actual `workflow_dispatch` run after merging.

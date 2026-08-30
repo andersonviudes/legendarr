@@ -56,3 +56,14 @@ frequent enough within a single session that `browser_resize` specifically shoul
 close to guaranteed-broken — go straight to `page.setViewportSize(...)` via
 `browser_run_code_unsafe` on the first failure rather than spending a "free" retry on it, unless
 the resize is genuinely disposable to the task at hand.
+
+Recurred again the same day (2026-08-30) on a different tool: `browser_select_option({element,
+target, values: ["Shows"]})` against a genuine native `<select>` failed 3 times in a row with
+`data/values must be array` (and once with the generic schema-compile error) even though `values`
+was a real JSON array every time — never recovered, so `browser_select_option` now joins
+`browser_resize` on the "treat as close to guaranteed-broken, don't retry a 3rd time" list. The
+fallback that actually worked was **not** `browser_run_code_unsafe` with `page.selectOption(...)`
+(untried) but `mcp__playwright__browser_evaluate` with a function that grabs the `<select>` by
+`id`/attribute, sets `.value` directly, and manually dispatches a `new Event('change', {bubbles:
+true})` — setting `.value` alone does not fire the page's own change handler, so the dispatch is
+required. Go straight to this on the first failure rather than retrying.
