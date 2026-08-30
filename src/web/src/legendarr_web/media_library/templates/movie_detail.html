@@ -2,7 +2,7 @@
 {% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, subtitle_pill_list %}
 {% block title %}legendarr · {{ movie.title }}{% endblock %}
 {% block content %}
-{{ media_detail_toolbar("/media/movies/" ~ movie.id ~ "/scan") }}
+{{ media_detail_toolbar("/media/movies/" ~ movie.id ~ "/scan", "/media/movies/" ~ movie.id ~ "/search-subtitles") }}
 
 <div class="media-detail-header">
   <div class="media-detail-poster">
@@ -16,7 +16,16 @@
   </div>
   <div class="media-detail-meta">
     <hgroup>
-      <h1>{{ icon("clapperboard") }} {{ movie.title }}</h1>
+      <h1>
+        {{ icon("clapperboard") }} {{ movie.title }}
+        <button
+          type="button"
+          class="app-icon-btn media-detail-title-copy"
+          aria-label="{{ t('a11y.copy_title') }}"
+          data-copy="{{ movie.title }}"
+          data-copy-toast="{{ t('media_library.title_copied') }}"
+        >{{ icon("copy") }}</button>
+      </h1>
       <p>{{ movie.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
@@ -31,6 +40,9 @@
       <span>{{ movie.language_profile_name }}</span>
       {{ lang_pill_group(movie.target_languages|join(",")) }}
     </p>
+    {% endif %}
+    {% if movie.overview %}
+    <p class="media-detail-overview">{{ movie.overview }}</p>
     {% endif %}
   </div>
 </div>
@@ -105,4 +117,5 @@
 <script src="/static/js/subtitle-acquire.js" defer></script>
 <script src="/static/js/subtitle-pill-menu.js" defer></script>
 <script src="/static/js/subtitle-file-modal.js" defer></script>
+<script src="/static/js/media-detail.js" defer></script>
 {% endblock %}
