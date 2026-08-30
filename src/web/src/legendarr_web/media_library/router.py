@@ -7,10 +7,22 @@ from fastapi.responses import RedirectResponse
 from legendarr_web.backend_client.client import get_backend_client
 from legendarr_web.languages import SUPPORTED_LANGUAGES
 from legendarr_web.media_library import service
+from legendarr_web.subtitle_acquisition import service as subtitle_acquisition_service
+from legendarr_web.subtitle_acquisition.provider_display import provider_label
 from legendarr_web.templates.loader import get_templates
 
 router = APIRouter(prefix="/media")
 templates = get_templates("media_library")
+
+
+# The search panels auto-fire their results request on load (no more "Search" button), so
+# the loading state names the providers being queried instead of a bare "Searching...".
+async def _searching_providers(client: httpx.AsyncClient) -> list[str]:
+    try:
+        providers = await subtitle_acquisition_service.list_subtitle_providers(client)
+    except httpx.HTTPStatusError:
+        return []
+    return [provider_label(p["kind"]) for p in providers if p["enabled"]]
 
 
 @router.get("/movies")
@@ -127,6 +139,30 @@ async def trigger_series_scan(
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
 
 
+@router.post("/movies/{movie_id}/search-subtitles")
+async def trigger_movie_subtitle_search(
+    request: Request, movie_id: int, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    try:
+        await service.trigger_movie_subtitle_search(client, movie_id)
+        result = {"success": True, "message": "Subtitle search started."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't start the subtitle search."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
+@router.post("/series/{series_id}/search-subtitles")
+async def trigger_series_subtitle_search(
+    request: Request, series_id: int, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    try:
+        await service.trigger_series_subtitle_search(client, series_id)
+        result = {"success": True, "message": "Subtitle search started."}
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't start the subtitle search."}
+    return templates.TemplateResponse(request, "_test_result.html", {"result": result})
+
+
 @router.post("/files/{media_file_id}/translate")
 async def trigger_file_translation(
     request: Request,
@@ -227,10 +263,20 @@ async def show_subtitle_search(
             languages = await service.get_target_languages(client, media_file_id)
         except httpx.HTTPStatusError:
             languages = []
+    try:
+        resource = await service.get_subtitle_search_resource(client, media_file_id)
+    except httpx.HTTPStatusError:
+        resource = None
+    providers = await _searching_providers(client) if languages else []
     return templates.TemplateResponse(
         request,
         "_subtitle_search_panel.html",
-        {"media_file_id": media_file_id, "languages": languages},
+        {
+            "media_file_id": media_file_id,
+            "languages": languages,
+            "resource": resource,
+            "providers": providers,
+        },
     )
 
 
@@ -338,6 +384,7 @@ async def show_pending_subtitle_search(
         )
     except httpx.HTTPStatusError:
         languages = []
+    providers = await _searching_providers(client) if languages else []
     return templates.TemplateResponse(
         request,
         "_pending_subtitle_search_panel.html",
@@ -346,6 +393,7 @@ async def show_pending_subtitle_search(
             "season_number": season_number,
             "episode_number": episode_number,
             "languages": languages,
+            "providers": providers,
         },
     )
 

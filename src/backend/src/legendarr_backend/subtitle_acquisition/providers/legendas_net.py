@@ -60,10 +60,11 @@ class LegendasNetProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`moviehash` is ignored — not used here. See the class docstring for how
-        `imdb_id`/`season`/`episode` pick a movie search, a TV search, or a skip.
-        `video_path` is ignored too."""
+        """`moviehash`/`series_imdb_id` are ignored — not used here. See the class
+        docstring for how `imdb_id`/`season`/`episode` pick a movie search, a TV
+        search, or a skip. `video_path` is ignored too."""
         if language.strip().lower() != "pt-br":
             return []
         if season is not None and episode is not None:

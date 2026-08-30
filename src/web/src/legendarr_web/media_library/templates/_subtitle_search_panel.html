@@ -4,23 +4,35 @@
    language picker — the languages searched are whatever the caller resolved, not a
    user choice. #}
 {% from "macros.html" import empty_state, lang_pill_group %}
-<h3>{{ t("media_library.search_providers") }}</h3>
+<div class="subtitle-search-header">
+  <h3>{{ t("media_library.search_providers") }}</h3>
+  {% if languages %}
+  <p class="subtitle-search-languages">{{ t("common.language") }}: {{ lang_pill_group(languages|join(",")) }}</p>
+  {% endif %}
+</div>
+{% if resource and resource.path %}
+<div class="subtitle-search-resource">
+  <p class="subtitle-search-resource-label">{{ icon("info") }} {{ t("media_library.search_resource") }}</p>
+  <p class="subtitle-search-resource-path">{{ resource.path }}</p>
+  <p class="subtitle-search-resource-name">{{ resource.release_name }}</p>
+</div>
+{% endif %}
 {% if languages %}
-<p class="subtitle-search-languages">{{ t("common.language") }}: {{ lang_pill_group(languages|join(",")) }}</p>
-<button
-  type="button"
-  class="page-toolbar-btn"
+<div
+  id="subtitle-search-results"
   hx-get="/media/files/{{ media_file_id }}/subtitle-search/results?{% for language in languages %}languages={{ language }}{% if not loop.last %}&{% endif %}{% endfor %}"
-  hx-target="#subtitle-search-results"
+  hx-trigger="load"
   hx-swap="innerHTML"
-  hx-indicator="#subtitle-search-indicator"
-  hx-disabled-elt="this"
 >
-  {{ icon("search") }}
-  <span>{{ t("common.search") }}</span>
-</button>
-<p id="subtitle-search-indicator" class="test-indicator test-result" role="status">{{ t("common.searching") }}</p>
-<div id="subtitle-search-results"></div>
+  <p aria-busy="true" role="status">{{ t("common.searching") }}</p>
+  {% if providers %}
+  <ul class="subtitle-search-loading-providers">
+    {% for name in providers %}
+    <li>{{ t("media_library.searching_provider", provider=name) }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
 {% else %}
 {{ empty_state(t("media_library.no_target_languages")) }}
 {% endif %}

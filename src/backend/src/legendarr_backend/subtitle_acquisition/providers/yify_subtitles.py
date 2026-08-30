@@ -90,10 +90,11 @@ class YifySubtitlesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own series signal — skipped rather than
         attempted, since this site has no series content at all to search.
-        `season`/`episode`/`video_path` are ignored — not used here."""
+        `season`/`episode`/`video_path`/`series_imdb_id` are ignored — not used here."""
         if imdb_id is None:
             logger.debug(
                 "yify_subtitles search skipped for %r: this provider is movies-only",

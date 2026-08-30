@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from legendarr_backend.arr_clients.base import MediaItem, MediaLibraryClient
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
@@ -185,6 +187,7 @@ def test_sync_persists_arr_status_fields_for_movies(in_memory_session, fake_clie
                 status="released",
                 quality_profile_id=4,
                 quality_profile_name="Any",
+                genres=["Action", "Sci-Fi"],
             )
         ]
     )
@@ -196,10 +199,12 @@ def test_sync_persists_arr_status_fields_for_movies(in_memory_session, fake_clie
     assert movie.status == "released"
     assert movie.quality_profile_id == 4
     assert movie.quality_profile_name == "Any"
+    assert movie.genre_list == ["Action", "Sci-Fi"]
 
 
 def test_sync_persists_arr_status_and_episode_fields_for_series(in_memory_session, fake_clients):
     sonarr = create_arr_service(in_memory_session, _service_input("sonarr", "sonarr"))
+    last_aired = datetime(2018, 6, 10, 1, 0, tzinfo=UTC)
     fake_clients[sonarr.id] = _FakeClient(
         [
             MediaItem(
@@ -212,6 +217,8 @@ def test_sync_persists_arr_status_and_episode_fields_for_series(in_memory_sessio
                 quality_profile_name="Any",
                 episode_count=8,
                 episode_file_count=8,
+                genres=["Anime"],
+                last_aired=last_aired,
             )
         ]
     )
@@ -225,6 +232,9 @@ def test_sync_persists_arr_status_and_episode_fields_for_series(in_memory_sessio
     assert series.quality_profile_name == "Any"
     assert series.episode_count == 8
     assert series.episode_file_count == 8
+    assert series.genre_list == ["Anime"]
+    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
+    assert series.last_aired == last_aired.replace(tzinfo=None)
 
 
 def test_sync_updates_arr_status_fields_on_existing_rows(in_memory_session, fake_clients):

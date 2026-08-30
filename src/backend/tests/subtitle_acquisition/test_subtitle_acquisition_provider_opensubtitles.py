@@ -92,6 +92,49 @@ def test_opensubtitles_search_passes_imdb_id_and_moviehash_when_given(monkeypatc
     assert "moviehash=abc123" in seen["path"]
 
 
+def test_opensubtitles_search_uses_parent_imdb_id_and_episode_numbers_for_a_series(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
+
+    def _get_json(self, path):
+        seen["path"] = path
+        return _search_response()
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+
+    provider = OpenSubtitlesProvider(_config())
+    provider.search(
+        "Ahsoka", "pt-br", imdb_id=None, series_imdb_id="tt13622776", season=1, episode=4
+    )
+
+    assert "parent_imdb_id=13622776" in seen["path"]
+    assert "season_number=1" in seen["path"]
+    assert "episode_number=4" in seen["path"]
+    assert "query=" not in seen["path"]
+    assert "&imdb_id=" not in seen["path"]
+
+
+def test_opensubtitles_search_falls_back_to_query_and_episode_numbers_without_series_imdb_id(
+    monkeypatch,
+):
+    seen = {}
+    monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)
+
+    def _get_json(self, path):
+        seen["path"] = path
+        return _search_response()
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+
+    provider = OpenSubtitlesProvider(_config())
+    provider.search("Ahsoka", "pt-br", season=1, episode=4)
+
+    assert "query=Ahsoka" in seen["path"]
+    assert "season_number=1" in seen["path"]
+    assert "episode_number=4" in seen["path"]
+    assert "parent_imdb_id" not in seen["path"]
+
+
 def test_opensubtitles_search_ignores_moviehash_when_use_hash_is_disabled(monkeypatch):
     seen = {}
     monkeypatch.setattr(ProviderHttpClient, "post_json", _login_post_json)

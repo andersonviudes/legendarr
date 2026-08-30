@@ -47,10 +47,12 @@
 
 {#
   Toolbar for a movie/series detail page: Sync (same trigger as the list pages) plus a
-  per-item "Scan Disk" that rescans just this item's files and subtitles.
+  per-item "Scan Disk" that rescans just this item's files and subtitles, plus a
+  "Search Subtitles" that finds and downloads the best subtitle for every file the
+  item already has, without rescanning the disk first.
 #}
-{% macro media_detail_toolbar(scan_url) %}
-<div class="page-toolbar">
+{% macro media_detail_toolbar(scan_url, search_url) %}
+<div class="page-toolbar page-toolbar--media-detail">
   <button
     type="button"
     class="page-toolbar-btn"
@@ -75,11 +77,25 @@
     {{ icon("hard-drive") }}
     <span>{{ t("common.scan_disk") }}</span>
   </button>
+  <button
+    type="button"
+    class="page-toolbar-btn"
+    hx-post="{{ search_url }}"
+    hx-target="#search-subtitles-result"
+    hx-swap="innerHTML"
+    hx-indicator="#search-subtitles-indicator"
+    hx-disabled-elt="this"
+  >
+    {{ icon("search") }}
+    <span>{{ t("common.search_subtitles") }}</span>
+  </button>
 </div>
 <div id="sync-result" aria-live="polite"></div>
 <p id="sync-indicator" class="test-indicator test-result" role="status">{{ t("common.syncing_library") }}</p>
 <div id="scan-result" aria-live="polite"></div>
 <p id="scan-indicator" class="test-indicator test-result" role="status">{{ t("common.scanning_disk") }}</p>
+<div id="search-subtitles-result" aria-live="polite"></div>
+<p id="search-subtitles-indicator" class="test-indicator test-result" role="status">{{ t("common.searching_subtitles") }}</p>
 {% endmacro %}
 
 {% macro field(name, label, type="text", value="", required=false, placeholder="", autocomplete="", step="") %}
@@ -261,6 +277,18 @@
 {% set external_subtitles = subtitles | rejectattr("origin", "equalto", "embedded") | list %}
 {% set embedded_count = embedded_tracks | length %}
 <ul class="subtitle-pill-list">
+  {% if embedded_tracks %}
+  <li class="subtitle-pill-item">
+    <span
+      class="lang-pill lang-pill--embedded"
+      data-tooltip="{{ t('media_library.embedded_tracks_one' if embedded_count == 1 else 'media_library.embedded_tracks_other', count=embedded_count) }}"
+      data-subtitle-file-modal-open="subtitle-file-modal-{{ media_file_id }}"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+    >{{ icon("captions") }} {{ embedded_count }}</span>
+  </li>
+  {% endif %}
   {% for subtitle in external_subtitles %}
   <li class="subtitle-pill-item">
     <span
@@ -276,18 +304,6 @@
     </div>
   </li>
   {% endfor %}
-  {% if embedded_tracks %}
-  <li class="subtitle-pill-item">
-    <span
-      class="lang-pill lang-pill--embedded"
-      data-tooltip="{{ t('media_library.embedded_tracks_one' if embedded_count == 1 else 'media_library.embedded_tracks_other', count=embedded_count) }}"
-      data-subtitle-file-modal-open="subtitle-file-modal-{{ media_file_id }}"
-      role="button"
-      tabindex="0"
-      aria-haspopup="dialog"
-    >{{ icon("captions") }} {{ embedded_count }}</span>
-  </li>
-  {% endif %}
   {% for language in missing_languages %}
   <li class="subtitle-pill-item">
     <span

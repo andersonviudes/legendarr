@@ -95,11 +95,12 @@ class TVsubtitlesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """`season`/`episode` unset means either a movie search or a series file the
         orchestrator couldn't resolve an episode for — skipped rather than attempted,
         since TVsubtitles has no title-only or movie search path at all. `video_path` is
-        ignored — not used here."""
+        ignored — not used here, same as `series_imdb_id`."""
         if season is None or episode is None:
             logger.debug("tvsubtitles search skipped for %r: no season/episode resolved", title)
             return []

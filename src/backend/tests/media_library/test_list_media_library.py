@@ -33,6 +33,7 @@ def test_list_movies_includes_arr_fields_and_no_metadata(in_memory_session):
             status="released",
             quality_profile_id=4,
             quality_profile_name="Any",
+            genres="Action,Sci-Fi",
         )
     )
     in_memory_session.commit()
@@ -47,6 +48,7 @@ def test_list_movies_includes_arr_fields_and_no_metadata(in_memory_session):
     assert movies[0].poster_url is None
     assert movies[0].overview is None
     assert movies[0].poster_cached is False
+    assert movies[0].genres == ["Action", "Sci-Fi"]
 
 
 def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
@@ -81,6 +83,7 @@ def test_list_movies_joins_media_metadata_by_movie_id(in_memory_session):
 def test_list_series_includes_episode_counts(in_memory_session):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
     assert arr_service.id is not None
+    last_aired = datetime(2018, 6, 10, 1, 0, tzinfo=UTC)
     in_memory_session.add(
         Series(
             arr_service_id=arr_service.id,
@@ -93,6 +96,8 @@ def test_list_series_includes_episode_counts(in_memory_session):
             quality_profile_name="Any",
             episode_count=8,
             episode_file_count=8,
+            genres="Anime",
+            last_aired=last_aired,
         )
     )
     in_memory_session.commit()
@@ -103,3 +108,6 @@ def test_list_series_includes_episode_counts(in_memory_session):
     assert series[0].episode_count == 8
     assert series[0].episode_file_count == 8
     assert series[0].poster_url is None
+    assert series[0].genres == ["Anime"]
+    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
+    assert series[0].last_aired == last_aired.replace(tzinfo=None)

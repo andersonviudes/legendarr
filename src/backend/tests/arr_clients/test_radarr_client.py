@@ -17,6 +17,7 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
                 "monitored": True,
                 "status": "released",
                 "qualityProfileId": 4,
+                "genres": ["Action", "Sci-Fi"],
             }
         ]
 
@@ -36,6 +37,7 @@ def test_list_items_maps_response_to_media_items(monkeypatch):
     assert items[0].status == "released"
     assert items[0].quality_profile_id == 4
     assert items[0].quality_profile_name == "Any"
+    assert items[0].genres == ["Action", "Sci-Fi"]
 
 
 def test_system_status_requests_system_status(monkeypatch):

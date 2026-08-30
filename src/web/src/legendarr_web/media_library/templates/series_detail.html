@@ -2,9 +2,12 @@
 {% from "macros.html" import empty_state, lang_pill_group, media_detail_toolbar, missing_lang_pills, subtitle_pill_list %}
 {% block title %}legendarr · {{ series.title }}{% endblock %}
 {% block content %}
-{{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan") }}
+{{ media_detail_toolbar("/media/series/" ~ series.id ~ "/scan", "/media/series/" ~ series.id ~ "/search-subtitles") }}
 
 <div class="media-detail-header">
+  {% if series.poster_cached %}
+  <div class="media-detail-backdrop" style="background-image: url('/posters/series_{{ series.id }}.jpg')"></div>
+  {% endif %}
   <div class="media-detail-poster">
     <div class="poster-art">
       {% if series.poster_cached %}
@@ -16,21 +19,43 @@
   </div>
   <div class="media-detail-meta">
     <hgroup>
-      <h1>{{ icon("tv") }} {{ series.title }}</h1>
+      <h1>
+        {{ icon("tv") }} {{ series.title }}
+        <button
+          type="button"
+          class="app-icon-btn media-detail-title-copy"
+          aria-label="{{ t('a11y.copy_title') }}"
+          data-copy="{{ series.title }}"
+          data-copy-toast="{{ t('media_library.title_copied') }}"
+        >{{ icon("copy") }}</button>
+      </h1>
       <p>{{ series.remote_path }}</p>
     </hgroup>
     <p class="media-detail-facts">
-      <span>{{ t("media_library.episode_progress", file_count=series.episode_file_count, episode_count=series.episode_count) }}</span>
-      <span>{{ t("media_library.missing_subtitles_count", count=series.missing_subtitles_count) }}</span>
+      <span>{{ icon("files") }} {{ t("media_library.episode_progress", file_count=series.episode_file_count, episode_count=series.episode_count) }}</span>
+      <span>{{ icon("triangle-alert") }} {{ t("media_library.missing_subtitles_count", count=series.missing_subtitles_count) }}</span>
       <span>{{ t("common.monitored") if series.monitored else t("common.unmonitored") }}</span>
-      {% if series.status %}<span>{{ series.status }}</span>{% endif %}
+      {% if series.status == "ended" %}
+      <span>{{ icon("square") }} {{ t("media_library.series_status_ended") }}</span>
+      {% elif series.status == "continuing" %}
+      <span>{{ icon("square") }} {{ t("media_library.series_status_continuing") }}</span>
+      {% elif series.status %}
+      <span>{{ series.status }}</span>
+      {% endif %}
       {% if series.quality_profile_name %}<span>{{ series.quality_profile_name }}</span>{% endif %}
+      {% if series.last_aired %}
+      <span>{{ icon("calendar") }} {{ t("media_library.last_aired_on", date=(series.last_aired|local_datetime)[:10]) }}</span>
+      {% endif %}
+      {% if series.genres %}<span>{{ icon("tag") }} {{ series.genres|join(", ") }}</span>{% endif %}
     </p>
     {% if series.language_profile_name %}
     <p class="media-detail-facts">
       <span>{{ series.language_profile_name }}</span>
       {{ lang_pill_group(series.target_languages|join(",")) }}
     </p>
+    {% endif %}
+    {% if series.overview %}
+    <p class="media-detail-overview">{{ series.overview }}</p>
     {% endif %}
   </div>
 </div>
@@ -153,4 +178,5 @@
 <script src="/static/js/subtitle-acquire.js" defer></script>
 <script src="/static/js/subtitle-pill-menu.js" defer></script>
 <script src="/static/js/subtitle-file-modal.js" defer></script>
+<script src="/static/js/media-detail.js" defer></script>
 {% endblock %}

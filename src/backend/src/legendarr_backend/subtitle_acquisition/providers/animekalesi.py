@@ -69,10 +69,11 @@ class AnimeKalesiProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`imdb_id`/`moviehash`/`video_path`/`tvdb_id` are ignored — not used here. See
-        the class docstring for why a missing `season`/`episode` skips the search
-        entirely, and only Turkish is served."""
+        """`imdb_id`/`moviehash`/`video_path`/`tvdb_id`/`series_imdb_id` are ignored —
+        not used here. See the class docstring for why a missing `season`/`episode`
+        skips the search entirely, and only Turkish is served."""
         if language.strip().lower() != "tr":
             return []
         if season is None or episode is None:

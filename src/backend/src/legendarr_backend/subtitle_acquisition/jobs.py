@@ -7,7 +7,7 @@ from legendarr_backend.config.config_file import AppConfigFile, load_or_create_c
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
-from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.media_library.models import MediaFile, MediaKind
 from legendarr_backend.media_servers.notify_media_servers import (
     notify_media_servers_of_subtitle_write,
 )
@@ -87,6 +87,44 @@ def enqueue_full_acquisition_scan(
             retry_delay_seconds=retry_delay_seconds,
             speech_to_text_model_size=speech_to_text_model_size,
             speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
+        )
+    return len(media_file_ids)
+
+
+def enqueue_item_acquisition_scan(
+    scheduler: BackgroundScheduler,
+    session: Session,
+    media_kind: MediaKind,
+    media_id: int,
+    queue: JobQueue,
+    *,
+    retry_attempts: int,
+    retry_delay_seconds: float,
+    speech_to_text_model_size: str = "base",
+    speech_to_text_timeout_seconds: float = 1800.0,
+    cascade: bool = False,
+) -> int:
+    """Enqueue an acquisition run for every `MediaFile` belonging to one movie/series.
+
+    Shared by the "Search Subtitles" toolbar button on the movie/series detail page —
+    same per-item `MediaFile` filter `media_library.jobs.enqueue_media_scan`'s cascade
+    step uses, but triggered directly instead of after a disk rescan. Callers pass
+    `JobQueue.ACQUIRE` for this responsive, event-triggered path, not `ACQUIRE_BULK` —
+    same `SCAN` vs `SCAN_BULK` reasoning as `media_library.jobs`.
+    """
+    filter_column = MediaFile.movie_id if media_kind == "movie" else MediaFile.series_id
+    media_file_ids = session.exec(select(MediaFile.id).where(filter_column == media_id)).all()
+    for media_file_id in media_file_ids:
+        assert media_file_id is not None
+        enqueue_acquisition(
+            scheduler,
+            media_file_id,
+            queue,
+            retry_attempts=retry_attempts,
+            retry_delay_seconds=retry_delay_seconds,
+            speech_to_text_model_size=speech_to_text_model_size,
+            speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
+            cascade=cascade,
         )
     return len(media_file_ids)
 

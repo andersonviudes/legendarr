@@ -56,6 +56,7 @@ def _movie_read(movie: Movie, metadata: MediaMetadata | None) -> MovieRead:
         monitored=movie.monitored,
         status=movie.status,
         quality_profile_name=movie.quality_profile_name,
+        genres=movie.genre_list,
         **metadata_fields(metadata),
     )
 
@@ -70,5 +71,7 @@ def _series_read(series: Series, metadata: MediaMetadata | None) -> SeriesRead:
         quality_profile_name=series.quality_profile_name,
         episode_count=series.episode_count,
         episode_file_count=series.episode_file_count,
+        genres=series.genre_list,
+        last_aired=series.last_aired,
         **metadata_fields(metadata),
     )

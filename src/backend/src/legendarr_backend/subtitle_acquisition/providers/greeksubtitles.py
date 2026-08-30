@@ -60,10 +60,11 @@ class GreekSubtitlesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`imdb_id`/`moviehash`/`video_path`/`tvdb_id` are ignored — not used here. See
-        the class docstring for how `season`/`episode` refine the query, and why only
-        `el`/`en` are served."""
+        """`imdb_id`/`moviehash`/`video_path`/`tvdb_id`/`series_imdb_id` are ignored —
+        not used here. See the class docstring for how `season`/`episode` refine the
+        query, and why only `el`/`en` are served."""
         wanted = language.strip().lower()
         if wanted not in _LANGUAGES:
             return []

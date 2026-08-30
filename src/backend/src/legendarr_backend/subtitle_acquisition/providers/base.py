@@ -19,6 +19,10 @@ class SubtitleSearchResult:
     "no such signal" rather than "verified not a match". `hearing_impaired` is `None` when
     the provider can't tell (most of them), `True`/`False` when it can — see
     `candidate_evaluation/match_score.py` for how both feed scoring.
+
+    `uploader` is display-only (the manual-search results table) — `None` when the
+    provider's response doesn't name one (an anonymous upload, or a provider that
+    doesn't track it at all).
     """
 
     release_name: str
@@ -27,6 +31,7 @@ class SubtitleSearchResult:
     page_link: str | None = None
     hash_matched: bool = False
     hearing_impaired: bool | None = None
+    uploader: str | None = None
 
 
 class SubtitleProvider(Protocol):
@@ -45,6 +50,7 @@ class SubtitleProvider(Protocol):
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id`/`moviehash` are optional extra precision a provider *may* use to
         narrow its search (OpenSubtitles does); a provider with no such lookup just
@@ -56,8 +62,8 @@ class SubtitleProvider(Protocol):
         resolved by the orchestrator via `media_library.locate.resolve_media_file_episode`
         (a live Sonarr lookup) — `None` for a movie search or when that resolution failed.
         TVsubtitles is the first provider that actually needs them (it has no movie
-        content and can't search without an episode number); every other provider
-        ignores them the same way it ignores an unused `imdb_id`/`moviehash`.
+        content and can't search without an episode number); every other provider but
+        OpenSubtitles ignores them the same way it ignores an unused `imdb_id`/`moviehash`.
 
         `video_path` is the local video file itself, for a provider whose lookup needs
         to read the raw file rather than search by metadata — Napiprojekt is the first
@@ -67,7 +73,14 @@ class SubtitleProvider(Protocol):
         `tvdb_id` is `Series.tvdb_id` for a series search, `None` for a movie search or
         when it isn't set — Anime Tosho is the first provider that needs it (resolving
         an AniDB episode id starts from a TVDB series id); every other provider ignores
-        it the same way it ignores an unused `season`/`episode`."""
+        it the same way it ignores an unused `season`/`episode`.
+
+        `series_imdb_id` is `Series.imdb_id` for a series search, `None` for a movie
+        search (which already gets its own precise id via `imdb_id`) or when it isn't
+        set — OpenSubtitles is the first provider that needs it: OpenSubtitles.com's API
+        treats `imdb_id` as a direct episode/movie lookup, so a series' own id has to
+        travel separately as `parent_imdb_id` alongside `season_number`/`episode_number`.
+        Every other provider ignores it the same way it ignores an unused `tvdb_id`."""
         ...
 
     def download(self, result: SubtitleSearchResult) -> str: ...

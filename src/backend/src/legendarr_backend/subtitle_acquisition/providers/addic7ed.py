@@ -97,12 +97,13 @@ class Addic7edProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """`imdb_id` unset is the orchestrator's own movie/series signal
         (`acquire_media_file_subtitle.py:79`) — a series search is skipped with no
         HTTP calls rather than attempted without the season number Addic7ed's TV
-        listing requires. `season`/`episode`/`video_path` are ignored — not used here
-        yet."""
+        listing requires. `season`/`episode`/`video_path`/`series_imdb_id` are
+        ignored — not used here yet."""
         if imdb_id is None:
             logger.debug(
                 "addic7ed search skipped for %r: series search needs a season number "

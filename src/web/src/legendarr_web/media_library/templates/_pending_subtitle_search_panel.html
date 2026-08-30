@@ -2,24 +2,29 @@
    with no media file yet (Sonarr hasn't downloaded it) — same shape as
    _subtitle_search_panel.html, keyed by series/season/episode instead of a media file id. #}
 {% from "macros.html" import empty_state, lang_pill_group %}
-<h3>{{ t("media_library.search_providers") }}</h3>
+<div class="subtitle-search-header">
+  <h3>{{ t("media_library.search_providers") }}</h3>
+  {% if languages %}
+  <p class="subtitle-search-languages">{{ t("common.language") }}: {{ lang_pill_group(languages|join(",")) }}</p>
+  {% endif %}
+</div>
 <p class="subtitle-search-pending-notice">{{ t("media_library.pending_episode_notice") }}</p>
 {% if languages %}
-<p class="subtitle-search-languages">{{ t("common.language") }}: {{ lang_pill_group(languages|join(",")) }}</p>
-<button
-  type="button"
-  class="page-toolbar-btn"
+<div
+  id="subtitle-search-results"
   hx-get="/media/series/{{ series_id }}/episodes/{{ season_number }}/{{ episode_number }}/subtitle-search/results?{% for language in languages %}languages={{ language }}{% if not loop.last %}&{% endif %}{% endfor %}"
-  hx-target="#subtitle-search-results"
+  hx-trigger="load"
   hx-swap="innerHTML"
-  hx-indicator="#subtitle-search-indicator"
-  hx-disabled-elt="this"
 >
-  {{ icon("search") }}
-  <span>{{ t("common.search") }}</span>
-</button>
-<p id="subtitle-search-indicator" class="test-indicator test-result" role="status">{{ t("common.searching") }}</p>
-<div id="subtitle-search-results"></div>
+  <p aria-busy="true" role="status">{{ t("common.searching") }}</p>
+  {% if providers %}
+  <ul class="subtitle-search-loading-providers">
+    {% for name in providers %}
+    <li>{{ t("media_library.searching_provider", provider=name) }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
 {% else %}
 {{ empty_state(t("media_library.no_target_languages")) }}
 {% endif %}

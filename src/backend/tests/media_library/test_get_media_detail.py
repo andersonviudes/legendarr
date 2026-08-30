@@ -43,6 +43,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
         remote_path="/movies/Foo",
         monitored=True,
         status="released",
+        genres="Action,Sci-Fi",
     )
     in_memory_session.add(movie)
     in_memory_session.commit()
@@ -79,6 +80,7 @@ def test_get_movie_detail_includes_files_subtitles_and_profile(in_memory_session
     assert detail.files[0].subtitles[0].origin == "external"
     assert detail.files[0].missing_languages == ["pt-BR", "fr"]
     assert detail.missing_subtitles_count == 1
+    assert detail.genres == ["Action", "Sci-Fi"]
 
 
 def test_get_movie_detail_uses_item_override_profile_over_default(in_memory_session):
@@ -231,6 +233,7 @@ def test_get_series_detail_returns_none_when_missing(in_memory_session):
 def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, monkeypatch):
     arr_service = _seed_arr_service(in_memory_session, "sonarr")
     assert arr_service.id is not None
+    last_aired = datetime(2018, 6, 10, 1, 0, tzinfo=UTC)
     series = Series(
         arr_service_id=arr_service.id,
         arr_id=7,
@@ -240,6 +243,8 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
         status="continuing",
         episode_count=2,
         episode_file_count=1,
+        genres="Anime,Adventure",
+        last_aired=last_aired,
     )
     in_memory_session.add(series)
     in_memory_session.commit()
@@ -299,6 +304,9 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
     assert detail.episodes[1].pending_languages == []
     assert detail.missing_subtitles_count == 0
     assert detail.episodes_unavailable is False
+    assert detail.genres == ["Anime", "Adventure"]
+    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
+    assert detail.last_aired == last_aired.replace(tzinfo=None)
 
 
 def test_get_series_detail_includes_pending_subtitle_languages_for_episode_without_file(

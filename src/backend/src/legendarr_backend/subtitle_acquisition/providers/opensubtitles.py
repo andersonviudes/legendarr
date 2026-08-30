@@ -91,20 +91,36 @@ class OpenSubtitlesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
         """`moviehash` is only ever sent when this provider's own `use_hash` config is
         on — the caller always offers it when it has one, this is where that setting
-        actually takes effect. `season`/`episode` aren't used by this provider's search
-        yet — ignored, same as `video_path` and every other kwarg this provider doesn't
-        read."""
-        params = {
-            "query": title,
+        actually takes effect.
+
+        `season`/`episode` set together anchor the search on one episode. With
+        `series_imdb_id` also given, the API is asked for that episode precisely —
+        `parent_imdb_id`/`season_number`/`episode_number`, no `query` — since
+        OpenSubtitles' own guidance is that combining an id-based lookup with a text
+        query produces conflicting filters. `series_imdb_id` unresolved falls back to
+        `query`/`season_number`/`episode_number` together, still narrower than title
+        alone. Movie search (`season`/`episode` both `None`) is unchanged: `query` plus
+        `imdb_id` when given. `video_path`/`tvdb_id` are ignored — not used here."""
+        params: dict[str, str | int] = {
             "languages": language.lower(),
             "ai_translated": "include" if self._include_ai_translated else "exclude",
             "machine_translated": "include" if self._include_machine_translated else "exclude",
         }
-        if imdb_id:
-            params["imdb_id"] = imdb_id.removeprefix("tt")
+        if season is not None and episode is not None:
+            if series_imdb_id:
+                params["parent_imdb_id"] = series_imdb_id.removeprefix("tt")
+            else:
+                params["query"] = title
+            params["season_number"] = season
+            params["episode_number"] = episode
+        else:
+            params["query"] = title
+            if imdb_id:
+                params["imdb_id"] = imdb_id.removeprefix("tt")
         if moviehash and self._use_hash:
             params["moviehash"] = moviehash
         client = self._authenticated_client()
@@ -116,6 +132,7 @@ class OpenSubtitlesProvider:
                 language=attributes.get("language", language),
                 hash_matched=bool(attributes.get("moviehash_match", False)),
                 hearing_impaired=bool(attributes.get("hearing_impaired", False)),
+                uploader=attributes.get("uploader", {}).get("name") or None,
             )
             for entry in response.get("data", [])
             for attributes in [entry["attributes"]]

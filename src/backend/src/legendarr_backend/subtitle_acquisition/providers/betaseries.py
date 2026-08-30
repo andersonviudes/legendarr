@@ -66,10 +66,11 @@ class BetaSeriesProvider:
         episode: int | None = None,
         video_path: Path | None = None,
         tvdb_id: int | None = None,
+        series_imdb_id: str | None = None,
     ) -> list[SubtitleSearchResult]:
-        """`imdb_id`/`moviehash`/`video_path` are ignored — not used here. See the class
-        docstring for why `tvdb_id`/`season`/`episode` are all required and only
-        `en`/`fr` are served."""
+        """`imdb_id`/`moviehash`/`video_path`/`series_imdb_id` are ignored — not used
+        here. See the class docstring for why `tvdb_id`/`season`/`episode` are all
+        required and only `en`/`fr` are served."""
         if tvdb_id is None or season is None or episode is None:
             logger.debug(
                 "betaseries search skipped for %r: no tvdb_id/season/episode resolved", title

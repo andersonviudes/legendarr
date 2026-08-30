@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -18,6 +20,7 @@ class MediaRead(BaseModel):
     poster_cached: bool = False
     year: int | None = None
     imdb_rating: float | None = None
+    genres: list[str] = []
 
 
 class MovieRead(MediaRead):
@@ -28,6 +31,8 @@ class SeriesRead(MediaRead):
     # Sonarr-only episode counts — no equivalent for a movie.
     episode_count: int | None = None
     episode_file_count: int | None = None
+    # Sonarr-only: date the most recently aired episode aired. No equivalent for a movie.
+    last_aired: datetime | None = None
 
 
 class SubtitleRead(BaseModel):
@@ -130,6 +135,14 @@ class WantedRead(BaseModel):
     missing_files_count: int
 
 
+class SubtitleSearchResourceRead(BaseModel):
+    """The manual-search panel's "Resource" info box — the searched file's on-disk
+    path and a display-only, reconstructed scene-style release name for it."""
+
+    path: str
+    release_name: str
+
+
 class SubtitleCandidateRead(BaseModel):
     """One manual-search result — everything the UI needs to display it and, on
     download, everything `SubtitleCandidateDownloadInput` needs to re-locate it."""
@@ -140,6 +153,7 @@ class SubtitleCandidateRead(BaseModel):
     language: str
     page_link: str | None = None
     score: float
+    uploader: str | None = None
 
 
 class SubtitleCandidateDownloadInput(BaseModel):

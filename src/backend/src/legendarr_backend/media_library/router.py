@@ -34,18 +34,23 @@ from legendarr_backend.media_library.schemas import (
     SubtitleCandidateDownloadInput,
     SubtitleCandidateRead,
     SubtitleRead,
+    SubtitleSearchResourceRead,
     WantedRead,
 )
 from legendarr_backend.media_metadata.fetch_metadata import cache_poster_now
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.subtitle_acquisition.audit_trail import get_latest_attempt
 from legendarr_backend.subtitle_acquisition.blacklist.blacklist_subtitle import blacklist_subtitle
+from legendarr_backend.subtitle_acquisition.describe_search_resource import (
+    describe_subtitle_search_resource,
+)
 from legendarr_backend.subtitle_acquisition.download_media_file_subtitle import (
     download_subtitle_candidate,
 )
 from legendarr_backend.subtitle_acquisition.download_pending_subtitle import (
     download_pending_subtitle_candidate,
 )
+from legendarr_backend.subtitle_acquisition.jobs import enqueue_item_acquisition_scan
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
     SubtitleCandidate,
@@ -191,6 +196,44 @@ def _trigger_item_scan(request: Request, kind: MediaKind, item_id: int) -> dict[
         on_reconcile_pending=_get_on_reconcile_pending(request),
     )
     return {"status": "enqueued"}
+
+
+@router.post("/movies/{movie_id}/search-subtitles", status_code=202)
+def trigger_movie_subtitle_search(
+    movie_id: int, request: Request, session: Session = Depends(_get_session)
+) -> dict[str, int]:
+    return _trigger_item_subtitle_search(request, session, "movie", movie_id)
+
+
+@router.post("/series/{series_id}/search-subtitles", status_code=202)
+def trigger_series_subtitle_search(
+    series_id: int, request: Request, session: Session = Depends(_get_session)
+) -> dict[str, int]:
+    return _trigger_item_subtitle_search(request, session, "series", series_id)
+
+
+def _trigger_item_subtitle_search(
+    request: Request, session: Session, kind: MediaKind, item_id: int
+) -> dict[str, int]:
+    """ "Search Subtitles" for one movie/series: finds and downloads the best available
+    subtitle for every `MediaFile` the item already has — the toolbar's on-demand
+    counterpart to the acquisition pass "Scan Disk" cascades into after rescanning the
+    disk first, without rescanning here.
+    """
+    scheduler, config = _scheduler_and_config(request)
+    enqueued = enqueue_item_acquisition_scan(
+        scheduler,
+        session,
+        kind,
+        item_id,
+        JobQueue.ACQUIRE,
+        retry_attempts=config.acquisition_retry_attempts,
+        retry_delay_seconds=config.acquisition_retry_delay_seconds,
+        speech_to_text_model_size=config.speech_to_text_model_size,
+        speech_to_text_timeout_seconds=config.speech_to_text_timeout_seconds,
+        cascade=True,
+    )
+    return {"media_files_enqueued": enqueued}
 
 
 @router.post("/movies/{movie_id}/poster-cache")
@@ -377,6 +420,17 @@ def get_target_languages_for_media_file(
     media_file_id: int, session: Session = Depends(_get_session)
 ) -> list[str]:
     return target_languages_for_media_file(session, media_file_id)
+
+
+@router.get(
+    "/files/{media_file_id}/subtitle-search/resource", response_model=SubtitleSearchResourceRead
+)
+def get_subtitle_search_resource(
+    media_file_id: int, session: Session = Depends(_get_session)
+) -> SubtitleSearchResourceRead:
+    media_file, video_path = _get_media_file_and_video_path(session, media_file_id)
+    resource = describe_subtitle_search_resource(session, media_file, video_path)
+    return SubtitleSearchResourceRead(path=resource.path, release_name=resource.release_name)
 
 
 @router.get(

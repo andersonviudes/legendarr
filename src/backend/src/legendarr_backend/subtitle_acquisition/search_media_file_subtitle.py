@@ -45,6 +45,10 @@ class SubtitleCandidate:
     # results list, so a caller reconstructing a candidate from a download request
     # (which doesn't carry a score) can leave it at the default.
     score: float = 0.0
+    # Display-only, same as `SubtitleSearchResult.uploader` it's copied from — `None`
+    # for every provider but OpenSubtitles, which doesn't set it either for an
+    # anonymous upload.
+    uploader: str | None = None
 
 
 def search_media_file_subtitle_candidates(
@@ -83,6 +87,7 @@ def search_media_file_subtitle_candidates(
                     episode=context.episode_number,
                     video_path=video_path,
                     tvdb_id=context.tvdb_id,
+                    series_imdb_id=context.series_imdb_id,
                 )
                 record_success(BreakerCategory.ACQUISITION, provider.name)
             except Exception:
@@ -102,6 +107,7 @@ def search_media_file_subtitle_candidates(
                     language=result.language,
                     page_link=result.page_link,
                     score=score_candidate(result, video_path.stem, hearing_impaired_preference),
+                    uploader=result.uploader,
                 )
                 for result in results
                 if (provider.name, result.download_id) not in blacklisted
