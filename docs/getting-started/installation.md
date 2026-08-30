@@ -9,7 +9,7 @@ docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media \
   -e LEGENDARR_SONARR_URL=http://sonarr:8989 \
   -e LEGENDARR_SONARR_API_KEY=your-sonarr-api-key \
   -e PUID=1000 -e PGID=1000 \
-  ghcr.io/andersonviudes/legendarr:latest
+  andersonviudes/legendarr:latest
 ```
 
 The dashboard is then available at `http://localhost:8000`.

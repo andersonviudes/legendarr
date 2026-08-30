@@ -4,7 +4,7 @@
 
 services:
   legendarr:
-    image: ghcr.io/andersonviudes/legendarr:latest
+    image: andersonviudes/legendarr:latest
     environment:
       - LEGENDARR_RADARR_URL=http://radarr:7878
       - LEGENDARR_RADARR_API_KEY=your-radarr-api-key

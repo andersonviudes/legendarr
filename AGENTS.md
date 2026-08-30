@@ -43,7 +43,7 @@ gates, not the publishing mechanism (see `ROADMAP.md`'s `1.0.0` section).
   `workflow_dispatch`, pick `bump: patch|minor|major` from the Actions tab). Order: run the
   shared test job → bump the version (working tree only) → build a `linux/amd64` image and
   smoke-test it locally (`docker run` + poll `GET /`) → push a multi-arch
-  (`linux/amd64,linux/arm64`) image to `ghcr.io/andersonviudes/legendarr` tagged with both the
+  (`linux/amd64,linux/arm64`) image to [Docker Hub](https://hub.docker.com/r/andersonviudes/legendarr) tagged with both the
   version and `latest` → regenerate `docs/changelog.md` and the release notes with
   [git-cliff](https://git-cliff.org) (`cliff.toml`, grouped by the commit types
   `.github/workflows/pr-title.yml` enforces) → commit the version bump + changelog as
@@ -54,11 +54,11 @@ gates, not the publishing mechanism (see `ROADMAP.md`'s `1.0.0` section).
   link, `image-digest.txt`, `docker-compose.example.yml` as assets) → manually re-trigger
   `docs.yml` (`[skip ci]` also skips its push-triggered deploy, so the refreshed changelog page
   wouldn't otherwise go live until some unrelated docs change).
-- Two one-time manual repo settings this depends on: (1) Settings → Actions → General →
+- Two one-time manual setup steps this depends on: (1) repo Settings → Actions → General →
   Workflow permissions → "Read and write permissions", for the default `GITHUB_TOKEN` to
-  push/tag/release *and* push to GHCR (`packages: write`); (2) after the very first successful
-  push, flip the new `legendarr` package's visibility to public under the repo's Packages tab —
-  GHCR creates a package pushed via `GITHUB_TOKEN` as private by default.
+  push/tag/release; (2) a Docker Hub access token (Docker Hub → Account Settings → Security
+  → New Access Token) stored as the `DOCKERHUB_TOKEN` repo secret, alongside a
+  `DOCKERHUB_USERNAME` secret — Docker Hub doesn't accept `GITHUB_TOKEN`, unlike GHCR.
 
 ## Architecture
 

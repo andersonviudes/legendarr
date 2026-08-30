@@ -490,7 +490,7 @@ are what Bazarr also offers that legendarr doesn't yet.
   timing, quality-checked content, pluggable multi-provider/multi-language translation,
   unattended scheduling, media-server integration, and a configurable, backed-up,
   multi-language, observable UI. (The Docker image itself is already published on every
-  release at `ghcr.io/andersonviudes/legendarr` — what's still missing for `1.0.0` is the
+  release at [`andersonviudes/legendarr`](https://hub.docker.com/r/andersonviudes/legendarr) on Docker Hub — what's still missing for `1.0.0` is the
   feature set above, not the publishing mechanism.)
 
 Have a feature request? Open an issue on
