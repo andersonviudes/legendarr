@@ -106,6 +106,25 @@ def target_languages_for_media_file(session: Session, media_file_id: int) -> lis
     return profile.target_language_list if profile else []
 
 
+def has_source_subtitle_for_media_file(session: Session, media_file_id: int) -> bool:
+    """Whether this file already has a discovered `Subtitle` (external or embedded, an
+    already-extracted embedded track is a real row here too) in one of its effective
+    profile's source languages — i.e. there's something to translate *from*. Gates the
+    missing/empty pills' "Translate now" action (`subtitle_pill_list()` in `macros.html`),
+    which otherwise dangled on a pill with nothing behind it to pick as a source.
+    """
+    profile = _resolve_profile_for_media_file(session, media_file_id)
+    if profile is None:
+        return False
+    present = {
+        subtitle.language
+        for subtitle in session.exec(
+            select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+        )
+    }
+    return any(language.lower() in present for language in profile.source_language_list)
+
+
 def _resolve_profile_for_media_file(session: Session, media_file_id: int) -> LanguageProfile | None:
     media_file = session.get(MediaFile, media_file_id)
     if media_file is None:

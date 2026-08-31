@@ -255,6 +255,9 @@ def _media_file_reads(
             )
             for track in embedded_tracks_by_file_id.get(media_file.id, [])
         ]
+        has_source_subtitle = profile is not None and any(
+            language.lower() in present for language in profile.source_language_list
+        )
         reads.append(
             MediaFileRead(
                 id=media_file.id,
@@ -265,6 +268,7 @@ def _media_file_reads(
                 missing_languages=[
                     language for language in target_languages if language.lower() not in present
                 ],
+                has_source_subtitle=has_source_subtitle,
             )
         )
     return reads

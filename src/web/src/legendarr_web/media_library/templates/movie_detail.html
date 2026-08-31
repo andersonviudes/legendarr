@@ -76,7 +76,7 @@
         {{ file.relative_path }}
         {% endif %}
       </td>
-      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path, file.embedded_tracks) }}</td>
+      <td id="subtitles-cell-{{ file.id }}">{{ subtitle_pill_list(file.subtitles, file.id, file.missing_languages, file.relative_path, file.embedded_tracks, file.has_source_subtitle) }}</td>
       <td>
         <div class="file-row-actions">
           <button

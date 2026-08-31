@@ -27,6 +27,7 @@ def _movie_detail_handler(request: httpx.Request) -> httpx.Response:
                     "size_bytes": 100,
                     "subtitles": [{"id": 9, "language": "en", "origin": "external"}],
                     "embedded_tracks": [],
+                    "has_source_subtitle": True,
                 }
             ],
         },
@@ -338,6 +339,28 @@ def test_movie_detail_page_renders_a_missing_language_as_a_gray_pill(stub_backen
     assert 'class="lang-pill lang-pill--missing"' in response.text
     assert "fr" in response.text
     assert "/media/files/5/translate" in response.text
+
+
+def _movie_detail_with_missing_language_and_no_source_handler(
+    request: httpx.Request,
+) -> httpx.Response:
+    response = _movie_detail_with_missing_language_handler(request)
+    body = response.json()
+    body["files"][0]["has_source_subtitle"] = False
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_hides_translate_now_without_a_source_subtitle(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_missing_language_and_no_source_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    assert 'class="lang-pill lang-pill--missing"' in response.text
+    assert "/media/files/5/translate" not in response.text
+    assert "/media/files/5/subtitle-search" in response.text
 
 
 def _movie_detail_with_no_subtitles_handler(request: httpx.Request) -> httpx.Response:

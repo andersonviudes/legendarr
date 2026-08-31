@@ -253,6 +253,13 @@
   `.file-row-actions` (Actions column) since it doesn't apply to any subtitle, existing
   or hypothetical.
 
+  "Translate now" additionally only renders when `has_source_subtitle` is true — a
+  missing/empty pill has no subtitle of its own to act on, and translating needs a real
+  subtitle in one of the profile's *source* languages to translate *from*, which a file
+  with none yet (no source language acquired/extracted) can't supply. "Manual search"
+  has no such gate — it searches providers for a target language directly, no local
+  source subtitle required.
+
   "Delete" (labeled to match Bazarr's own Tools-menu wording, ROADMAP.md 0.23.0's gap
   analysis) is still `blacklist_subtitle` under the hood — it deletes the file from disk
   *and* records a `SubtitleBlacklistEntry` so the same release isn't re-fetched, unchanged
@@ -277,7 +284,7 @@
   count is `embedded_tracks`' length too — extracted + skipped — so a file whose every
   embedded track was skipped still has a way to open the dialog and see them.
 #}
-{% macro subtitle_pill_list(subtitles, media_file_id, missing_languages=[], file_name=None, embedded_tracks=[]) %}
+{% macro subtitle_pill_list(subtitles, media_file_id, missing_languages=[], file_name=None, embedded_tracks=[], has_source_subtitle=False) %}
 {% if subtitles or missing_languages or embedded_tracks %}
 {% set external_subtitles = subtitles | rejectattr("origin", "equalto", "embedded") | list %}
 {% set embedded_count = embedded_tracks | length %}
@@ -320,7 +327,7 @@
       aria-haspopup="true"
     >{{ language }}</span>
     <div class="subtitle-pill-menu" hidden>
-      {{ _subtitle_pill_file_actions(media_file_id) }}
+      {{ _subtitle_pill_file_actions(media_file_id, has_source_subtitle) }}
     </div>
   </li>
   {% endfor %}
@@ -434,9 +441,11 @@
 {% endif %}
 {% else %}
 {#
-  No subtitles yet — still need Translate now/Manual search reachable (arguably the
-  case they matter most for), so the "—" placeholder becomes a menu trigger too, same
-  shape as a real pill just without the subtitle-specific actions.
+  No subtitles yet — still need Manual search reachable (arguably the case it matters
+  most for), so the "—" placeholder becomes a menu trigger too, same shape as a real
+  pill just without the subtitle-specific actions. "Translate now" itself won't render
+  here regardless (see _subtitle_pill_file_actions below) — a file with zero subtitles
+  has no source-language one either.
 #}
 <span class="subtitle-pill-item">
   <span
@@ -447,14 +456,15 @@
     aria-haspopup="true"
   >—</span>
   <div class="subtitle-pill-menu" hidden>
-    {{ _subtitle_pill_file_actions(media_file_id) }}
+    {{ _subtitle_pill_file_actions(media_file_id, has_source_subtitle) }}
   </div>
 </span>
 {% endif %}
 <span id="translate-result-{{ media_file_id }}"></span>
 {% endmacro %}
 
-{% macro _subtitle_pill_file_actions(media_file_id) %}
+{% macro _subtitle_pill_file_actions(media_file_id, has_source_subtitle=False) %}
+{% if has_source_subtitle %}
 <button
   type="button"
   class="subtitle-pill-menu-item"
@@ -463,6 +473,7 @@
   hx-swap="innerHTML"
   hx-disabled-elt="this"
 >{{ icon("send") }} {{ t("common.translate_now") }}</button>
+{% endif %}
 <button
   type="button"
   class="subtitle-pill-menu-item"

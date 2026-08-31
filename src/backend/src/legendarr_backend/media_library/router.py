@@ -64,6 +64,7 @@ from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
 )
 from legendarr_backend.subtitle_acquisition.upload_pending_subtitle import upload_pending_subtitle
 from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
+    has_source_subtitle_for_media_file,
     missing_target_languages_for_media_file,
     target_languages_for_media_file,
 )
@@ -412,6 +413,7 @@ def _acquisition_result(
         subtitles=subtitle_reads,
         embedded_tracks=embedded_track_reads,
         missing_languages=missing_target_languages_for_media_file(session, media_file_id),
+        has_source_subtitle=has_source_subtitle_for_media_file(session, media_file_id),
     )
 
 
