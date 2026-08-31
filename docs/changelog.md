@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.2] - 2026-08-31
+
+### 📚 Documentation
+
+- Add codecov badge and Installation section to README
+- Inline the full Docker Compose example in the README
+- Add full-HD feature screenshots (#102)
+
+### 🔧 Miscellaneous
+
+- Grant actions:write so the release workflow can trigger the docs redeploy
+
 ## [0.22.1] - 2026-08-30
 
 ### ✨ Features
@@ -181,5 +193,6 @@ All notable changes to this project are documented here. The format follows
 - Record .app-brand-mark shared-class gotcha
 - Record reflex-PR clarification, playwright resize recurrence, and brand-asset check (#97)
 - Disable Plex/Jellyfin by default in the dev compose stack (#99)
+- Bump version to v0.22.1 [skip ci]
 
 
