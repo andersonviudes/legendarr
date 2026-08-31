@@ -3,6 +3,25 @@
   legendarr
 </h1>
 
+<p align="center">
+  <a href="https://github.com/andersonviudes/legendarr/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/andersonviudes/legendarr/ci.yml?branch=main&label=CI" alt="CI">
+  </a>
+  <a href="https://github.com/andersonviudes/legendarr/releases/latest">
+    <img src="https://img.shields.io/github/v/release/andersonviudes/legendarr?label=release" alt="release">
+  </a>
+  <a href="https://hub.docker.com/r/andersonviudes/legendarr">
+    <img src="https://img.shields.io/docker/pulls/andersonviudes/legendarr" alt="docker pulls">
+  </a>
+  <img src="https://img.shields.io/github/languages/code-size/andersonviudes/legendarr" alt="code size">
+  <a href="https://codecov.io/gh/andersonviudes/legendarr">
+    <img src="https://img.shields.io/codecov/c/github/andersonviudes/legendarr" alt="codecov">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/andersonviudes/legendarr" alt="License">
+  </a>
+</p>
+
 ## About
 
 Self-hosted companion for **Radarr** and **Sonarr** that automatically translates
@@ -10,6 +29,33 @@ subtitles, with flexible language profiles and the ability to translate any subt
 including tracks embedded inside the video.
 
 Full documentation: **[andersonviudes.github.io/legendarr](https://andersonviudes.github.io/legendarr/)**.
+
+## Installation
+
+Full walkthrough (path mappings, `PUID`/`PGID`, building from source): [Installation docs](https://andersonviudes.github.io/legendarr/getting-started/installation/).
+
+### Docker
+
+```bash
+docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media \
+  -e LEGENDARR_RADARR_URL=http://radarr:7878 \
+  -e LEGENDARR_RADARR_API_KEY=your-radarr-api-key \
+  -e LEGENDARR_SONARR_URL=http://sonarr:8989 \
+  -e LEGENDARR_SONARR_API_KEY=your-sonarr-api-key \
+  -e PUID=1000 -e PGID=1000 \
+  andersonviudes/legendarr:latest
+```
+
+### Docker Compose
+
+Copy [`docker-compose.example.yml`](docker-compose.example.yml) to `docker-compose.yml`,
+adjust the paths/env vars, then:
+
+```bash
+docker compose up -d
+```
+
+The dashboard is then available at `http://localhost:8000`.
 
 ## Features
 
