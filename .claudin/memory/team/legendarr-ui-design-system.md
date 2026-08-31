@@ -760,3 +760,22 @@ literal copy of the pasted mockup). New `match_score_field()` macro
   fields through the backend correctly. Needed a CDP `Network.clearBrowserCache` +
   `setCacheDisabled` session (`browser_run_code_unsafe`, not a plain reload) to see the rebuilt
   JS/CSS, per the browser-cache gotcha logged earlier in this file — still applies, still bites.
+
+**Update (2026-08-31 — external pill's "Blacklist" item relabeled to "Delete"):** the user
+screenshotted the same external-pill dropdown from the 2026-08-29 entries above and flagged a
+missing delete option. Confirmed via `AskUserQuestion` (after finding ROADMAP.md 0.23.0's own gap
+analysis already states Bazarr's "Delete" tool maps onto legendarr's existing "Blacklist" action,
+not a separate capability) that no new action was wanted — just relabel the existing 5th item so
+its delete behavior reads clearly. `_subtitle_pill_subtitle_actions()`/the file-modal row actions
+block in `macros.html` now use `t("common.delete")` instead of `t("common.blacklist")` (that key
+had exactly one caller, so it was deleted from all three locale catalogs rather than left dead);
+icon stays `ban.svg` — unlike every other icon swap logged in this file, no new one was vendored,
+since `backups.html`'s existing delete button already pairs `icon("ban")` with `t("common.delete")`,
+confirming "ban" is this app's established delete icon, not something specific to blacklisting.
+**The underlying behavior is unchanged**: the button still posts to
+`/media/subtitles/{id}/blacklist`, still calls `blacklist_subtitle()`, and still both deletes the
+file *and* adds a `SubtitleBlacklistEntry` so the release isn't re-fetched — only the visible
+label/tooltip changed. **How to apply:** if a future ask wants a delete that *doesn't* also block
+re-fetching (a real second action, not a relabel), that's new backend surface — a plain
+unlink-and-rescan without `add_blacklist_entry`, most naturally in `subtitle_discovery/` since it
+isn't acquisition-specific — not something the rename above already covers.
