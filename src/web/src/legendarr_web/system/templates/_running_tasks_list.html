@@ -5,6 +5,9 @@
   <li class="task-line">
     <span class="task-line-name">{{ task.name }}</span>
     <span class="task-line-queue">{{ task.queue }}</span>
+    {% if task.queued %}
+    <span class="task-line-status task-line-status--queued">{{ t("system.tasks.queued_badge") }}</span>
+    {% endif %}
     <span class="task-line-time">{{ task.started_at | local_datetime }}</span>
     {% if task.phase %}
     <div class="task-line-progress">

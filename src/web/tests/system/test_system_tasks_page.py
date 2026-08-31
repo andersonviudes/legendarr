@@ -9,6 +9,14 @@ _TASK = {
     "started_at": "2026-08-24T10:15:30.123456",
 }
 
+_QUEUED_TASK = {
+    "job_id": "subtitle_scan:2",
+    "name": "subtitle_scan:2",
+    "queue": "scan_bulk",
+    "started_at": "2026-08-24T10:15:30.123456",
+    "queued": True,
+}
+
 _TASK_WITH_PROGRESS = {
     "job_id": "subtitle_translation:1",
     "name": "subtitle_translation:1",
@@ -49,6 +57,12 @@ def _tasks_handler(request: httpx.Request) -> httpx.Response:
 def _tasks_with_progress_handler(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/system/tasks/running":
         return httpx.Response(200, json=[_TASK_WITH_PROGRESS])
+    return httpx.Response(200, json=[])
+
+
+def _queued_task_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/system/tasks/running":
+        return httpx.Response(200, json=[_QUEUED_TASK])
     return httpx.Response(200, json=[])
 
 
@@ -146,6 +160,28 @@ def test_running_tasks_partial_renders_no_progress_for_a_task_without_a_phase(st
 
     assert response.status_code == 200
     assert "<progress" not in response.text
+
+
+def test_running_tasks_partial_shows_a_queued_badge_for_a_queued_task(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_queued_task_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "Queued" in response.text
+
+
+def test_running_tasks_partial_shows_no_queued_badge_for_a_running_task(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_tasks_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "Queued" not in response.text
 
 
 def test_tasks_count_shows_badge_when_tasks_are_running(stub_backend_client):

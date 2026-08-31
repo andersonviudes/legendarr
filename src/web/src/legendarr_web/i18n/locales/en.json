@@ -333,6 +333,7 @@
   "system.logs.level_error": "Error",
   "system.logs.empty": "No log lines yet.",
   "system.tasks.empty": "No tasks running right now.",
+  "system.tasks.queued_badge": "Queued",
   "system.tasks.scheduled_jobs_title": "Scheduled Jobs",
   "system.tasks.scheduled_jobs_empty": "No scheduled jobs.",
   "system.tasks.next_run": "Next run",

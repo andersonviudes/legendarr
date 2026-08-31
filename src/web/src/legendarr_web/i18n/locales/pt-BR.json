@@ -333,6 +333,7 @@
   "system.logs.level_error": "Erro",
   "system.logs.empty": "Nenhuma linha de log ainda.",
   "system.tasks.empty": "Nenhuma tarefa em execução no momento.",
+  "system.tasks.queued_badge": "Na fila",
   "system.tasks.scheduled_jobs_title": "Trabalhos agendados",
   "system.tasks.scheduled_jobs_empty": "Nenhum trabalho agendado.",
   "system.tasks.next_run": "Próxima execução",

@@ -15,6 +15,8 @@ from apscheduler.events import (
 )
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+
 
 @dataclass(frozen=True)
 class RunningTask:
@@ -22,6 +24,14 @@ class RunningTask:
     name: str
     queue: str
     started_at: datetime
+    # Set by `tasks()`, not by `submit()` — see `RunningTaskRegistry.tasks()`. A job is
+    # "submitted" to its executor the instant APScheduler sees it's due, regardless of
+    # whether a worker thread is actually free; for a queue whose worker count is smaller
+    # than a burst of same-queue jobs (every `_bulk` queue is deliberately `max_workers=1`,
+    # `scheduling/queues.py`), most of that burst just sits in the executor's own FIFO
+    # queue. `queued=True` marks one of those — it hasn't started executing yet, so its
+    # `started_at` is really "submitted at", not a real elapsed-time anchor.
+    queued: bool = False
     # Live-progress fields (ROADMAP 0.20.0's "Live progress") — all unset until the
     # running job's own code reports a checkpoint via `report_progress()`. `phase` is a
     # domain-defined string ("translating", "searching", ...) the caller picks; this
@@ -53,6 +63,12 @@ class RunningTaskRegistry:
     `EVENT_JOB_ADDED` for a stopped scheduler, so the cache is never populated for them — but
     they're still in the jobstore at submit time, so `scheduler.get_job()` works fine there.
     `submit()` tries the live lookup first and only falls back to the cache.
+
+    `submit()` records every submission, but a queue whose worker count is smaller than
+    a burst of same-queue jobs (any `_bulk` queue, see `scheduling/queues.py`) can end up
+    with far more `_tasks` entries than it can actually run at once — the rest are just
+    waiting their turn in that executor's own FIFO queue. `tasks()` is what tells the two
+    apart (see its own docstring); this class only tracks "submitted", not "started".
     """
 
     def __init__(self) -> None:
@@ -119,8 +135,28 @@ class RunningTaskRegistry:
                 )
 
     def tasks(self) -> list[RunningTask]:
+        """Every submitted-but-not-finished task, `queued` flagged for the ones that
+        haven't actually started executing yet.
+
+        `_tasks` preserves submission order (dict insertion order), and so does each
+        queue's own `ThreadPoolExecutor` — one shared FIFO work queue per executor,
+        regardless of how many jobs got submitted to it at once. So the first
+        `QUEUE_WORKERS[queue]` not-yet-finished tasks *for that queue*, in submission
+        order, are the ones a worker thread is genuinely running right now; anything past
+        that is still waiting in line behind them, no matter how long ago it was submitted.
+        """
         with self._lock:
-            return list(self._tasks.values())
+            in_flight: dict[str, int] = {}
+            result = []
+            for task in self._tasks.values():
+                ahead = in_flight.get(task.queue, 0)
+                in_flight[task.queue] = ahead + 1
+                # `task.queue` is always a `JobQueue.value` set at `add_job` time
+                # (`job.executor`) — round-trip it back to the enum `QUEUE_WORKERS` is
+                # keyed by instead of relying on `StrEnum`'s str-equality for the lookup.
+                capacity = QUEUE_WORKERS.get(JobQueue(task.queue), 1)
+                result.append(task if ahead < capacity else replace(task, queued=True))
+            return result
 
     def clear(self) -> None:
         with self._lock:
@@ -147,7 +183,9 @@ def attach_running_task_registry(scheduler: BackgroundScheduler) -> None:
 
 
 def get_running_tasks() -> list[RunningTask]:
-    """Return the tasks currently handed to an executor, i.e. genuinely running."""
+    """Return the tasks currently handed to an executor — each flagged `queued=True`
+    unless a worker thread is genuinely running it right now, see `RunningTaskRegistry.tasks()`.
+    """
     return _registry.tasks()
 
 

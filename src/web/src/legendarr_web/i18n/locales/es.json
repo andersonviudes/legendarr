@@ -333,6 +333,7 @@
   "system.logs.level_error": "Error",
   "system.logs.empty": "Aún no hay líneas de registro.",
   "system.tasks.empty": "No hay tareas en ejecución en este momento.",
+  "system.tasks.queued_badge": "En cola",
   "system.tasks.scheduled_jobs_title": "Trabajos programados",
   "system.tasks.scheduled_jobs_empty": "No hay trabajos programados.",
   "system.tasks.next_run": "Próxima ejecución",

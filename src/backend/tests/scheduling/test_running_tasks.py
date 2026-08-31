@@ -150,6 +150,77 @@ def test_two_concurrent_instances_of_the_same_job_dont_collide():
     assert len(registry.tasks()) == 1
 
 
+def _register_and_submit(
+    scheduler: BackgroundScheduler, registry: RunningTaskRegistry, job_id: str, queue: JobQueue
+) -> datetime:
+    register_job(
+        scheduler,
+        _noop,
+        queue=queue,
+        job_id=job_id,
+        trigger="interval",
+        minutes=1,
+        retry_attempts=1,
+        retry_delay_seconds=0,
+        max_instances=1,
+        coalesce=False,
+    )
+    registry.remember(_added_event(job_id), scheduler)
+    run_time = datetime.now(UTC)
+    registry.submit(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, job_id, "default", [run_time]), scheduler
+    )
+    return run_time
+
+
+def test_tasks_flags_extra_submissions_as_queued_when_the_queue_has_one_worker():
+    """The regression this exists to prevent: `scan_bulk` has exactly one worker
+    (`scheduling/queues.py`), and the bulk fan-out submits one job per media file in a
+    tight loop (`subtitle_discovery/jobs.py`'s `enqueue_full_subtitle_scan`) — only the
+    first should ever show as genuinely running.
+    """
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    for job_id in ("scan_1", "scan_2", "scan_3"):
+        _register_and_submit(scheduler, registry, job_id, JobQueue.SCAN_BULK)
+
+    assert {task.job_id: task.queued for task in registry.tasks()} == {
+        "scan_1": False,
+        "scan_2": True,
+        "scan_3": True,
+    }
+
+
+def test_tasks_uses_each_queues_own_worker_count_as_capacity():
+    """`translate` has two workers (`scheduling/queues.py`) — the first two submissions
+    are genuinely running at once, only the third is queued."""
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    for job_id in ("t1", "t2", "t3"):
+        _register_and_submit(scheduler, registry, job_id, JobQueue.TRANSLATE)
+
+    assert {task.job_id: task.queued for task in registry.tasks()} == {
+        "t1": False,
+        "t2": False,
+        "t3": True,
+    }
+
+
+def test_tasks_promotes_the_next_queued_job_once_the_running_one_finishes():
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    first_run = _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+    assert {task.job_id: task.queued for task in registry.tasks()} == {
+        "scan_1": False,
+        "scan_2": True,
+    }
+
+    registry.finish(JobExecutionEvent(EVENT_JOB_EXECUTED, "scan_1", "default", first_run))
+
+    assert {task.job_id: task.queued for task in registry.tasks()} == {"scan_2": False}
+
+
 def test_report_progress_updates_the_matching_task():
     scheduler = _scheduler_with_job()
     registry = RunningTaskRegistry()

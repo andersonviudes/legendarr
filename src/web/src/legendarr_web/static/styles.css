@@ -2353,6 +2353,14 @@ button.contrast:is(:hover, :focus),
   color: var(--lg-warn-color);
 }
 
+/* Running-tasks list only (System → Tasks "Live Activity") — a task submitted to a
+   queue whose worker(s) are all busy hasn't actually started yet (`RunningTask.queued`,
+   `scheduling/running_tasks.py`); muted instead of a success/failure/missed color since
+   it's neither. */
+.task-line-status--queued {
+  color: var(--pico-muted-color);
+}
+
 /* === Login page (authentication/templates/login.html) — the one page that doesn't
    extend base.html, so it needs its own centered layout instead of .app-shell. === */
 .login-page {
