@@ -40,3 +40,4 @@
 - [legendarr translation provider batch-limit followup](legendarr-translation-provider-batch-limit-followup.md) — Google's 128-segment cap hit on a real subtitle, fixed via chunking; DeepL/LibreTranslate/LLM unverified
 - [legendarr PR title semantic lint](legendarr-pr-title-semantic-lint.md) — CI's `lint` job enforces the same lowercase-start subjectPattern on PR titles, not just commit messages
 - [legendarr prod deployment topology](legendarr-prod-deployment-topology.md) — real instance runs on a separate host (NAS-like stack), no docker/SSH access from this sandbox
+- [legendarr task media title resolution](legendarr-task-media-title-resolution.md) — Tasks page shows media titles not raw job_ids; resolved at display time in system/, PR #109

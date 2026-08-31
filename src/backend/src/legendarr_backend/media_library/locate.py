@@ -18,6 +18,24 @@ def resolve_media_file_owner(session: Session, media_file: MediaFile) -> Movie |
     return session.get(Series, media_file.series_id)
 
 
+def resolve_media_file_display_name(session: Session, media_file: MediaFile) -> str | None:
+    """A `MediaFile`'s human-readable label — the owning `Movie`'s title, or the owning
+    `Series`' title plus the file's own filename (an episode's title is a live Sonarr
+    fetch, too expensive here — same reasoning as `resolve_media_file_episode`). Mirrors
+    `history.list_history`'s `_media_titles_by_file_id`, single-file instead of batched,
+    for `system.resolve_job_media_title`'s job-name resolution.
+
+    `None` when the owning `Movie`/`Series` no longer exists — same skip-don't-fail
+    posture as `resolve_media_file_path`.
+    """
+    item = resolve_media_file_owner(session, media_file)
+    if item is None:
+        return None
+    if media_file.movie_id is not None:
+        return item.title
+    return f"{item.title} — {Path(media_file.relative_path).name}"
+
+
 def resolve_media_file_episode(session: Session, media_file: MediaFile) -> EpisodeItem | None:
     """The `EpisodeItem` (season/episode number) a series `MediaFile` corresponds to,
     via a live Sonarr `list_episodes` call matched by `relative_path` — the same

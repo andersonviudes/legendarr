@@ -1,10 +1,14 @@
 import logging
+from collections.abc import Iterator
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlmodel import Session
 
+from legendarr_backend.database.engine import get_session
 from legendarr_backend.system.browse_directory import list_subdirectories
 from legendarr_backend.system.job_history import list_job_runs
 from legendarr_backend.system.read_logs import list_recent_logs
+from legendarr_backend.system.resolve_job_media_title import resolve_job_media_titles
 from legendarr_backend.system.running_tasks import list_running_tasks
 from legendarr_backend.system.scheduler_status import list_scheduled_jobs
 from legendarr_backend.system.schemas import (
@@ -32,6 +36,11 @@ def _get_scheduler(request: Request):
     return scheduler
 
 
+def _get_session() -> Iterator[Session]:
+    with get_session() as session:
+        yield session
+
+
 @router.get("/directories", response_model=DirectoryListingRead)
 def get_directories(path: str = "/") -> DirectoryListingRead:
     try:
@@ -56,8 +65,8 @@ def get_logs(level: str | None = None, limit: int = 200) -> list[LogLineRead]:
 
 
 @router.get("/tasks/running", response_model=list[RunningTaskRead])
-def get_running_tasks() -> list[RunningTaskRead]:
-    return list_running_tasks()
+def get_running_tasks(session: Session = Depends(_get_session)) -> list[RunningTaskRead]:
+    return list_running_tasks(session)
 
 
 @router.get("/jobs/scheduled", response_model=list[ScheduledJobRead])
@@ -66,12 +75,13 @@ def get_scheduled_jobs(request: Request) -> list[ScheduledJobRead]:
 
 
 @router.get("/jobs/history", response_model=list[JobRunRead])
-def get_job_history(limit: int = 20) -> list[JobRunRead]:
+def get_job_history(limit: int = 20, session: Session = Depends(_get_session)) -> list[JobRunRead]:
     runs = list_job_runs(limit=limit)
+    display_names = resolve_job_media_titles(session, (run.job_id for run in runs))
     return [
         JobRunRead(
             job_id=run.job_id,
-            name=run.name,
+            name=display_names.get(run.job_id, run.name),
             queue=run.queue,
             status=run.status,
             started_at=run.started_at,
