@@ -25,6 +25,8 @@ from whichever service does the actual work.
 | `libretranslate` | [LibreTranslate](https://libretranslate.com/) — self-hosted, needs an Endpoint URL; an API Key is only required by instances that opt into one. |
 | `llm` | Any OpenAI-compatible `/chat/completions` API — OpenAI itself, or a self-hosted/third-party endpoint that speaks the same protocol (Ollama, LM Studio, OpenRouter, Groq, ...). Needs an API Key; Endpoint and Model both default (to `https://api.openai.com/v1` and `gpt-4o-mini`) when left blank. |
 
+![Translation providers settings page](../assets/screenshots/translation-providers.png)
+
 `deepl`, `google`, `libretranslate`, and `llm` are registered and credentialed from
 `/settings/translation-providers/`: enable the ones you want, fill in whichever credential
 fields they need, and use "Test connection" to confirm they're reachable before relying on

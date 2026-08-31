@@ -151,6 +151,8 @@ uploaded is a free choice (any of `legendarr_web/languages.py`'s `SUPPORTED_LANG
 restricted to the item's configured source languages — a user might already have (or find) a
 correct target-language subtitle and want to skip translation altogether.
 
+![Manual search dialog for one episode](../assets/screenshots/subtitle-acquisition-search.png)
+
 "Manual search" (`GET /media/files/{id}/subtitle-candidates`, backed by
 `subtitle_acquisition/search_media_file_subtitle.py`) searches every provider in the resolved
 chain for the chosen language — unlike the automatic path, it never stops at the first

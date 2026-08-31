@@ -18,6 +18,8 @@ one SQLite database and no external services required.
 Unlike tools that only handle external `.srt` files, legendarr is built to discover and
 translate any subtitle track, including ones embedded inside the video container.
 
+![legendarr dashboard](assets/screenshots/dashboard.png)
+
 ---
 
 ## Feature Highlights

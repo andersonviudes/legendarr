@@ -3,6 +3,8 @@
 Before a subtitle can be translated, legendarr needs to find it. `scan_video_subtitles()`
 discovers every subtitle available for a video file and reports where each one came from.
 
+![Episode list with embedded-track and language badges](../assets/screenshots/subtitle-discovery.png)
+
 ## External subtitles
 
 Sibling files next to the video (matching its filename stem) are always considered.

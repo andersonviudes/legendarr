@@ -37,6 +37,8 @@ straight from the code, not hand-maintained here:
 All three are reachable without authentication, even when login is enabled — they only
 serve the schema/documentation, never data.
 
+![Swagger UI at /api/docs](../assets/screenshots/api-docs.png)
+
 ## Getting started
 
 The domains most useful for scripting against an existing instance:

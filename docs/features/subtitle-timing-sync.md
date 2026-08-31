@@ -12,6 +12,8 @@ in a movie/series detail page gets its own "Sync timing" button, which enqueues 
 for that single `Subtitle`. There's no bulk fan-out and no scheduled interval — the same
 manual-only posture translation had before unattended scheduling (0.10.0) existed.
 
+![Per-subtitle actions menu with the Sync timing button](../assets/screenshots/subtitle-actions-menu.png)
+
 ## Overwrite behavior
 
 `ffsubsync` writes to a temporary sibling file first, and the target `.srt` is only replaced
