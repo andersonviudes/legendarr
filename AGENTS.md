@@ -54,6 +54,11 @@ gates, not the publishing mechanism (see `ROADMAP.md`'s `1.0.0` section).
   link, `image-digest.txt`, `docker-compose.example.yml` as assets) → manually re-trigger
   `docs.yml` (`[skip ci]` also skips its push-triggered deploy, so the refreshed changelog page
   wouldn't otherwise go live until some unrelated docs change).
+- Right after the image push, the workflow also syncs Docker Hub's Repository Overview (full
+  description + short description) via `peter-evans/dockerhub-description@v4`, reading the root
+  `README.md` with its repo-relative links/image rewritten to absolute `github.com`/
+  `raw.githubusercontent.com` URLs first (Docker Hub's renderer can't resolve repo-relative
+  paths) — so the overview stays in sync with the README on every release without a manual step.
 - Two one-time manual setup steps this depends on: (1) repo Settings → Actions → General →
   Workflow permissions → "Read and write permissions", for the default `GITHUB_TOKEN` to
   push/tag/release; (2) a Docker Hub access token (Docker Hub → Account Settings → Security

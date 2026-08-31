@@ -59,3 +59,17 @@ output — both `cargo install git-cliff` (global tool install) and downloading+
 prebuilt binary were denied by this environment's permission policy (download-and-execute
 pattern). First real confidence in the changelog formatting and the full pipeline comes from an
 actual `workflow_dispatch` run after merging.
+
+**2026-08-31 — sync Docker Hub's Repository Overview on every release:** added two steps to
+`release.yml` right after "Build and push image": a `sed` step rewriting the root `README.md`'s
+repo-relative paths (the `branding/legendarr-mark-512.png` logo `<img src>`, the `LICENSE`
+badge `<a href>`, and the two `(LICENSE)`/`(docker-compose.example.yml)` markdown links) to
+absolute `raw.githubusercontent.com`/`github.com` URLs into `/tmp/dockerhub-readme.md`, then
+`peter-evans/dockerhub-description@v4` pushes that file as the full description plus a
+hardcoded short description (reusing the root `pyproject.toml`'s `description` field text,
+which fits Docker Hub's 100-character short-description limit) to the
+`andersonviudes/legendarr` Docker Hub repo. **Why:** Docker Hub's markdown renderer has no base
+URL to resolve repo-relative links/images against, so pushing README.md verbatim would show a
+broken logo and dead links on the Docker Hub overview page. **Not verified end-to-end** — same
+caveat as the rest of this pipeline, first real confidence comes from an actual
+`workflow_dispatch` run.
