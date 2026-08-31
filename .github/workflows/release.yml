@@ -97,6 +97,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Prepare Docker Hub overview
+        run: |
+          sed \
+            -e 's#src="branding/legendarr-mark-512.png"#src="https://raw.githubusercontent.com/${{ github.repository }}/main/branding/legendarr-mark-512.png"#' \
+            -e 's#href="LICENSE"#href="https://github.com/${{ github.repository }}/blob/main/LICENSE"#' \
+            -e 's#(docker-compose.example.yml)#(https://github.com/${{ github.repository }}/blob/main/docker-compose.example.yml)#' \
+            -e 's#(LICENSE)#(https://github.com/${{ github.repository }}/blob/main/LICENSE)#' \
+            README.md > /tmp/dockerhub-readme.md
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          short-description: "Self-hosted subtitle translation companion for Radarr and Sonarr"
+          readme-filepath: /tmp/dockerhub-readme.md
+
       - name: Install git-cliff
         uses: taiki-e/install-action@git-cliff
 

@@ -36,29 +36,13 @@ separate published packages. It follows `ROADMAP.md`'s `0.x.0` milestones (bumpe
 milestone's items are fully checked off); `1.0.0` is about the remaining feature-parity/auth
 gates, not the publishing mechanism (see `ROADMAP.md`'s `1.0.0` section).
 
-- Bump locally with `make bump-version part=patch|minor|major` (wraps
-  `scripts/bump_version.sh`, which re-locks `uv.lock` too) — for local testing only, this
-  doesn't publish anything.
-- Real releases go through the `Release` workflow (`.github/workflows/release.yml`,
-  `workflow_dispatch`, pick `bump: patch|minor|major` from the Actions tab). Order: run the
-  shared test job → bump the version (working tree only) → build a `linux/amd64` image and
-  smoke-test it locally (`docker run` + poll `GET /`) → push a multi-arch
-  (`linux/amd64,linux/arm64`) image to [Docker Hub](https://hub.docker.com/r/andersonviudes/legendarr) tagged with both the
-  version and `latest` → regenerate `docs/changelog.md` and the release notes with
-  [git-cliff](https://git-cliff.org) (`cliff.toml`, grouped by the commit types
-  `.github/workflows/pr-title.yml` enforces) → commit the version bump + changelog as
-  `chore: bump version to vX.Y.Z [skip ci]` straight to `main` (mechanical commit, same
-  exception as `fix:`/`docs:` — see `.claudin/memory/team/legendarr-branch-convention.md`; the
-  `[skip ci]` is why the image build/push happens *before* this commit, using the not-yet-
-  committed version) → tag `vX.Y.Z` → create the GitHub Release (categorized changelog + compare
-  link, `image-digest.txt`, `docker-compose.example.yml` as assets) → manually re-trigger
-  `docs.yml` (`[skip ci]` also skips its push-triggered deploy, so the refreshed changelog page
-  wouldn't otherwise go live until some unrelated docs change).
-- Two one-time manual setup steps this depends on: (1) repo Settings → Actions → General →
-  Workflow permissions → "Read and write permissions", for the default `GITHUB_TOKEN` to
-  push/tag/release; (2) a Docker Hub access token (Docker Hub → Account Settings → Security
-  → New Access Token) stored as the `DOCKERHUB_TOKEN` repo secret, alongside a
-  `DOCKERHUB_USERNAME` secret — Docker Hub doesn't accept `GITHUB_TOKEN`, unlike GHCR.
+Bump locally with `make bump-version part=patch|minor|major` for local testing only — it doesn't
+publish anything. Real releases go through the `Release` workflow
+(`.github/workflows/release.yml`, `workflow_dispatch`, pick `bump: patch|minor|major` from the
+Actions tab) — see `.claudin/rules/release-pipeline.md` (loads automatically when touching that
+workflow or `scripts/bump_version.sh`/`cliff.toml`) for the exact step order and the one-time
+setup it depends on, and `.claudin/memory/team/legendarr-versioning-release-pipeline.md` for the
+history/rationale behind those choices.
 
 ## Architecture
 
@@ -80,8 +64,9 @@ slice folder in whichever module owns them, not a new generic layer. Tests mirro
 
 ## Conventions
 
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `test:`, ...).
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) — see
+  `.claudin/rules/commit-message-convention.md` for the exact shape (scope, optional `ROADMAP`
+  suffix, no hand-typed PR numbers) this repo's history actually uses.
 - New features go on a feature branch with a PR into `main` — don't push those directly to
   `main`. Bug fixes (`fix:` commits) can be committed and pushed straight to `main`.
 - Python style, Ruff config, and env var conventions: see `.claudin/rules/python-conventions.md`
