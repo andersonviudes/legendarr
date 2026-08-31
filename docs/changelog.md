@@ -3,6 +3,27 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.3] - 2026-08-31
+
+### ✨ Features
+
+- Sync Docker Hub repository overview on release (#103)
+- Throttle periodic subtitle discovery, acquisition, and translation fan-outs (#107)
+- Make each executor queue's worker count configurable (#108)
+- Show media titles instead of raw job ids on the Tasks page (#109)
+
+### 🐛 Bug Fixes
+
+- Route uvicorn's startup and access logs through configure_logging (#104)
+- Subtitle-pill dropdown fixes (#105)
+- Live activity queued-task display and unbounded OCR track duration (#106)
+- Don't let Docker Hub description sync block the release
+- Stop mistaking a release-tag fragment for a subtitle's language (#110)
+
+### 🔧 Miscellaneous
+
+- Note the real legendarr instance runs on a separate host
+
 ## [0.22.2] - 2026-08-31
 
 ### 📚 Documentation
@@ -14,6 +35,7 @@ All notable changes to this project are documented here. The format follows
 ### 🔧 Miscellaneous
 
 - Grant actions:write so the release workflow can trigger the docs redeploy
+- Bump version to v0.22.2 [skip ci]
 
 ## [0.22.1] - 2026-08-30
 
