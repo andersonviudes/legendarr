@@ -47,6 +47,7 @@ class AppConfigFile(BaseModel):
     subtitle_scan_retry_delay_seconds: float = 5.0
     subtitle_scan_max_instances: int = 1
     subtitle_scan_coalesce: bool = True
+    subtitle_scan_recheck_hours: int = 24
     embedded_subtitle_probe_timeout_seconds: float = 30.0
     ocr_cue_timeout_seconds: float = 10.0
     translate_retry_attempts: int = Field(default=3, ge=1)
@@ -64,6 +65,7 @@ class AppConfigFile(BaseModel):
     acquisition_interval_minutes: int = 60
     acquisition_max_instances: int = 1
     acquisition_coalesce: bool = True
+    acquisition_upgrade_recheck_hours: int = 24
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = 5.0
     timing_sync_timeout_seconds: float = 120.0
@@ -131,6 +133,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "subtitle_scan_retry_delay_seconds": settings.subtitle_scan_retry_delay_seconds,
         "subtitle_scan_max_instances": settings.subtitle_scan_max_instances,
         "subtitle_scan_coalesce": settings.subtitle_scan_coalesce,
+        "subtitle_scan_recheck_hours": settings.subtitle_scan_recheck_hours,
         "embedded_subtitle_probe_timeout_seconds": settings.embedded_subtitle_probe_timeout_seconds,
         "ocr_cue_timeout_seconds": settings.ocr_cue_timeout_seconds,
         "translate_retry_attempts": settings.translate_retry_attempts,
@@ -144,6 +147,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "acquisition_interval_minutes": settings.acquisition_interval_minutes,
         "acquisition_max_instances": settings.acquisition_max_instances,
         "acquisition_coalesce": settings.acquisition_coalesce,
+        "acquisition_upgrade_recheck_hours": settings.acquisition_upgrade_recheck_hours,
         "timing_sync_retry_attempts": settings.timing_sync_retry_attempts,
         "timing_sync_retry_delay_seconds": settings.timing_sync_retry_delay_seconds,
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,

@@ -116,6 +116,12 @@ class AcquiredSubtitle(SQLModel, table=True):
 
     `score` is the `match_score.score_candidate` result at acquisition/upgrade time —
     what a later upgrade pass compares a fresh candidate's score against.
+
+    `last_upgrade_checked_at` is stamped every time `upgrade_subtitle_for_media_file`
+    considers this subtitle, whether or not it actually upgrades it — the periodic
+    acquisition fan-out's throttle, so a file that already has a subtitle doesn't get a
+    live provider search on every single interval tick (see
+    `subtitle_acquisition.upgrade_media_file_subtitle.should_check_for_upgrade`).
     """
 
     id: int | None = Field(default=None, primary_key=True)
@@ -125,6 +131,7 @@ class AcquiredSubtitle(SQLModel, table=True):
     download_id: str
     score: float
     acquired_at: datetime
+    last_upgrade_checked_at: datetime | None = Field(default=None)
 
 
 class AcquisitionAttempt(SQLModel, table=True):

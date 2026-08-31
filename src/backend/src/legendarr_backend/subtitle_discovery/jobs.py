@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
@@ -15,6 +16,7 @@ from legendarr_backend.subtitle_acquisition.jobs import enqueue_acquisition
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
 )
+from legendarr_backend.subtitle_discovery.scan_eligibility import needs_subtitle_scan
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ def register_subtitle_scan_job(
                 session,
                 retry_attempts=config.subtitle_scan_retry_attempts,
                 retry_delay_seconds=config.subtitle_scan_retry_delay_seconds,
+                recheck_after=timedelta(hours=config.subtitle_scan_recheck_hours),
                 probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
                 ocr_cue_timeout_seconds=config.ocr_cue_timeout_seconds,
             )
@@ -58,28 +61,37 @@ def enqueue_full_subtitle_scan(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
+    recheck_after: timedelta,
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
 ) -> int:
-    """Enqueue a per-file subtitle scan for every known `MediaFile` on the bulk queue.
+    """Enqueue a per-file subtitle scan for every `MediaFile` due for one, on the bulk queue.
 
     Shared by the periodic fan-out job — same shape as media_library's
     `enqueue_full_scan`, kept a separate function for the same reason (reusable by a
     future manual-trigger endpoint without duplicating the fan-out logic).
+
+    "Due" means `needs_subtitle_scan` (never probed, size changed since the last probe,
+    or `recheck_after` has elapsed) — a file already probed and unchanged is skipped
+    instead of re-probing (and potentially re-extracting/OCR-ing) it on every tick.
     """
-    media_file_ids = session.exec(select(MediaFile.id)).all()
-    for media_file_id in media_file_ids:
-        assert media_file_id is not None
+    media_files = session.exec(select(MediaFile)).all()
+    enqueued = 0
+    for media_file in media_files:
+        if not needs_subtitle_scan(session, media_file, recheck_after):
+            continue
+        assert media_file.id is not None
         enqueue_subtitle_scan(
             scheduler,
-            media_file_id,
+            media_file.id,
             JobQueue.SCAN_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
             probe_timeout_seconds=probe_timeout_seconds,
             ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
         )
-    return len(media_file_ids)
+        enqueued += 1
+    return enqueued
 
 
 def enqueue_subtitle_scan(

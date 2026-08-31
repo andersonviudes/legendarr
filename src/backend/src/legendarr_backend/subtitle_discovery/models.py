@@ -77,3 +77,25 @@ class EmbeddedTrack(SQLModel, table=True):
     # extraction/OCR toggle.
     extracted: bool = Field(default=False)
     scanned_at: datetime
+
+
+class SubtitleScanState(SQLModel, table=True):
+    """Marks a `MediaFile` as having been probed by the subtitle scan at least once,
+    and what it looked like at that time — the periodic fan-outs' readiness/re-probe
+    signal.
+
+    `subtitle_acquisition`/`subtitle_translation`'s fan-outs check for this row's
+    existence before considering a file at all, so a file that hasn't been through
+    subtitle discovery yet is never mistaken for one with nothing to acquire/translate.
+    The subtitle scan fan-out itself re-probes a file once `probed_size_bytes` no
+    longer matches `MediaFile.size_bytes` (the video was replaced) or `probed_at` is
+    older than the configured recheck window (to still catch a manually-dropped
+    external subtitle eventually) — see `subtitle_discovery.scan_eligibility`.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    media_file_id: int = Field(
+        foreign_key="mediafile.id", unique=True, index=True, ondelete="CASCADE"
+    )
+    probed_at: datetime
+    probed_size_bytes: int

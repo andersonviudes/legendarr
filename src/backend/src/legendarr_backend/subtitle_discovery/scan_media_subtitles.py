@@ -10,7 +10,7 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
-from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle, SubtitleScanState
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
 )
@@ -166,5 +166,19 @@ def scan_subtitles_for_media_file(
             session.add(track_row)
     for stale_track in existing_tracks.values():
         session.delete(stale_track)
+
+    scan_state = session.exec(
+        select(SubtitleScanState).where(SubtitleScanState.media_file_id == media_file.id)
+    ).first()
+    if scan_state is None:
+        session.add(
+            SubtitleScanState(
+                media_file_id=media_file.id, probed_at=now, probed_size_bytes=media_file.size_bytes
+            )
+        )
+    else:
+        scan_state.probed_at = now
+        scan_state.probed_size_bytes = media_file.size_bytes
+        session.add(scan_state)
 
     return ScanResult(added=added, removed=removed)
