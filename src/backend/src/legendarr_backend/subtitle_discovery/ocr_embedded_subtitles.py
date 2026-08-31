@@ -6,6 +6,7 @@ pipeline as an external file or a text-based embedded track.
 
 import logging
 import os
+import time
 from pathlib import Path
 
 import pytesseract
@@ -25,6 +26,15 @@ logger = logging.getLogger(__name__)
 # an entry here; anything else is passed straight through to `pytesseract`.
 TESSERACT_LANG_OVERRIDES = {"chi": "chi_sim", "zho": "chi_sim"}
 _FALLBACK_LANGUAGE = "eng"
+
+# Caps the whole track's OCR pass — `ocr_cue_timeout_seconds` only bounds a single cue,
+# and a PGS track can carry hundreds/thousands of them. `scan_bulk`'s executor has
+# exactly one worker (`scheduling/queues.py`), so an unbounded loop here would starve
+# every other queued file-scan behind it for as long as this track's OCR takes. A module
+# constant, not a `Settings` field, same posture as the other resilience thresholds
+# (`scheduling/circuit_breaker.py`, `scheduling/scheduled_retry.py`) — not something a
+# user needs to tune per-install.
+MAX_OCR_TRACK_SECONDS = 300.0
 
 
 def ocr_pgs_track(
@@ -74,7 +84,16 @@ def _ocr_cues(
 ) -> list[SubtitleLine]:
     tesseract_language = _resolve_tesseract_language(language)
     lines = []
+    deadline = time.monotonic() + MAX_OCR_TRACK_SECONDS
     for index, cue in enumerate(cues, start=1):
+        if time.monotonic() > deadline:
+            logger.warning(
+                "OCR track budget (%.0fs) exhausted after %d/%d cues; skipping the rest",
+                MAX_OCR_TRACK_SECONDS,
+                index - 1,
+                len(cues),
+            )
+            break
         text = _ocr_cue_image(cue.image, tesseract_language, timeout_seconds)
         if not text:
             continue

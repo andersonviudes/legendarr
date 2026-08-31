@@ -171,6 +171,43 @@ def test_ocr_pgs_track_falls_back_to_english_when_language_pack_missing(monkeypa
     assert captured_lang["lang"] == "eng"
 
 
+def test_ocr_pgs_track_stops_once_the_whole_track_budget_is_exhausted(monkeypatch, tmp_path):
+    """`ocr_cue_timeout_seconds` only bounds a single cue — this is the aggregate cap over
+    the whole track, so a track with many cues can't monopolize `scan_bulk`'s single
+    worker forever (`scheduling/queues.py`).
+    """
+    monkeypatch.setattr(ocr_module, "extract_pgs_subtitle_stream", _fake_extract_writes_sup)
+    monkeypatch.setattr(
+        ocr_module, "parse_pgs", lambda data: [_cue(0, 1000), _cue(1000, 2000), _cue(2000, 3000)]
+    )
+    monkeypatch.setattr(ocr_module.pytesseract, "get_languages", lambda config="": ["eng"])
+    monkeypatch.setattr(ocr_module, "MAX_OCR_TRACK_SECONDS", 10.0)
+    # 1st call sets the deadline (now + 10). 2nd call (before cue 1) is still within
+    # budget. 3rd call (before cue 2) is past it, so cue 2 and the untouched cue 3 are
+    # both skipped.
+    clock = iter([0.0, 0.0, 20.0])
+    monkeypatch.setattr(ocr_module.time, "monotonic", lambda: next(clock))
+    calls = []
+
+    def _image_to_string(image, lang, timeout):
+        calls.append(image)
+        return "cue text"
+
+    monkeypatch.setattr(ocr_module.pytesseract, "image_to_string", _image_to_string)
+
+    output_path = tmp_path / "movie.embedded.4.eng.srt"
+    ocr_pgs_track(
+        tmp_path / "movie.mkv",
+        _track(),
+        output_path,
+        timeout_seconds=30.0,
+        ocr_cue_timeout_seconds=10.0,
+    )
+
+    assert len(calls) == 1
+    assert output_path.read_text().count("cue text") == 1
+
+
 def test_ocr_pgs_track_skips_a_cue_whose_ocr_call_raises(monkeypatch, tmp_path):
     monkeypatch.setattr(ocr_module, "extract_pgs_subtitle_stream", _fake_extract_writes_sup)
     monkeypatch.setattr(ocr_module, "parse_pgs", lambda data: [_cue(0, 1000), _cue(1000, 2000)])

@@ -30,6 +30,15 @@ def test_list_running_tasks_reflects_the_shared_registry(isolated_running_tasks)
     assert list_running_tasks() == []
 
 
+def test_list_running_tasks_carries_the_queued_flag_through(isolated_running_tasks, monkeypatch):
+    task = RunningTask(
+        job_id="scan_2", name="scan_2", queue="scan_bulk", started_at=datetime.now(), queued=True
+    )
+    monkeypatch.setattr("legendarr_backend.system.running_tasks.get_running_tasks", lambda: [task])
+
+    assert list_running_tasks()[0].queued is True
+
+
 def test_list_running_tasks_carries_progress_fields_through(isolated_running_tasks, monkeypatch):
     task = RunningTask(
         job_id="translating_job",
