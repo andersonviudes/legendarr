@@ -73,3 +73,19 @@ URL to resolve repo-relative links/images against, so pushing README.md verbatim
 broken logo and dead links on the Docker Hub overview page. **Not verified end-to-end** — same
 caveat as the rest of this pipeline, first real confidence comes from an actual
 `workflow_dispatch` run.
+
+**2026-08-31 — first real `workflow_dispatch` run failed at "Update Docker Hub description"
+(`403 Forbidden` on the PATCH request, run 33437186508):** `peter-evans/dockerhub-description@v4`
+needs the Docker Hub PAT to carry `Read, Write, Delete` scope to update a repo's
+description/README via the API — a token scoped only `Read & Write` (enough for
+`docker/login-action` + the image push, both of which succeeded) gets `403`. Since no step in
+`release.yml` has `continue-on-error`, this optional metadata-sync step failing aborted the rest
+of the job — no git tag, no `gh release create`, no version-bump commit, no docs redeploy. The
+image itself *was* already built and pushed by the prior step, so Docker Hub now has an
+orphaned `andersonviudes/legendarr:0.22.3` + `:latest` (bumped from 0.22.2) with no matching git
+tag/GitHub release — `main` is still at 0.22.2. **Fixed same day**, two parts: (1) manual —
+user regenerated `DOCKERHUB_TOKEN` as a PAT with `Read, Write, Delete` scope on Docker Hub; (2)
+code — added `continue-on-error: true` to the "Update Docker Hub description" step so a future
+failure of this non-essential step can't block tagging/releasing/publishing the changelog again.
+The orphaned `0.22.3` Docker Hub tag was left as-is (harmless, no release references it); the
+next `workflow_dispatch` bumps straight to `0.22.4`.

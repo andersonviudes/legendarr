@@ -21,7 +21,9 @@ Actions tab) does, in order:
 5. Sync Docker Hub's Repository Overview (`peter-evans/dockerhub-description@v4`) from the root
    `README.md`, with its repo-relative logo/`LICENSE`/`docker-compose.example.yml` links
    rewritten to absolute GitHub URLs first — Docker Hub's renderer can't resolve repo-relative
-   paths.
+   paths. `continue-on-error: true` — this step needs the `DOCKERHUB_TOKEN` PAT to carry
+   `Read, Write, Delete` scope (more than the `Read & Write` the login/push steps need), so a
+   failure here must not block tagging/releasing.
 6. Regenerate `docs/changelog.md` and the release notes with [git-cliff](https://git-cliff.org)
    (`cliff.toml`, grouped by the commit types `.github/workflows/pr-title.yml` enforces).
 7. Commit the version bump + changelog as `chore: bump version to vX.Y.Z [skip ci]` straight to
@@ -45,6 +47,11 @@ unset rather than assuming a release run will just work): (1) repo Settings → 
 push/tag/release; (2) a Docker Hub access token (Docker Hub → Account Settings → Security → New
 Access Token) stored as the `DOCKERHUB_TOKEN` repo secret, alongside a `DOCKERHUB_USERNAME`
 secret — Docker Hub doesn't accept `GITHUB_TOKEN`.
+
+The Docker Hub PAT needs `Read, Write, Delete` scope — `Read & Write` is enough for
+`docker/login-action` and the image push, but `peter-evans/dockerhub-description@v4` gets a
+`403 Forbidden` updating the description with anything less (hit in practice on 2026-08-31, run
+33437186508; see the memory doc below for the incident).
 
 For the history/rationale behind these choices (why Docker Hub over GHCR, why version follows
 `ROADMAP.md` milestones instead of commit-type semver, verification caveats), see
