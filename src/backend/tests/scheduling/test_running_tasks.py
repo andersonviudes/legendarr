@@ -11,7 +11,7 @@ from apscheduler.events import (
     JobSubmissionEvent,
 )
 from apscheduler.schedulers.background import BackgroundScheduler
-from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.running_tasks import (
     RunningTaskRegistry,
     attach_running_task_registry,
@@ -206,6 +206,43 @@ def test_tasks_uses_each_queues_own_worker_count_as_capacity():
     }
 
 
+def test_tasks_uses_a_configured_worker_count_instead_of_the_queue_workers_default():
+    """`scan_bulk` defaults to one worker, but a registry configured with a higher
+    count (e.g. from `AppConfigFile.scan_bulk_queue_workers`) should treat that many
+    submissions as genuinely running instead of falling back to the default."""
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 2})
+    for job_id in ("scan_1", "scan_2", "scan_3"):
+        _register_and_submit(scheduler, registry, job_id, JobQueue.SCAN_BULK)
+
+    assert {task.job_id: task.queued for task in registry.tasks()} == {
+        "scan_1": False,
+        "scan_2": False,
+        "scan_3": True,
+    }
+
+
+def test_configure_overrides_an_existing_registrys_worker_counts():
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    registry.configure({JobQueue.SCAN_BULK: 2})
+    for job_id in ("scan_1", "scan_2"):
+        _register_and_submit(scheduler, registry, job_id, JobQueue.SCAN_BULK)
+
+    assert {task.job_id: task.queued for task in registry.tasks()} == {
+        "scan_1": False,
+        "scan_2": False,
+    }
+
+
+def test_clear_resets_configured_worker_counts_back_to_the_queue_workers_default():
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 2})
+
+    registry.clear()
+
+    assert registry._queue_workers == QUEUE_WORKERS
+
+
 def test_tasks_promotes_the_next_queued_job_once_the_running_one_finishes():
     scheduler = build_scheduler()
     registry = RunningTaskRegistry()
@@ -262,6 +299,43 @@ def test_report_progress_for_a_job_not_running_is_a_noop():
     registry.report_progress("missing_job", phase="translating", current=1, total=1, language="en")
 
     assert registry.tasks() == []
+
+
+def test_attach_running_task_registry_applies_a_queue_workers_override():
+    """`legendarr_backend.bootstrap.build_scheduler()` passes the same `queue_workers`
+    map to both `scheduling.scheduler.build_scheduler()` and here — this is what keeps
+    the "queued" badge honest once a queue's worker count is configured above its
+    `QUEUE_WORKERS` default.
+    """
+    reset_running_tasks()
+    scheduler = build_scheduler({JobQueue.SCAN_BULK: 2})
+    attach_running_task_registry(scheduler, {JobQueue.SCAN_BULK: 2})
+    scheduler.start()
+    started = [threading.Event(), threading.Event()]
+    finish = threading.Event()
+
+    def slow_job(index: int) -> None:
+        started[index].set()
+        finish.wait(timeout=5)
+
+    try:
+        scheduler.add_job(slow_job, "date", args=[0], id="e2e_1", executor=JobQueue.SCAN_BULK.value)
+        scheduler.add_job(slow_job, "date", args=[1], id="e2e_2", executor=JobQueue.SCAN_BULK.value)
+        assert started[0].wait(timeout=5)
+        assert started[1].wait(timeout=5)
+        for _ in range(50):
+            if len(get_running_tasks()) == 2:
+                break
+            time.sleep(0.02)
+        tasks = get_running_tasks()
+        assert {task.job_id: task.queued for task in tasks} == {
+            "e2e_1": False,
+            "e2e_2": False,
+        }
+    finally:
+        finish.set()
+        scheduler.shutdown(wait=False)
+        reset_running_tasks()
 
 
 def test_end_to_end_a_real_one_off_job_run_through_a_real_scheduler_shows_up_while_running():

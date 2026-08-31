@@ -152,6 +152,29 @@ def test_subtitle_scan_settings_round_trip_through_config_file(tmp_path):
     assert stored["subtitle_scan_max_instances"] == 2
 
 
+def test_queue_worker_settings_round_trip_through_config_file(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path,
+        database_url="",
+        scan_queue_workers=5,
+        scan_bulk_queue_workers=2,
+        translate_queue_workers=3,
+    )
+
+    config = load_or_create_config_file(settings)
+
+    assert config.scan_queue_workers == 5
+    assert config.scan_bulk_queue_workers == 2
+    assert config.translate_queue_workers == 3
+    # Untouched fields still default to `scheduling.queues.QUEUE_WORKERS`'s values.
+    assert config.sync_queue_workers == 1
+    assert config.acquire_queue_workers == 2
+
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["scan_queue_workers"] == 5
+    assert stored["scan_bulk_queue_workers"] == 2
+
+
 def test_update_config_file_applies_updates_and_keeps_secrets_encrypted(tmp_path):
     settings = Settings(data_dir=tmp_path, database_url="", radarr_api_key="radarr-key")
     load_or_create_config_file(settings)

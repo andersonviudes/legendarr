@@ -71,10 +71,22 @@ class RunningTaskRegistry:
     apart (see its own docstring); this class only tracks "submitted", not "started".
     """
 
-    def __init__(self) -> None:
+    def __init__(self, queue_workers: dict[JobQueue, int] | None = None) -> None:
         self._tasks: dict[tuple[str, datetime], RunningTask] = {}
         self._job_meta: dict[str, tuple[str, str]] = {}
+        self._queue_workers: dict[JobQueue, int] = (
+            queue_workers if queue_workers is not None else QUEUE_WORKERS
+        )
         self._lock = threading.Lock()
+
+    def configure(self, queue_workers: dict[JobQueue, int]) -> None:
+        """Override the per-queue worker counts `tasks()` uses as capacity — called by
+        `attach_running_task_registry()` once `AppConfigFile`'s `*_queue_workers` fields
+        are known, so the "queued" badge matches the executor sizes
+        `scheduling.scheduler.build_scheduler()` was actually given rather than the
+        `QUEUE_WORKERS` defaults."""
+        with self._lock:
+            self._queue_workers = queue_workers
 
     def remember(self, event: JobEvent, scheduler: BackgroundScheduler) -> None:
         job = scheduler.get_job(event.job_id)
@@ -154,7 +166,7 @@ class RunningTaskRegistry:
                 # `task.queue` is always a `JobQueue.value` set at `add_job` time
                 # (`job.executor`) — round-trip it back to the enum `QUEUE_WORKERS` is
                 # keyed by instead of relying on `StrEnum`'s str-equality for the lookup.
-                capacity = QUEUE_WORKERS.get(JobQueue(task.queue), 1)
+                capacity = self._queue_workers.get(JobQueue(task.queue), 1)
                 result.append(task if ahead < capacity else replace(task, queued=True))
             return result
 
@@ -162,17 +174,28 @@ class RunningTaskRegistry:
         with self._lock:
             self._tasks.clear()
             self._job_meta.clear()
+            self._queue_workers = QUEUE_WORKERS
 
 
 _registry = RunningTaskRegistry()
 
 
-def attach_running_task_registry(scheduler: BackgroundScheduler) -> None:
+def attach_running_task_registry(
+    scheduler: BackgroundScheduler, queue_workers: dict[JobQueue, int] | None = None
+) -> None:
     """Wire the shared registry onto `scheduler`'s event stream.
 
     Call once per scheduler instance, alongside where its periodic jobs are registered
     (`legendarr_backend/bootstrap.py`).
+
+    `queue_workers` — when given, the same map `scheduling.scheduler.build_scheduler()`
+    sized its executors with (`legendarr_backend.bootstrap.build_scheduler()` builds one
+    from `AppConfigFile`'s `*_queue_workers` fields and passes it to both) — is applied
+    via `configure()` so `tasks()`'s "queued" capacity matches those executors instead of
+    the `QUEUE_WORKERS` defaults.
     """
+    if queue_workers is not None:
+        _registry.configure(queue_workers)
     scheduler.add_listener(
         lambda event: _registry.remember(event, scheduler), EVENT_JOB_ADDED | EVENT_JOB_MODIFIED
     )

@@ -15,15 +15,22 @@ from legendarr_backend.scheduling.retry import with_retry
 JOB_JITTER_SECONDS = 60
 
 
-def build_scheduler() -> BackgroundScheduler:
+def build_scheduler(queue_workers: dict[JobQueue, int] | None = None) -> BackgroundScheduler:
     """Construct a scheduler with one executor per named queue.
 
     Job-agnostic: no job is registered here. Slices register their own jobs onto this
     scheduler via `register_job`.
+
+    `queue_workers` overrides `QUEUE_WORKERS`'s default thread-pool size per queue —
+    every caller that doesn't pass one (every test, and any code that hasn't been wired
+    to `AppConfigFile`'s `*_queue_workers` fields) gets the same defaults as before. A
+    queue missing from a caller-provided map falls back to its `QUEUE_WORKERS` default
+    rather than raising, so a partial override (e.g. in a test) is safe.
     """
+    workers = queue_workers if queue_workers is not None else QUEUE_WORKERS
     executors = {
-        queue.value: ThreadPoolExecutor(max_workers=workers)
-        for queue, workers in QUEUE_WORKERS.items()
+        queue.value: ThreadPoolExecutor(max_workers=workers.get(queue, default))
+        for queue, default in QUEUE_WORKERS.items()
     }
     # Explicit UTC — APScheduler otherwise defaults to the host's local tz (via
     # `tzlocal`), which would make `next_run_time`/`scheduled_run_time` ambiguous
