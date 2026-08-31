@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
@@ -29,7 +29,7 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import Subtitle, SubtitleScanState
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select
 
@@ -602,19 +602,76 @@ def test_enqueue_full_acquisition_scan_enqueues_every_known_media_file(
     in_memory_session.add(first)
     in_memory_session.add(second)
     in_memory_session.commit()
+    assert first.id is not None
+    assert second.id is not None
+    now = datetime.now(UTC)
+    in_memory_session.add(
+        SubtitleScanState(media_file_id=first.id, probed_at=now, probed_size_bytes=1)
+    )
+    in_memory_session.add(
+        SubtitleScanState(media_file_id=second.id, probed_at=now, probed_size_bytes=1)
+    )
+    in_memory_session.commit()
 
     scheduler = build_scheduler()
     added = []
     monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
 
     enqueued = enqueue_full_acquisition_scan(
-        scheduler, in_memory_session, retry_attempts=1, retry_delay_seconds=0.0
+        scheduler,
+        in_memory_session,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        upgrade_recheck_after=timedelta(hours=24),
     )
 
     assert enqueued == 2
     ids = {kwargs["id"] for _, kwargs in added}
     assert ids == {f"subtitle_acquisition:{first.id}", f"subtitle_acquisition:{second.id}"}
     assert all(kwargs["executor"] == JobQueue.ACQUIRE_BULK.value for _, kwargs in added)
+
+
+def test_enqueue_full_acquisition_scan_skips_media_file_without_subtitle_scan(
+    in_memory_session, tmp_path, monkeypatch
+):
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    scanned = MediaFile(
+        movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    not_yet_scanned = MediaFile(
+        movie_id=movie.id, relative_path="Bar.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(scanned)
+    in_memory_session.add(not_yet_scanned)
+    in_memory_session.commit()
+    assert scanned.id is not None
+    in_memory_session.add(
+        SubtitleScanState(
+            media_file_id=scanned.id, probed_at=datetime.now(UTC), probed_size_bytes=1
+        )
+    )
+    in_memory_session.commit()
+    # `not_yet_scanned` has no `SubtitleScanState` row — discovery hasn't run for it yet.
+
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueued = enqueue_full_acquisition_scan(
+        scheduler,
+        in_memory_session,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        upgrade_recheck_after=timedelta(hours=24),
+    )
+
+    assert enqueued == 1
+    ids = {kwargs["id"] for _, kwargs in added}
+    assert ids == {f"subtitle_acquisition:{scanned.id}"}
 
 
 def test_enqueue_item_acquisition_scan_enqueues_only_that_movies_media_files(

@@ -15,7 +15,11 @@ from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import report_progress
 from legendarr_backend.scheduling.scheduler import register_job
-from legendarr_backend.subtitle_translation.translate_media_file import translate_media_file
+from legendarr_backend.subtitle_discovery.scan_eligibility import has_completed_subtitle_scan
+from legendarr_backend.subtitle_translation.translate_media_file import (
+    needs_translation,
+    translate_media_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,24 +63,36 @@ def enqueue_full_translation_scan(
     retry_delay_seconds: float,
     default_translation_provider: str | None = None,
 ) -> int:
-    """Enqueue a translation run for every known `MediaFile` on the bulk queue.
+    """Enqueue a translation run for every `MediaFile` that actually needs one, on the
+    bulk queue.
 
     Shared by the periodic fan-out job (`register_translation_job`) and the manual
     bulk/"translate now" path — same reasoning as `subtitle_discovery.jobs`'s
     `enqueue_full_subtitle_scan`.
+
+    Skips a file `has_completed_subtitle_scan` doesn't recognize yet (discovery hasn't
+    run for it, so there's nothing reliable to translate from) and one `needs_translation`
+    says is already fully covered — instead of scheduling (and opening a session for)
+    every known file on every fan-out tick.
     """
-    media_file_ids = session.exec(select(MediaFile.id)).all()
-    for media_file_id in media_file_ids:
-        assert media_file_id is not None
+    media_files = session.exec(select(MediaFile)).all()
+    enqueued = 0
+    for media_file in media_files:
+        assert media_file.id is not None
+        if not has_completed_subtitle_scan(session, media_file.id):
+            continue
+        if not needs_translation(session, media_file):
+            continue
         enqueue_translation(
             scheduler,
-            media_file_id,
+            media_file.id,
             JobQueue.TRANSLATE_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
             default_translation_provider=default_translation_provider,
         )
-    return len(media_file_ids)
+        enqueued += 1
+    return enqueued
 
 
 def enqueue_translation(

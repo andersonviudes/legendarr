@@ -409,22 +409,59 @@ def test_enqueued_translation_job_honors_manually_picked_source_subtitle(
     assert "bonjour traduit" in output.read_text(encoding="utf-8")
 
 
-def test_enqueue_full_translation_scan_enqueues_every_known_media_file(
+def test_enqueue_full_translation_scan_enqueues_media_files_that_need_translation(
     in_memory_session, tmp_path, monkeypatch
 ):
     service = _arr_service(in_memory_session, tmp_path)
     assert service.id is not None
     movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
     in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
     in_memory_session.commit()
-    first = MediaFile(
+
+    not_yet_scanned = MediaFile(
         movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
     )
-    second = MediaFile(
+    needs_translation_file = MediaFile(
         movie_id=movie.id, relative_path="Bar.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
     )
-    in_memory_session.add(first)
-    in_memory_session.add(second)
+    fully_covered = MediaFile(
+        movie_id=movie.id, relative_path="Baz.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(not_yet_scanned)
+    in_memory_session.add(needs_translation_file)
+    in_memory_session.add(fully_covered)
+    in_memory_session.commit()
+    assert needs_translation_file.id is not None
+    assert fully_covered.id is not None
+    # `not_yet_scanned` is never passed to `scan_subtitles_for_media_file` below, so it
+    # has no `SubtitleScanState` row — discovery hasn't run for it yet.
+
+    (tmp_path / "Bar").mkdir()
+    (tmp_path / "Bar" / "Bar.mkv").touch()
+    (tmp_path / "Bar" / "Bar.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(
+        in_memory_session, needs_translation_file, tmp_path / "Bar" / "Bar.mkv"
+    )
+
+    (tmp_path / "Baz").mkdir()
+    (tmp_path / "Baz" / "Baz.mkv").touch()
+    (tmp_path / "Baz" / "Baz.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    (tmp_path / "Baz" / "Baz.pt-br.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nolá\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, fully_covered, tmp_path / "Baz" / "Baz.mkv")
     in_memory_session.commit()
 
     scheduler = build_scheduler()
@@ -435,9 +472,9 @@ def test_enqueue_full_translation_scan_enqueues_every_known_media_file(
         scheduler, in_memory_session, retry_attempts=1, retry_delay_seconds=0.0
     )
 
-    assert enqueued == 2
+    assert enqueued == 1
     ids = {kwargs["id"] for _, kwargs in added}
-    assert ids == {f"subtitle_translation:{first.id}", f"subtitle_translation:{second.id}"}
+    assert ids == {f"subtitle_translation:{needs_translation_file.id}"}
     assert all(kwargs["executor"] == JobQueue.TRANSLATE_BULK.value for _, kwargs in added)
 
 

@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     subtitle_scan_retry_delay_seconds: float = Field(default=5.0)
     subtitle_scan_max_instances: int = Field(default=1)
     subtitle_scan_coalesce: bool = Field(default=True)
+    # How long a `MediaFile` whose size hasn't changed goes without being re-probed by the
+    # subtitle scan fan-out — re-probing (ffprobe/extraction) on every interval tick is
+    # wasted work when nothing changed, but a manually-dropped external subtitle still
+    # needs to be picked up eventually without touching the video file at all.
+    subtitle_scan_recheck_hours: int = Field(default=24)
     # ffprobe/ffmpeg subprocess timeout for embedded subtitle-track probing/extraction
     # (ROADMAP.md 0.6.0), guarding against a hung/corrupt container.
     embedded_subtitle_probe_timeout_seconds: float = Field(default=30.0)
@@ -67,6 +72,11 @@ class Settings(BaseSettings):
     acquisition_interval_minutes: int = Field(default=60)
     acquisition_max_instances: int = Field(default=1)
     acquisition_coalesce: bool = Field(default=True)
+    # How long a media file's `AcquiredSubtitle` goes unchecked before
+    # `upgrade_subtitle_for_media_file` is allowed to search providers for it again — a
+    # file that already has a subtitle doesn't need a fresh live search every single
+    # acquisition interval.
+    acquisition_upgrade_recheck_hours: int = Field(default=24)
     # Manual "sync timing" only (ROADMAP.md 0.7.0), same posture as translate_retry_attempts
     # — no interval/max_instances/coalesce fields, just the retry policy
     # `enqueue_timing_sync` needs. `ffsubsync` decodes the whole audio track, so its timeout

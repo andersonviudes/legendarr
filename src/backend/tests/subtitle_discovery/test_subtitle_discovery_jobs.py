@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
@@ -13,7 +13,7 @@ from legendarr_backend.subtitle_discovery.jobs import (
     enqueue_subtitle_scan,
     register_subtitle_scan_job,
 )
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import Subtitle, SubtitleScanState
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import ScanResult
 from sqlmodel import select
 
@@ -353,10 +353,83 @@ def test_enqueue_full_subtitle_scan_enqueues_every_known_media_file(
     monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
 
     enqueued = enqueue_full_subtitle_scan(
-        scheduler, in_memory_session, retry_attempts=1, retry_delay_seconds=0.0
+        scheduler,
+        in_memory_session,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        recheck_after=timedelta(hours=24),
     )
 
     assert enqueued == 2
     ids = {kwargs["id"] for _, kwargs in added}
     assert ids == {f"subtitle_scan:{first.id}", f"subtitle_scan:{second.id}"}
+
+
+def test_enqueue_full_subtitle_scan_skips_an_up_to_date_media_file(
+    in_memory_session, tmp_path, monkeypatch
+):
+    service = create_arr_service(
+        in_memory_session,
+        ArrServiceInput(
+            name="radarr",
+            service_type="radarr",
+            host="radarr",
+            port=7878,
+            api_key="api-key",
+            remote_path_prefix="/remote",
+            local_path_prefix=str(tmp_path),
+        ),
+    )
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    up_to_date = MediaFile(
+        movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    stale = MediaFile(
+        movie_id=movie.id, relative_path="Bar.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    changed = MediaFile(
+        movie_id=movie.id, relative_path="Baz.mkv", size_bytes=2, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(up_to_date)
+    in_memory_session.add(stale)
+    in_memory_session.add(changed)
+    in_memory_session.commit()
+    assert up_to_date.id is not None
+    assert stale.id is not None
+    assert changed.id is not None
+
+    now = datetime.now(UTC)
+    in_memory_session.add(
+        SubtitleScanState(media_file_id=up_to_date.id, probed_at=now, probed_size_bytes=1)
+    )
+    in_memory_session.add(
+        SubtitleScanState(
+            media_file_id=stale.id, probed_at=now - timedelta(hours=48), probed_size_bytes=1
+        )
+    )
+    in_memory_session.add(
+        # Probed recently, but the video's `size_bytes` (2) no longer matches what was
+        # probed (1) — a replaced file is due for a re-probe regardless of recheck_after.
+        SubtitleScanState(media_file_id=changed.id, probed_at=now, probed_size_bytes=1)
+    )
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+
+    enqueued = enqueue_full_subtitle_scan(
+        scheduler,
+        in_memory_session,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        recheck_after=timedelta(hours=24),
+    )
+
+    assert enqueued == 2
+    ids = {kwargs["id"] for _, kwargs in added}
+    assert ids == {f"subtitle_scan:{stale.id}", f"subtitle_scan:{changed.id}"}
     assert all(kwargs["executor"] == JobQueue.SCAN_BULK.value for _, kwargs in added)

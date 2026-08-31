@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlmodel import Session, select
@@ -84,6 +85,11 @@ def upgrade_subtitle_for_media_file(
     if current is None:
         return UpgradeResult(skipped_reason="no_upgradeable_subtitle")
     subtitle, metadata = current
+    # Stamped before the search itself, regardless of which return path below is hit —
+    # `should_check_for_upgrade` reads this back to throttle how often the periodic
+    # acquisition fan-out bothers calling this function at all for this media file.
+    metadata.last_upgrade_checked_at = datetime.now(UTC)
+    session.add(metadata)
 
     chain = resolve_subtitle_provider_chain(session)
     if not chain:
@@ -208,3 +214,30 @@ def _current_upgradeable_subtitle(
         if metadata is not None:
             return subtitle, metadata
     return None
+
+
+def should_check_for_upgrade(
+    session: Session, media_file: MediaFile, recheck_after: timedelta
+) -> bool:
+    """Whether `upgrade_subtitle_for_media_file` is due to run for `media_file`.
+
+    `False` for the same reasons `upgrade_subtitle_for_media_file` itself would skip
+    (no language profile, no upgradeable subtitle), or when its `AcquiredSubtitle` row
+    was checked more recently than `recheck_after` ago — the periodic acquisition
+    fan-out's throttle against calling this on every single interval tick for a file
+    that already has a subtitle.
+    """
+    profile = resolve_media_file_profile(session, media_file)
+    if profile is None:
+        return False
+    current = _current_upgradeable_subtitle(session, media_file, profile.source_language_list)
+    if current is None:
+        return False
+    _, metadata = current
+    if metadata.last_upgrade_checked_at is None:
+        return True
+    # SQLite drops tzinfo on round trip, so a value read back from `AcquiredSubtitle`
+    # is always naive — compare against a naive `now` too, same convention as
+    # `authentication.manage_authentication._utcnow`.
+    now = datetime.now(UTC).replace(tzinfo=None)
+    return now - metadata.last_upgrade_checked_at >= recheck_after

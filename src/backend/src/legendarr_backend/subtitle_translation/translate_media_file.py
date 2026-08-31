@@ -105,40 +105,9 @@ def translate_media_file(
         return TranslationResult(translated_languages=[], skipped_reason="no_language_profile")
     assert media_file.id is not None
 
-    # Keyed by the lowercase language `scan_video_subtitles._guess_language_from_filename`
-    # actually persists, ordered oldest-first so a duplicate language keeps the most
-    # recently scanned row.
-    external_subtitles = {
-        subtitle.language: subtitle
-        for subtitle in session.exec(
-            select(Subtitle)
-            .where(
-                Subtitle.media_file_id == media_file.id,
-                Subtitle.origin == SubtitleOrigin.EXTERNAL,
-            )
-            .order_by(col(Subtitle.scanned_at))
-        )
-    }
-
-    # Keyed by the already-normalized language `scan_video_subtitles` persists for an
-    # embedded row (`language_codes.normalize_language_code`, e.g. ffprobe's "por" ->
-    # "pt") — region-blind, same as the target-satisfaction check below, since ffprobe has
-    # no way to tell e.g. Brazilian from European Portuguese. A language with more than one
-    # embedded row (several tracks in the same language) is resolved by
-    # `pick_best_embedded_subtitle` instead of an arbitrary row-fetch order.
-    embedded_subtitles_by_language: dict[str, list[Subtitle]] = defaultdict(list)
-    for subtitle in session.exec(
-        select(Subtitle).where(
-            Subtitle.media_file_id == media_file.id,
-            Subtitle.origin == SubtitleOrigin.EMBEDDED,
-        )
-    ):
-        embedded_subtitles_by_language[subtitle.language].append(subtitle)
-    embedded_subtitles: dict[str, Subtitle] = {}
-    for language, subtitles in embedded_subtitles_by_language.items():
-        best = pick_best_embedded_subtitle(subtitles, profile)
-        assert best is not None  # subtitles is never empty for a grouped-by-language entry
-        embedded_subtitles[language] = best
+    external_subtitles, embedded_subtitles = _gather_discovered_subtitles(
+        session, media_file, profile
+    )
 
     if source_subtitle_id is None:
         source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
@@ -231,6 +200,82 @@ def translate_media_file(
                 clear_translation_blacklist(session, media_file.id, target_language)
 
     return TranslationResult(translated_languages=translated_languages)
+
+
+def _gather_discovered_subtitles(
+    session: Session, media_file: MediaFile, profile: LanguageProfile
+) -> tuple[dict[str, Subtitle], dict[str, Subtitle]]:
+    """External and embedded subtitles discovery has found for `media_file` so far,
+    keyed by language — the shared lookup `translate_media_file` and `needs_translation`
+    both build their source-pick and missing-target checks on.
+    """
+    assert media_file.id is not None
+
+    # Keyed by the lowercase language `scan_video_subtitles._guess_language_from_filename`
+    # actually persists, ordered oldest-first so a duplicate language keeps the most
+    # recently scanned row.
+    external_subtitles = {
+        subtitle.language: subtitle
+        for subtitle in session.exec(
+            select(Subtitle)
+            .where(
+                Subtitle.media_file_id == media_file.id,
+                Subtitle.origin == SubtitleOrigin.EXTERNAL,
+            )
+            .order_by(col(Subtitle.scanned_at))
+        )
+    }
+
+    # Keyed by the already-normalized language `scan_video_subtitles` persists for an
+    # embedded row (`language_codes.normalize_language_code`, e.g. ffprobe's "por" ->
+    # "pt") — region-blind, same as the target-satisfaction check below, since ffprobe has
+    # no way to tell e.g. Brazilian from European Portuguese. A language with more than one
+    # embedded row (several tracks in the same language) is resolved by
+    # `pick_best_embedded_subtitle` instead of an arbitrary row-fetch order.
+    embedded_subtitles_by_language: dict[str, list[Subtitle]] = defaultdict(list)
+    for subtitle in session.exec(
+        select(Subtitle).where(
+            Subtitle.media_file_id == media_file.id,
+            Subtitle.origin == SubtitleOrigin.EMBEDDED,
+        )
+    ):
+        embedded_subtitles_by_language[subtitle.language].append(subtitle)
+    embedded_subtitles: dict[str, Subtitle] = {}
+    for language, subtitles in embedded_subtitles_by_language.items():
+        best = pick_best_embedded_subtitle(subtitles, profile)
+        assert best is not None  # subtitles is never empty for a grouped-by-language entry
+        embedded_subtitles[language] = best
+
+    return external_subtitles, embedded_subtitles
+
+
+def needs_translation(session: Session, media_file: MediaFile) -> bool:
+    """Whether `translate_media_file` would find something to do for `media_file` right
+    now — the periodic translation fan-out's enqueue-time filter, so a fully-covered
+    file (or one with no discovered source subtitle yet) is never scheduled at all.
+
+    Mirrors `translate_media_file`'s own automatic source pick and missing-target
+    computation, blacklist filter included — deliberately not the manual
+    `source_subtitle_id` override path, which a periodic fan-out never uses.
+    """
+    profile = resolve_media_file_profile(session, media_file)
+    if profile is None:
+        return False
+    assert media_file.id is not None
+    external_subtitles, embedded_subtitles = _gather_discovered_subtitles(
+        session, media_file, profile
+    )
+    source = _pick_source_subtitle(profile, external_subtitles, embedded_subtitles)
+    if source is None:
+        return False
+    embedded_languages = set(embedded_subtitles)
+    missing_targets = _missing_targets(profile, external_subtitles, embedded_languages, source)
+    missing_targets = [
+        language
+        for language in missing_targets
+        if not is_translation_blacklisted(session, media_file.id, language)
+    ]
+    return bool(missing_targets)
 
 
 def _missing_targets(
