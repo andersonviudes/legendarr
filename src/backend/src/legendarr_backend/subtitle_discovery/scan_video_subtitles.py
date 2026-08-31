@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from glob import escape as glob_escape
@@ -237,6 +238,21 @@ def _skipped_track(track: EmbeddedSubtitleTrack, language: str) -> DetectedEmbed
     )
 
 
+_LANGUAGE_CODE_PATTERN = re.compile(r"^[a-z]{2,3}(-[a-z]{2,4})?$")
+
+
 def _guess_language_from_filename(path: Path) -> str:
+    """The convention (`<video-stem>.<language>.<ext>`, e.g. `movie.pt-BR.srt`) is what
+    both this app's own downloads (`acquire_media_file_subtitle.py`) and well-behaved
+    external subtitles use, but a subtitle shipped alongside the video by its release
+    group often keeps the full scene release name as its filename instead, with no
+    language suffix at all — the trailing dot-segment then isn't a language code but a
+    release-tag fragment (e.g. `...HDR10][H265]-GROUP`). Validating the segment against
+    a plausible language-code shape before trusting it keeps that fragment from being
+    stored and displayed as if it were the subtitle's language.
+    """
     parts = path.stem.split(".")
-    return parts[-1].lower() if len(parts) > 1 else "und"
+    if len(parts) == 1:
+        return "und"
+    candidate = parts[-1].lower()
+    return candidate if _LANGUAGE_CODE_PATTERN.match(candidate) else "und"
