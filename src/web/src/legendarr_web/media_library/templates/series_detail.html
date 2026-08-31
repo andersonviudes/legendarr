@@ -99,7 +99,7 @@
         </td>
         <td {% if episode.media_file %}id="subtitles-cell-{{ episode.media_file.id }}"{% endif %}>
           {% if episode.media_file %}
-          {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path, episode.media_file.embedded_tracks) }}
+          {{ subtitle_pill_list(episode.media_file.subtitles, episode.media_file.id, episode.media_file.missing_languages, episode.media_file.relative_path, episode.media_file.embedded_tracks, episode.media_file.has_source_subtitle) }}
           {% elif series.target_languages %}
           {{ missing_lang_pills(series.target_languages, episode.pending_languages) }}
           {% else %}

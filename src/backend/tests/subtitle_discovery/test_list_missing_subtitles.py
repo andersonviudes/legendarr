@@ -6,6 +6,7 @@ from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.media_library.models import MediaFile, Movie
 from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
+    has_source_subtitle_for_media_file,
     list_media_files_without_subtitles,
     list_missing_target_languages_by_media_file,
     missing_target_languages_for_media_file,
@@ -226,3 +227,70 @@ def test_target_languages_for_media_file_returns_empty_without_a_profile(
     languages = target_languages_for_media_file(in_memory_session, media_file.id)
 
     assert languages == []
+
+
+def test_has_source_subtitle_true_when_a_source_language_subtitle_exists(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="en",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo/Foo.en.srt",
+            content_hash="test-hash",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    assert has_source_subtitle_for_media_file(in_memory_session, media_file.id) is True
+
+
+def test_has_source_subtitle_false_without_a_source_language_subtitle(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    in_memory_session.add(
+        LanguageProfile(
+            name="Default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+        )
+    )
+    in_memory_session.commit()
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+    # Only the target language is present so far — nothing to translate from yet.
+    in_memory_session.add(
+        Subtitle(
+            media_file_id=media_file.id,
+            language="pt-br",
+            origin=SubtitleOrigin.EXTERNAL,
+            relative_path="Foo/Foo.pt-br.srt",
+            content_hash="test-hash",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    assert has_source_subtitle_for_media_file(in_memory_session, media_file.id) is False
+
+
+def test_has_source_subtitle_false_without_a_profile(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+
+    assert has_source_subtitle_for_media_file(in_memory_session, media_file.id) is False

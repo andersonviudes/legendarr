@@ -90,6 +90,10 @@ class MediaFileRead(BaseModel):
     # Profile target languages this file has no subtitle for yet — rendered as extra
     # gray pills alongside the real ones (embedded/external) in subtitle_pill_list().
     missing_languages: list[str] = []
+    # Whether this file already has a subtitle in one of the profile's source languages —
+    # gates the missing/empty pills' "Translate now" action in subtitle_pill_list(), since
+    # translating needs a real source subtitle to translate from.
+    has_source_subtitle: bool = False
 
 
 class MediaDetailRead(BaseModel):
@@ -181,6 +185,7 @@ class SubtitleAcquisitionResult(BaseModel):
     subtitles: list[SubtitleRead]
     embedded_tracks: list[EmbeddedTrackRead] = []
     missing_languages: list[str] = []
+    has_source_subtitle: bool = False
 
 
 class PendingSubtitleAcquisitionResult(BaseModel):

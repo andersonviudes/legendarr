@@ -760,3 +760,46 @@ literal copy of the pasted mockup). New `match_score_field()` macro
   fields through the backend correctly. Needed a CDP `Network.clearBrowserCache` +
   `setCacheDisabled` session (`browser_run_code_unsafe`, not a plain reload) to see the rebuilt
   JS/CSS, per the browser-cache gotcha logged earlier in this file — still applies, still bites.
+
+**Update (2026-08-31 — external pill's "Blacklist" item relabeled to "Delete"):** the user
+screenshotted the same external-pill dropdown from the 2026-08-29 entries above and flagged a
+missing delete option. Confirmed via `AskUserQuestion` (after finding ROADMAP.md 0.23.0's own gap
+analysis already states Bazarr's "Delete" tool maps onto legendarr's existing "Blacklist" action,
+not a separate capability) that no new action was wanted — just relabel the existing 5th item so
+its delete behavior reads clearly. `_subtitle_pill_subtitle_actions()`/the file-modal row actions
+block in `macros.html` now use `t("common.delete")` instead of `t("common.blacklist")` (that key
+had exactly one caller, so it was deleted from all three locale catalogs rather than left dead);
+icon stays `ban.svg` — unlike every other icon swap logged in this file, no new one was vendored,
+since `backups.html`'s existing delete button already pairs `icon("ban")` with `t("common.delete")`,
+confirming "ban" is this app's established delete icon, not something specific to blacklisting.
+**The underlying behavior is unchanged**: the button still posts to
+`/media/subtitles/{id}/blacklist`, still calls `blacklist_subtitle()`, and still both deletes the
+file *and* adds a `SubtitleBlacklistEntry` so the release isn't re-fetched — only the visible
+label/tooltip changed. **How to apply:** if a future ask wants a delete that *doesn't* also block
+re-fetching (a real second action, not a relabel), that's new backend surface — a plain
+unlink-and-rescan without `add_blacklist_entry`, most naturally in `subtitle_discovery/` since it
+isn't acquisition-specific — not something the rename above already covers.
+
+**Update (2026-08-31, same round — "Translate now" hidden on a missing pill with no source
+subtitle):** the user screenshotted a gray "missing" pt-BR pill's dropdown and flagged that
+"Translate now" shouldn't be offered there — "essa legenda não existe" (that subtitle doesn't
+exist). Confirmed via `AskUserQuestion` (three options: gate it on a source subtitle existing,
+move it onto each real subtitle's own dropdown instead, or something else) that the file-level
+"Translate now" button (`_subtitle_pill_file_actions()`, shown on missing pills and the empty "—"
+placeholder) should stay where it is but only render when the file already has a discovered
+`Subtitle` — external or an extracted embedded track, both land in the same `Subtitle` table — in
+one of the profile's *source* languages; "Manual search" keeps showing unconditionally, since it
+searches providers directly and needs no local source. New shared query,
+`has_source_subtitle_for_media_file()` in `subtitle_discovery/list_missing_subtitles.py` (sibling
+of `missing_target_languages_for_media_file()`, same `_resolve_profile_for_media_file()` +
+per-file query shape) — deliberately not a reuse of `acquire_media_file_subtitle.py`'s similarly-named
+private `_has_source_language_subtitle()`, which takes an already-resolved `source_languages` list
+and a different call shape for a different purpose (gating provider acquisition of a *source*
+subtitle itself, not gating a UI button); duplicating the one-line `any(...)` check was judged
+cheaper than coupling the two modules for it. New `MediaFileRead.has_source_subtitle` /
+`SubtitleAcquisitionResult.has_source_subtitle` fields (the latter inherited by
+`SubtitleBlacklistResult`) thread it to every place `subtitle_pill_list()` is called — the two
+detail-page templates *and* the two HTMX out-of-band swap partials
+(`_subtitle_acquire_result.html`, `_subtitle_blacklist_result.html`) — same "every OOB swap site
+needs the new field too, or it silently regresses after the next action" gotcha logged for
+`missing_languages` in the 2026-08-24 entry above; this one hit a real test failure (`test_movie_detail_page_renders_a_missing_language_as_a_gray_pill`) that made it obvious immediately, since a hand-built JSON test fixture doesn't get the field for free the way the real backend response does.
