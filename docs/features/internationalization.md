@@ -15,6 +15,8 @@ This is unrelated to a language profile's source/target languages, which set wha
 language a *subtitle's content* is translated to or from — the UI locale only changes
 what language the dashboard's own text is written in.
 
+![Settings → General, with the Display language dropdown](../assets/screenshots/settings-general.png)
+
 ## How it works
 
 `legendarr_web` resolves the active locale once per request (an app-wide dependency,

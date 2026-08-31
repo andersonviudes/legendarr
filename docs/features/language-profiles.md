@@ -4,6 +4,8 @@ A language profile is a named set of source/target languages and translation pre
 It lets you say, for example: "for anime, translate embedded Japanese subs to `pt-BR` and
 `en`, extracting embedded tracks when no external subtitle exists".
 
+![Language profiles settings page](../assets/screenshots/language-profiles.png)
+
 ## Fields
 
 | Field | Description |

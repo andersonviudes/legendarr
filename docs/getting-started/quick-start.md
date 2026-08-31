@@ -1,5 +1,7 @@
 # Quick Start
 
+![legendarr dashboard](../assets/screenshots/dashboard.png)
+
 1. **Set your Radarr/Sonarr connection details.** Copy `.env.example` to `.env` and fill in
    the URLs and API keys:
 

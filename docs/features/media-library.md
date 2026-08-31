@@ -15,3 +15,5 @@ The scheduler is started once and shared by both the CLI entrypoint and the web 
 
 The synced library is browsable at `/media/movies` and `/media/series` in the web
 dashboard, each showing the count of items currently synced.
+
+![Series library, poster grid](../assets/screenshots/media-library.png)

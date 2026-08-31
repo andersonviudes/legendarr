@@ -15,6 +15,8 @@ set:
 A server only turns on once both are set and "Test connection" has succeeded at least
 once, same gating as every other provider page.
 
+![Media servers settings page](../assets/screenshots/media-servers.png)
+
 ## What triggers a refresh
 
 Only the automatic pipeline: a download or an upgrade in subtitle acquisition, and a

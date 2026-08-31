@@ -15,6 +15,8 @@ password, since that would lock every login out with no way back short of editin
 (`authentication/passwords.py`, stdlib `hashlib`, no extra dependency) before being
 stored in `config.yaml` — never in plaintext, and never re-displayed once saved.
 
+![Settings → General, with the Require login toggle and API key](../assets/screenshots/settings-general.png)
+
 ## What gets gated
 
 Two independent layers, both driven by the same `auth_enabled` flag:

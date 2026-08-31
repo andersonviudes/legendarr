@@ -17,6 +17,8 @@ Settings → Backup (`/settings/backup/`) creates a downloadable `.zip` archive 
   in the environment instead, and the archive omits it (there's nothing on disk to copy).
 - `manifest.json` — when the archive was created, and whether the key was bundled.
 
+![Backup settings page](../assets/screenshots/backup.png)
+
 ## Scope
 
 Backups don't include the SQLite database. Restoring on a new host brings back
