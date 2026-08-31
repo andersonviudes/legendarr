@@ -39,3 +39,4 @@
 - [legendarr dev Plex/Jellyfin webhook test](legendarr-dev-plex-jellyfin-webhook-test.md) — gated behind "media-servers" compose profile (opt-in); Jellyfin verified end-to-end, Plex needs a plex.tv claim
 - [legendarr translation provider batch-limit followup](legendarr-translation-provider-batch-limit-followup.md) — Google's 128-segment cap hit on a real subtitle, fixed via chunking; DeepL/LibreTranslate/LLM unverified
 - [legendarr PR title semantic lint](legendarr-pr-title-semantic-lint.md) — CI's `lint` job enforces the same lowercase-start subjectPattern on PR titles, not just commit messages
+- [legendarr prod deployment topology](legendarr-prod-deployment-topology.md) — real instance runs on a separate host (NAS-like stack), no docker/SSH access from this sandbox
