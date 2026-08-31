@@ -36,6 +36,21 @@ def test_scan_video_subtitles_finds_external_sibling_with_brackets_in_the_name(t
     assert subtitles[0].language == "pt-br"
 
 
+def test_scan_video_subtitles_falls_back_to_und_for_a_release_name_sibling(tmp_path: Path):
+    """A subtitle shipped by the release group under the raw scene release name (no
+    `.<language>.` suffix) must not have a release-tag fragment mistaken for its
+    language — see `_guess_language_from_filename`."""
+    video = tmp_path / "Show.S01E25.2160p.DV.HDR10.HEVC-GROUP.mkv"
+    video.touch()
+    (tmp_path / "Show.S01E25.2160p.DV.HDR10.HEVC-GROUP][DV HDR10][H265]-hone.srt").touch()
+
+    subtitles = scan_video_subtitles(video).subtitles
+
+    assert len(subtitles) == 1
+    assert subtitles[0].origin == SubtitleOrigin.EXTERNAL
+    assert subtitles[0].language == "und"
+
+
 def test_scan_video_subtitles_skips_embedded_probing_by_default(monkeypatch, tmp_path: Path):
     video = tmp_path / "movie.mkv"
     video.touch()
