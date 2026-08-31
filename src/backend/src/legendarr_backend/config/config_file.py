@@ -100,6 +100,16 @@ class AppConfigFile(BaseModel):
     ui_locale: str = "en"
     timezone: str = "UTC"
     backup_retention_count: int = Field(default=7, ge=1)
+    sync_queue_workers: int = Field(default=1, ge=1)
+    scan_queue_workers: int = Field(default=2, ge=1)
+    scan_bulk_queue_workers: int = Field(default=1, ge=1)
+    translate_queue_workers: int = Field(default=2, ge=1)
+    translate_bulk_queue_workers: int = Field(default=1, ge=1)
+    acquire_queue_workers: int = Field(default=2, ge=1)
+    acquire_bulk_queue_workers: int = Field(default=1, ge=1)
+    timing_sync_queue_workers: int = Field(default=2, ge=1)
+    metadata_bulk_queue_workers: int = Field(default=1, ge=1)
+    maintenance_queue_workers: int = Field(default=1, ge=1)
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -180,6 +190,16 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "ui_locale": settings.ui_locale,
         "timezone": settings.timezone,
         "backup_retention_count": settings.backup_retention_count,
+        "sync_queue_workers": settings.sync_queue_workers,
+        "scan_queue_workers": settings.scan_queue_workers,
+        "scan_bulk_queue_workers": settings.scan_bulk_queue_workers,
+        "translate_queue_workers": settings.translate_queue_workers,
+        "translate_bulk_queue_workers": settings.translate_bulk_queue_workers,
+        "acquire_queue_workers": settings.acquire_queue_workers,
+        "acquire_bulk_queue_workers": settings.acquire_bulk_queue_workers,
+        "timing_sync_queue_workers": settings.timing_sync_queue_workers,
+        "metadata_bulk_queue_workers": settings.metadata_bulk_queue_workers,
+        "maintenance_queue_workers": settings.maintenance_queue_workers,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

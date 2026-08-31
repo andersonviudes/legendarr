@@ -1,9 +1,32 @@
-from legendarr_backend.scheduling.queues import JobQueue
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.scheduler import JOB_JITTER_SECONDS, build_scheduler, register_job
 
 
 def _noop() -> None:
     pass
+
+
+def _pool_size(scheduler, queue: JobQueue) -> int:
+    return scheduler._executors[queue.value]._pool._max_workers
+
+
+def test_build_scheduler_defaults_every_queue_to_queue_workers():
+    scheduler = build_scheduler()
+
+    for queue, workers in QUEUE_WORKERS.items():
+        assert _pool_size(scheduler, queue) == workers
+
+
+def test_build_scheduler_overrides_a_queues_worker_count():
+    scheduler = build_scheduler({JobQueue.SCAN: 5})
+
+    assert _pool_size(scheduler, JobQueue.SCAN) == 5
+
+
+def test_build_scheduler_falls_back_to_queue_workers_for_queues_missing_from_the_override():
+    scheduler = build_scheduler({JobQueue.SCAN: 5})
+
+    assert _pool_size(scheduler, JobQueue.SCAN_BULK) == QUEUE_WORKERS[JobQueue.SCAN_BULK]
 
 
 def test_register_job_applies_queue_and_concurrency_policy():

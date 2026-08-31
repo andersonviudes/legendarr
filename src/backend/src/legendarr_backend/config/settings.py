@@ -160,6 +160,24 @@ class Settings(BaseSettings):
     # `config.yaml` + the Fernet key file only, not the SQLite database — see
     # `backup/manage_backups.py`.
     backup_retention_count: int = Field(default=7, ge=1)
+    # How many jobs each named executor queue (`scheduling/queues.py`'s `JobQueue`) is
+    # allowed to run at once — the throttle knobs behind PR #107's periodic subtitle
+    # discovery/acquisition/translation fan-outs. Same config/env-only posture as most
+    # other scheduling knobs (`translate_max_instances`, `acquisition_max_instances`,
+    # ...): no runtime-editable Settings UI yet. Unlike those, these also need a full
+    # restart to take effect — `legendarr_backend.bootstrap.build_scheduler()` sizes
+    # each queue's `ThreadPoolExecutor` once at startup, it isn't rebuilt when
+    # `config.yaml` changes. Defaults mirror `scheduling.queues.QUEUE_WORKERS`.
+    sync_queue_workers: int = Field(default=1, ge=1)
+    scan_queue_workers: int = Field(default=2, ge=1)
+    scan_bulk_queue_workers: int = Field(default=1, ge=1)
+    translate_queue_workers: int = Field(default=2, ge=1)
+    translate_bulk_queue_workers: int = Field(default=1, ge=1)
+    acquire_queue_workers: int = Field(default=2, ge=1)
+    acquire_bulk_queue_workers: int = Field(default=1, ge=1)
+    timing_sync_queue_workers: int = Field(default=2, ge=1)
+    metadata_bulk_queue_workers: int = Field(default=1, ge=1)
+    maintenance_queue_workers: int = Field(default=1, ge=1)
 
     @property
     def translation_plugin_package_list(self) -> list[str]:

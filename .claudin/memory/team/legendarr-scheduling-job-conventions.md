@@ -56,3 +56,18 @@ if the job needs tunable retry/concurrency, add job-prefixed fields to both `Set
 explicit keyword args and has no config-file dependency of its own. Tests mirror the split:
 `tests/scheduling/` covers the generic `register_job`/`with_retry` helpers with dummy
 functions/queues; `tests/media_library/test_jobs.py` covers the slice-specific wiring.
+
+**Update (2026-08-31) — each queue's thread-pool size is now config-driven too:**
+`scheduling/queues.py`'s `QUEUE_WORKERS` dict is still the *default* worker count per
+`JobQueue` (used when a caller passes nothing), but it's no longer the sole source of
+truth. `Settings`/`AppConfigFile` gained one `<queue>_queue_workers` field per `JobQueue`
+member (`scan_queue_workers`, `scan_bulk_queue_workers`, `translate_queue_workers`, ...);
+`legendarr_backend.bootstrap.build_scheduler()` builds a `dict[JobQueue, int]` from them
+and passes it to *both* `scheduling.scheduler.build_scheduler(queue_workers)` (sizes each
+`ThreadPoolExecutor`) and `scheduling.running_tasks.attach_running_task_registry(scheduler,
+queue_workers)` (so the Tasks page's "queued" badge — see [[legendarr-prod-deployment-topology]]
+for the real-world report that motivated this — uses the *actual* configured capacity, not
+the `QUEUE_WORKERS` default, via `RunningTaskRegistry.configure()`). Same posture as most
+other scheduling knobs: config/env-only, no Settings UI yet — and unlike `max_instances`/
+`coalesce`/interval fields, these also need a full process restart, since the executor pool
+is sized once at `build_scheduler()` time and never rebuilt when `config.yaml` changes.
