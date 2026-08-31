@@ -48,8 +48,27 @@ docker run -p 8000:8000 -v ./data:/config -v /path/to/your/library:/media \
 
 ### Docker Compose
 
-Copy [`docker-compose.example.yml`](docker-compose.example.yml) to `docker-compose.yml`,
-adjust the paths/env vars, then:
+Save as `docker-compose.yml` (also available as [`docker-compose.example.yml`](docker-compose.example.yml)
+in the repo root), adjust the paths/env vars, then `docker compose up -d`:
+
+```yaml
+services:
+  legendarr:
+    image: andersonviudes/legendarr:latest
+    environment:
+      - LEGENDARR_RADARR_URL=http://radarr:7878
+      - LEGENDARR_RADARR_API_KEY=your-radarr-api-key
+      - LEGENDARR_SONARR_URL=http://sonarr:8989
+      - LEGENDARR_SONARR_API_KEY=your-sonarr-api-key
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./data:/config
+      - /path/to/your/library:/media
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+```
 
 ```bash
 docker compose up -d
