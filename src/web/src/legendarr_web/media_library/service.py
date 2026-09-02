@@ -143,6 +143,16 @@ async def remove_subtitle_style_tags(client: httpx.AsyncClient, subtitle_id: int
     return response.json()
 
 
+async def trigger_embedded_track_extraction(
+    client: httpx.AsyncClient, media_file_id: int, track_index: int
+) -> dict:
+    response = await client.post(
+        f"/media/files/{media_file_id}/embedded-tracks/{track_index}/extract"
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 async def get_target_languages(client: httpx.AsyncClient, media_file_id: int) -> list[str]:
     response = await client.get(f"/media/files/{media_file_id}/target-languages")
     response.raise_for_status()

@@ -321,6 +321,49 @@ def test_movie_detail_page_hides_provider_columns_without_acquisition_data(stub_
     assert "0 Bytes" in dialog
 
 
+def _movie_detail_with_skipped_embedded_track_handler(request: httpx.Request) -> httpx.Response:
+    response = _movie_detail_handler(request)
+    body = response.json()
+    body["files"][0]["subtitles"] = []
+    body["files"][0]["embedded_tracks"] = [
+        {"track_index": 2, "language": "de", "extracted": False, "subtitle": None}
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_movie_detail_page_shows_extract_button_for_a_skipped_embedded_track(
+    stub_backend_client,
+):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_skipped_embedded_track_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "/media/files/5/embedded-tracks/2/extract" in dialog
+    # No sync-timing/translate/blacklist actions for a track that was never extracted —
+    # there's no real `Subtitle` row (`row.subtitle` is `None`) for any of those to act on.
+    assert "/media/subtitles/" not in dialog
+
+
+def test_movie_detail_page_hides_extract_button_for_an_already_extracted_track(
+    stub_backend_client,
+):
+    app = create_app()
+    stub_backend_client(app, handler=_movie_detail_with_embedded_subtitle_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/movies/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "/embedded-tracks/" not in dialog
+
+
 def _movie_detail_with_missing_language_handler(request: httpx.Request) -> httpx.Response:
     response = _movie_detail_handler(request)
     body = response.json()

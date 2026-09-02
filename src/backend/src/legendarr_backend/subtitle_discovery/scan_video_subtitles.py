@@ -64,6 +64,7 @@ def scan_video_subtitles(
     ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     known_languages: frozenset[str] = frozenset(),
     source_languages: frozenset[str] = frozenset(),
+    force_track_index: int | None = None,
 ) -> SubtitleScanResult:
     """Discover subtitle tracks for a video file.
 
@@ -93,11 +94,17 @@ def scan_video_subtitles(
     extract-everything behavior. A track skipped for any reason — a disabled toggle, a
     language outside `source_languages`, already covered, or a failed extraction — is still
     reported, just as an unextracted `DetectedEmbeddedTrack`, not a `DiscoveredSubtitle`.
+
+    `force_track_index`, when set, is the manual "extract this track anyway" override: the
+    matching track bypasses every one of the above gates (toggle, `source_languages`,
+    already-covered) — every other track is still filtered normally. It also bypasses the
+    top-level `extract_embedded or ocr_embedded` short-circuit below, so a forced track is
+    probed and extracted even when a profile has both toggles off.
     """
     external = _scan_external_subtitles(video_path)
     subtitles: list[DiscoveredSubtitle] = list(external)
     detected_embedded_tracks: list[DetectedEmbeddedTrack] = []
-    if extract_embedded or ocr_embedded:
+    if extract_embedded or ocr_embedded or force_track_index is not None:
         already_covered = {normalize_language_code(language) for language in known_languages} | {
             normalize_language_code(item.language) for item in external
         }
@@ -109,6 +116,7 @@ def scan_video_subtitles(
             ocr_embedded=ocr_embedded,
             ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
             source_languages=source_languages,
+            force_track_index=force_track_index,
         )
         subtitles += embedded
     return SubtitleScanResult(
@@ -148,19 +156,21 @@ def _scan_embedded_subtitles(
     ocr_embedded: bool,
     ocr_cue_timeout_seconds: float,
     source_languages: frozenset[str],
+    force_track_index: int | None = None,
 ) -> tuple[list[DiscoveredSubtitle], list[DetectedEmbeddedTrack]]:
     subtitles: list[DiscoveredSubtitle] = []
     detected_tracks: list[DetectedEmbeddedTrack] = []
     for track in probe_embedded_subtitle_tracks(video_path, timeout_seconds=probe_timeout_seconds):
         language = normalize_language_code(track.language)
         is_image_track = track.codec_name in IMAGE_BASED_SUBTITLE_CODECS
-        if is_image_track and not ocr_embedded:
+        forced = track.index == force_track_index
+        if is_image_track and not ocr_embedded and not forced:
             detected_tracks.append(_skipped_track(track, language))
             continue
-        if not is_image_track and not extract_embedded:
+        if not is_image_track and not extract_embedded and not forced:
             detected_tracks.append(_skipped_track(track, language))
             continue
-        if source_languages and language not in source_languages:
+        if source_languages and language not in source_languages and not forced:
             logger.debug(
                 "embedded track %d (%s) skipped for %s: %s is not a configured source language",
                 track.index,
@@ -170,7 +180,7 @@ def _scan_embedded_subtitles(
             )
             detected_tracks.append(_skipped_track(track, language))
             continue
-        if language in already_covered_languages:
+        if language in already_covered_languages and not forced:
             logger.debug(
                 "embedded track %d (%s) skipped for %s: %s is already covered by another subtitle",
                 track.index,

@@ -23,6 +23,7 @@
   "common.translate_now": "Translate now",
   "common.translate_from_this": "Translate from this",
   "common.remove_style_tags": "Remove style tags",
+  "common.extract": "Extract",
   "common.manual_search": "Manual search",
   "common.noun.service": "service",
   "common.noun.proxy": "proxy",
