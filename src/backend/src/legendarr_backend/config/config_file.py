@@ -65,7 +65,6 @@ class AppConfigFile(BaseModel):
     acquisition_interval_minutes: int = 60
     acquisition_max_instances: int = 1
     acquisition_coalesce: bool = True
-    acquisition_upgrade_recheck_hours: int = 24
     timing_sync_retry_attempts: int = Field(default=3, ge=1)
     timing_sync_retry_delay_seconds: float = 5.0
     timing_sync_timeout_seconds: float = 120.0
@@ -77,6 +76,11 @@ class AppConfigFile(BaseModel):
     metadata_refresh_retry_delay_seconds: float = 5.0
     metadata_refresh_max_instances: int = 1
     metadata_refresh_coalesce: bool = True
+    upgrade_interval_minutes: int = 1440
+    upgrade_retry_attempts: int = Field(default=3, ge=1)
+    upgrade_retry_delay_seconds: float = 5.0
+    upgrade_max_instances: int = 1
+    upgrade_coalesce: bool = True
     poster_cache_cleanup_interval_minutes: int = 1440
     poster_cache_cleanup_retry_attempts: int = Field(default=3, ge=1)
     poster_cache_cleanup_retry_delay_seconds: float = 5.0
@@ -110,6 +114,7 @@ class AppConfigFile(BaseModel):
     timing_sync_queue_workers: int = Field(default=2, ge=1)
     metadata_bulk_queue_workers: int = Field(default=1, ge=1)
     maintenance_queue_workers: int = Field(default=1, ge=1)
+    upgrade_bulk_queue_workers: int = Field(default=1, ge=1)
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -157,7 +162,6 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "acquisition_interval_minutes": settings.acquisition_interval_minutes,
         "acquisition_max_instances": settings.acquisition_max_instances,
         "acquisition_coalesce": settings.acquisition_coalesce,
-        "acquisition_upgrade_recheck_hours": settings.acquisition_upgrade_recheck_hours,
         "timing_sync_retry_attempts": settings.timing_sync_retry_attempts,
         "timing_sync_retry_delay_seconds": settings.timing_sync_retry_delay_seconds,
         "timing_sync_timeout_seconds": settings.timing_sync_timeout_seconds,
@@ -168,6 +172,11 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "metadata_refresh_retry_delay_seconds": settings.metadata_refresh_retry_delay_seconds,
         "metadata_refresh_max_instances": settings.metadata_refresh_max_instances,
         "metadata_refresh_coalesce": settings.metadata_refresh_coalesce,
+        "upgrade_interval_minutes": settings.upgrade_interval_minutes,
+        "upgrade_retry_attempts": settings.upgrade_retry_attempts,
+        "upgrade_retry_delay_seconds": settings.upgrade_retry_delay_seconds,
+        "upgrade_max_instances": settings.upgrade_max_instances,
+        "upgrade_coalesce": settings.upgrade_coalesce,
         "poster_cache_cleanup_interval_minutes": settings.poster_cache_cleanup_interval_minutes,
         "poster_cache_cleanup_retry_attempts": settings.poster_cache_cleanup_retry_attempts,
         "poster_cache_cleanup_retry_delay_seconds": (
@@ -200,6 +209,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "timing_sync_queue_workers": settings.timing_sync_queue_workers,
         "metadata_bulk_queue_workers": settings.metadata_bulk_queue_workers,
         "maintenance_queue_workers": settings.maintenance_queue_workers,
+        "upgrade_bulk_queue_workers": settings.upgrade_bulk_queue_workers,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

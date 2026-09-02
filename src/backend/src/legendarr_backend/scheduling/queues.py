@@ -40,6 +40,11 @@ class JobQueue(StrEnum):
     # no provider API call), unrelated to every job type above; its own queue so it never
     # competes with (or is throttled by) a bulk scan/translate/acquire/metadata run.
     MAINTENANCE = "maintenance"
+    # Periodic upgrade re-search: walks the whole library looking for a better-scoring
+    # release for a subtitle already acquired. Runs on its own daily schedule, fully
+    # decoupled from ACQUIRE/ACQUIRE_BULK so acquisition and upgrade never compete for the
+    # same executor. Periodic-only, same reasoning as METADATA_BULK — no manual trigger.
+    UPGRADE_BULK = "upgrade_bulk"
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
@@ -53,4 +58,5 @@ QUEUE_WORKERS: dict[JobQueue, int] = {
     JobQueue.TIMING_SYNC: 2,
     JobQueue.METADATA_BULK: 1,
     JobQueue.MAINTENANCE: 1,
+    JobQueue.UPGRADE_BULK: 1,
 }

@@ -18,6 +18,7 @@ from legendarr_backend.scheduling.running_tasks import attach_running_task_regis
 from legendarr_backend.scheduling.scheduled_retry import attach_scheduled_retry
 from legendarr_backend.scheduling.scheduler import build_scheduler as build_bare_scheduler
 from legendarr_backend.subtitle_acquisition.jobs import register_acquisition_job
+from legendarr_backend.subtitle_acquisition.upgrade_jobs import register_subtitle_upgrade_job
 from legendarr_backend.subtitle_discovery.jobs import register_subtitle_scan_job
 from legendarr_backend.subtitle_translation.jobs import register_translation_job
 from legendarr_backend.system.job_history import attach_job_history_recorder
@@ -39,6 +40,7 @@ def build_scheduler() -> BackgroundScheduler:
         JobQueue.TIMING_SYNC: config.timing_sync_queue_workers,
         JobQueue.METADATA_BULK: config.metadata_bulk_queue_workers,
         JobQueue.MAINTENANCE: config.maintenance_queue_workers,
+        JobQueue.UPGRADE_BULK: config.upgrade_bulk_queue_workers,
     }
     scheduler = build_bare_scheduler(queue_workers)
     attach_running_task_registry(scheduler, queue_workers)
@@ -50,6 +52,7 @@ def build_scheduler() -> BackgroundScheduler:
     register_subtitle_scan_job(scheduler, config)
     register_translation_job(scheduler, config)
     register_acquisition_job(scheduler, config)
+    register_subtitle_upgrade_job(scheduler, config)
     register_metadata_refresh_job(scheduler, config)
     register_poster_cache_cleanup_job(scheduler, config)
     register_temp_file_cleanup_job(scheduler, config)
