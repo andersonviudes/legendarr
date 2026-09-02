@@ -65,5 +65,5 @@ def test_dashboard_polls_the_same_running_tasks_endpoint_as_the_tasks_page(stub_
     assert response.status_code == 200
     assert "Live Activity" in response.text
     assert 'id="dashboard-running-tasks"' in response.text
-    assert 'hx-get="/system/tasks/running"' in response.text
+    assert 'hx-get="/system/tasks/running?limit=10"' in response.text
     assert 'hx-trigger="load, every 3s"' in response.text

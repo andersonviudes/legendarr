@@ -4,25 +4,54 @@ from legendarr_backend.scheduling.running_tasks import RunningTask, get_running_
 from legendarr_backend.system.running_tasks import list_running_tasks
 
 
-def test_list_running_tasks_returns_most_recently_started_first(
+def test_list_running_tasks_preserves_submission_order_within_the_same_status(
     isolated_running_tasks, monkeypatch, in_memory_session
 ):
-    older = RunningTask(
-        job_id="older_job", name="older_job", queue="sync", started_at=datetime.now()
+    first = RunningTask(
+        job_id="first_job", name="first_job", queue="sync", started_at=datetime.now()
     )
-    newer = RunningTask(
-        job_id="newer_job",
-        name="newer_job",
+    second = RunningTask(
+        job_id="second_job",
+        name="second_job",
         queue="scan",
-        started_at=older.started_at + timedelta(seconds=1),
+        started_at=first.started_at + timedelta(seconds=1),
     )
     monkeypatch.setattr(
-        "legendarr_backend.system.running_tasks.get_running_tasks", lambda: [older, newer]
+        "legendarr_backend.system.running_tasks.get_running_tasks", lambda: [first, second]
     )
 
     tasks = list_running_tasks(in_memory_session)
 
-    assert [task.job_id for task in tasks] == ["newer_job", "older_job"]
+    assert [task.job_id for task in tasks] == ["first_job", "second_job"]
+
+
+def test_list_running_tasks_puts_running_tasks_before_queued_ones(
+    isolated_running_tasks, monkeypatch, in_memory_session
+):
+    queued_first = RunningTask(
+        job_id="scan_1", name="scan_1", queue="scan_bulk", started_at=datetime.now(), queued=True
+    )
+    running = RunningTask(
+        job_id="scan_2",
+        name="scan_2",
+        queue="scan_bulk",
+        started_at=queued_first.started_at + timedelta(seconds=1),
+    )
+    queued_second = RunningTask(
+        job_id="scan_3",
+        name="scan_3",
+        queue="scan_bulk",
+        started_at=queued_first.started_at + timedelta(seconds=2),
+        queued=True,
+    )
+    monkeypatch.setattr(
+        "legendarr_backend.system.running_tasks.get_running_tasks",
+        lambda: [queued_first, running, queued_second],
+    )
+
+    tasks = list_running_tasks(in_memory_session)
+
+    assert [task.job_id for task in tasks] == ["scan_2", "scan_1", "scan_3"]
 
 
 def test_list_running_tasks_reflects_the_shared_registry(isolated_running_tasks, in_memory_session):

@@ -184,6 +184,23 @@ def test_running_tasks_partial_shows_no_queued_badge_for_a_running_task(stub_bac
     assert "Queued" not in response.text
 
 
+def test_running_tasks_partial_respects_the_limit_query_param(stub_backend_client):
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/system/tasks/running":
+            return httpx.Response(200, json=[_TASK, _QUEUED_TASK])
+        return httpx.Response(200, json=[])
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running?limit=1")
+
+    assert response.status_code == 200
+    assert "media_library_scan_fanout" in response.text
+    assert "subtitle_scan:2" not in response.text
+
+
 def test_tasks_count_shows_badge_when_tasks_are_running(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_tasks_handler)

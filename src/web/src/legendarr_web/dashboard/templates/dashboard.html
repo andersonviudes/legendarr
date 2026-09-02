@@ -56,7 +56,7 @@
   <h2>{{ icon("activity") }} {{ t("dashboard.live_activity_heading") }}</h2>
   <div
     id="dashboard-running-tasks"
-    hx-get="/system/tasks/running"
+    hx-get="/system/tasks/running?limit=10"
     hx-trigger="load, every 3s"
     hx-swap="innerHTML"
   ></div>
