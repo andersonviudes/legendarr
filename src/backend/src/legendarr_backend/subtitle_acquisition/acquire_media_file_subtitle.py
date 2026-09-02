@@ -11,12 +11,6 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
-from legendarr_backend.scheduling.circuit_breaker import (
-    BreakerCategory,
-    is_open,
-    record_failure,
-    record_success,
-)
 from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_audio import (
     EmbeddedAudioTrack,
     extract_audio_track,
@@ -29,24 +23,18 @@ from legendarr_backend.subtitle_acquisition.audit_trail import record_acquisitio
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
-from legendarr_backend.subtitle_acquisition.candidate_evaluation.episode_identity import (
-    passes_episode_identity,
-)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     CandidateEvaluation,
     evaluate_candidate,
-    pick_best_match,
 )
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
     passes_quality_gate,
-)
-from legendarr_backend.subtitle_acquisition.candidate_evaluation.release_filters import (
-    passes_release_name_filters,
 )
 from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
     record_acquired_subtitle,
 )
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
+from legendarr_backend.subtitle_acquisition.provider_search import search_providers_concurrently
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
@@ -116,8 +104,8 @@ def acquire_subtitle_for_media_file(
     lookup OpenSubtitles' API is built around. Series get their episode's season/episode
     number instead, via `media_library.locate.resolve_media_file_episode` (a live
     Sonarr lookup, `None` when it can't be resolved) — most providers still ignore it
-    and search title-only, so `pick_best_match`'s cutoff is still what keeps a wrong
-    episode's subtitle from being accepted for those; TVsubtitles and OpenSubtitles are
+    and search title-only, so `cutoff` is still what keeps a wrong episode's subtitle
+    from being accepted for those; TVsubtitles and OpenSubtitles are
     the first providers that actually anchor their search on it — OpenSubtitles via
     `Series.imdb_id`, passed through as `series_imdb_id` (not `imdb_id`, which its API
     treats as a direct episode/movie lookup rather than a series).
@@ -251,8 +239,9 @@ def _has_source_language_subtitle(
 
 def _match_cutoff_for_media_file(profile: LanguageProfile, media_file: MediaFile) -> float:
     """The profile's per-media-type match score (0-100), as the 0.0-1.0 fraction
-    `pick_best_match` expects — movies and series can be given a different minimum
-    match quality since the same profile can be assigned to either."""
+    `_search_and_download` compares each scored candidate against — movies and series
+    can be given a different minimum match quality since the same profile can be
+    assigned to either."""
     percent = (
         profile.movie_match_score if media_file.movie_id is not None else profile.series_match_score
     )
@@ -353,74 +342,62 @@ def _search_and_download(
     progress_total: int = 0,
 ) -> _AcquiredCandidate | None:
     blacklisted = list_blacklisted_download_ids(session, media_file_id, language)
-    last_error: Exception | None = None
-    last_provider_name: str | None = None
-    for provider in chain:
-        if is_open(BreakerCategory.ACQUISITION, provider.name):
-            logger.info(
-                "subtitle provider %r circuit open, skipping search for %r (%s)",
+
+    def _report_dispatch(provider: SubtitleProvider) -> None:
+        if on_progress is not None:
+            on_progress(progress_current, progress_total, language, provider.name)
+
+    scored, last_error, last_provider_name = search_providers_concurrently(
+        chain,
+        title,
+        language,
+        imdb_id=imdb_id,
+        moviehash=moviehash,
+        season=season,
+        episode=episode,
+        video_path=video_path,
+        tvdb_id=tvdb_id,
+        series_imdb_id=series_imdb_id,
+        reference_filename=video_path.stem,
+        hearing_impaired_preference=hearing_impaired_preference,
+        blacklisted=blacklisted,
+        must_contain=must_contain,
+        must_not_contain=must_not_contain,
+        on_dispatch=_report_dispatch,
+    )
+
+    # Sorted best-first already — the first candidate below `cutoff` means every
+    # candidate after it is too, so this stops at the same point `pick_best_match`
+    # would've, just walking the merged list instead of one provider's own.
+    for scored_candidate in scored:
+        if scored_candidate.candidate.score < cutoff:
+            break
+        provider = scored_candidate.provider
+        result = scored_candidate.result
+        try:
+            content = provider.download(result)
+        except Exception:
+            logger.warning(
+                "subtitle provider %r failed downloading %r, trying next",
                 provider.name,
-                title,
-                language,
+                result.release_name,
             )
             continue
-        try:
-            if on_progress is not None:
-                on_progress(progress_current, progress_total, language, provider.name)
-            candidates = provider.search(
-                title,
-                language,
-                imdb_id=imdb_id,
-                moviehash=moviehash,
-                season=season,
-                episode=episode,
-                video_path=video_path,
-                tvdb_id=tvdb_id,
-                series_imdb_id=series_imdb_id,
-            )
-            record_success(BreakerCategory.ACQUISITION, provider.name)
-            candidates = [
-                candidate
-                for candidate in candidates
-                if passes_release_name_filters(
-                    candidate.release_name, must_contain, must_not_contain
-                )
-                and (provider.name, candidate.download_id) not in blacklisted
-                and passes_episode_identity(candidate, season, episode)
-            ]
-            best = pick_best_match(
-                candidates,
-                video_path.stem,
-                cutoff=cutoff,
-                hearing_impaired_preference=hearing_impaired_preference,
-            )
-            if best is None:
-                continue
-            content = provider.download(best)
-            if not passes_quality_gate(content):
-                logger.warning(
-                    "subtitle from %r failed quality-gate checks (%r), trying next",
-                    provider.name,
-                    best.release_name,
-                )
-                continue
-            return _AcquiredCandidate(
-                content=content,
-                provider=provider.name,
-                release_name=best.release_name,
-                download_id=best.download_id,
-                evaluation=evaluate_candidate(best, video_path.stem),
-            )
-        except Exception as exc:
-            record_failure(BreakerCategory.ACQUISITION, provider.name)
-            last_error = exc
-            last_provider_name = provider.name
+        if not passes_quality_gate(content):
             logger.warning(
-                "subtitle provider %r failed searching %r (%s), trying next",
+                "subtitle from %r failed quality-gate checks (%r), trying next",
                 provider.name,
-                title,
-                language,
+                result.release_name,
             )
+            continue
+        return _AcquiredCandidate(
+            content=content,
+            provider=provider.name,
+            release_name=result.release_name,
+            download_id=result.download_id,
+            evaluation=evaluate_candidate(result, video_path.stem),
+        )
+
     if last_error is not None:
         record_acquisition_failure(
             session,

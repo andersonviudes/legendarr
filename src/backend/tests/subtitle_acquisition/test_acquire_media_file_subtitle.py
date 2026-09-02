@@ -279,56 +279,28 @@ def test_acquire_subtitle_skips_when_nothing_clears_the_match_cutoff(
     assert list(in_memory_session.exec(select(AcquisitionFailure))) == []
 
 
-def test_acquire_subtitle_passes_the_profiles_movie_match_score_as_cutoff_for_a_movie(
-    in_memory_session, tmp_path, monkeypatch
+def test_acquire_subtitle_movie_match_score_becomes_the_cutoff_for_a_movie(
+    in_memory_session, tmp_path
 ):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie)
-    _profile(in_memory_session, movie_match_score=77, series_match_score=11)
-    video = _write_video(tmp_path)
-    provider = _FakeProvider(
-        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
-    )
-    _use_chain(monkeypatch, provider)
-    captured: dict = {}
+    profile = _profile(in_memory_session, movie_match_score=77, series_match_score=11)
 
-    def _spy_pick_best_match(
-        candidates, reference_filename, cutoff=0.4, hearing_impaired_preference=None
-    ):
-        captured["cutoff"] = cutoff
-        return candidates[0] if candidates else None
+    cutoff = acquire_media_file_subtitle_module._match_cutoff_for_media_file(profile, media_file)
 
-    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
-
-    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
-
-    assert captured["cutoff"] == 0.77
+    assert cutoff == 0.77
 
 
-def test_acquire_subtitle_passes_the_profiles_series_match_score_as_cutoff_for_a_series(
-    in_memory_session, tmp_path, monkeypatch
+def test_acquire_subtitle_series_match_score_becomes_the_cutoff_for_a_series(
+    in_memory_session, tmp_path
 ):
     series = _series(in_memory_session, tmp_path)
     media_file = _series_media_file(in_memory_session, series)
-    _profile(in_memory_session, movie_match_score=77, series_match_score=11)
-    video = _write_video(tmp_path)
-    provider = _FakeProvider(
-        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")]
-    )
-    _use_chain(monkeypatch, provider)
-    captured: dict = {}
+    profile = _profile(in_memory_session, movie_match_score=77, series_match_score=11)
 
-    def _spy_pick_best_match(
-        candidates, reference_filename, cutoff=0.4, hearing_impaired_preference=None
-    ):
-        captured["cutoff"] = cutoff
-        return candidates[0] if candidates else None
+    cutoff = acquire_media_file_subtitle_module._match_cutoff_for_media_file(profile, media_file)
 
-    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
-
-    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
-
-    assert captured["cutoff"] == 0.11
+    assert cutoff == 0.11
 
 
 def test_acquire_subtitle_records_a_failure_when_a_provider_raises_during_search(
@@ -589,6 +561,31 @@ def test_acquire_subtitle_falls_back_to_the_next_provider_on_quality_gate_failur
     result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
 
     assert result.acquired_language == "en"
+
+
+def test_acquire_subtitle_downloads_the_highest_scoring_candidate_across_providers(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    video = _write_video(tmp_path)
+    # Both clear the default cutoff, but "first" (searched first in chain/priority
+    # order) is a weaker text match than "second" — the winner is picked by score
+    # across every provider, not by which provider happens to come first in the chain.
+    first = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo.Bar", download_id="1", language="en")]
+    )
+    second = _FakeProvider(
+        results=[SubtitleSearchResult(release_name="Foo", download_id="2", language="en")]
+    )
+    _use_chain(monkeypatch, first, second)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    acquired = in_memory_session.exec(select(AcquiredSubtitle)).one()
+    assert acquired.download_id == "2"
 
 
 def test_acquire_subtitle_tries_the_next_source_language_when_the_first_has_no_match(
@@ -873,22 +870,15 @@ def test_acquire_subtitle_excludes_a_wrong_episode_candidate_before_scoring(
             season_number=1, episode_number=2, title="Foo", relative_path="Foo/Foo.mkv"
         ),
     )
-    captured: dict = {}
 
-    def _spy_pick_best_match(
-        candidates, reference_filename, cutoff=0.4, hearing_impaired_preference=None
-    ):
-        captured["download_ids"] = [candidate.download_id for candidate in candidates]
-        return candidates[0] if candidates else None
-
-    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
-
-    acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
 
     # The "wrong" candidate names episode 3 in its release name — the resolved episode
-    # is 2 — so it's filtered out before `pick_best_match` ever sees it, regardless of
-    # how close its title text might otherwise score.
-    assert captured["download_ids"] == ["right"]
+    # is 2 — so it's filtered out before scoring, regardless of how close its title
+    # text might otherwise match.
+    assert result.acquired_language == "en"
+    acquired = in_memory_session.exec(select(AcquiredSubtitle)).one()
+    assert acquired.download_id == "right"
 
 
 def test_acquire_subtitle_accepts_a_hash_matched_candidate_regardless_of_cutoff(
@@ -928,13 +918,15 @@ def test_acquire_subtitle_passes_the_profiles_hearing_impaired_preference(
     _use_chain(monkeypatch, provider)
     captured: dict = {}
 
-    def _spy_pick_best_match(
-        candidates, reference_filename, cutoff=0.4, hearing_impaired_preference=None
-    ):
-        captured["hearing_impaired_preference"] = hearing_impaired_preference
-        return candidates[0] if candidates else None
+    def _spy_search_providers_concurrently(*args, **kwargs):
+        captured["hearing_impaired_preference"] = kwargs["hearing_impaired_preference"]
+        return [], None, None
 
-    monkeypatch.setattr(acquire_media_file_subtitle_module, "pick_best_match", _spy_pick_best_match)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "search_providers_concurrently",
+        _spy_search_providers_concurrently,
+    )
 
     acquire_subtitle_for_media_file(in_memory_session, media_file, video)
 
