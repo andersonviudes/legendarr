@@ -119,9 +119,9 @@ class AcquiredSubtitle(SQLModel, table=True):
 
     `last_upgrade_checked_at` is stamped every time `upgrade_subtitle_for_media_file`
     considers this subtitle, whether or not it actually upgrades it — the periodic
-    acquisition fan-out's throttle, so a file that already has a subtitle doesn't get a
+    upgrade fan-out's throttle, so a file that already has a subtitle doesn't get a
     live provider search on every single interval tick (see
-    `subtitle_acquisition.upgrade_media_file_subtitle.should_check_for_upgrade`).
+    `subtitle_acquisition.upgrade_media_file_subtitle.upgrade_search_priority`).
     """
 
     id: int | None = Field(default=None, primary_key=True)

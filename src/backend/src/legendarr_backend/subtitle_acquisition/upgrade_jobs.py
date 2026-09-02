@@ -16,7 +16,7 @@ from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.jobs import media_file_ids_with_completed_scan
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
-    should_check_for_upgrade,
+    upgrade_search_priority,
     upgrade_subtitle_for_media_file,
 )
 
@@ -43,7 +43,7 @@ def register_subtitle_upgrade_job(
                 session,
                 retry_attempts=config.upgrade_retry_attempts,
                 retry_delay_seconds=config.upgrade_retry_delay_seconds,
-                recheck_after=timedelta(minutes=config.upgrade_interval_minutes),
+                recheck_after=timedelta(minutes=config.upgrade_recheck_minutes),
             )
         logger.info("upgrade fan-out enqueued: %d media files", enqueued)
 
@@ -69,14 +69,30 @@ def enqueue_full_upgrade_scan(
     retry_delay_seconds: float,
     recheck_after: timedelta,
 ) -> int:
-    """Enqueue an upgrade re-check for every subtitle-discovery-ready `MediaFile` on the
-    bulk queue — the periodic counterpart to
-    `subtitle_acquisition.jobs.enqueue_full_acquisition_scan`, reusing the same
-    `media_file_ids_with_completed_scan` eligibility filter: upgrade needs discovery's
-    `Subtitle` rows to find the current subtitle to replace, same reasoning as acquisition.
+    """Enqueue an upgrade re-check for every eligible `MediaFile` on the bulk queue —
+    the periodic counterpart to `subtitle_acquisition.jobs.enqueue_full_acquisition_scan`,
+    reusing the same `media_file_ids_with_completed_scan` eligibility filter: upgrade
+    needs discovery's `Subtitle` rows to find the current subtitle to replace, same
+    reasoning as acquisition.
+
+    Unlike acquisition's full scan, not every discovery-scanned media file is enqueued —
+    only the ones `upgrade_search_priority` says are actually due a check right now (has
+    an upgradeable subtitle scored below its profile's upgrade threshold, not checked
+    within `recheck_after`). Those are enqueued ascending by current score, so the
+    worst-scoring subtitles reach the front of the (typically single-worker)
+    `UPGRADE_BULK` queue first.
     """
     media_file_ids = media_file_ids_with_completed_scan(session)
+    candidates: list[tuple[int, float]] = []
     for media_file_id in media_file_ids:
+        media_file = session.get(MediaFile, media_file_id)
+        if media_file is None:
+            continue
+        priority = upgrade_search_priority(session, media_file, recheck_after)
+        if priority is not None:
+            candidates.append((media_file_id, priority))
+    candidates.sort(key=lambda candidate: candidate[1])
+    for media_file_id, _ in candidates:
         enqueue_upgrade(
             scheduler,
             media_file_id,
@@ -85,7 +101,7 @@ def enqueue_full_upgrade_scan(
             retry_delay_seconds=retry_delay_seconds,
             recheck_after=recheck_after,
         )
-    return len(media_file_ids)
+    return len(candidates)
 
 
 def enqueue_upgrade(
@@ -105,9 +121,10 @@ def enqueue_upgrade(
     subtitle in place without changing its language, so it never needs to chain into a
     translation run.
 
-    `recheck_after` throttles `should_check_for_upgrade` below (default: no throttle,
+    `recheck_after` throttles `upgrade_search_priority` below (default: no throttle,
     always check) — the periodic fan-out is the only caller that passes a real recheck
-    window, matching its own interval.
+    window, and now pre-filters/sorts by the same check before enqueuing at all; this
+    call is a defense-in-depth backstop, not the primary filter.
     """
     job_id = f"subtitle_upgrade:{media_file_id}"
 
@@ -123,7 +140,7 @@ def enqueue_upgrade(
                     "upgrade skipped: owner of media file %d no longer exists", media_file_id
                 )
                 return
-            if not should_check_for_upgrade(session, media_file, recheck_after):
+            if upgrade_search_priority(session, media_file, recheck_after) is None:
                 return
             result = upgrade_subtitle_for_media_file(session, media_file, video_path)
             session.commit()

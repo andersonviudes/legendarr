@@ -81,6 +81,7 @@ class AppConfigFile(BaseModel):
     upgrade_retry_delay_seconds: float = 5.0
     upgrade_max_instances: int = 1
     upgrade_coalesce: bool = True
+    upgrade_recheck_minutes: int = 4320
     poster_cache_cleanup_interval_minutes: int = 1440
     poster_cache_cleanup_retry_attempts: int = Field(default=3, ge=1)
     poster_cache_cleanup_retry_delay_seconds: float = 5.0
@@ -177,6 +178,7 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "upgrade_retry_delay_seconds": settings.upgrade_retry_delay_seconds,
         "upgrade_max_instances": settings.upgrade_max_instances,
         "upgrade_coalesce": settings.upgrade_coalesce,
+        "upgrade_recheck_minutes": settings.upgrade_recheck_minutes,
         "poster_cache_cleanup_interval_minutes": settings.poster_cache_cleanup_interval_minutes,
         "poster_cache_cleanup_retry_attempts": settings.poster_cache_cleanup_retry_attempts,
         "poster_cache_cleanup_retry_delay_seconds": (

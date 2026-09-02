@@ -140,6 +140,23 @@ unconditional command risks an unnecessary, disruptive rewrite of an already-ver
 the fix-direct-to-main convention correctly, clarify intent instead of assuming a revert is
 wanted.
 
+**2026-09-02 — recurrence: branch creation AND per-task test coverage must be literal
+Tasks list entries, not just an Agreed Decisions bullet or a single end-of-plan test
+task:** building a plan for the upgrade-job score/threshold/recheck-window feature,
+"Feature branch + PR" was recorded under **Agreed Decisions** (not as a `- [ ]` Tasks
+entry) and the Tasks list ended with one generic "lint, typecheck, full test suite" item
+with no explicit per-change unit-test tasks. `ExitPlanMode` was rejected with "adiciona
+para trabalharmos em uma branch e testar no final e cobrir com testes unitários" — the
+same root cause as the 2026-07-22 entry above (knowing the rule isn't the same as
+encoding it in the plan's actual Tasks list), now recurring a second time and extended
+to explicitly cover test coverage too. **How to apply:** for any `feat:`-sized plan,
+before calling `ExitPlanMode`: (1) add "create the feature branch" as the literal first
+`- [ ]` Tasks entry, not just an Agreed Decisions bullet; (2) give implementation tasks
+that touch testable logic their own paired "add/update tests for X" Tasks entries as you
+go, not one bundled test task saved for the end; (3) still keep a final "lint,
+typecheck, full test suite" task as the last entry. Do this by default — don't wait for
+the user to reject `ExitPlanMode` a third time.
+
 Separately, `git push origin main` was rejected ("the remote contains work you do not have")
 after two small `chore:`/`docs:` commits were made directly on local `main`: a `feat:` PR opened
 earlier the same session had been squash-merged into `origin/main` in the meantime (by the user,

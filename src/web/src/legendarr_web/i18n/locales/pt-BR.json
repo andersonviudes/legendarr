@@ -221,6 +221,10 @@
   "language_profiles.movie_match_score": "Pontuação de correspondência de filmes",
   "language_profiles.series_match_score": "Pontuação de correspondência de séries",
   "language_profiles.match_score_hint": "Qualidade mínima de correspondência (0–100) que um candidato de legenda precisa atingir para ser baixado automaticamente.",
+  "language_profiles.upgrade_threshold_heading": "Limite de Atualização de Pontuação",
+  "language_profiles.movie_upgrade_threshold": "Pontuação de atualização de filmes",
+  "language_profiles.series_upgrade_threshold": "Pontuação de atualização de séries",
+  "language_profiles.upgrade_threshold_hint": "Pontuação máxima da legenda atual (0–100) abaixo da qual o job de upgrade vai buscar uma versão melhor. Nesse valor ou acima, a legenda atual é mantida como está.",
 
   "arr_services.edit_server_title": "Editar servidor {type}",
   "arr_services.add_server_title": "Adicionar servidor {type}",

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from legendarr_backend.arr_clients.base import EpisodeItem
@@ -28,6 +28,7 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 )
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
+    upgrade_search_priority,
     upgrade_subtitle_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -422,3 +423,67 @@ def test_upgrade_excludes_a_wrong_episode_candidate_before_scoring(
     # `evaluate_candidate` even though it would otherwise easily beat the 0.1 baseline.
     assert result.skipped_reason == "no_upgrade_found"
     assert provider.download_calls == []
+
+
+def test_upgrade_search_priority_returns_none_without_language_profile(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+
+    priority = upgrade_search_priority(in_memory_session, media_file, timedelta(days=3))
+
+    assert priority is None
+
+
+def test_upgrade_search_priority_returns_none_without_upgradeable_subtitle(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+
+    priority = upgrade_search_priority(in_memory_session, media_file, timedelta(days=3))
+
+    assert priority is None
+
+
+def test_upgrade_search_priority_returns_none_when_score_at_or_above_threshold(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, movie_upgrade_threshold=90)
+    _acquired_subtitle(in_memory_session, media_file, score=0.95)
+
+    priority = upgrade_search_priority(in_memory_session, media_file, timedelta(days=3))
+
+    assert priority is None
+
+
+def test_upgrade_search_priority_returns_none_when_checked_within_recheck_window(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session)
+    subtitle = _acquired_subtitle(in_memory_session, media_file, score=0.1)
+    assert subtitle.id is not None
+    metadata = get_acquired_subtitle(in_memory_session, subtitle.id)
+    assert metadata is not None
+    metadata.last_upgrade_checked_at = datetime.now(UTC).replace(tzinfo=None)
+    in_memory_session.add(metadata)
+    in_memory_session.commit()
+
+    priority = upgrade_search_priority(in_memory_session, media_file, timedelta(days=3))
+
+    assert priority is None
+
+
+def test_upgrade_search_priority_returns_current_score_when_eligible(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, movie_upgrade_threshold=90)
+    _acquired_subtitle(in_memory_session, media_file, score=0.5)
+
+    priority = upgrade_search_priority(in_memory_session, media_file, timedelta(days=3))
+
+    assert priority == 0.5

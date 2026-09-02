@@ -39,6 +39,16 @@ class LanguageProfile(SQLModel, table=True):
     # assigned to both movies and series, and how strict the match needs to be can differ.
     movie_match_score: int = Field(default=40)
     series_match_score: int = Field(default=40)
+    # Minimum current-subtitle score (0-100) below which the periodic upgrade job will
+    # bother re-searching providers for a better release — at/above this, the current
+    # subtitle is considered good enough and left alone. Split by media type for the
+    # same reason movie_match_score/series_match_score are: a profile is type-agnostic
+    # and the same one can be assigned to both a Movie and a Series. Default 100 keeps
+    # every existing profile's upgrade behavior unchanged (100% is effectively
+    # unreachable in practice), same migration-safety posture as movie_match_score's
+    # default of 40.
+    movie_upgrade_threshold: int = Field(default=100)
+    series_upgrade_threshold: int = Field(default=100)
 
     @property
     def source_language_list(self) -> list[str]:
