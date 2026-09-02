@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     upgrade_retry_delay_seconds: float = Field(default=5.0)
     upgrade_max_instances: int = Field(default=1)
     upgrade_coalesce: bool = Field(default=True)
+    # Decoupled from upgrade_interval_minutes above (the fan-out's own run cadence) —
+    # this is the minimum time between two upgrade searches for the *same* media file,
+    # regardless of how often the fan-out itself runs. Default 4320 (3 days).
+    upgrade_recheck_minutes: int = Field(default=4320)
     # Manual "sync timing" only (ROADMAP.md 0.7.0), same posture as translate_retry_attempts
     # — no interval/max_instances/coalesce fields, just the retry policy
     # `enqueue_timing_sync` needs. `ffsubsync` decodes the whole audio track, so its timeout

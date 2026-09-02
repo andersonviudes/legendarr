@@ -37,3 +37,13 @@ profile" should call the same `_match_cutoff_for_media_file(profile, media_file)
 the two raw fields directly, dividing by 100) rather than re-deriving a fraction by hand — and if
 a use case ever needs the cutoff without a concrete `MediaFile` (e.g. a dry-run/preview), extend
 that helper's signature rather than inlining the movie/series branch a second time.
+
+**2026-09-02 addendum — a second, differently-purposed field pair exists now:**
+`movie_upgrade_threshold`/`series_upgrade_threshold` (same int 0-100 shape, same
+movie-vs-series split) were added to `LanguageProfile` for the *upgrade* job, not
+acquisition — they gate whether the upgrade job bothers re-searching for a media file at
+all (current score below threshold), not the accept/reject cutoff `movie_match_score`/
+`series_match_score` apply to a freshly found candidate. Default 100 (vs. this pair's
+default 40) for the same migration-safety reason: it preserves "always eligible" for
+every existing profile. See [[legendarr-scheduling-job-conventions]]'s 2026-09-02 update
+for the job-side logic that reads it.

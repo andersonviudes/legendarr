@@ -55,6 +55,13 @@
                         hint=t("language_profiles.match_score_hint")) }}
   {{ match_score_field("series_match_score", t("language_profiles.series_match_score"),
                         value=(profile.series_match_score if profile else 40)) }}
+
+  <h2>{{ t("language_profiles.upgrade_threshold_heading") }}</h2>
+  {{ match_score_field("movie_upgrade_threshold", t("language_profiles.movie_upgrade_threshold"),
+                        value=(profile.movie_upgrade_threshold if profile else 100),
+                        hint=t("language_profiles.upgrade_threshold_hint")) }}
+  {{ match_score_field("series_upgrade_threshold", t("language_profiles.series_upgrade_threshold"),
+                        value=(profile.series_upgrade_threshold if profile else 100)) }}
 </form>
 {% endblock %}
 {% block scripts %}

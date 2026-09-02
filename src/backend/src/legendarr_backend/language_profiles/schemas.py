@@ -16,3 +16,5 @@ class LanguageProfileInput(BaseModel):
     release_name_must_not_contain: str = ""
     movie_match_score: int = Field(default=40, ge=0, le=100)
     series_match_score: int = Field(default=40, ge=0, le=100)
+    movie_upgrade_threshold: int = Field(default=100, ge=0, le=100)
+    series_upgrade_threshold: int = Field(default=100, ge=0, le=100)

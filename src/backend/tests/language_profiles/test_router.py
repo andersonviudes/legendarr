@@ -108,3 +108,18 @@ def test_create_returns_422_when_match_score_is_out_of_range(isolated_database):
         response = client.post("/language-profiles/", json=_payload(movie_match_score=101))
 
     assert response.status_code == 422
+
+
+def test_create_defaults_movie_and_series_upgrade_threshold_to_one_hundred(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload())
+
+    assert response.json()["movie_upgrade_threshold"] == 100
+    assert response.json()["series_upgrade_threshold"] == 100
+
+
+def test_create_returns_422_when_upgrade_threshold_is_out_of_range(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload(movie_upgrade_threshold=101))
+
+    assert response.status_code == 422

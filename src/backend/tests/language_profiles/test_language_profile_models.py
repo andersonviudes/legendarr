@@ -73,3 +73,10 @@ def test_movie_and_series_match_score_default_to_forty():
 
     assert profile.movie_match_score == 40
     assert profile.series_match_score == 40
+
+
+def test_movie_and_series_upgrade_threshold_default_to_one_hundred():
+    profile = _profile()
+
+    assert profile.movie_upgrade_threshold == 100
+    assert profile.series_upgrade_threshold == 100

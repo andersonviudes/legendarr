@@ -80,6 +80,26 @@ none of those callers passed a real throttle. That immediate side effect is gone
 now only ever runs from `subtitle_upgrade_fanout`, at most once a day by default. Confirmed
 with the user as the desired trade-off for a simpler two-job mental model.
 
+**Update (2026-09-02, later same day) — score-aware, threshold-gated upgrade
+prioritization:** built directly on the split above. `should_check_for_upgrade` was
+replaced by `upgrade_search_priority(session, media_file, recheck_after) -> float | None`
+in `upgrade_media_file_subtitle.py` — one function now doing eligibility (has profile,
+has an `AcquiredSubtitle`), a new score-threshold gate
+(`LanguageProfile.movie_upgrade_threshold`/`series_upgrade_threshold`, int 0-100, default
+100 so existing profiles keep today's "always eligible" behavior), and the recheck-window
+throttle all at once — returning the current subtitle's score (not just a bool) so it can
+double as a sort key. `upgrade_jobs.py::enqueue_full_upgrade_scan` now calls this for
+every discovery-scanned media file, keeps only the ones it returns a score for, and
+enqueues them **ascending by score** so the worst-scoring subtitles reach the (typically
+single-worker) `UPGRADE_BULK` queue first — previously it enqueued every scanned media
+file unconditionally and let `run_upgrade` skip no-ops at execution time. Also
+**decoupled the recheck window from the run interval**: a new `upgrade_recheck_minutes`
+config field (default 4320 = 3 days, config/env-only like `upgrade_interval_minutes`
+itself, no Settings UI) replaces `upgrade_interval_minutes` as the throttle passed into
+`upgrade_search_priority` — before this the fan-out's own cadence and the per-file
+recheck window were the same number by construction. See
+[[legendarr-match-score-configurable]] for the sibling field pair this was modeled on.
+
 **Update (2026-08-31) — each queue's thread-pool size is now config-driven too:**
 `scheduling/queues.py`'s `QUEUE_WORKERS` dict is still the *default* worker count per
 `JobQueue` (used when a caller passes nothing), but it's no longer the sole source of

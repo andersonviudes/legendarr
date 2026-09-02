@@ -5,6 +5,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
+from legendarr_backend.language_profiles.models import LanguageProfile
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
@@ -86,8 +87,8 @@ def upgrade_subtitle_for_media_file(
         return UpgradeResult(skipped_reason="no_upgradeable_subtitle")
     subtitle, metadata = current
     # Stamped before the search itself, regardless of which return path below is hit —
-    # `should_check_for_upgrade` reads this back to throttle how often the periodic
-    # acquisition fan-out bothers calling this function at all for this media file.
+    # `upgrade_search_priority` reads this back to throttle how often the periodic
+    # upgrade fan-out bothers calling this function at all for this media file.
     metadata.last_upgrade_checked_at = datetime.now(UTC)
     session.add(metadata)
 
@@ -216,28 +217,47 @@ def _current_upgradeable_subtitle(
     return None
 
 
-def should_check_for_upgrade(
-    session: Session, media_file: MediaFile, recheck_after: timedelta
-) -> bool:
-    """Whether `upgrade_subtitle_for_media_file` is due to run for `media_file`.
+def _upgrade_threshold_for_media_file(profile: LanguageProfile, media_file: MediaFile) -> float:
+    """The profile's per-media-type upgrade threshold (0-100), as the 0.0-1.0 fraction
+    `upgrade_search_priority` compares the current subtitle's score against — same
+    movie/series split as `acquire_media_file_subtitle._match_cutoff_for_media_file`,
+    for the same reason (a profile is type-agnostic)."""
+    percent = (
+        profile.movie_upgrade_threshold
+        if media_file.movie_id is not None
+        else profile.series_upgrade_threshold
+    )
+    return percent / 100
 
-    `False` for the same reasons `upgrade_subtitle_for_media_file` itself would skip
-    (no language profile, no upgradeable subtitle), or when its `AcquiredSubtitle` row
-    was checked more recently than `recheck_after` ago — the periodic acquisition
-    fan-out's throttle against calling this on every single interval tick for a file
-    that already has a subtitle.
+
+def upgrade_search_priority(
+    session: Session, media_file: MediaFile, recheck_after: timedelta
+) -> float | None:
+    """The current subtitle's score (0.0-1.0) if `upgrade_subtitle_for_media_file` is due
+    to run for `media_file` right now, or `None` if it should be skipped: no language
+    profile, no upgradeable subtitle, the score is already at/above the profile's
+    per-media-type upgrade threshold, or its `AcquiredSubtitle` row was checked more
+    recently than `recheck_after` ago.
+
+    Doubles as a boolean gate (`is None`) for `run_upgrade`'s own defense-in-depth check
+    and as a sort key for `subtitle_acquisition.upgrade_jobs.enqueue_full_upgrade_scan`,
+    which keeps every media file this returns a score for and enqueues them ascending by
+    score, so the worst-scoring subtitles get searched first.
     """
     profile = resolve_media_file_profile(session, media_file)
     if profile is None:
-        return False
+        return None
     current = _current_upgradeable_subtitle(session, media_file, profile.source_language_list)
     if current is None:
-        return False
+        return None
     _, metadata = current
-    if metadata.last_upgrade_checked_at is None:
-        return True
-    # SQLite drops tzinfo on round trip, so a value read back from `AcquiredSubtitle`
-    # is always naive — compare against a naive `now` too, same convention as
-    # `authentication.manage_authentication._utcnow`.
-    now = datetime.now(UTC).replace(tzinfo=None)
-    return now - metadata.last_upgrade_checked_at >= recheck_after
+    if metadata.score >= _upgrade_threshold_for_media_file(profile, media_file):
+        return None
+    if metadata.last_upgrade_checked_at is not None:
+        # SQLite drops tzinfo on round trip, so a value read back from `AcquiredSubtitle`
+        # is always naive — compare against a naive `now` too, same convention as
+        # `authentication.manage_authentication._utcnow`.
+        now = datetime.now(UTC).replace(tzinfo=None)
+        if now - metadata.last_upgrade_checked_at < recheck_after:
+            return None
+    return metadata.score

@@ -29,6 +29,8 @@ async def _language_profile_form(
     release_name_must_not_contain: str = Form(""),
     movie_match_score: int = Form(40),
     series_match_score: int = Form(40),
+    movie_upgrade_threshold: int = Form(100),
+    series_upgrade_threshold: int = Form(100),
 ) -> dict:
     return {
         "name": name,
@@ -45,6 +47,8 @@ async def _language_profile_form(
         "release_name_must_not_contain": release_name_must_not_contain,
         "movie_match_score": movie_match_score,
         "series_match_score": series_match_score,
+        "movie_upgrade_threshold": movie_upgrade_threshold,
+        "series_upgrade_threshold": series_upgrade_threshold,
     }
 
 

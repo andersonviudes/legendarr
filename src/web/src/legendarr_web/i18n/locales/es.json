@@ -221,6 +221,10 @@
   "language_profiles.movie_match_score": "Puntaje de coincidencia de películas",
   "language_profiles.series_match_score": "Puntaje de coincidencia de series",
   "language_profiles.match_score_hint": "Calidad de coincidencia mínima (0–100) que un candidato de subtítulo debe alcanzar para descargarse automáticamente.",
+  "language_profiles.upgrade_threshold_heading": "Umbral de Actualización de Puntaje",
+  "language_profiles.movie_upgrade_threshold": "Puntaje de actualización de películas",
+  "language_profiles.series_upgrade_threshold": "Puntaje de actualización de series",
+  "language_profiles.upgrade_threshold_hint": "Puntaje máximo del subtítulo actual (0–100) por debajo del cual el trabajo de actualización buscará una versión mejor. En este valor o por encima, el subtítulo actual se deja como está.",
 
   "arr_services.edit_server_title": "Editar servidor {type}",
   "arr_services.add_server_title": "Agregar servidor {type}",
