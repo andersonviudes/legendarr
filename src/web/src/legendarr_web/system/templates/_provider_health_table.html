@@ -1,0 +1,41 @@
+{% from "macros.html" import empty_state %}
+{% if providers %}
+<table>
+  <thead>
+    <tr>
+      <th scope="col">{{ t("system.providers.provider") }}</th>
+      <th scope="col">{{ t("system.providers.status") }}</th>
+      <th scope="col">{{ t("system.providers.circuit") }}</th>
+      <th scope="col">{{ t("system.providers.consecutive_failures") }}</th>
+      <th scope="col">{{ t("system.providers.last_success") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for provider in providers %}
+    <tr>
+      <td>{{ provider.label }}</td>
+      <td>
+        <span class="service-card-status{{ '' if provider.status == 'active' else ' is-disabled' }}">
+          {% if provider.status == "active" %}{{ t("common.enabled") }}
+          {%- elif provider.status == "disabled" %}{{ t("common.disabled") }}
+          {%- else %}{{ t("common.not_configured") }}{% endif %}
+        </span>
+      </td>
+      <td>
+        {% if provider.status == "active" %}
+        <span class="task-line-status task-line-status--{{ 'failure' if provider.circuit_open else 'success' }}">
+          {{ t("system.providers.circuit_open") if provider.circuit_open else t("system.providers.circuit_closed") }}
+        </span>
+        {% else %}—{% endif %}
+      </td>
+      <td>{% if provider.status == "active" %}{{ provider.consecutive_failures }}{% else %}—{% endif %}</td>
+      <td>
+        {% if provider.last_success_at %}{{ provider.last_success_at | local_datetime }}{% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ empty_state(empty_message) }}
+{% endif %}

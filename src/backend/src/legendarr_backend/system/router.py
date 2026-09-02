@@ -7,6 +7,7 @@ from sqlmodel import Session
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.system.browse_directory import list_subdirectories
 from legendarr_backend.system.job_history import list_job_runs
+from legendarr_backend.system.provider_status import list_provider_health
 from legendarr_backend.system.read_logs import list_recent_logs
 from legendarr_backend.system.resolve_job_media_title import resolve_job_media_titles
 from legendarr_backend.system.running_tasks import list_running_tasks
@@ -15,6 +16,7 @@ from legendarr_backend.system.schemas import (
     DirectoryListingRead,
     JobRunRead,
     LogLineRead,
+    ProviderHealthRead,
     RunningTaskRead,
     ScheduledJobRead,
 )
@@ -90,3 +92,8 @@ def get_job_history(limit: int = 20, session: Session = Depends(_get_session)) -
         )
         for run in runs
     ]
+
+
+@router.get("/providers", response_model=list[ProviderHealthRead])
+def get_provider_health(session: Session = Depends(_get_session)) -> list[ProviderHealthRead]:
+    return list_provider_health(session)

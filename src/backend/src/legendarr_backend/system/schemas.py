@@ -43,3 +43,12 @@ class JobRunRead(BaseModel):
     started_at: datetime
     finished_at: datetime
     error_message: str | None
+
+
+class ProviderHealthRead(BaseModel):
+    kind: str
+    category: str  # BreakerCategory value: "translation" | "acquisition"
+    circuit_open: bool
+    consecutive_failures: int
+    opened_at: datetime | None
+    last_success_at: datetime | None
