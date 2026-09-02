@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.4] - 2026-09-02
+
+### ✨ Features
+
+- Add a manual extract action for skipped embedded subtitle tracks (#111)
+- Add auto_translate flag to language profiles to gate automatic translation (#113)
+
+### 🐛 Bug Fixes
+
+- Order live tasks by execution order and cap the dashboard widget to 10 (#112)
+
+### 🔧 Miscellaneous
+
+- Record external-subtitle language-guess gotcha
+- Record auto_translate flag and open backoff gap
+
 ## [0.22.3] - 2026-08-31
 
 ### ✨ Features
@@ -23,6 +39,7 @@ All notable changes to this project are documented here. The format follows
 ### 🔧 Miscellaneous
 
 - Note the real legendarr instance runs on a separate host
+- Bump version to v0.22.3 [skip ci]
 
 ## [0.22.2] - 2026-08-31
 
