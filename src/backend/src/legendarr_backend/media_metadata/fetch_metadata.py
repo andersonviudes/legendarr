@@ -10,6 +10,10 @@ from legendarr_backend.media_metadata.client_factory import build_metadata_provi
 from legendarr_backend.media_metadata.manage_metadata_provider import list_metadata_providers
 from legendarr_backend.media_metadata.models import MediaMetadata, MetadataProviderConfig
 from legendarr_backend.media_metadata.providers.base import MediaType, MetadataResult
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +193,10 @@ def _safe_fetch(
 ) -> MetadataResult | None:
     client = build_metadata_provider(config)
     try:
-        return client.fetch(media_type=media_type, title=title, tvdb_id=tvdb_id, imdb_id=imdb_id)
+        with limit_concurrency(ConcurrencyCategory.METADATA, config.kind):
+            return client.fetch(
+                media_type=media_type, title=title, tvdb_id=tvdb_id, imdb_id=imdb_id
+            )
     except Exception:
         logger.exception("metadata fetch failed for %r via %s", title, config.kind)
         return None

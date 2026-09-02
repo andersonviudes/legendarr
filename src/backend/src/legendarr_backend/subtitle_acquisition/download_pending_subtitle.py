@@ -4,6 +4,10 @@ from datetime import UTC, datetime
 from sqlmodel import Session, select
 
 from legendarr_backend.media_library.models import Series
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.quality_gate import (
     passes_quality_gate,
 )
@@ -45,7 +49,8 @@ def download_pending_subtitle_candidate(
             page_link=candidate.page_link,
         )
         try:
-            content = provider.download(result)
+            with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
+                content = provider.download(result)
         except Exception:
             logger.warning(
                 "subtitle provider %r failed downloading %r",

@@ -17,6 +17,7 @@ from legendarr_backend.logging.setup import reset_log_records
 from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
 from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
 from legendarr_backend.scheduling.circuit_breaker import reset_circuit_breakers
+from legendarr_backend.scheduling.provider_concurrency import reset_provider_concurrency
 from legendarr_backend.scheduling.running_tasks import reset_running_tasks
 from legendarr_backend.scheduling.scheduled_retry import reset_scheduled_retries
 from legendarr_backend.subtitle_acquisition import (
@@ -89,6 +90,16 @@ def isolated_circuit_breakers():
     reset_circuit_breakers()
     yield
     reset_circuit_breakers()
+
+
+@pytest.fixture
+def isolated_provider_concurrency():
+    """Reset the in-memory provider-concurrency registry so a semaphore cached by one
+    test (possibly sized for a monkeypatched `PROVIDER_MAX_CONCURRENCY`) doesn't leak
+    into another test running in the same process."""
+    reset_provider_concurrency()
+    yield
+    reset_provider_concurrency()
 
 
 @pytest.fixture

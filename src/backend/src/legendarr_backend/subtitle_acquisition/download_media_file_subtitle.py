@@ -4,6 +4,10 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.match_score import (
     evaluate_candidate,
 )
@@ -53,7 +57,8 @@ def download_subtitle_candidate(
             page_link=candidate.page_link,
         )
         try:
-            content = provider.download(result)
+            with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
+                content = provider.download(result)
         except Exception:
             logger.warning(
                 "subtitle provider %r failed downloading %r",

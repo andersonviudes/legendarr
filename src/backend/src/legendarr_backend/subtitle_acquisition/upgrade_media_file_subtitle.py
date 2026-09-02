@@ -16,6 +16,10 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     list_blacklisted_download_ids,
 )
@@ -117,16 +121,17 @@ def upgrade_subtitle_for_media_file(
                 )
                 continue
             try:
-                candidates = provider.search(
-                    context.title,
-                    subtitle.language,
-                    imdb_id=context.imdb_id,
-                    moviehash=context.moviehash,
-                    season=context.season_number,
-                    episode=context.episode_number,
-                    video_path=video_path,
-                    tvdb_id=context.tvdb_id,
-                )
+                with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
+                    candidates = provider.search(
+                        context.title,
+                        subtitle.language,
+                        imdb_id=context.imdb_id,
+                        moviehash=context.moviehash,
+                        season=context.season_number,
+                        episode=context.episode_number,
+                        video_path=video_path,
+                        tvdb_id=context.tvdb_id,
+                    )
                 record_success(BreakerCategory.ACQUISITION, provider.name)
             except Exception:
                 record_failure(BreakerCategory.ACQUISITION, provider.name)
@@ -161,7 +166,8 @@ def upgrade_subtitle_for_media_file(
             return UpgradeResult(skipped_reason="no_upgrade_found")
         assert best_evaluation is not None
 
-        content = best_provider.download(best)
+        with limit_concurrency(ConcurrencyCategory.ACQUISITION, best_provider.name):
+            content = best_provider.download(best)
         if not passes_quality_gate(content):
             logger.warning(
                 "upgrade candidate from %r (%r) failed quality-gate checks for media file %d",
