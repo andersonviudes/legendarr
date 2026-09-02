@@ -43,9 +43,13 @@ async def show_tasks(request: Request, client: httpx.AsyncClient = Depends(get_b
 
 @router.get("/tasks/running")
 async def get_running_tasks_partial(
-    request: Request, client: httpx.AsyncClient = Depends(get_backend_client)
+    request: Request,
+    limit: int | None = None,
+    client: httpx.AsyncClient = Depends(get_backend_client),
 ):
     tasks = await service.get_running_tasks(client)
+    if limit is not None:
+        tasks = tasks[:limit]
     return templates.TemplateResponse(request, "_running_tasks_list.html", {"tasks": tasks})
 
 
