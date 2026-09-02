@@ -32,6 +32,12 @@ async def get_job_history(client: httpx.AsyncClient) -> list[dict]:
     return response.json()
 
 
+async def get_provider_health(client: httpx.AsyncClient) -> list[dict]:
+    response = await client.get("/system/providers")
+    response.raise_for_status()
+    return response.json()
+
+
 async def get_sessions(client: httpx.AsyncClient) -> list[dict]:
     response = await client.get("/auth/sessions")
     response.raise_for_status()

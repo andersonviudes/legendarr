@@ -26,6 +26,24 @@ class _BreakerState:
     opened_at: datetime | None = None
 
 
+@dataclass(frozen=True)
+class BreakerSnapshot:
+    """Point-in-time read of one provider's breaker state, for the System > Providers
+    status page (`system/provider_status.py`) — unlike `is_open`, exposes the failure
+    count and open timestamp behind that bool instead of collapsing them away.
+    """
+
+    is_open: bool
+    consecutive_failures: int
+    opened_at: datetime | None
+
+
+def _state_is_open(state: _BreakerState | None, now: datetime) -> bool:
+    if state is None or state.opened_at is None:
+        return False
+    return now - state.opened_at < timedelta(seconds=COOLDOWN_SECONDS)
+
+
 class CircuitBreakerRegistry:
     """Tracks per-provider failure streaks for the translation/acquisition provider
     chains, so a provider that's already failing gets skipped instead of hit again on
@@ -51,9 +69,19 @@ class CircuitBreakerRegistry:
         now = now if now is not None else datetime.now(UTC)
         with self._lock:
             state = self._breakers.get((category, provider))
-            if state is None or state.opened_at is None:
-                return False
-            return now - state.opened_at < timedelta(seconds=COOLDOWN_SECONDS)
+            return _state_is_open(state, now)
+
+    def get_state(
+        self, category: BreakerCategory, provider: str, *, now: datetime | None = None
+    ) -> BreakerSnapshot:
+        now = now if now is not None else datetime.now(UTC)
+        with self._lock:
+            state = self._breakers.get((category, provider))
+            return BreakerSnapshot(
+                is_open=_state_is_open(state, now),
+                consecutive_failures=state.consecutive_failures if state is not None else 0,
+                opened_at=state.opened_at if state is not None else None,
+            )
 
     def record_success(self, category: BreakerCategory, provider: str) -> None:
         with self._lock:
@@ -83,6 +111,16 @@ def is_open(category: BreakerCategory, provider: str, *, now: datetime | None = 
     skipped rather than called.
     """
     return _registry.is_open(category, provider, now=now)
+
+
+def get_state(
+    category: BreakerCategory, provider: str, *, now: datetime | None = None
+) -> BreakerSnapshot:
+    """Current failure-streak/circuit state for `provider` (within `category`) — for the
+    System > Providers status page. Read-only: unlike `is_open`, callers don't use this
+    to decide whether to skip a call.
+    """
+    return _registry.get_state(category, provider, now=now)
 
 
 def record_success(category: BreakerCategory, provider: str) -> None:

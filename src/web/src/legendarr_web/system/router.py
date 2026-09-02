@@ -6,6 +6,10 @@ from fastapi.responses import RedirectResponse
 
 from legendarr_web.backend_client.client import error_detail, get_backend_client
 from legendarr_web.i18n.translator import current_locale, translate
+from legendarr_web.subtitle_acquisition import provider_display as subtitle_acquisition_display
+from legendarr_web.subtitle_acquisition import service as subtitle_acquisition_service
+from legendarr_web.subtitle_translation import provider_display as subtitle_translation_display
+from legendarr_web.subtitle_translation import service as subtitle_translation_service
 from legendarr_web.system import service
 from legendarr_web.templates.loader import get_templates
 
@@ -72,6 +76,28 @@ async def show_sessions(request: Request, client: httpx.AsyncClient = Depends(ge
         request,
         "sessions.html",
         {"sessions": sessions, "current_session_id": current_session_id},
+    )
+
+
+@router.get("/providers/")
+async def show_providers(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
+    health = await service.get_provider_health(client)
+    translation_configs = await subtitle_translation_service.list_translation_providers(client)
+    acquisition_configs = await subtitle_acquisition_service.list_subtitle_providers(client)
+    return templates.TemplateResponse(
+        request,
+        "providers.html",
+        {
+            "translation_providers": _merge_provider_health(
+                translation_configs,
+                health,
+                "translation",
+                subtitle_translation_display.provider_label,
+            ),
+            "subtitle_providers": _merge_provider_health(
+                acquisition_configs, health, "acquisition", _acquisition_provider_label
+            ),
+        },
     )
 
 
@@ -157,3 +183,38 @@ def _breadcrumbs(path: str) -> list[dict[str, str]]:
 def _directory_rows(base_path: str, names: list[str]) -> list[dict[str, str]]:
     """Pair each subdirectory name with its full path, for the browser's row links."""
     return [{"name": name, "path": f"{base_path.rstrip('/')}/{name}"} for name in names]
+
+
+def _acquisition_provider_label(config: dict) -> str:
+    return subtitle_acquisition_display.provider_label(config["kind"])
+
+
+def _merge_provider_health(
+    configs: list[dict], health: list[dict], category: str, label_fn
+) -> list[dict]:
+    """Join each provider's config (kind, enabled, is_configured) with its health entry
+    (matched by kind) into one row per provider for the Providers status page — mirrors
+    `dashboard.router.show_dashboard`'s pattern of combining two slices' web-service
+    calls into one template context.
+    """
+    health_by_kind = {entry["kind"]: entry for entry in health if entry["category"] == category}
+    rows = []
+    for config in configs:
+        entry = health_by_kind.get(config["kind"], {})
+        if not config["is_configured"]:
+            status = "not_configured"
+        elif config["enabled"]:
+            status = "active"
+        else:
+            status = "disabled"
+        rows.append(
+            {
+                "kind": config["kind"],
+                "label": label_fn(config),
+                "status": status,
+                "circuit_open": entry.get("circuit_open", False),
+                "consecutive_failures": entry.get("consecutive_failures", 0),
+                "last_success_at": entry.get("last_success_at"),
+            }
+        )
+    return rows

@@ -163,3 +163,15 @@ def test_get_job_history_returns_recorded_runs(isolated_database):
     assert response.status_code == 200
     runs = response.json()
     assert any(run["job_id"] == "history_router_test_job" for run in runs)
+
+
+def test_get_provider_health_returns_provider_entries(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.get("/system/providers")
+
+    assert response.status_code == 200
+    entries = response.json()
+    assert any(entry["kind"] == "deepl" and entry["category"] == "translation" for entry in entries)
+    assert any(
+        entry["kind"] == "opensubtitles" and entry["category"] == "acquisition" for entry in entries
+    )

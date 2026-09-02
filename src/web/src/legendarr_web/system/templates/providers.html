@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}legendarr · {{ t("nav.system.providers") }}{% endblock %}
+{% block content %}
+<h1>{{ icon("plug-zap") }} {{ t("nav.system.providers") }}</h1>
+<p class="field-hint">{{ t("system.providers.circuit_hint") }}</p>
+
+<section>
+  <h2>{{ t("system.providers.translation_heading") }}</h2>
+  {% set providers = translation_providers %}
+  {% set empty_message = t("system.providers.empty") %}
+  {% include "_provider_health_table.html" %}
+</section>
+
+<section>
+  <h2>{{ t("system.providers.subtitle_heading") }}</h2>
+  {% set providers = subtitle_providers %}
+  {% set empty_message = t("system.providers.empty") %}
+  {% include "_provider_health_table.html" %}
+</section>
+{% endblock %}

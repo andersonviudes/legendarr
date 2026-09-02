@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from legendarr_backend.scheduling.circuit_breaker import (
     FAILURE_THRESHOLD,
     BreakerCategory,
+    BreakerSnapshot,
     CircuitBreakerRegistry,
     is_open,
     record_failure,
@@ -108,3 +109,50 @@ def test_module_level_functions_share_one_registry():
         assert is_open(BreakerCategory.TRANSLATION, "deepl") is True
     finally:
         reset_circuit_breakers()
+
+
+def test_get_state_for_a_provider_that_never_failed():
+    registry = CircuitBreakerRegistry()
+
+    snapshot = registry.get_state(BreakerCategory.TRANSLATION, "deepl")
+
+    assert snapshot == BreakerSnapshot(is_open=False, consecutive_failures=0, opened_at=None)
+
+
+def test_get_state_reflects_failures_below_the_threshold():
+    registry = CircuitBreakerRegistry()
+    for _ in range(FAILURE_THRESHOLD - 1):
+        registry.record_failure(BreakerCategory.TRANSLATION, "deepl")
+
+    snapshot = registry.get_state(BreakerCategory.TRANSLATION, "deepl")
+
+    assert snapshot.is_open is False
+    assert snapshot.consecutive_failures == FAILURE_THRESHOLD - 1
+    assert snapshot.opened_at is None
+
+
+def test_get_state_reflects_an_open_circuit():
+    registry = CircuitBreakerRegistry()
+    opened_at = datetime.now(UTC)
+    for _ in range(FAILURE_THRESHOLD):
+        registry.record_failure(BreakerCategory.TRANSLATION, "deepl", now=opened_at)
+
+    snapshot = registry.get_state(BreakerCategory.TRANSLATION, "deepl", now=opened_at)
+
+    assert snapshot.is_open is True
+    assert snapshot.consecutive_failures == FAILURE_THRESHOLD
+    assert snapshot.opened_at == opened_at
+
+
+def test_get_state_reports_closed_but_keeps_the_failure_count_past_cooldown():
+    registry = CircuitBreakerRegistry()
+    opened_at = datetime.now(UTC)
+    for _ in range(FAILURE_THRESHOLD):
+        registry.record_failure(BreakerCategory.TRANSLATION, "deepl", now=opened_at)
+
+    past_cooldown = opened_at + timedelta(minutes=10)
+    snapshot = registry.get_state(BreakerCategory.TRANSLATION, "deepl", now=past_cooldown)
+
+    assert snapshot.is_open is False
+    assert snapshot.consecutive_failures == FAILURE_THRESHOLD
+    assert snapshot.opened_at == opened_at
