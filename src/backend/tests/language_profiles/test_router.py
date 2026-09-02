@@ -89,6 +89,20 @@ def test_create_defaults_movie_and_series_match_score_to_forty(isolated_database
     assert response.json()["series_match_score"] == 40
 
 
+def test_create_defaults_auto_translate_to_true(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload())
+
+    assert response.json()["auto_translate"] is True
+
+
+def test_create_can_disable_auto_translate(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload(auto_translate=False))
+
+    assert response.json()["auto_translate"] is False
+
+
 def test_create_returns_422_when_match_score_is_out_of_range(isolated_database):
     with TestClient(create_api_app()) as client:
         response = client.post("/language-profiles/", json=_payload(movie_match_score=101))

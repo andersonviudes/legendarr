@@ -62,6 +62,12 @@ def test_speech_to_text_fallback_defaults_to_false():
     assert profile.speech_to_text_fallback is False
 
 
+def test_auto_translate_defaults_to_true():
+    profile = _profile()
+
+    assert profile.auto_translate is True
+
+
 def test_movie_and_series_match_score_default_to_forty():
     profile = _profile()
 

@@ -12,6 +12,11 @@ class LanguageProfile(SQLModel, table=True):
     name: str = Field(index=True, unique=True)
     source_languages: str
     target_languages: str
+    # Whether the periodic translation fan-out, and the translation cascade that follows
+    # a successful automatic acquisition, may pick this profile's media up on their own.
+    # Off doesn't remove the "Translate" action anywhere — an explicit/manual translate
+    # request always bypasses this (see `subtitle_translation.jobs.needs_translation`).
+    auto_translate: bool = Field(default=True)
     extract_embedded_subtitles: bool = Field(default=True)
     # OCR support for bitmap-based embedded tracks (PGS) — ROADMAP.md 0.14.0. Separate from
     # `extract_embedded_subtitles` since OCR is far heavier/slower than a direct ffmpeg

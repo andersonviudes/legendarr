@@ -206,6 +206,7 @@
   "language_profiles.edit_title": "Edit Language Profile",
   "language_profiles.source_languages": "Source Languages",
   "language_profiles.target_languages": "Target Languages",
+  "language_profiles.auto_translate": "Auto-translate missing languages",
   "language_profiles.extract_embedded": "Extract embedded subtitles",
   "language_profiles.ocr_embedded": "OCR embedded image subtitles (PGS)",
   "language_profiles.stt_fallback": "Speech-to-text fallback (last resort)",

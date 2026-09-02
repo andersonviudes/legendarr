@@ -254,12 +254,17 @@ def needs_translation(session: Session, media_file: MediaFile) -> bool:
     now — the periodic translation fan-out's enqueue-time filter, so a fully-covered
     file (or one with no discovered source subtitle yet) is never scheduled at all.
 
+    Also `False` when the effective profile's `auto_translate` is off — a manual
+    "Translate" trigger (`media_library.router`'s `trigger_file_translation`/
+    `trigger_subtitle_source_translation`) bypasses this function entirely, so disabling
+    automatic translation never blocks an explicit, one-off request.
+
     Mirrors `translate_media_file`'s own automatic source pick and missing-target
     computation, blacklist filter included — deliberately not the manual
     `source_subtitle_id` override path, which a periodic fan-out never uses.
     """
     profile = resolve_media_file_profile(session, media_file)
-    if profile is None:
+    if profile is None or not profile.auto_translate:
         return False
     assert media_file.id is not None
     external_subtitles, embedded_subtitles = _gather_discovered_subtitles(

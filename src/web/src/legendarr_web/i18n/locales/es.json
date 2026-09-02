@@ -206,6 +206,7 @@
   "language_profiles.edit_title": "Editar perfil de idioma",
   "language_profiles.source_languages": "Idiomas de origen",
   "language_profiles.target_languages": "Idiomas de destino",
+  "language_profiles.auto_translate": "Traducir automáticamente los idiomas faltantes",
   "language_profiles.extract_embedded": "Extraer subtítulos incrustados",
   "language_profiles.ocr_embedded": "OCR de subtítulos incrustados en imagen (PGS)",
   "language_profiles.stt_fallback": "Reserva de voz a texto (último recurso)",

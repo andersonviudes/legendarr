@@ -381,6 +381,66 @@ def test_enqueued_acquisition_job_cascades_to_translation_when_requested(
     assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is not None
 
 
+def test_enqueued_acquisition_job_does_not_cascade_when_auto_translate_disabled(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """A profile with `auto_translate` off must not have translation silently
+    re-enabled through the acquisition cascade — same gate as the periodic translation
+    fan-out's own `needs_translation` check."""
+
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    monkeypatch.setattr(
+        acquire_media_file_subtitle_module,
+        "resolve_subtitle_provider_chain",
+        lambda session: [_FakeProvider()],
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+            auto_translate=False,
+        )
+    )
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id,
+        relative_path="Foo.mkv",
+        size_bytes=1,
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    (tmp_path / "Foo").mkdir()
+    (tmp_path / "Foo" / "Foo.mkv").touch()
+
+    scheduler = build_scheduler()
+    enqueue_acquisition(
+        scheduler,
+        media_file.id,
+        JobQueue.ACQUIRE,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        cascade=True,
+    )
+    job = scheduler.get_job(f"subtitle_acquisition:{media_file.id}")
+    assert job is not None
+    job.func()
+
+    assert scheduler.get_job(f"subtitle_translation:{media_file.id}") is None
+
+
 def test_enqueued_acquisition_job_does_not_cascade_on_no_match(
     in_memory_session, tmp_path, monkeypatch
 ):

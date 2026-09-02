@@ -7,6 +7,9 @@ from sqlmodel import Session, select
 from legendarr_backend.config.config_file import AppConfigFile, load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import get_session
+from legendarr_backend.language_profiles.resolve_effective_profile import (
+    resolve_media_file_profile,
+)
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile, MediaKind
 from legendarr_backend.media_servers.notify_media_servers import (
@@ -178,6 +181,11 @@ def enqueue_acquisition(
     itself finds no source subtitle — gating this cascade on an actual find is what
     keeps that a single extra hop instead of an infinite back-and-forth.
 
+    Also gated on the resolved profile's `auto_translate` — a user who disabled
+    automatic translation for this profile shouldn't have it silently re-enabled through
+    the acquisition cascade (see `subtitle_translation.jobs.needs_translation`, the
+    equivalent gate for the periodic translation fan-out).
+
     `upgrade_recheck_after` throttles the upgrade/replace check below (default: no
     throttle, always check) — the periodic bulk fan-out is the only caller that passes
     a real recheck window, so a manual/event-triggered acquisition still gets an
@@ -241,15 +249,17 @@ def enqueue_acquisition(
             # oscillate forever against `subtitle_translation.jobs.run_translation`'s own
             # cascade back into acquisition on a missing source subtitle.
             if cascade and result.acquired_language is not None:
-                config = load_or_create_config_file(get_settings())
-                enqueue_translation(
-                    scheduler,
-                    media_file_id,
-                    JobQueue.TRANSLATE,
-                    retry_attempts=config.translate_retry_attempts,
-                    retry_delay_seconds=config.translate_retry_delay_seconds,
-                    default_translation_provider=config.default_translation_provider,
-                )
+                profile = resolve_media_file_profile(session, media_file)
+                if profile is not None and profile.auto_translate:
+                    config = load_or_create_config_file(get_settings())
+                    enqueue_translation(
+                        scheduler,
+                        media_file_id,
+                        JobQueue.TRANSLATE,
+                        retry_attempts=config.translate_retry_attempts,
+                        retry_delay_seconds=config.translate_retry_delay_seconds,
+                        default_translation_provider=config.default_translation_provider,
+                    )
 
     wrapped = with_retry(
         run_acquisition, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds

@@ -478,6 +478,47 @@ def test_enqueue_full_translation_scan_enqueues_media_files_that_need_translatio
     assert all(kwargs["executor"] == JobQueue.TRANSLATE_BULK.value for _, kwargs in added)
 
 
+def test_enqueue_full_translation_scan_skips_profile_with_auto_translate_disabled(
+    in_memory_session, tmp_path
+):
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.add(
+        LanguageProfile(
+            name="default",
+            source_languages="en",
+            target_languages="pt-BR",
+            is_default=True,
+            auto_translate=False,
+        )
+    )
+    in_memory_session.commit()
+
+    media_file = MediaFile(
+        movie_id=movie.id, relative_path="Bar.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+
+    (tmp_path / "Bar").mkdir()
+    (tmp_path / "Bar" / "Bar.mkv").touch()
+    (tmp_path / "Bar" / "Bar.en.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nhello\n\n", encoding="utf-8"
+    )
+    scan_subtitles_for_media_file(in_memory_session, media_file, tmp_path / "Bar" / "Bar.mkv")
+    in_memory_session.commit()
+
+    scheduler = build_scheduler()
+    enqueued = enqueue_full_translation_scan(
+        scheduler, in_memory_session, retry_attempts=1, retry_delay_seconds=0.0
+    )
+
+    assert enqueued == 0
+
+
 def test_enqueued_translation_job_notifies_media_servers_after_write(
     in_memory_session, tmp_path, monkeypatch
 ):

@@ -206,6 +206,7 @@
   "language_profiles.edit_title": "Editar perfil de idioma",
   "language_profiles.source_languages": "Idiomas de origem",
   "language_profiles.target_languages": "Idiomas de destino",
+  "language_profiles.auto_translate": "Traduzir automaticamente idiomas ausentes",
   "language_profiles.extract_embedded": "Extrair legendas incorporadas",
   "language_profiles.ocr_embedded": "OCR de legendas incorporadas em imagem (PGS)",
   "language_profiles.stt_fallback": "Reserva de fala para texto (último recurso)",
