@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
@@ -25,10 +24,6 @@ from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
 from legendarr_backend.subtitle_acquisition.reconcile_pending_subtitles import (
     reconcile_pending_subtitles_for_series,
 )
-from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
-    should_check_for_upgrade,
-    upgrade_subtitle_for_media_file,
-)
 from legendarr_backend.subtitle_discovery.scan_eligibility import has_completed_subtitle_scan
 from legendarr_backend.subtitle_translation.jobs import enqueue_translation
 
@@ -48,7 +43,6 @@ def register_acquisition_job(
                 session,
                 retry_attempts=config.acquisition_retry_attempts,
                 retry_delay_seconds=config.acquisition_retry_delay_seconds,
-                upgrade_recheck_after=timedelta(hours=config.acquisition_upgrade_recheck_hours),
                 speech_to_text_model_size=config.speech_to_text_model_size,
                 speech_to_text_timeout_seconds=config.speech_to_text_timeout_seconds,
             )
@@ -68,13 +62,29 @@ def register_acquisition_job(
     )
 
 
+def media_file_ids_with_completed_scan(session: Session) -> list[int]:
+    """Every `MediaFile.id` `has_completed_subtitle_scan` recognizes — i.e. discovery has
+    already run for it, so its `Subtitle` rows reflect what's actually on disk. Shared by
+    both the acquisition and upgrade periodic fan-outs: neither should search a file
+    discovery hasn't scanned yet, acquisition to avoid downloading a subtitle that's
+    already sitting there unscanned, upgrade because it needs discovery's rows to find the
+    current subtitle to replace.
+    """
+    all_media_file_ids = session.exec(select(MediaFile.id)).all()
+    media_file_ids: list[int] = []
+    for media_file_id in all_media_file_ids:
+        assert media_file_id is not None
+        if has_completed_subtitle_scan(session, media_file_id):
+            media_file_ids.append(media_file_id)
+    return media_file_ids
+
+
 def enqueue_full_acquisition_scan(
     scheduler: BackgroundScheduler,
     session: Session,
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
-    upgrade_recheck_after: timedelta,
     speech_to_text_model_size: str = "base",
     speech_to_text_timeout_seconds: float = 1800.0,
 ) -> int:
@@ -87,17 +97,9 @@ def enqueue_full_acquisition_scan(
 
     Skips a file `has_completed_subtitle_scan` doesn't recognize yet — acquisition
     needs discovery's `Subtitle` rows to already reflect what's on disk, or it risks
-    downloading a subtitle that's already sitting there unscanned. `upgrade_recheck_after`
-    is threaded through to `run_acquisition`, not used for the enqueue filter itself: a
-    file that already has a subtitle still needs to be considered here, just with its
-    upgrade re-check throttled.
+    downloading a subtitle that's already sitting there unscanned.
     """
-    all_media_file_ids = session.exec(select(MediaFile.id)).all()
-    media_file_ids: list[int] = []
-    for media_file_id in all_media_file_ids:
-        assert media_file_id is not None
-        if has_completed_subtitle_scan(session, media_file_id):
-            media_file_ids.append(media_file_id)
+    media_file_ids = media_file_ids_with_completed_scan(session)
     for media_file_id in media_file_ids:
         enqueue_acquisition(
             scheduler,
@@ -105,7 +107,6 @@ def enqueue_full_acquisition_scan(
             JobQueue.ACQUIRE_BULK,
             retry_attempts=retry_attempts,
             retry_delay_seconds=retry_delay_seconds,
-            upgrade_recheck_after=upgrade_recheck_after,
             speech_to_text_model_size=speech_to_text_model_size,
             speech_to_text_timeout_seconds=speech_to_text_timeout_seconds,
         )
@@ -157,7 +158,6 @@ def enqueue_acquisition(
     *,
     retry_attempts: int,
     retry_delay_seconds: float,
-    upgrade_recheck_after: timedelta = timedelta(),
     speech_to_text_model_size: str = "base",
     speech_to_text_timeout_seconds: float = 1800.0,
     cascade: bool = False,
@@ -185,11 +185,6 @@ def enqueue_acquisition(
     automatic translation for this profile shouldn't have it silently re-enabled through
     the acquisition cascade (see `subtitle_translation.jobs.needs_translation`, the
     equivalent gate for the periodic translation fan-out).
-
-    `upgrade_recheck_after` throttles the upgrade/replace check below (default: no
-    throttle, always check) — the periodic bulk fan-out is the only caller that passes
-    a real recheck window, so a manual/event-triggered acquisition still gets an
-    immediate upgrade check.
     """
     job_id = f"subtitle_acquisition:{media_file_id}"
     pending = scheduler.get_job(job_id)
@@ -230,21 +225,6 @@ def enqueue_acquisition(
             logger.info("acquisition finished for media file %d: %s", media_file_id, result)
             if result.acquired_language is not None:
                 notify_media_servers_of_subtitle_write(session, video_path)
-            # A pure no-op (neither acquired nor skipped) means a source-language
-            # subtitle already existed — check whether a better release has since
-            # shown up for it (ROADMAP.md 0.12.0's upgrade/replace pass), throttled by
-            # `upgrade_recheck_after` so the bulk fan-out doesn't search providers again
-            # for a file that was just checked.
-            if (
-                result.acquired_language is None
-                and result.skipped_reason is None
-                and should_check_for_upgrade(session, media_file, upgrade_recheck_after)
-            ):
-                upgrade_result = upgrade_subtitle_for_media_file(session, media_file, video_path)
-                session.commit()
-                logger.info("upgrade finished for media file %d: %s", media_file_id, upgrade_result)
-                if upgrade_result.upgraded_language is not None:
-                    notify_media_servers_of_subtitle_write(session, video_path)
             # Only cascade forward on an actual find — an unconditional cascade here would
             # oscillate forever against `subtitle_translation.jobs.run_translation`'s own
             # cascade back into acquisition on a missing source subtitle.

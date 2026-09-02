@@ -72,11 +72,17 @@ class Settings(BaseSettings):
     acquisition_interval_minutes: int = Field(default=60)
     acquisition_max_instances: int = Field(default=1)
     acquisition_coalesce: bool = Field(default=True)
-    # How long a media file's `AcquiredSubtitle` goes unchecked before
-    # `upgrade_subtitle_for_media_file` is allowed to search providers for it again — a
-    # file that already has a subtitle doesn't need a fresh live search every single
-    # acquisition interval.
-    acquisition_upgrade_recheck_hours: int = Field(default=24)
+    # Subtitle upgrade: re-search providers for an already-acquired subtitle and replace
+    # it in place if a strictly better-scoring release is now available (ROADMAP.md
+    # 0.12.0's upgrade/replace pass) — its own periodic job (`subtitle_upgrade_fanout`),
+    # fully decoupled from `acquisition_*` above: acquisition only searches for what's
+    # missing, upgrade only re-checks what's already there, each on its own schedule/queue.
+    # Same daily-cadence posture as `metadata_refresh_interval_minutes` below.
+    upgrade_interval_minutes: int = Field(default=1440)
+    upgrade_retry_attempts: int = Field(default=3, ge=1)
+    upgrade_retry_delay_seconds: float = Field(default=5.0)
+    upgrade_max_instances: int = Field(default=1)
+    upgrade_coalesce: bool = Field(default=True)
     # Manual "sync timing" only (ROADMAP.md 0.7.0), same posture as translate_retry_attempts
     # — no interval/max_instances/coalesce fields, just the retry policy
     # `enqueue_timing_sync` needs. `ffsubsync` decodes the whole audio track, so its timeout
@@ -178,6 +184,7 @@ class Settings(BaseSettings):
     timing_sync_queue_workers: int = Field(default=2, ge=1)
     metadata_bulk_queue_workers: int = Field(default=1, ge=1)
     maintenance_queue_workers: int = Field(default=1, ge=1)
+    upgrade_bulk_queue_workers: int = Field(default=1, ge=1)
 
     @property
     def translation_plugin_package_list(self) -> list[str]:

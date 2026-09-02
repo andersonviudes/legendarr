@@ -10,7 +10,12 @@ from legendarr_backend.subtitle_discovery.models import Subtitle
 # `jobs.py` convention (`subtitle_scan:<media_file_id>`, `media_scan:<kind>:<id>`, ...).
 # A prefix not listed here — a periodic fan-out's own job id, e.g.
 # `subtitle_discovery_scan_fanout` — is already a readable name on its own, left alone.
-_MEDIA_FILE_JOB_PREFIXES = {"subtitle_scan", "subtitle_acquisition", "subtitle_translation"}
+_MEDIA_FILE_JOB_PREFIXES = {
+    "subtitle_scan",
+    "subtitle_acquisition",
+    "subtitle_translation",
+    "subtitle_upgrade",
+}
 _SUBTITLE_JOB_PREFIX = "subtitle_timing_sync"
 _SERIES_JOB_PREFIX = "pending_subtitle_reconcile"
 _MEDIA_ITEM_JOB_PREFIXES = {"media_scan", "media_metadata_fetch"}
@@ -53,10 +58,10 @@ def resolve_job_media_titles(session: Session, job_ids: Iterable[str]) -> dict[s
 def _media_file_titles(
     session: Session, media_file_ids: dict[str, int], subtitle_ids: dict[str, int]
 ) -> dict[str, str]:
-    """Titles for `subtitle_scan`/`subtitle_acquisition`/`subtitle_translation` job ids
-    (keyed by `MediaFile.id` directly) and `subtitle_timing_sync` job ids (keyed by
-    `Subtitle.id`, one hop away from its `MediaFile`) — batched into the same two
-    queries regardless of which job types are actually present.
+    """Titles for `subtitle_scan`/`subtitle_acquisition`/`subtitle_translation`/
+    `subtitle_upgrade` job ids (keyed by `MediaFile.id` directly) and `subtitle_timing_sync`
+    job ids (keyed by `Subtitle.id`, one hop away from its `MediaFile`) — batched into the
+    same two queries regardless of which job types are actually present.
     """
     if not media_file_ids and not subtitle_ids:
         return {}
