@@ -5,6 +5,7 @@ class LanguageProfileInput(BaseModel):
     name: str = Field(min_length=1)
     source_languages: str = Field(min_length=1)
     target_languages: str = Field(min_length=1)
+    auto_translate: bool = True
     extract_embedded_subtitles: bool = True
     ocr_embedded_subtitles: bool = False
     speech_to_text_fallback: bool = False

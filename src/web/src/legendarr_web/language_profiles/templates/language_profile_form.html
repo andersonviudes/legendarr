@@ -29,6 +29,8 @@
                            selected=(profile.target_languages.split(",") if profile else []),
                            required=true) }}
 
+  {{ checkbox_field("auto_translate", t("language_profiles.auto_translate"),
+                     checked=(not profile or profile.auto_translate)) }}
   {{ checkbox_field("extract_embedded_subtitles", t("language_profiles.extract_embedded"),
                      checked=(not profile or profile.extract_embedded_subtitles)) }}
   {{ checkbox_field("ocr_embedded_subtitles", t("language_profiles.ocr_embedded"),
