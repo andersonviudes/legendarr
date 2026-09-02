@@ -186,6 +186,31 @@ def test_series_detail_page_collapses_embedded_subtitles_into_one_dialog(stub_ba
     assert "<p>Season 01/Bar.S01E01.mkv</p>" in response.text
 
 
+def _series_detail_with_skipped_embedded_track_handler(request: httpx.Request) -> httpx.Response:
+    response = _series_detail_handler(request)
+    body = response.json()
+    body["episodes"][0]["media_file"]["subtitles"] = []
+    body["episodes"][0]["media_file"]["embedded_tracks"] = [
+        {"track_index": 2, "language": "de", "extracted": False, "subtitle": None}
+    ]
+    return httpx.Response(200, json=body)
+
+
+def test_series_detail_page_shows_extract_button_for_a_skipped_embedded_track(
+    stub_backend_client,
+):
+    app = create_app()
+    stub_backend_client(app, handler=_series_detail_with_skipped_embedded_track_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/media/series/1")
+
+    assert response.status_code == 200
+    dialog_start = response.text.index('id="subtitle-file-modal-5"')
+    dialog = response.text[dialog_start:]
+    assert "/media/files/5/embedded-tracks/2/extract" in dialog
+
+
 def _series_detail_with_acquired_subtitle_handler(request: httpx.Request) -> httpx.Response:
     response = _series_detail_handler(request)
     body = response.json()

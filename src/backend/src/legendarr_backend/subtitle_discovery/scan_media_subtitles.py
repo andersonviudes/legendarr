@@ -36,6 +36,7 @@ def scan_subtitles_for_media_file(
     *,
     probe_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
     ocr_cue_timeout_seconds: float = DEFAULT_PROBE_TIMEOUT_SECONDS,
+    force_track_index: int | None = None,
 ) -> ScanResult:
     """Discover external subtitles next to `video_path` and reconcile `Subtitle` rows.
 
@@ -60,6 +61,10 @@ def scan_subtitles_for_media_file(
     `ffprobe` detects, extracted or not, is reconciled into `EmbeddedTrack` the same
     add/update/remove-stale way `Subtitle` rows are, so the UI can show what the container
     has even when most of it was skipped.
+
+    `force_track_index`, when set, is the manual "extract this track anyway" override —
+    passed straight through to `scan_video_subtitles`, which bypasses every gate above for
+    that one track. See its docstring for the full behavior.
     """
     if not video_path.is_file():
         logger.warning("subtitle scan skipped: %s is not a file", video_path)
@@ -91,6 +96,7 @@ def scan_subtitles_for_media_file(
         ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
         known_languages=known_languages,
         source_languages=source_languages,
+        force_track_index=force_track_index,
     )
     video_dir = Path(media_file.relative_path).parent
 

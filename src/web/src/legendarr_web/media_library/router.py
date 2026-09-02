@@ -239,6 +239,24 @@ async def trigger_subtitle_style_tag_removal(
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
 
 
+@router.post("/files/{media_file_id}/embedded-tracks/{track_index}/extract")
+async def trigger_embedded_track_extraction(
+    request: Request,
+    media_file_id: int,
+    track_index: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        result = await service.trigger_embedded_track_extraction(client, media_file_id, track_index)
+    except httpx.HTTPStatusError:
+        result = {"success": False, "message": "Couldn't extract this track."}
+    return templates.TemplateResponse(
+        request,
+        "_subtitle_blacklist_result.html",
+        {"media_file_id": media_file_id, "result": result},
+    )
+
+
 @router.get("/files/{media_file_id}/subtitle-search")
 async def show_subtitle_search(
     request: Request,

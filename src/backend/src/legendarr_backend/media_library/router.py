@@ -69,6 +69,7 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     target_languages_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
+from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 from legendarr_backend.subtitle_discovery.strip_subtitle_style_tags import (
     strip_subtitle_style_tags,
 )
@@ -346,6 +347,49 @@ def remove_subtitle_style_tags_route(
     subtitle_path = video_path.parent / Path(subtitle.relative_path).name
     cleaned = strip_subtitle_style_tags(subtitle_path)
     return {"status": "cleaned" if cleaned else "unsupported"}
+
+
+@router.post(
+    "/files/{media_file_id}/embedded-tracks/{track_index}/extract",
+    response_model=SubtitleAcquisitionResult,
+)
+def extract_embedded_track_route(
+    media_file_id: int, track_index: int, session: Session = Depends(_get_session)
+) -> SubtitleAcquisitionResult:
+    """Force-extract one embedded track the automatic scan skipped — bypasses the
+    source-language/already-covered/toggle gates for just this track
+    (`scan_video_subtitles.scan_video_subtitles`'s `force_track_index`). Synchronous,
+    same posture as blacklist/remove-style-tags above: local `ffmpeg`/OCR work, nothing
+    to enqueue.
+    """
+    media_file, video_path = _get_media_file_and_video_path(session, media_file_id)
+    track = session.exec(
+        select(EmbeddedTrack).where(
+            EmbeddedTrack.media_file_id == media_file_id,
+            EmbeddedTrack.track_index == track_index,
+        )
+    ).first()
+    if track is None:
+        raise HTTPException(status_code=404, detail="Embedded track not found")
+    config = load_or_create_config_file(get_settings())
+    scan_subtitles_for_media_file(
+        session,
+        media_file,
+        video_path,
+        probe_timeout_seconds=config.embedded_subtitle_probe_timeout_seconds,
+        ocr_cue_timeout_seconds=config.ocr_cue_timeout_seconds,
+        force_track_index=track_index,
+    )
+    session.commit()
+    track = session.exec(
+        select(EmbeddedTrack).where(
+            EmbeddedTrack.media_file_id == media_file_id,
+            EmbeddedTrack.track_index == track_index,
+        )
+    ).first()
+    success = track is not None and track.extracted
+    message = "Track extracted." if success else "Couldn't extract this track."
+    return _acquisition_result(session, media_file_id, success, message)
 
 
 def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:

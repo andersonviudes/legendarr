@@ -515,3 +515,139 @@ def test_scan_video_subtitles_skips_image_track_when_ocr_leaves_no_file(
     subtitles = scan_video_subtitles(video, ocr_embedded=True).subtitles
 
     assert subtitles == []
+
+
+def test_scan_video_subtitles_force_track_index_bypasses_disabled_toggles(
+    monkeypatch, tmp_path: Path
+):
+    """`force_track_index` — the manual "extract this track anyway" override — extracts
+    a track even when both `extract_embedded` and `ocr_embedded` are off, and even
+    probes for it at all (mirrors `test_scan_video_subtitles_skips_embedded_probing_by_default`,
+    which asserts probing is skipped entirely with no override)."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="jpn", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(video, force_track_index=2)
+
+    assert len(result.subtitles) == 1
+    assert result.subtitles[0].origin == SubtitleOrigin.EMBEDDED
+    assert result.detected_embedded_tracks[0].extracted is True
+
+
+def test_scan_video_subtitles_force_track_index_bypasses_source_languages(
+    monkeypatch, tmp_path: Path
+):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="deu", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(
+        video,
+        extract_embedded=True,
+        source_languages=frozenset({"en", "ja"}),
+        force_track_index=2,
+    )
+
+    assert len(result.subtitles) == 1
+    assert result.subtitles[0].language == "de"
+
+
+def test_scan_video_subtitles_force_track_index_bypasses_already_covered(
+    monkeypatch, tmp_path: Path
+):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    (tmp_path / "movie.pt-BR.srt").touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="por", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(video, extract_embedded=True, force_track_index=2)
+
+    embedded = [s for s in result.subtitles if s.origin == SubtitleOrigin.EMBEDDED]
+    assert len(embedded) == 1
+
+
+def test_scan_video_subtitles_force_track_index_only_affects_the_matching_track(
+    monkeypatch, tmp_path: Path
+):
+    """A second, unrelated track outside `source_languages` is still gated normally in
+    the same call — the override targets exactly one track index, not every track."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    forced_track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="deu", forced=False, hearing_impaired=False
+    )
+    other_track = EmbeddedSubtitleTrack(
+        index=3, codec_name="subrip", language="fra", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "probe_embedded_subtitle_tracks",
+        lambda *a, **k: [forced_track, other_track],
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.touch(),
+    )
+
+    result = scan_video_subtitles(
+        video,
+        extract_embedded=True,
+        source_languages=frozenset({"en", "ja"}),
+        force_track_index=2,
+    )
+
+    assert len(result.subtitles) == 1
+    assert result.subtitles[0].track_index == 2
+    extracted_by_index = {t.track_index: t.extracted for t in result.detected_embedded_tracks}
+    assert extracted_by_index == {2: True, 3: False}
+
+
+def test_scan_video_subtitles_force_track_index_bypasses_ocr_toggle(monkeypatch, tmp_path: Path):
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    track = _pgs_track()
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+
+    def _fake_ocr(video_path, track, output_path, **kwargs):
+        output_path.touch()
+
+    monkeypatch.setattr(scan_video_subtitles_module, "ocr_pgs_track", _fake_ocr)
+
+    subtitles = scan_video_subtitles(video, ocr_embedded=False, force_track_index=4).subtitles
+
+    assert len(subtitles) == 1
+    assert subtitles[0].origin == SubtitleOrigin.EMBEDDED

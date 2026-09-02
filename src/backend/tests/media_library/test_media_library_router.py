@@ -34,8 +34,10 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 )
 from legendarr_backend.subtitle_acquisition.models import PendingSubtitle
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
+from legendarr_backend.subtitle_discovery import scan_video_subtitles as scan_video_subtitles_module
 from legendarr_backend.subtitle_discovery.jobs import enqueue_subtitle_scan
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
+from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import EmbeddedSubtitleTrack
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select
 
@@ -807,6 +809,77 @@ def test_remove_subtitle_style_tags_cleans_the_file(isolated_database, tmp_path)
 def test_remove_subtitle_style_tags_returns_404_when_missing(isolated_database):
     with TestClient(create_api_app()) as client:
         response = client.post("/media/subtitles/1/remove-style-tags")
+
+    assert response.status_code == 404
+
+
+def test_extract_embedded_track_creates_a_subtitle_and_flips_extracted(
+    isolated_database, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "probe_embedded_subtitle_tracks",
+        lambda *a, **k: [
+            EmbeddedSubtitleTrack(
+                index=2, codec_name="subrip", language="deu", forced=False, hearing_impaired=False
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "extract_embedded_subtitle_track",
+        lambda video_path, track, output_path, **k: output_path.write_text(
+            "1\n00:00:00,000 --> 00:00:01,000\nHi\n\n", encoding="utf-8"
+        ),
+    )
+
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+        with get_session() as session:
+            session.add(
+                EmbeddedTrack(
+                    media_file_id=media_file_id,
+                    track_index=2,
+                    codec_name="subrip",
+                    language="de",
+                    extracted=False,
+                    scanned_at=datetime.now(UTC),
+                )
+            )
+            session.commit()
+
+        response = client.post(f"/media/files/{media_file_id}/embedded-tracks/2/extract")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    embedded = {t["track_index"]: t for t in body["embedded_tracks"]}
+    assert embedded[2]["extracted"] is True
+    assert embedded[2]["subtitle"]["origin"] == "embedded"
+    with get_session() as session:
+        track = session.exec(
+            select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file_id)
+        ).one()
+        assert track.extracted is True
+        subtitles = session.exec(
+            select(Subtitle).where(Subtitle.media_file_id == media_file_id)
+        ).all()
+    assert len(subtitles) == 1
+    assert subtitles[0].origin == SubtitleOrigin.EMBEDDED
+
+
+def test_extract_embedded_track_returns_404_when_media_file_missing(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/media/files/1/embedded-tracks/0/extract")
+
+    assert response.status_code == 404
+
+
+def test_extract_embedded_track_returns_404_when_track_missing(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        media_file_id = _seed_movie_with_video(tmp_path)
+
+        response = client.post(f"/media/files/{media_file_id}/embedded-tracks/2/extract")
 
     assert response.status_code == 404
 
