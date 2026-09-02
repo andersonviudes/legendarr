@@ -3,6 +3,17 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.5] - 2026-09-02
+
+### ✨ Features
+
+- Search providers in parallel and pick the best match across all of them (#114)
+- Add a Providers status page under System (#115)
+- Split subtitle upgrade into its own daily job (#116)
+- Prioritize upgrade searches by current subtitle score (#117)
+- Skip subtitle acquisition when the target language is already embedded (#118)
+- Scale bulk job queues with host CPU count, capped per-provider concurrency (#119)
+
 ## [0.22.4] - 2026-09-02
 
 ### ✨ Features
@@ -18,6 +29,7 @@ All notable changes to this project are documented here. The format follows
 
 - Record external-subtitle language-guess gotcha
 - Record auto_translate flag and open backoff gap
+- Bump version to v0.22.4 [skip ci]
 
 ## [0.22.3] - 2026-08-31
 
