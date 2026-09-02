@@ -30,6 +30,11 @@ class LanguageProfile(SQLModel, table=True):
     speech_to_text_fallback: bool = Field(default=False)
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
+    # Off by default: subtitle_acquisition skips searching/downloading a source-language
+    # subtitle for a media file whose target languages are all already covered by an
+    # embedded track (see `subtitle_acquisition.acquire_media_file_subtitle`). On opts back
+    # into the old behavior — always search regardless of what's already embedded.
+    download_even_if_target_embedded: bool = Field(default=False)
     is_default: bool = Field(default=False)
     release_name_must_contain: str = Field(default="")
     release_name_must_not_contain: str = Field(default="")

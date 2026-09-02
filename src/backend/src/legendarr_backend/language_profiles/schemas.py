@@ -11,6 +11,7 @@ class LanguageProfileInput(BaseModel):
     speech_to_text_fallback: bool = False
     forced: bool = False
     hearing_impaired: bool = False
+    download_even_if_target_embedded: bool = False
     is_default: bool = False
     release_name_must_contain: str = ""
     release_name_must_not_contain: str = ""

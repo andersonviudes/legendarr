@@ -51,19 +51,31 @@ def test_scan_video_subtitles_falls_back_to_und_for_a_release_name_sibling(tmp_p
     assert subtitles[0].language == "und"
 
 
-def test_scan_video_subtitles_skips_embedded_probing_by_default(monkeypatch, tmp_path: Path):
+def test_scan_video_subtitles_probes_but_does_not_extract_by_default(monkeypatch, tmp_path: Path):
+    """Probing (`ffprobe`) always runs so `EmbeddedTrack` reflects the container even with
+    both extraction toggles off — but nothing gets extracted without one of them on."""
     video = tmp_path / "movie.mkv"
     video.touch()
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="eng", forced=False, hearing_impaired=False
+    )
     monkeypatch.setattr(
-        scan_video_subtitles_module,
-        "probe_embedded_subtitle_tracks",
-        lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not probe")),
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
     )
 
     result = scan_video_subtitles(video)
 
     assert result.subtitles == []
-    assert result.detected_embedded_tracks == []
+    assert result.detected_embedded_tracks == [
+        DetectedEmbeddedTrack(
+            track_index=2,
+            codec_name="subrip",
+            language="en",
+            forced=False,
+            hearing_impaired=False,
+            extracted=False,
+        )
+    ]
 
 
 def test_scan_video_subtitles_extracts_embedded_text_based_tracks(monkeypatch, tmp_path: Path):

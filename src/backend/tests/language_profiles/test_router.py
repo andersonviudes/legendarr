@@ -103,6 +103,22 @@ def test_create_can_disable_auto_translate(isolated_database):
     assert response.json()["auto_translate"] is False
 
 
+def test_create_defaults_download_even_if_target_embedded_to_false(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post("/language-profiles/", json=_payload())
+
+    assert response.json()["download_even_if_target_embedded"] is False
+
+
+def test_create_can_enable_download_even_if_target_embedded(isolated_database):
+    with TestClient(create_api_app()) as client:
+        response = client.post(
+            "/language-profiles/", json=_payload(download_even_if_target_embedded=True)
+        )
+
+    assert response.json()["download_even_if_target_embedded"] is True
+
+
 def test_create_returns_422_when_match_score_is_out_of_range(isolated_database):
     with TestClient(create_api_app()) as client:
         response = client.post("/language-profiles/", json=_payload(movie_match_score=101))

@@ -46,11 +46,13 @@ def scan_subtitles_for_media_file(
     `media_file.relative_path`'s directory, same convention as `MediaFile` itself, so
     a subtitle row survives a path-mapping edit.
 
-    Embedded-track probing/extraction is additionally gated by the file's effective
-    `LanguageProfile`: skipped entirely when there's no effective profile, or when
-    `extract_embedded_subtitles` is `False` — external scanning happens regardless, same
-    as before. When it does run, a track whose language already has an external subtitle
-    is skipped instead of extracted (see `scan_video_subtitles`).
+    Embedded-track probing (ffprobe metadata only) always runs, regardless of the file's
+    effective `LanguageProfile` — so `EmbeddedTrack` stays an accurate picture of the
+    container even for a profile with every extraction toggle off (or no profile at all).
+    Extraction to a real `.srt` sibling is what's gated: skipped entirely when there's no
+    effective profile, or when `extract_embedded_subtitles` is `False` — external scanning
+    happens regardless, same as before. When it does run, a track whose language already
+    has an external subtitle is skipped instead of extracted (see `scan_video_subtitles`).
 
     OCR of bitmap-based (PGS) tracks is gated the same way, separately, by
     `LanguageProfile.ocr_embedded_subtitles` — a profile can enable either flag

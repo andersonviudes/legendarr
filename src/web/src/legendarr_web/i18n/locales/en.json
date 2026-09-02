@@ -210,6 +210,7 @@
   "language_profiles.auto_translate": "Auto-translate missing languages",
   "language_profiles.extract_embedded": "Extract embedded subtitles",
   "language_profiles.ocr_embedded": "OCR embedded image subtitles (PGS)",
+  "language_profiles.acquire_when_target_embedded": "Download subtitle even if target language is embedded",
   "language_profiles.stt_fallback": "Speech-to-text fallback (last resort)",
   "language_profiles.hearing_impaired": "Hearing-impaired (HI)",
   "language_profiles.default_profile": "Default profile",

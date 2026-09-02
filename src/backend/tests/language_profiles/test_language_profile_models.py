@@ -62,6 +62,12 @@ def test_speech_to_text_fallback_defaults_to_false():
     assert profile.speech_to_text_fallback is False
 
 
+def test_download_even_if_target_embedded_defaults_to_false():
+    profile = _profile()
+
+    assert profile.download_even_if_target_embedded is False
+
+
 def test_auto_translate_defaults_to_true():
     profile = _profile()
 

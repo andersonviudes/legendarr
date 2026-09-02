@@ -24,7 +24,7 @@ from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_a
 )
 from legendarr_backend.subtitle_acquisition.models import AcquiredSubtitle, AcquisitionFailure
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 from sqlmodel import select
 
@@ -242,6 +242,88 @@ def test_acquire_subtitle_is_a_noop_when_a_source_language_subtitle_already_exis
 
     assert result == acquire_media_file_subtitle_module.AcquisitionResult()
     assert provider.search_calls == []
+
+
+def test_acquire_subtitle_skips_when_every_target_language_is_already_embedded(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, target_languages="pt-BR")
+    video = _write_video(tmp_path)
+    assert media_file.id is not None
+    in_memory_session.add(
+        EmbeddedTrack(
+            media_file_id=media_file.id,
+            track_index=2,
+            codec_name="subrip",
+            language="pt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language is None
+    assert result.skipped_reason == "target_already_embedded"
+    assert provider.search_calls == []
+
+
+def test_acquire_subtitle_searches_when_download_even_if_target_embedded_is_enabled(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, target_languages="pt-BR", download_even_if_target_embedded=True)
+    video = _write_video(tmp_path)
+    assert media_file.id is not None
+    in_memory_session.add(
+        EmbeddedTrack(
+            media_file_id=media_file.id,
+            track_index=2,
+            codec_name="subrip",
+            language="pt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    assert provider.search_calls != []
+
+
+def test_acquire_subtitle_searches_when_only_some_target_languages_are_embedded(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    _profile(in_memory_session, target_languages="pt-BR,fr")
+    video = _write_video(tmp_path)
+    assert media_file.id is not None
+    in_memory_session.add(
+        EmbeddedTrack(
+            media_file_id=media_file.id,
+            track_index=2,
+            codec_name="subrip",
+            language="pt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+    provider = _FakeProvider()
+    _use_chain(monkeypatch, provider)
+
+    result = acquire_subtitle_for_media_file(in_memory_session, media_file, video)
+
+    assert result.acquired_language == "en"
+    assert provider.search_calls != []
 
 
 def test_acquire_subtitle_skips_when_no_provider_configured(in_memory_session, tmp_path):

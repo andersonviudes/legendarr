@@ -38,6 +38,9 @@ from legendarr_backend.subtitle_acquisition.provider_search import search_provid
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleProvider
 from legendarr_backend.subtitle_acquisition.search_context import resolve_subtitle_search_context
 from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
+from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
+    target_languages_missing_embedded_track,
+)
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
@@ -60,10 +63,11 @@ DEFAULT_SPEECH_TO_TEXT_MODEL_DIR = Path("./data/whisper_models")
 class AcquisitionResult:
     """Outcome of one `acquire_subtitle_for_media_file` run. `skipped_reason` is set
     (and `acquired_language` left `None`) for every expected, non-error outcome — no
-    language profile, no provider configured, or nothing cleared the match cutoff.
-    `None`/`None` (both fields unset) means a source-language subtitle already existed
-    — a genuine no-op, not something worth a reason string. None of these are errors;
-    they're common states the job logs and moves past instead of failing.
+    language profile, no provider configured, every target language already embedded, or
+    nothing cleared the match cutoff. `None`/`None` (both fields unset) means a
+    source-language subtitle already existed — a genuine no-op, not something worth a
+    reason string. None of these are errors; they're common states the job logs and moves
+    past instead of failing.
     """
 
     acquired_language: str | None = None
@@ -118,6 +122,11 @@ def acquire_subtitle_for_media_file(
     0.11.0/0.12.0 roadmap work; this is a standalone, explicitly-triggered step (see
     `subtitle_acquisition/jobs.py`).
 
+    Also skipped when every one of the profile's target languages is already covered by an
+    embedded track (`target_languages_missing_embedded_track`) — there'd be nothing to
+    translate a freshly-acquired source subtitle into. `LanguageProfile.
+    download_even_if_target_embedded` opts back into searching regardless.
+
     When every source language comes up empty (no configured provider, or none found an
     above-cutoff match) and the profile's `speech_to_text_fallback` (ROADMAP.md 0.15.0)
     is on, a local Whisper transcription of the media file's own audio is tried once —
@@ -141,6 +150,11 @@ def acquire_subtitle_for_media_file(
 
     if _has_source_language_subtitle(session, media_file, profile.source_language_list):
         return AcquisitionResult()
+
+    if not profile.download_even_if_target_embedded and not target_languages_missing_embedded_track(
+        session, media_file.id, profile.target_language_list
+    ):
+        return AcquisitionResult(skipped_reason="target_already_embedded")
 
     chain = resolve_subtitle_provider_chain(session)
     if not chain and not profile.speech_to_text_fallback:

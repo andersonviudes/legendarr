@@ -11,8 +11,9 @@ from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
     list_missing_target_languages_by_media_file,
     missing_target_languages_for_media_file,
     target_languages_for_media_file,
+    target_languages_missing_embedded_track,
 )
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
 
@@ -294,3 +295,64 @@ def test_has_source_subtitle_false_without_a_profile(in_memory_session, tmp_path
     assert media_file.id is not None
 
     assert has_source_subtitle_for_media_file(in_memory_session, media_file.id) is False
+
+
+def test_target_languages_missing_embedded_track_returns_uncovered_targets(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+    in_memory_session.add(
+        EmbeddedTrack(
+            media_file_id=media_file.id,
+            track_index=2,
+            codec_name="subrip",
+            language="pt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    # "pt-BR" is already embedded (region-blind, normalizes to "pt"); "fr" isn't.
+    missing = target_languages_missing_embedded_track(
+        in_memory_session, media_file.id, ["pt-BR", "fr"]
+    )
+
+    assert missing == ["fr"]
+
+
+def test_target_languages_missing_embedded_track_returns_empty_when_all_covered(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+    in_memory_session.add(
+        EmbeddedTrack(
+            media_file_id=media_file.id,
+            track_index=2,
+            codec_name="subrip",
+            language="pt",
+            scanned_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    missing = target_languages_missing_embedded_track(in_memory_session, media_file.id, ["pt-BR"])
+
+    assert missing == []
+
+
+def test_target_languages_missing_embedded_track_returns_everything_without_any_embedded_track(
+    in_memory_session, tmp_path
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    assert media_file.id is not None
+
+    missing = target_languages_missing_embedded_track(
+        in_memory_session, media_file.id, ["pt-BR", "fr"]
+    )
+
+    assert missing == ["pt-BR", "fr"]

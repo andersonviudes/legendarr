@@ -210,6 +210,7 @@
   "language_profiles.auto_translate": "Traduzir automaticamente idiomas ausentes",
   "language_profiles.extract_embedded": "Extrair legendas incorporadas",
   "language_profiles.ocr_embedded": "OCR de legendas incorporadas em imagem (PGS)",
+  "language_profiles.acquire_when_target_embedded": "Baixar legenda mesmo com o idioma de destino incorporado",
   "language_profiles.stt_fallback": "Reserva de fala para texto (último recurso)",
   "language_profiles.hearing_impaired": "Para surdos e com deficiência auditiva (HI)",
   "language_profiles.default_profile": "Perfil padrão",

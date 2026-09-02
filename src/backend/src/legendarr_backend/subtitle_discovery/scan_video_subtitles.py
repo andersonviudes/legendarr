@@ -69,7 +69,9 @@ def scan_video_subtitles(
     """Discover subtitle tracks for a video file.
 
     External sibling files (``*.srt``, ``*.ass``) are always considered. Embedded
-    text-based tracks (SubRip, ASS/SSA, ``mov_text``) are additionally probed and
+    tracks are always probed (`ffprobe` metadata only, no extraction) so `EmbeddedTrack`
+    (`subtitle_discovery.models`) stays an accurate picture of the container regardless of
+    any toggle. Text-based tracks (SubRip, ASS/SSA, ``mov_text``) are additionally
     extracted to ``.srt`` siblings when `extract_embedded` is set — the caller gates that
     on the file's effective `LanguageProfile.extract_embedded_subtitles`
     (see `scan_subtitles_for_media_file`). A track whose language already has an external
@@ -97,28 +99,25 @@ def scan_video_subtitles(
 
     `force_track_index`, when set, is the manual "extract this track anyway" override: the
     matching track bypasses every one of the above gates (toggle, `source_languages`,
-    already-covered) — every other track is still filtered normally. It also bypasses the
-    top-level `extract_embedded or ocr_embedded` short-circuit below, so a forced track is
-    probed and extracted even when a profile has both toggles off.
+    already-covered) — every other track is still filtered normally.
     """
     external = _scan_external_subtitles(video_path)
     subtitles: list[DiscoveredSubtitle] = list(external)
     detected_embedded_tracks: list[DetectedEmbeddedTrack] = []
-    if extract_embedded or ocr_embedded or force_track_index is not None:
-        already_covered = {normalize_language_code(language) for language in known_languages} | {
-            normalize_language_code(item.language) for item in external
-        }
-        embedded, detected_embedded_tracks = _scan_embedded_subtitles(
-            video_path,
-            probe_timeout_seconds,
-            already_covered,
-            extract_embedded=extract_embedded,
-            ocr_embedded=ocr_embedded,
-            ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
-            source_languages=source_languages,
-            force_track_index=force_track_index,
-        )
-        subtitles += embedded
+    already_covered = {normalize_language_code(language) for language in known_languages} | {
+        normalize_language_code(item.language) for item in external
+    }
+    embedded, detected_embedded_tracks = _scan_embedded_subtitles(
+        video_path,
+        probe_timeout_seconds,
+        already_covered,
+        extract_embedded=extract_embedded,
+        ocr_embedded=ocr_embedded,
+        ocr_cue_timeout_seconds=ocr_cue_timeout_seconds,
+        source_languages=source_languages,
+        force_track_index=force_track_index,
+    )
+    subtitles += embedded
     return SubtitleScanResult(
         subtitles=subtitles, detected_embedded_tracks=detected_embedded_tracks
     )
