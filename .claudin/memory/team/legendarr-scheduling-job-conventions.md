@@ -57,6 +57,29 @@ explicit keyword args and has no config-file dependency of its own. Tests mirror
 `tests/scheduling/` covers the generic `register_job`/`with_retry` helpers with dummy
 functions/queues; `tests/media_library/test_jobs.py` covers the slice-specific wiring.
 
+**Update (2026-09-02) — split a combined job into two independent ones (acquisition vs.
+upgrade):** `subtitle_acquisition/jobs.py`'s periodic fan-out used to do two things per
+media file back-to-back: search for a missing subtitle, and — as a fallback when nothing
+was missing — re-search providers for a better-scoring release of one already acquired
+("upgrade/replace", ROADMAP 0.12.0), throttled by a per-file timestamp
+(`acquisition_upgrade_recheck_hours`). Per a user request to run these on separate
+schedules (acquisition unchanged, upgrade daily), upgrade was pulled out into its own
+slice-owned job module (`subtitle_acquisition/upgrade_jobs.py::register_subtitle_upgrade_job`,
+job id `subtitle_upgrade_fanout`), its own queue (`JobQueue.UPGRADE_BULK`), and its own
+config block (`upgrade_interval_minutes` default 1440/24h, `upgrade_retry_attempts`,
+`upgrade_retry_delay_seconds`, `upgrade_max_instances`, `upgrade_coalesce`,
+`upgrade_bulk_queue_workers`) — `acquisition_upgrade_recheck_hours` was removed, replaced
+by `upgrade_interval_minutes` doing double duty as both the job's own APScheduler interval
+and the `should_check_for_upgrade` throttle window passed into it. The two jobs share one
+small helper (`subtitle_acquisition.jobs.media_file_ids_with_completed_scan`) for the
+"every discovery-scanned `MediaFile`" eligibility walk, otherwise fully independent.
+**Behavior change users should know about:** upgrade checking used to also fire immediately
+(unthrottled) on every manual/event-triggered acquisition — the "Search Subtitles" button,
+the discovery-scan cascade, and translation's missing-source-subtitle cascade — because
+none of those callers passed a real throttle. That immediate side effect is gone; upgrade
+now only ever runs from `subtitle_upgrade_fanout`, at most once a day by default. Confirmed
+with the user as the desired trade-off for a simpler two-job mental model.
+
 **Update (2026-08-31) — each queue's thread-pool size is now config-driven too:**
 `scheduling/queues.py`'s `QUEUE_WORKERS` dict is still the *default* worker count per
 `JobQueue` (used when a caller passes nothing), but it's no longer the sole source of
