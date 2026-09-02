@@ -7,7 +7,8 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
 )
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
-from legendarr_backend.subtitle_discovery.models import Subtitle
+from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
+from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 
 
 def list_media_files_without_subtitles(session: Session) -> list[MediaFile]:
@@ -123,6 +124,29 @@ def has_source_subtitle_for_media_file(session: Session, media_file_id: int) -> 
         )
     }
     return any(language.lower() in present for language in profile.source_language_list)
+
+
+def target_languages_missing_embedded_track(
+    session: Session, media_file_id: int, target_languages: list[str]
+) -> list[str]:
+    """Which of `target_languages` have no embedded track at all yet — extracted or not,
+    unlike `has_source_subtitle_for_media_file`/the missing-target helpers above, which
+    only look at `Subtitle`. `EmbeddedTrack` (`subtitle_discovery.models`) is populated by
+    every subtitle scan regardless of a profile's extraction toggles, so this reflects the
+    container's actual contents. Feeds `subtitle_acquisition`'s "target already embedded,
+    nothing to search for" skip check (`LanguageProfile.download_even_if_target_embedded`).
+    """
+    embedded_languages = {
+        track.language
+        for track in session.exec(
+            select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file_id)
+        )
+    }
+    return [
+        language
+        for language in target_languages
+        if normalize_language_code(language) not in embedded_languages
+    ]
 
 
 def _resolve_profile_for_media_file(session: Session, media_file_id: int) -> LanguageProfile | None:

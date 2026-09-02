@@ -35,6 +35,8 @@
                      checked=(not profile or profile.extract_embedded_subtitles)) }}
   {{ checkbox_field("ocr_embedded_subtitles", t("language_profiles.ocr_embedded"),
                      checked=(profile and profile.ocr_embedded_subtitles)) }}
+  {{ checkbox_field("download_even_if_target_embedded", t("language_profiles.acquire_when_target_embedded"),
+                     checked=(profile and profile.download_even_if_target_embedded)) }}
   {{ checkbox_field("speech_to_text_fallback", t("language_profiles.stt_fallback"),
                      checked=(profile and profile.speech_to_text_fallback)) }}
   {{ checkbox_field("forced", t("common.forced"), checked=(profile and profile.forced)) }}

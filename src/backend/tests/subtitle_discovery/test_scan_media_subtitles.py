@@ -440,6 +440,39 @@ def test_scan_skips_embedded_extraction_when_an_external_subtitle_already_covers
     assert rows[0].origin == SubtitleOrigin.EXTERNAL
 
 
+def test_scan_probes_embedded_tracks_with_both_extraction_toggles_off(
+    in_memory_session, tmp_path, monkeypatch
+):
+    """Detection always runs, regardless of `extract_embedded_subtitles`/
+    `ocr_embedded_subtitles` — only extraction itself is gated by those toggles."""
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
+    video = tmp_path / "Foo" / "Foo.mkv"
+    video.parent.mkdir(parents=True)
+    video.touch()
+    _language_profile(
+        in_memory_session,
+        extract_embedded_subtitles=False,
+        ocr_embedded_subtitles=False,
+        source_languages="en,pt",
+    )
+    track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="por", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module, "probe_embedded_subtitle_tracks", lambda *a, **k: [track]
+    )
+
+    scan_subtitles_for_media_file(in_memory_session, media_file, video)
+    in_memory_session.commit()
+
+    tracks = _embedded_tracks(in_memory_session)
+    assert len(tracks) == 1
+    assert tracks[0].language == "pt"
+    assert tracks[0].extracted is False
+    assert _subtitles(in_memory_session) == []
+
+
 def test_scan_persists_origin_as_lowercase_enum_value(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie, "Foo/Foo.mkv")
