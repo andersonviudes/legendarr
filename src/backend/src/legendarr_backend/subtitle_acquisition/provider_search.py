@@ -10,6 +10,10 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.candidate_evaluation.episode_identity import (
     passes_episode_identity,
 )
@@ -126,17 +130,18 @@ def search_providers_concurrently(
         provider: SubtitleProvider,
     ) -> tuple[SubtitleProvider, list[SubtitleSearchResult], Exception | None]:
         try:
-            results = provider.search(
-                title,
-                language,
-                imdb_id=imdb_id,
-                moviehash=moviehash,
-                season=season,
-                episode=episode,
-                video_path=video_path,
-                tvdb_id=tvdb_id,
-                series_imdb_id=series_imdb_id,
-            )
+            with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
+                results = provider.search(
+                    title,
+                    language,
+                    imdb_id=imdb_id,
+                    moviehash=moviehash,
+                    season=season,
+                    episode=episode,
+                    video_path=video_path,
+                    tvdb_id=tvdb_id,
+                    series_imdb_id=series_imdb_id,
+                )
             record_success(BreakerCategory.ACQUISITION, provider.name)
             return provider, results, None
         except Exception as exc:

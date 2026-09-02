@@ -18,6 +18,10 @@ from legendarr_backend.scheduling.circuit_breaker import (
     record_failure,
     record_success,
 )
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.blacklist.manage_subtitle_blacklist import (
     clear_translation_blacklist,
     is_translation_blacklisted,
@@ -418,7 +422,8 @@ def _translate_with_fallback(
             )
             continue
         try:
-            translated = translate_subtitle(lines, provider, source_language, target_language)
+            with limit_concurrency(ConcurrencyCategory.TRANSLATION, provider.name):
+                translated = translate_subtitle(lines, provider, source_language, target_language)
             record_success(BreakerCategory.TRANSLATION, provider.name)
             return translated, provider.name
         except Exception as exc:

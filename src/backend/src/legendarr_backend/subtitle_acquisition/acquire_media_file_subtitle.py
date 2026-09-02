@@ -11,6 +11,10 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.scheduling.provider_concurrency import (
+    ConcurrencyCategory,
+    limit_concurrency,
+)
 from legendarr_backend.subtitle_acquisition.audio_transcription.probe_embedded_audio import (
     EmbeddedAudioTrack,
     extract_audio_track,
@@ -389,7 +393,8 @@ def _search_and_download(
         provider = scored_candidate.provider
         result = scored_candidate.result
         try:
-            content = provider.download(result)
+            with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
+                content = provider.download(result)
         except Exception:
             logger.warning(
                 "subtitle provider %r failed downloading %r, trying next",
