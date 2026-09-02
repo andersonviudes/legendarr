@@ -42,3 +42,4 @@
 - [legendarr prod deployment topology](legendarr-prod-deployment-topology.md) — real instance runs on a separate host (NAS-like stack), no docker/SSH access from this sandbox
 - [legendarr task media title resolution](legendarr-task-media-title-resolution.md) — Tasks page shows media titles not raw job_ids; resolved at display time in system/, PR #109
 - [legendarr external-subtitle language-guess gotcha](legendarr-external-subtitle-language-guess-gotcha.md) — release-name-only subtitle siblings could get a scene-tag fragment stored as language; fixed 2026-08-31
+- [legendarr auto_translate flag & open backoff gap](legendarr-auto-translate-flag-and-open-backoff-gap.md) — new per-profile flag gates auto-translation; no-backoff-on-repeated-failure issue still open
