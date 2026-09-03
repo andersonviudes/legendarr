@@ -47,15 +47,17 @@ class JobQueue(StrEnum):
     UPGRADE_BULK = "upgrade_bulk"
 
 
-def cpu_scaled_workers(fraction: float = 0.75, minimum: int = 1) -> int:
-    """`fraction` of the host's CPU count, rounded down, never below `minimum` — the
-    default sizing for a bulk queue's worker pool instead of a hardcoded constant, so a
-    beefier host processes more items concurrently without any code change. Safe to use
-    even for a provider-facing queue: `provider_concurrency.limit_concurrency` caps how
-    many of those concurrent workers can hit the *same* provider at once, independent of
-    how many vCPUs the host has.
+def cpu_scaled_workers(minimum: int = 1, maximum: int = 4) -> int:
+    """The host's CPU count, capped at `maximum` (never below `minimum`) — the default
+    sizing for a bulk queue's worker pool instead of a hardcoded constant, so a modest
+    host doesn't over-commit while a beefier host still doesn't spawn more workers than
+    useful. Mirrors Bazarr's `concurrent_jobs` default (`app/config.py`:
+    `4 if os.cpu_count() >= 4 else os.cpu_count()`) exactly. Safe to use even for a
+    provider-facing queue: `provider_concurrency.limit_concurrency` caps how many of
+    those concurrent workers can hit the *same* provider at once, independent of how
+    many vCPUs the host has.
     """
-    return max(minimum, int((os.cpu_count() or 1) * fraction))
+    return max(minimum, min(maximum, os.cpu_count() or 1))
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {

@@ -45,3 +45,4 @@
 - [legendarr auto_translate flag & open backoff gap](legendarr-auto-translate-flag-and-open-backoff-gap.md) — new per-profile flag gates auto-translation; no-backoff-on-repeated-failure issue still open
 - [legendarr conftest missing model import gotcha](legendarr-conftest-missing-model-import-gotcha.md) — subtitle_proxies.models wasn't imported; narrow-scoped test runs failed with NoReferencedTableError
 - [legendarr apply_patch silent function-split gotcha](legendarr-apply-patch-silent-split-gotcha.md) — a Read(offset,limit) stopping before EOF let an apply_patch append land mid-function, undetected until tests ran
+- [legendarr bulk queue worker default mismatch](legendarr-bulk-queue-worker-default-mismatch.md) — PR #119's cpu_scaled_workers() never reaches build_scheduler(); bulk queues run at 1 worker unless env-overridden
