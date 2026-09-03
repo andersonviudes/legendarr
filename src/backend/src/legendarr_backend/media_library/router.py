@@ -35,6 +35,7 @@ from legendarr_backend.media_library.schemas import (
     SubtitleCandidateRead,
     SubtitleRead,
     SubtitleSearchResourceRead,
+    SubtitleSummaryRead,
     WantedRead,
 )
 from legendarr_backend.media_metadata.fetch_metadata import cache_poster_now
@@ -282,10 +283,20 @@ def trigger_file_translation(
 
 @router.post("/subtitles/{subtitle_id}/sync-timing", status_code=202)
 def trigger_subtitle_timing_sync(
-    subtitle_id: int, request: Request, session: Session = Depends(_get_session)
+    subtitle_id: int,
+    request: Request,
+    reference_subtitle_id: int | None = Form(None),
+    session: Session = Depends(_get_session),
 ) -> dict[str, str]:
-    if session.get(Subtitle, subtitle_id) is None:
+    subtitle = session.get(Subtitle, subtitle_id)
+    if subtitle is None:
         raise HTTPException(status_code=404, detail="Subtitle not found")
+    if reference_subtitle_id is not None:
+        if reference_subtitle_id == subtitle_id:
+            raise HTTPException(status_code=400, detail="Cannot sync a subtitle against itself")
+        reference_subtitle = session.get(Subtitle, reference_subtitle_id)
+        if reference_subtitle is None or reference_subtitle.media_file_id != subtitle.media_file_id:
+            raise HTTPException(status_code=404, detail="Reference subtitle not found")
     scheduler, config = _scheduler_and_config(request)
     enqueue_timing_sync(
         scheduler,
@@ -294,6 +305,7 @@ def trigger_subtitle_timing_sync(
         retry_attempts=config.timing_sync_retry_attempts,
         retry_delay_seconds=config.timing_sync_retry_delay_seconds,
         timeout_seconds=config.timing_sync_timeout_seconds,
+        reference_subtitle_id=reference_subtitle_id,
     )
     return {"status": "enqueued"}
 
@@ -466,6 +478,20 @@ def get_target_languages_for_media_file(
     media_file_id: int, session: Session = Depends(_get_session)
 ) -> list[str]:
     return target_languages_for_media_file(session, media_file_id)
+
+
+@router.get("/files/{media_file_id}/subtitles", response_model=list[SubtitleSummaryRead])
+def list_media_file_subtitles(
+    media_file_id: int, session: Session = Depends(_get_session)
+) -> list[SubtitleSummaryRead]:
+    rows = session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file_id)).all()
+    summaries = []
+    for row in rows:
+        assert row.id is not None
+        summaries.append(
+            SubtitleSummaryRead(id=row.id, language=row.language, origin=row.origin.value)
+        )
+    return summaries
 
 
 @router.get(

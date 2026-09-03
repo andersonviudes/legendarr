@@ -482,6 +482,10 @@ are what Bazarr also offers that legendarr doesn't yet.
 - [ ] **Subtitle timing sync** — Two-point fit: linear-stretch a subtitle's timings between two
   user-picked anchor points (a known correct timestamp early and late in the file) — the other
   manual sync method Bazarr offers alongside a fixed offset.
+- [x] **Subtitle timing sync** — Sync using another subtitle: the "Sync timing" action now
+  opens a dialog offering a choice between the existing audio-based sync (0.7.0) and using
+  another already-correctly-timed subtitle on the same file as `ffsubsync`'s reference instead
+  of decoding audio.
 
 ## 1.0.0 — Official release
 

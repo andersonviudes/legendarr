@@ -481,6 +481,187 @@ def test_trigger_subtitle_timing_sync_returns_404_when_missing(isolated_database
     assert response.status_code == 404
 
 
+def test_trigger_subtitle_timing_sync_forwards_reference_subtitle_id(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            assert media_file.id is not None
+            subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            reference_subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="fr",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.fr.srt",
+                content_hash="test-hash-fr",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.add(reference_subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            session.refresh(reference_subtitle)
+            subtitle_id = subtitle.id
+            reference_subtitle_id = reference_subtitle.id
+        response = client.post(
+            f"/media/subtitles/{subtitle_id}/sync-timing",
+            data={"reference_subtitle_id": reference_subtitle_id},
+        )
+
+    assert response.status_code == 202
+    assert scheduler.get_job(f"subtitle_timing_sync:{subtitle_id}") is not None
+
+
+def test_trigger_subtitle_timing_sync_rejects_self_reference(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            assert media_file.id is not None
+            subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            subtitle_id = subtitle.id
+        response = client.post(
+            f"/media/subtitles/{subtitle_id}/sync-timing",
+            data={"reference_subtitle_id": subtitle_id},
+        )
+
+    assert response.status_code == 400
+
+
+def test_trigger_subtitle_timing_sync_rejects_reference_from_another_file(isolated_database):
+    app = create_api_app()
+    scheduler = build_scheduler()
+    app.state.scheduler = scheduler
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            other_media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Bar.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.add(other_media_file)
+            session.commit()
+            session.refresh(media_file)
+            session.refresh(other_media_file)
+            assert media_file.id is not None
+            assert other_media_file.id is not None
+            subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            other_subtitle = Subtitle(
+                media_file_id=other_media_file.id,
+                language="fr",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Bar.fr.srt",
+                content_hash="test-hash-fr",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.add(other_subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            session.refresh(other_subtitle)
+            subtitle_id = subtitle.id
+            other_subtitle_id = other_subtitle.id
+        response = client.post(
+            f"/media/subtitles/{subtitle_id}/sync-timing",
+            data={"reference_subtitle_id": other_subtitle_id},
+        )
+
+    assert response.status_code == 404
+
+
+def test_list_media_file_subtitles_returns_summaries(isolated_database):
+    app = create_api_app()
+
+    with TestClient(app) as client:
+        movie = _seed_movie()
+        with get_session() as session:
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            session.refresh(media_file)
+            assert media_file.id is not None
+            subtitle = Subtitle(
+                media_file_id=media_file.id,
+                language="en",
+                origin=SubtitleOrigin.EXTERNAL,
+                relative_path="Foo.en.srt",
+                content_hash="test-hash",
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(subtitle)
+            session.commit()
+            session.refresh(subtitle)
+            media_file_id = media_file.id
+            subtitle_id = subtitle.id
+        response = client.get(f"/media/files/{media_file_id}/subtitles")
+
+    assert response.status_code == 200
+    assert response.json() == [{"id": subtitle_id, "language": "en", "origin": "external"}]
+
+
 def test_trigger_subtitle_source_translation_enqueues_translation(isolated_database):
     app = create_api_app()
     scheduler = build_scheduler()

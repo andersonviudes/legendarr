@@ -119,8 +119,17 @@ async def trigger_file_translation(client: httpx.AsyncClient, media_file_id: int
     return response.json()
 
 
-async def trigger_subtitle_timing_sync(client: httpx.AsyncClient, subtitle_id: int) -> dict:
-    response = await client.post(f"/media/subtitles/{subtitle_id}/sync-timing")
+async def get_media_file_subtitles(client: httpx.AsyncClient, media_file_id: int) -> list[dict]:
+    response = await client.get(f"/media/files/{media_file_id}/subtitles")
+    response.raise_for_status()
+    return response.json()
+
+
+async def trigger_subtitle_timing_sync(
+    client: httpx.AsyncClient, subtitle_id: int, reference_subtitle_id: int | None = None
+) -> dict:
+    data = {"reference_subtitle_id": reference_subtitle_id} if reference_subtitle_id else None
+    response = await client.post(f"/media/subtitles/{subtitle_id}/sync-timing", data=data)
     response.raise_for_status()
     return response.json()
 

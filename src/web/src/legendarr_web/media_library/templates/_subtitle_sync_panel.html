@@ -1,0 +1,33 @@
+{# Loaded into #subtitle-acquire-content by a subtitle's own "Sync timing" pill/row action.
+   Two independent ways to re-align this subtitle's cues: against the video's audio track
+   (ffsubsync's default mode), or against another subtitle already on this file that's
+   already correctly timed (ffsubsync's reference-subtitle mode) — see
+   docs/features/subtitle-timing-sync.md. #}
+{% from "macros.html" import select_field %}
+<h3>{{ t("common.sync_timing") }}</h3>
+<p>{{ t("media_library.sync_dialog_description") }}</p>
+<form
+  hx-post="/media/subtitles/{{ subtitle_id }}/sync-timing"
+  hx-target="#subtitle-acquire-content"
+  hx-swap="innerHTML"
+  hx-disabled-elt="find button"
+>
+  <button type="submit">{{ icon("refresh-cw") }} {{ t("media_library.sync_using_audio") }}</button>
+</form>
+{% if candidates %}
+<form
+  hx-post="/media/subtitles/{{ subtitle_id }}/sync-timing"
+  hx-target="#subtitle-acquire-content"
+  hx-swap="innerHTML"
+  hx-disabled-elt="find button"
+>
+  {% set options = [] %}
+  {% for candidate in candidates %}
+  {% set _ = options.append((candidate.id, candidate.language ~ " (" ~ candidate.origin ~ ")")) %}
+  {% endfor %}
+  {{ select_field("reference_subtitle_id", t("media_library.sync_reference_label"), options) }}
+  <button type="submit">{{ icon("captions") }} {{ t("media_library.sync_using_subtitle") }}</button>
+</form>
+{% else %}
+<p>{{ t("media_library.sync_no_other_subtitles") }}</p>
+{% endif %}
