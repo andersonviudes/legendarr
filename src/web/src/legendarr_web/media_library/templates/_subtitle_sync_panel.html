@@ -6,13 +6,14 @@
 {% from "macros.html" import select_field %}
 <h3>{{ t("common.sync_timing") }}</h3>
 <p>{{ t("media_library.sync_dialog_description") }}</p>
-<button
-  type="button"
+<form
   hx-post="/media/subtitles/{{ subtitle_id }}/sync-timing"
   hx-target="#subtitle-acquire-content"
   hx-swap="innerHTML"
-  hx-disabled-elt="this"
->{{ icon("refresh-cw") }} {{ t("media_library.sync_using_audio") }}</button>
+  hx-disabled-elt="find button"
+>
+  <button type="submit">{{ icon("refresh-cw") }} {{ t("media_library.sync_using_audio") }}</button>
+</form>
 {% if candidates %}
 <form
   hx-post="/media/subtitles/{{ subtitle_id }}/sync-timing"
