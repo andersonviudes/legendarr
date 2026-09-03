@@ -14,51 +14,77 @@
   hx-swap="outerHTML"
   hx-trigger="every 15s"
 >
-  <div class="stat-grid">
-    <article class="stat-card">
-      <p class="stat-value">{{ profile_count }}</p>
-      <p class="stat-label">{{ icon("languages") }} {{ t("dashboard.stat.profiles") }}</p>
-    </article>
-    <article class="stat-card">
-      <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
-      <p class="stat-label">{{ icon("history") }} {{ t("dashboard.stat.next_sync") }}</p>
-    </article>
-    <article class="stat-card">
-      <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
-      <p class="stat-label">{{ icon("refresh-cw") }} {{ t("dashboard.stat.sync_interval") }}</p>
-    </article>
-    <a class="stat-card" href="/media/wanted/movies">
-      <p class="stat-value">{{ movies_missing_count }}</p>
-      <p class="stat-label">{{ icon("clapperboard") }} {{ t("dashboard.stat.missing_movies") }}</p>
-    </a>
-    <a class="stat-card" href="/media/wanted/series">
-      <p class="stat-value">{{ series_missing_count }}</p>
-      <p class="stat-label">{{ icon("tv") }} {{ t("dashboard.stat.missing_series") }}</p>
-    </a>
-  </div>
+  <section class="dashboard-section">
+    <h2>{{ icon("chart-column") }} {{ t("dashboard.overview_heading") }}</h2>
+    <div class="stat-grid">
+      <article class="stat-card">
+        <span class="stat-card-icon">{{ icon("languages") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ profile_count }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.profiles") }}</p>
+        </span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card-icon stat-card-icon--pending">{{ icon("history") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ (next_sync_minutes ~ "m") if next_sync_minutes is not none else "—" }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.next_sync") }}</p>
+        </span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-card-icon stat-card-icon--pending">{{ icon("refresh-cw") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ (sync_interval_minutes ~ "m") if sync_interval_minutes is not none else "—" }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.sync_interval") }}</p>
+        </span>
+      </article>
+      <a class="stat-card" href="/media/wanted/movies">
+        <span class="stat-card-icon stat-card-icon--warn">{{ icon("clapperboard") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ movies_missing_count }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.missing_movies") }}</p>
+        </span>
+      </a>
+      <a class="stat-card" href="/media/wanted/series">
+        <span class="stat-card-icon stat-card-icon--warn">{{ icon("tv") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ series_missing_count }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.missing_series") }}</p>
+        </span>
+      </a>
+    </div>
+  </section>
 
-  <section>
+  <section class="dashboard-section">
     <h2>{{ icon("captions") }} {{ t("dashboard.providers_heading") }}</h2>
     <div class="stat-grid">
       <a class="stat-card" href="/settings/subtitle-providers/">
-        <p class="stat-value">{{ subtitle_providers_enabled }}/{{ subtitle_providers_total }}</p>
-        <p class="stat-label">{{ icon("captions") }} {{ t("dashboard.stat.subtitle_providers") }}</p>
+        <span class="stat-card-icon">{{ icon("captions") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ subtitle_providers_enabled }}/{{ subtitle_providers_total }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.subtitle_providers") }}</p>
+        </span>
       </a>
       <a class="stat-card" href="/settings/translation-providers/">
-        <p class="stat-value">{{ translation_providers_enabled }}/{{ translation_providers_total }}</p>
-        <p class="stat-label">{{ icon("globe") }} {{ t("dashboard.stat.translation_providers") }}</p>
+        <span class="stat-card-icon">{{ icon("globe") }}</span>
+        <span class="stat-card-text">
+          <p class="stat-value">{{ translation_providers_enabled }}/{{ translation_providers_total }}</p>
+          <p class="stat-label">{{ t("dashboard.stat.translation_providers") }}</p>
+        </span>
       </a>
     </div>
   </section>
 </div>
 
-<section>
+<section class="dashboard-section">
   <h2>{{ icon("activity") }} {{ t("dashboard.live_activity_heading") }}</h2>
-  <div
-    id="dashboard-running-tasks"
-    hx-get="/system/tasks/running?limit=10"
-    hx-trigger="load, every 3s"
-    hx-swap="innerHTML"
-  ></div>
+  <div class="dashboard-panel">
+    <div
+      id="dashboard-running-tasks"
+      hx-get="/system/tasks/running?limit=10"
+      hx-trigger="load, every 3s"
+      hx-swap="innerHTML"
+    ></div>
+  </div>
 </section>
 {% endblock %}

@@ -119,7 +119,8 @@ svg.lucide {
    just a slightly different fill against the page bg. Not needed in dark, where the
    background-color step already does that job. */
 [data-theme="light"] .stat-card,
-[data-theme="light"] .service-card {
+[data-theme="light"] .service-card,
+[data-theme="light"] .dashboard-panel {
   box-shadow: 0 1px 2px rgba(22, 23, 26, 0.06);
 }
 
@@ -508,29 +509,74 @@ body {
   padding: 1.25rem 1.5rem;
 }
 
-/* === Stat cards: dashboard === */
+/* === Stat cards: dashboard ===
+   Fixed-size columns (not 1fr) + justify-content:start so tiles keep a readable width
+   and stay left-aligned instead of stretching to fill a wide viewport or leaving one
+   large blank column on the right when the row doesn't fill up. */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 15rem));
+  justify-content: start;
   gap: 1.25rem;
-  margin-block: 1.5rem 2.5rem;
-  max-width: 40rem;
+  margin-block: 1rem 2.5rem;
 }
 
 .stat-card {
-  display: block;
-  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
   border: 1px solid var(--pico-card-border-color);
   border-radius: 0.75rem;
   background-color: var(--pico-card-background-color);
   color: inherit;
   text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+a.stat-card:hover {
+  border-color: var(--pico-primary);
+}
+
+/* Icon badge: default reads as "configuration" (brand accent). Modifiers cover the
+   other two meanings a tile carries here — a scheduling countdown/interval, and a
+   count that needs the user's attention. */
+.stat-card-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  background-color: var(--lg-primary-dim-background-color);
+  color: var(--pico-primary);
+}
+
+.stat-card-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.stat-card-icon--pending {
+  background-color: var(--lg-pending-dim-background-color);
+  color: var(--lg-pending-color);
+}
+
+.stat-card-icon--warn {
+  background-color: var(--lg-warn-dim-background-color);
+  color: var(--lg-warn-color);
+}
+
+.stat-card-text {
+  min-width: 0;
 }
 
 .stat-value {
   margin: 0;
   font-size: 1.6875rem;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--pico-h1-color);
 }
 
@@ -538,6 +584,22 @@ body {
   margin: 0.25rem 0 0;
   font-size: var(--lg-font-xs);
   color: var(--pico-muted-color);
+}
+
+/* Boxed panel for the dashboard's non-tile content (Live activity list) so it reads as
+   a widget alongside the stat cards above it, instead of floating loose on the page
+   background. */
+.dashboard-panel {
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--pico-card-background-color);
+  margin-block: 1rem 2.5rem;
+  overflow: hidden;
+}
+
+.dashboard-panel .empty-state {
+  margin: 0;
+  padding: 1rem 1.25rem;
 }
 
 /* === Statistics: daily trend + breakdown bars ===
