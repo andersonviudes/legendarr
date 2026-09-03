@@ -177,14 +177,34 @@ async def trigger_file_translation(
     return templates.TemplateResponse(request, "_test_result.html", {"result": result})
 
 
+@router.get("/subtitles/{subtitle_id}/sync-timing")
+async def show_subtitle_sync_panel(
+    request: Request,
+    subtitle_id: int,
+    media_file_id: int,
+    client: httpx.AsyncClient = Depends(get_backend_client),
+):
+    try:
+        subtitles = await service.get_media_file_subtitles(client, media_file_id)
+    except httpx.HTTPStatusError:
+        subtitles = []
+    candidates = [subtitle for subtitle in subtitles if subtitle["id"] != subtitle_id]
+    return templates.TemplateResponse(
+        request,
+        "_subtitle_sync_panel.html",
+        {"subtitle_id": subtitle_id, "candidates": candidates},
+    )
+
+
 @router.post("/subtitles/{subtitle_id}/sync-timing")
 async def trigger_subtitle_timing_sync(
     request: Request,
     subtitle_id: int,
+    reference_subtitle_id: int | None = Form(None),
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
     try:
-        await service.trigger_subtitle_timing_sync(client, subtitle_id)
+        await service.trigger_subtitle_timing_sync(client, subtitle_id, reference_subtitle_id)
         result = {"success": True, "message": "Timing sync queued."}
     except httpx.HTTPStatusError:
         result = {"success": False, "message": "Couldn't queue the timing sync."}

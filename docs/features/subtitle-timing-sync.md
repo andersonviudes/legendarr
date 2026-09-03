@@ -5,12 +5,21 @@ produced by [translation](subtitle-translation.md) — can drift out of sync wit
 audio. `sync_subtitle_timing()` re-aligns one subtitle's cues against the video, via
 `ffsubsync`.
 
+## Two sync modes
+
+`ffsubsync` accepts either a video (it decodes the audio track) or another already-correctly-
+timed subtitle file as its reference — `sync_subtitle_timing()` is agnostic to which, and just
+forwards whatever `reference_path` it's given. Clicking a subtitle's "Sync timing" action opens
+a dialog with both options: sync against the video's audio (the only mode before this), or
+pick another subtitle already on the same file to sync against instead.
+
 ## Manual, per-subtitle trigger
 
 Unlike translation, this isn't run automatically as part of any pipeline. Each subtitle row
-in a movie/series detail page gets its own "Sync timing" button, which enqueues a one-off job
-for that single `Subtitle`. There's no bulk fan-out and no scheduled interval — the same
-manual-only posture translation had before unattended scheduling (0.10.0) existed.
+in a movie/series detail page gets its own "Sync timing" action, which enqueues a one-off job
+for that single `Subtitle` once a mode is picked from the dialog. There's no bulk fan-out and
+no scheduled interval — the same manual-only posture translation had before unattended
+scheduling (0.10.0) existed.
 
 ![Per-subtitle actions menu with the Sync timing button](../assets/screenshots/subtitle-actions-menu.png)
 

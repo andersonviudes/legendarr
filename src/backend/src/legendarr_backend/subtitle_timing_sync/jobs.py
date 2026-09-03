@@ -22,8 +22,14 @@ def enqueue_timing_sync(
     retry_attempts: int,
     retry_delay_seconds: float,
     timeout_seconds: float,
+    reference_subtitle_id: int | None = None,
 ) -> None:
     """Enqueue an ad-hoc timing sync of one `Subtitle` for immediate execution.
+
+    `reference_subtitle_id`, when given, is another `Subtitle` on the same media file to
+    sync `subtitle_id`'s timing against instead of the video's audio track — resolved to a
+    file path at run time, same as `subtitle_id` itself, and tolerated the same way if it's
+    gone by then. `None` (the default) keeps the original audio-based sync.
 
     Same `add_job` shape as `subtitle_translation.jobs.enqueue_translation`: a "date"
     trigger with `misfire_grace_time=None` and `replace_existing=True` dedupes a pending
@@ -51,8 +57,18 @@ def enqueue_timing_sync(
                 )
                 return
             subtitle_path = video_path.parent / Path(subtitle.relative_path).name
+            reference_path = video_path
+            if reference_subtitle_id is not None:
+                reference_subtitle = session.get(Subtitle, reference_subtitle_id)
+                if reference_subtitle is None:
+                    logger.info(
+                        "timing sync skipped: reference subtitle %d no longer exists",
+                        reference_subtitle_id,
+                    )
+                    return
+                reference_path = video_path.parent / Path(reference_subtitle.relative_path).name
             synced = sync_subtitle_timing(
-                video_path, subtitle_path, timeout_seconds=timeout_seconds
+                reference_path, subtitle_path, timeout_seconds=timeout_seconds
             )
             logger.info("timing sync finished for subtitle %d: synced=%s", subtitle_id, synced)
 

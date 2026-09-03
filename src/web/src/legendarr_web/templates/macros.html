@@ -401,12 +401,11 @@
           class="app-icon-btn"
           aria-label="{{ t('common.sync_timing') }}"
           data-tooltip="{{ t('common.sync_timing') }}"
-          hx-post="/media/subtitles/{{ row.subtitle.id }}/sync-timing"
-          hx-target="#sync-result-{{ row.subtitle.id }}"
+          data-subtitle-acquire-open
+          hx-get="/media/subtitles/{{ row.subtitle.id }}/sync-timing?media_file_id={{ media_file_id }}"
+          hx-target="#subtitle-acquire-content"
           hx-swap="innerHTML"
-          hx-disabled-elt="this"
         >{{ icon("refresh-cw") }}</button>
-        <span id="sync-result-{{ row.subtitle.id }}"></span>
         {% endif %}
         <button
           type="button"
@@ -499,10 +498,10 @@
 <button
   type="button"
   class="subtitle-pill-menu-item"
-  hx-post="/media/subtitles/{{ subtitle.id }}/sync-timing"
-  hx-target="#sync-result-{{ subtitle.id }}"
+  data-subtitle-acquire-open
+  hx-get="/media/subtitles/{{ subtitle.id }}/sync-timing?media_file_id={{ media_file_id }}"
+  hx-target="#subtitle-acquire-content"
   hx-swap="innerHTML"
-  hx-disabled-elt="this"
 >{{ icon("refresh-cw") }} {{ t("common.sync_timing") }}</button>
 <button
   type="button"

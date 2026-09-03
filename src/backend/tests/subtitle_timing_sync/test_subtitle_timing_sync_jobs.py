@@ -155,3 +155,133 @@ def test_enqueued_timing_sync_job_calls_sync_subtitle_timing_with_resolved_paths
     assert video_path == tmp_path / "Foo" / "Foo.mkv"
     assert subtitle_path == tmp_path / "Foo" / "Foo.en.srt"
     assert timeout_seconds == 45.0
+
+
+def test_enqueued_timing_sync_job_resolves_reference_subtitle_path(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    calls = []
+    monkeypatch.setattr(
+        jobs_module,
+        "sync_subtitle_timing",
+        lambda reference_path, subtitle_path, *, timeout_seconds: (
+            calls.append((reference_path, subtitle_path, timeout_seconds)) or True
+        ),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    subtitle = Subtitle(
+        media_file_id=media_file.id,
+        language="en",
+        origin=SubtitleOrigin.EXTERNAL,
+        relative_path="Foo.en.srt",
+        content_hash="test-hash",
+        scanned_at=datetime.now(UTC),
+    )
+    reference_subtitle = Subtitle(
+        media_file_id=media_file.id,
+        language="fr",
+        origin=SubtitleOrigin.EXTERNAL,
+        relative_path="Foo.fr.srt",
+        content_hash="test-hash-fr",
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(subtitle)
+    in_memory_session.add(reference_subtitle)
+    in_memory_session.commit()
+    assert subtitle.id is not None
+    assert reference_subtitle.id is not None
+
+    scheduler = build_scheduler()
+    enqueue_timing_sync(
+        scheduler,
+        subtitle.id,
+        JobQueue.TIMING_SYNC,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        timeout_seconds=45.0,
+        reference_subtitle_id=reference_subtitle.id,
+    )
+    job = scheduler.get_job(f"subtitle_timing_sync:{subtitle.id}")
+    assert job is not None
+    job.func()
+
+    assert len(calls) == 1
+    reference_path, subtitle_path, timeout_seconds = calls[0]
+    assert reference_path == tmp_path / "Foo" / "Foo.fr.srt"
+    assert subtitle_path == tmp_path / "Foo" / "Foo.en.srt"
+    assert timeout_seconds == 45.0
+
+
+def test_enqueued_timing_sync_job_skips_when_reference_subtitle_deleted(
+    in_memory_session, tmp_path, monkeypatch
+):
+    @contextmanager
+    def _session():
+        yield in_memory_session
+
+    monkeypatch.setattr(jobs_module, "get_session", _session)
+    calls = []
+    monkeypatch.setattr(
+        jobs_module,
+        "sync_subtitle_timing",
+        lambda reference_path, subtitle_path, *, timeout_seconds: calls.append(
+            (reference_path, subtitle_path)
+        ),
+    )
+
+    service = _arr_service(in_memory_session, tmp_path)
+    assert service.id is not None
+    movie = Movie(arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo")
+    in_memory_session.add(movie)
+    in_memory_session.commit()
+    media_file = MediaFile(
+        movie_id=movie.id, relative_path="Foo.mkv", size_bytes=1, scanned_at=datetime.now(UTC)
+    )
+    in_memory_session.add(media_file)
+    in_memory_session.commit()
+    assert media_file.id is not None
+    subtitle = Subtitle(
+        media_file_id=media_file.id,
+        language="en",
+        origin=SubtitleOrigin.EXTERNAL,
+        relative_path="Foo.en.srt",
+        content_hash="test-hash",
+        scanned_at=datetime.now(UTC),
+    )
+    in_memory_session.add(subtitle)
+    in_memory_session.commit()
+    assert subtitle.id is not None
+
+    scheduler = build_scheduler()
+    enqueue_timing_sync(
+        scheduler,
+        subtitle.id,
+        JobQueue.TIMING_SYNC,
+        retry_attempts=1,
+        retry_delay_seconds=0.0,
+        timeout_seconds=45.0,
+        reference_subtitle_id=999,
+    )
+    job = scheduler.get_job(f"subtitle_timing_sync:{subtitle.id}")
+    assert job is not None
+
+    # Must not raise — the reference row can be gone by the time the job runs.
+    job.func()
+
+    assert calls == []

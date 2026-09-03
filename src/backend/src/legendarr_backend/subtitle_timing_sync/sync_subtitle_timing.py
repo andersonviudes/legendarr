@@ -6,9 +6,16 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def sync_subtitle_timing(video_path: Path, subtitle_path: Path, *, timeout_seconds: float) -> bool:
-    """Re-align `subtitle_path`'s cues against `video_path`'s audio track via `ffsubsync`,
-    overwriting `subtitle_path` in place on success.
+def sync_subtitle_timing(
+    reference_path: Path, subtitle_path: Path, *, timeout_seconds: float
+) -> bool:
+    """Re-align `subtitle_path`'s cues against `reference_path` via `ffsubsync`, overwriting
+    `subtitle_path` in place on success.
+
+    `reference_path` is opaque to this function — `ffsubsync` accepts either a video (it
+    decodes the audio track) or another already-correctly-timed subtitle file as its
+    reference argument, and picks the right mode from the file itself. The caller
+    (`subtitle_timing_sync.jobs.enqueue_timing_sync`) decides which one to pass.
 
     Same subprocess idiom as `probe_embedded_subtitles`: `ffsubsync` writes to a temporary
     sibling first, and `subtitle_path` is only replaced once it exits successfully, so a
@@ -26,7 +33,7 @@ def sync_subtitle_timing(video_path: Path, subtitle_path: Path, *, timeout_secon
     temp_path = subtitle_path.with_name(f"{subtitle_path.stem}.tmp.srt")
     try:
         subprocess.run(
-            ["ffsubsync", str(video_path), "-i", str(subtitle_path), "-o", str(temp_path)],
+            ["ffsubsync", str(reference_path), "-i", str(subtitle_path), "-o", str(temp_path)],
             capture_output=True,
             text=True,
             timeout=timeout_seconds,

@@ -139,6 +139,17 @@ class WantedRead(BaseModel):
     missing_files_count: int
 
 
+class SubtitleSummaryRead(BaseModel):
+    """A bare-bones view of one `Subtitle` — just enough to label it in a picker (the
+    timing-sync dialog's "sync using another subtitle" reference select). Deliberately
+    narrower than `SubtitleRead`, which also carries acquisition-score fields that don't
+    apply here."""
+
+    id: int
+    language: str
+    origin: str
+
+
 class SubtitleSearchResourceRead(BaseModel):
     """The manual-search panel's "Resource" info box — the searched file's on-disk
     path and a display-only, reconstructed scene-style release name for it."""
