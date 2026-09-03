@@ -1,6 +1,7 @@
 import yaml
 from legendarr_backend.config.config_file import load_or_create_config_file, update_config_file
 from legendarr_backend.config.settings import Settings
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
 
 
@@ -173,6 +174,30 @@ def test_queue_worker_settings_round_trip_through_config_file(tmp_path):
     stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
     assert stored["scan_queue_workers"] == 5
     assert stored["scan_bulk_queue_workers"] == 2
+
+
+def test_bulk_queue_worker_defaults_track_queue_workers(tmp_path):
+    """Regression test for the bug where `Settings`'s `*_queue_workers` fields hardcoded
+    stale literals instead of pulling from `scheduling.queues.QUEUE_WORKERS` — every
+    CPU-scaled bulk queue silently ran at 1 worker regardless of host CPU count until
+    `default_factory` wired them together. Not tied to a specific `os.cpu_count()` value:
+    just asserts the two never drift apart again, whatever the host's CPU count is.
+    """
+    settings = Settings(data_dir=tmp_path, database_url="")
+
+    assert settings.translate_bulk_queue_workers == QUEUE_WORKERS[JobQueue.TRANSLATE_BULK]
+    assert settings.acquire_bulk_queue_workers == QUEUE_WORKERS[JobQueue.ACQUIRE_BULK]
+    assert settings.timing_sync_queue_workers == QUEUE_WORKERS[JobQueue.TIMING_SYNC]
+    assert settings.metadata_bulk_queue_workers == QUEUE_WORKERS[JobQueue.METADATA_BULK]
+    assert settings.upgrade_bulk_queue_workers == QUEUE_WORKERS[JobQueue.UPGRADE_BULK]
+
+    config = load_or_create_config_file(settings)
+
+    assert config.translate_bulk_queue_workers == QUEUE_WORKERS[JobQueue.TRANSLATE_BULK]
+    assert config.acquire_bulk_queue_workers == QUEUE_WORKERS[JobQueue.ACQUIRE_BULK]
+    assert config.timing_sync_queue_workers == QUEUE_WORKERS[JobQueue.TIMING_SYNC]
+    assert config.metadata_bulk_queue_workers == QUEUE_WORKERS[JobQueue.METADATA_BULK]
+    assert config.upgrade_bulk_queue_workers == QUEUE_WORKERS[JobQueue.UPGRADE_BULK]
 
 
 def test_update_config_file_applies_updates_and_keeps_secrets_encrypted(tmp_path):

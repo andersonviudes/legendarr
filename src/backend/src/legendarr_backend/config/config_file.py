@@ -5,6 +5,7 @@ from cryptography.fernet import Fernet
 from pydantic import BaseModel, Field
 
 from legendarr_backend.config.settings import Settings
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.security.fernet import resolve_fernet
 from legendarr_backend.security.secrets import decrypt_secret, encrypt_secret, is_encrypted
 
@@ -105,17 +106,40 @@ class AppConfigFile(BaseModel):
     ui_locale: str = "en"
     timezone: str = "UTC"
     backup_retention_count: int = Field(default=7, ge=1)
-    sync_queue_workers: int = Field(default=1, ge=1)
-    scan_queue_workers: int = Field(default=2, ge=1)
-    scan_bulk_queue_workers: int = Field(default=1, ge=1)
-    translate_queue_workers: int = Field(default=2, ge=1)
-    translate_bulk_queue_workers: int = Field(default=1, ge=1)
-    acquire_queue_workers: int = Field(default=2, ge=1)
-    acquire_bulk_queue_workers: int = Field(default=1, ge=1)
-    timing_sync_queue_workers: int = Field(default=2, ge=1)
-    metadata_bulk_queue_workers: int = Field(default=1, ge=1)
-    maintenance_queue_workers: int = Field(default=1, ge=1)
-    upgrade_bulk_queue_workers: int = Field(default=1, ge=1)
+    # Same posture as `Settings`'s own `*_queue_workers` fields (`config/settings.py`) —
+    # defaults pulled from `scheduling.queues.QUEUE_WORKERS` rather than duplicated as
+    # literals, since `load_or_create_config_file`'s `defaults` dict always supplies one
+    # of these for every key anyway; kept in sync purely so a reader of this class alone
+    # sees the real default, not a stale one.
+    sync_queue_workers: int = Field(default_factory=lambda: QUEUE_WORKERS[JobQueue.SYNC], ge=1)
+    scan_queue_workers: int = Field(default_factory=lambda: QUEUE_WORKERS[JobQueue.SCAN], ge=1)
+    scan_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.SCAN_BULK], ge=1
+    )
+    translate_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TRANSLATE], ge=1
+    )
+    translate_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TRANSLATE_BULK], ge=1
+    )
+    acquire_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.ACQUIRE], ge=1
+    )
+    acquire_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.ACQUIRE_BULK], ge=1
+    )
+    timing_sync_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TIMING_SYNC], ge=1
+    )
+    metadata_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.METADATA_BULK], ge=1
+    )
+    maintenance_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.MAINTENANCE], ge=1
+    )
+    upgrade_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.UPGRADE_BULK], ge=1
+    )
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:

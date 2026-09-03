@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+
 
 class Settings(BaseSettings):
     """Runtime configuration for legendarr, sourced from environment variables."""
@@ -177,18 +179,39 @@ class Settings(BaseSettings):
     # ...): no runtime-editable Settings UI yet. Unlike those, these also need a full
     # restart to take effect — `legendarr_backend.bootstrap.build_scheduler()` sizes
     # each queue's `ThreadPoolExecutor` once at startup, it isn't rebuilt when
-    # `config.yaml` changes. Defaults mirror `scheduling.queues.QUEUE_WORKERS`.
-    sync_queue_workers: int = Field(default=1, ge=1)
-    scan_queue_workers: int = Field(default=2, ge=1)
-    scan_bulk_queue_workers: int = Field(default=1, ge=1)
-    translate_queue_workers: int = Field(default=2, ge=1)
-    translate_bulk_queue_workers: int = Field(default=1, ge=1)
-    acquire_queue_workers: int = Field(default=2, ge=1)
-    acquire_bulk_queue_workers: int = Field(default=1, ge=1)
-    timing_sync_queue_workers: int = Field(default=2, ge=1)
-    metadata_bulk_queue_workers: int = Field(default=1, ge=1)
-    maintenance_queue_workers: int = Field(default=1, ge=1)
-    upgrade_bulk_queue_workers: int = Field(default=1, ge=1)
+    # `config.yaml` changes. Defaults are pulled straight from
+    # `scheduling.queues.QUEUE_WORKERS` via `default_factory` rather than duplicated as
+    # literals — a prior version hardcoded these and drifted out of sync with PR #119's
+    # CPU-scaled bulk-queue defaults, silently pinning every bulk queue at 1 worker.
+    sync_queue_workers: int = Field(default_factory=lambda: QUEUE_WORKERS[JobQueue.SYNC], ge=1)
+    scan_queue_workers: int = Field(default_factory=lambda: QUEUE_WORKERS[JobQueue.SCAN], ge=1)
+    scan_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.SCAN_BULK], ge=1
+    )
+    translate_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TRANSLATE], ge=1
+    )
+    translate_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TRANSLATE_BULK], ge=1
+    )
+    acquire_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.ACQUIRE], ge=1
+    )
+    acquire_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.ACQUIRE_BULK], ge=1
+    )
+    timing_sync_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.TIMING_SYNC], ge=1
+    )
+    metadata_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.METADATA_BULK], ge=1
+    )
+    maintenance_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.MAINTENANCE], ge=1
+    )
+    upgrade_bulk_queue_workers: int = Field(
+        default_factory=lambda: QUEUE_WORKERS[JobQueue.UPGRADE_BULK], ge=1
+    )
 
     @property
     def translation_plugin_package_list(self) -> list[str]:
