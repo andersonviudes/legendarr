@@ -173,21 +173,22 @@ def _register_and_submit(
     return run_time
 
 
-def test_tasks_flags_extra_submissions_as_queued_when_the_queue_has_one_worker():
-    """The regression this exists to prevent: `scan_bulk` has exactly one worker
+def test_tasks_flags_extra_submissions_as_queued_when_the_queue_has_two_workers():
+    """The regression this exists to prevent: `scan_bulk` has exactly two workers
     (`scheduling/queues.py`), and the bulk fan-out submits one job per media file in a
     tight loop (`subtitle_discovery/jobs.py`'s `enqueue_full_subtitle_scan`) — only the
-    first should ever show as genuinely running.
+    first two should ever show as genuinely running at once.
     """
     scheduler = build_scheduler()
     registry = RunningTaskRegistry()
-    for job_id in ("scan_1", "scan_2", "scan_3"):
+    for job_id in ("scan_1", "scan_2", "scan_3", "scan_4"):
         _register_and_submit(scheduler, registry, job_id, JobQueue.SCAN_BULK)
 
     assert {task.job_id: task.queued for task in registry.tasks()} == {
         "scan_1": False,
-        "scan_2": True,
+        "scan_2": False,
         "scan_3": True,
+        "scan_4": True,
     }
 
 
@@ -245,7 +246,7 @@ def test_clear_resets_configured_worker_counts_back_to_the_queue_workers_default
 
 def test_tasks_promotes_the_next_queued_job_once_the_running_one_finishes():
     scheduler = build_scheduler()
-    registry = RunningTaskRegistry()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
     first_run = _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
     _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
     assert {task.job_id: task.queued for task in registry.tasks()} == {
