@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.6] - 2026-09-03
+
+### ✨ Features
+
+- Fix dead bulk queue worker defaults, cap concurrency at 4 (#120)
+- Sync a subtitle's timing against another subtitle instead of audio (ROADMAP 0.23.0) (#121)
+
 ## [0.22.5] - 2026-09-02
 
 ### ✨ Features
@@ -13,6 +20,10 @@ All notable changes to this project are documented here. The format follows
 - Prioritize upgrade searches by current subtitle score (#117)
 - Skip subtitle acquisition when the target language is already embedded (#118)
 - Scale bulk job queues with host CPU count, capped per-provider concurrency (#119)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.5 [skip ci]
 
 ## [0.22.4] - 2026-09-02
 
