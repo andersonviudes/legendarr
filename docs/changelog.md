@@ -3,12 +3,26 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.7] - 2026-09-04
+
+### ✨ Features
+
+- Reorganize stat cards into a clearer, more polished layout (#123)
+
+### 🐛 Bug Fixes
+
+- Lower bulk queue worker cap to 2, raise flat queues off 1 (#122)
+
 ## [0.22.6] - 2026-09-03
 
 ### ✨ Features
 
 - Fix dead bulk queue worker defaults, cap concurrency at 4 (#120)
 - Sync a subtitle's timing against another subtitle instead of audio (ROADMAP 0.23.0) (#121)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.6 [skip ci]
 
 ## [0.22.5] - 2026-09-02
 

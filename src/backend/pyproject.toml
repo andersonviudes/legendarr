@@ -1,6 +1,6 @@
 [project]
 name = "legendarr-backend"
-version = "0.22.6"
+version = "0.22.7"
 description = "Core domain services: Radarr/Sonarr sync, subtitle discovery and translation"
 requires-python = ">=3.12"
 dependencies = [

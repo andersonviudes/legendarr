@@ -1,6 +1,6 @@
 [project]
 name = "legendarr-bootstrap"
-version = "0.22.6"
+version = "0.22.7"
 description = "Runs legendarr-backend and legendarr-web together as a single process"
 requires-python = ">=3.12"
 dependencies = [
