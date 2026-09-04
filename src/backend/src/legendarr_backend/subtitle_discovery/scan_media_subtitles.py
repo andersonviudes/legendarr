@@ -158,6 +158,7 @@ def scan_subtitles_for_media_file(
                     track_index=track.track_index,
                     codec_name=track.codec_name,
                     language=track.language,
+                    display_language=track.display_language,
                     forced=track.forced,
                     hearing_impaired=track.hearing_impaired,
                     extracted=track.extracted,
@@ -167,6 +168,7 @@ def scan_subtitles_for_media_file(
         else:
             track_row.codec_name = track.codec_name
             track_row.language = track.language
+            track_row.display_language = track.display_language
             track_row.forced = track.forced
             track_row.hearing_impaired = track.hearing_impaired
             track_row.extracted = track.extracted

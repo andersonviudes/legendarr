@@ -71,6 +71,7 @@ def test_scan_video_subtitles_probes_but_does_not_extract_by_default(monkeypatch
             track_index=2,
             codec_name="subrip",
             language="en",
+            display_language="en",
             forced=False,
             hearing_impaired=False,
             extracted=False,
@@ -116,6 +117,7 @@ def test_scan_video_subtitles_extracts_embedded_text_based_tracks(monkeypatch, t
             track_index=2,
             codec_name="subrip",
             language="ja",
+            display_language="ja",
             forced=False,
             hearing_impaired=True,
             extracted=True,
@@ -196,6 +198,7 @@ def test_scan_video_subtitles_skips_embedded_track_matching_a_known_language(
             track_index=2,
             codec_name="subrip",
             language="en",
+            display_language="en",
             forced=False,
             hearing_impaired=False,
             extracted=False,
@@ -286,6 +289,31 @@ def test_scan_video_subtitles_keeps_multiple_embedded_tracks_in_the_same_languag
     assert {s.track_index for s in subtitles} == {2, 3}
 
 
+def test_scan_video_subtitles_keeps_region_tag_in_display_language(monkeypatch, tmp_path: Path):
+    """A generic "por" track and an already region-qualified "pt-BR" one both normalize to
+    the same matching language ("pt" — ffprobe can't tell them apart for matching, see
+    `language_codes`), but the container's raw tags carry different information, so the
+    UI's badge shouldn't collapse them to the same, indistinguishable "pt"/"pt"."""
+    video = tmp_path / "movie.mkv"
+    video.touch()
+    generic_track = EmbeddedSubtitleTrack(
+        index=2, codec_name="subrip", language="por", forced=False, hearing_impaired=False
+    )
+    region_track = EmbeddedSubtitleTrack(
+        index=3, codec_name="subrip", language="pt-BR", forced=False, hearing_impaired=False
+    )
+    monkeypatch.setattr(
+        scan_video_subtitles_module,
+        "probe_embedded_subtitle_tracks",
+        lambda *a, **k: [generic_track, region_track],
+    )
+
+    detected = scan_video_subtitles(video).detected_embedded_tracks
+
+    assert {track.language for track in detected} == {"pt"}
+    assert {track.display_language for track in detected} == {"pt", "pt-br"}
+
+
 def test_scan_video_subtitles_extracts_embedded_track_with_unmapped_language_code(
     monkeypatch, tmp_path: Path
 ):
@@ -369,6 +397,7 @@ def test_scan_video_subtitles_skips_embedded_track_outside_source_languages(
             track_index=2,
             codec_name="subrip",
             language="de",
+            display_language="de",
             forced=False,
             hearing_impaired=False,
             extracted=False,

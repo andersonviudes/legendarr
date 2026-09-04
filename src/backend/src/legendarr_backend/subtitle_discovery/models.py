@@ -70,6 +70,9 @@ class EmbeddedTrack(SQLModel, table=True):
     track_index: int
     codec_name: str
     language: str
+    # The tag actually shown in the UI, e.g. "pt-br" instead of `language`'s region-collapsed
+    # "pt" — see `language_codes.display_language_code`.
+    display_language: str
     forced: bool = Field(default=False)
     hearing_impaired: bool = Field(default=False)
     # Whether this track resulted in a `Subtitle` row — `False` for one skipped by the

@@ -356,7 +356,7 @@
     {% set _ = rows.append({"language": subtitle.language, "origin": subtitle.origin, "subtitle": subtitle, "extracted": false}) %}
     {% endfor %}
     {% for track in embedded_tracks %}
-    {% set _ = rows.append({"language": track.language, "origin": "embedded", "subtitle": track.subtitle, "extracted": track.extracted, "track_index": track.track_index}) %}
+    {% set _ = rows.append({"language": track.display_language, "origin": "embedded", "subtitle": track.subtitle, "extracted": track.extracted, "track_index": track.track_index}) %}
     {% endfor %}
     {% for row in rows %}
     {% if row.subtitle %}

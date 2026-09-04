@@ -456,6 +456,7 @@ def _acquisition_result(
         EmbeddedTrackRead(
             track_index=track.track_index,
             language=track.language,
+            display_language=track.display_language,
             extracted=track.extracted,
             subtitle=subtitle_read_by_track_index.get(track.track_index),
         )
