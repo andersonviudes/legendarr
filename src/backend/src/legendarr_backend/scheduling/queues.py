@@ -14,8 +14,8 @@ class JobQueue(StrEnum):
     # Single-item scans triggered by events (webhook, history poll) stay responsive:
     # they never queue behind the bulk full-scan backlog.
     SCAN = "scan"
-    # Interval fan-out walks the whole library one item at a time — slow on purpose,
-    # the pool sizes are the I/O throttle on network mounts.
+    # Interval fan-out walks the whole library — deliberately capped well below the
+    # CPU-scaled bulk queues, the pool size is the I/O throttle on network mounts.
     SCAN_BULK = "scan_bulk"
     # Translation calls a real provider API per subtitle line — its own queue so a slow
     # provider never starves (or queues behind) subtitle scans.
@@ -47,29 +47,31 @@ class JobQueue(StrEnum):
     UPGRADE_BULK = "upgrade_bulk"
 
 
-def cpu_scaled_workers(minimum: int = 1, maximum: int = 4) -> int:
+def cpu_scaled_workers(minimum: int = 1, maximum: int = 2) -> int:
     """The host's CPU count, capped at `maximum` (never below `minimum`) — the default
     sizing for a bulk queue's worker pool instead of a hardcoded constant, so a modest
     host doesn't over-commit while a beefier host still doesn't spawn more workers than
-    useful. Mirrors Bazarr's `concurrent_jobs` default (`app/config.py`:
-    `4 if os.cpu_count() >= 4 else os.cpu_count()`) exactly. Safe to use even for a
-    provider-facing queue: `provider_concurrency.limit_concurrency` caps how many of
-    those concurrent workers can hit the *same* provider at once, independent of how
-    many vCPUs the host has.
+    useful. Capped lower than Bazarr's `concurrent_jobs` default (`app/config.py`:
+    `4 if os.cpu_count() >= 4 else os.cpu_count()`) on purpose — `PROVIDER_MAX_CONCURRENCY`
+    already limits any one provider to 3 concurrent calls, so a couple of bulk-queue
+    workers is enough to keep several different files/providers in flight without a
+    modest host over-committing. Safe to use even for a provider-facing queue:
+    `provider_concurrency.limit_concurrency` caps how many of those concurrent workers
+    can hit the *same* provider at once, independent of how many vCPUs the host has.
     """
     return max(minimum, min(maximum, os.cpu_count() or 1))
 
 
 QUEUE_WORKERS: dict[JobQueue, int] = {
-    JobQueue.SYNC: 1,
+    JobQueue.SYNC: 2,
     JobQueue.SCAN: 2,
-    JobQueue.SCAN_BULK: 1,
+    JobQueue.SCAN_BULK: 2,
     JobQueue.TRANSLATE: 2,
     JobQueue.TRANSLATE_BULK: cpu_scaled_workers(),
     JobQueue.ACQUIRE: 2,
     JobQueue.ACQUIRE_BULK: cpu_scaled_workers(),
     JobQueue.TIMING_SYNC: cpu_scaled_workers(),
     JobQueue.METADATA_BULK: cpu_scaled_workers(),
-    JobQueue.MAINTENANCE: 1,
+    JobQueue.MAINTENANCE: 2,
     JobQueue.UPGRADE_BULK: cpu_scaled_workers(),
 }

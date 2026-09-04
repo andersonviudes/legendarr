@@ -168,7 +168,7 @@ def test_queue_worker_settings_round_trip_through_config_file(tmp_path):
     assert config.scan_bulk_queue_workers == 2
     assert config.translate_queue_workers == 3
     # Untouched fields still default to `scheduling.queues.QUEUE_WORKERS`'s values.
-    assert config.sync_queue_workers == 1
+    assert config.sync_queue_workers == 2
     assert config.acquire_queue_workers == 2
 
     stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
