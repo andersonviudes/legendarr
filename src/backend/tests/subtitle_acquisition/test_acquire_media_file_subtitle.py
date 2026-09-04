@@ -258,6 +258,7 @@ def test_acquire_subtitle_skips_when_every_target_language_is_already_embedded(
             track_index=2,
             codec_name="subrip",
             language="pt",
+            display_language="pt",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -286,6 +287,7 @@ def test_acquire_subtitle_searches_when_download_even_if_target_embedded_is_enab
             track_index=2,
             codec_name="subrip",
             language="pt",
+            display_language="pt",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -313,6 +315,7 @@ def test_acquire_subtitle_searches_when_only_some_target_languages_are_embedded(
             track_index=2,
             codec_name="subrip",
             language="pt",
+            display_language="pt",
             scanned_at=datetime.now(UTC),
         )
     )

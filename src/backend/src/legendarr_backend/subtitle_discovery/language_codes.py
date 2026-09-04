@@ -2,10 +2,13 @@
 (ISO 639-2, e.g. "eng", "por") can be compared against the codes the rest of the app
 uses (language profiles, external subtitle filenames, e.g. "en", "pt-BR").
 
-Region subtags (the "BR" in "pt-BR") aren't derivable from a container's language tag,
-so normalization intentionally collapses to the primary language only — an embedded
-generic "por" track is treated as matching a "pt-BR" profile target, since ffprobe has
-no way to tell Brazilian from European Portuguese.
+Region subtags (the "BR" in "pt-BR") aren't derivable from a *bare* ISO 639-2 tag, so
+`normalize_language_code` intentionally collapses to the primary language only for
+matching purposes — an embedded generic "por" track is treated as matching a "pt-BR"
+profile target, since ffprobe has no way to tell Brazilian from European Portuguese in
+that case. But a container can also carry an already region-qualified IETF tag (e.g.
+"pt-BR" itself, written by `mkvmerge --language`) — `display_language_code` keeps that
+subtag instead of collapsing it away, so the UI can still tell two such tracks apart.
 """
 
 # ISO 639-2 (bibliographic and terminological forms) -> ISO 639-1, for the languages a
@@ -82,3 +85,15 @@ def normalize_language_code(code: str) -> str:
     if len(primary) == 2:
         return primary
     return _ISO_639_2_TO_1.get(primary, primary)
+
+
+def display_language_code(code: str) -> str:
+    """Map a language tag to a UI-friendly form without discarding a region/script subtag
+    the way `normalize_language_code` does for matching. Only the primary subtag is looked
+    up in the ISO 639-2 table; any subtag after the first "-" is kept as-is.
+
+    "en" -> "en", "eng" -> "en", "pt-BR" -> "pt-br", "por" -> "pt".
+    """
+    primary, _, rest = code.strip().lower().partition("-")
+    primary = primary if len(primary) == 2 else _ISO_639_2_TO_1.get(primary, primary)
+    return f"{primary}-{rest}" if rest else primary

@@ -5,7 +5,10 @@ from enum import StrEnum
 from glob import escape as glob_escape
 from pathlib import Path
 
-from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
+from legendarr_backend.subtitle_discovery.language_codes import (
+    display_language_code,
+    normalize_language_code,
+)
 from legendarr_backend.subtitle_discovery.ocr_embedded_subtitles import ocr_pgs_track
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
@@ -44,6 +47,10 @@ class DetectedEmbeddedTrack:
     track_index: int
     codec_name: str
     language: str
+    # The tag actually shown in the UI, e.g. "pt-br" instead of `language`'s region-collapsed
+    # "pt" — see `language_codes.display_language_code`. Only differs from `language` when
+    # the container's own tag was already region-qualified.
+    display_language: str
     forced: bool
     hearing_impaired: bool
     extracted: bool
@@ -161,13 +168,14 @@ def _scan_embedded_subtitles(
     detected_tracks: list[DetectedEmbeddedTrack] = []
     for track in probe_embedded_subtitle_tracks(video_path, timeout_seconds=probe_timeout_seconds):
         language = normalize_language_code(track.language)
+        display_language = display_language_code(track.language)
         is_image_track = track.codec_name in IMAGE_BASED_SUBTITLE_CODECS
         forced = track.index == force_track_index
         if is_image_track and not ocr_embedded and not forced:
-            detected_tracks.append(_skipped_track(track, language))
+            detected_tracks.append(_skipped_track(track, language, display_language))
             continue
         if not is_image_track and not extract_embedded and not forced:
-            detected_tracks.append(_skipped_track(track, language))
+            detected_tracks.append(_skipped_track(track, language, display_language))
             continue
         if source_languages and language not in source_languages and not forced:
             logger.debug(
@@ -177,7 +185,7 @@ def _scan_embedded_subtitles(
                 video_path,
                 track.language,
             )
-            detected_tracks.append(_skipped_track(track, language))
+            detected_tracks.append(_skipped_track(track, language, display_language))
             continue
         if language in already_covered_languages and not forced:
             logger.debug(
@@ -187,7 +195,7 @@ def _scan_embedded_subtitles(
                 video_path,
                 track.language,
             )
-            detected_tracks.append(_skipped_track(track, language))
+            detected_tracks.append(_skipped_track(track, language, display_language))
             continue
         output_path = video_path.with_name(
             f"{video_path.stem}.embedded.{track.index}.{track.language}.srt"
@@ -211,7 +219,7 @@ def _scan_embedded_subtitles(
             # A missing `ffmpeg` binary, or an OCR pass that produced no usable text, makes
             # extraction a no-op instead of raising (see `extract_embedded_subtitle_track`/
             # `ocr_pgs_track`) — nothing was written, so there's nothing to report.
-            detected_tracks.append(_skipped_track(track, language))
+            detected_tracks.append(_skipped_track(track, language, display_language))
             continue
         subtitles.append(
             DiscoveredSubtitle(
@@ -228,6 +236,7 @@ def _scan_embedded_subtitles(
                 track_index=track.index,
                 codec_name=track.codec_name,
                 language=language,
+                display_language=display_language,
                 forced=track.forced,
                 hearing_impaired=track.hearing_impaired,
                 extracted=True,
@@ -236,11 +245,14 @@ def _scan_embedded_subtitles(
     return subtitles, detected_tracks
 
 
-def _skipped_track(track: EmbeddedSubtitleTrack, language: str) -> DetectedEmbeddedTrack:
+def _skipped_track(
+    track: EmbeddedSubtitleTrack, language: str, display_language: str
+) -> DetectedEmbeddedTrack:
     return DetectedEmbeddedTrack(
         track_index=track.index,
         codec_name=track.codec_name,
         language=language,
+        display_language=display_language,
         forced=track.forced,
         hearing_impaired=track.hearing_impaired,
         extracted=False,

@@ -1023,6 +1023,7 @@ def test_extract_embedded_track_creates_a_subtitle_and_flips_extracted(
                     track_index=2,
                     codec_name="subrip",
                     language="de",
+                    display_language="de",
                     extracted=False,
                     scanned_at=datetime.now(UTC),
                 )
@@ -1037,6 +1038,7 @@ def test_extract_embedded_track_creates_a_subtitle_and_flips_extracted(
     embedded = {t["track_index"]: t for t in body["embedded_tracks"]}
     assert embedded[2]["extracted"] is True
     assert embedded[2]["subtitle"]["origin"] == "embedded"
+    assert embedded[2]["display_language"] == "de"
     with get_session() as session:
         track = session.exec(
             select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file_id)

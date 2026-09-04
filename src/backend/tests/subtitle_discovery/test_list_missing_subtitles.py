@@ -309,6 +309,7 @@ def test_target_languages_missing_embedded_track_returns_uncovered_targets(
             track_index=2,
             codec_name="subrip",
             language="pt",
+            display_language="pt",
             scanned_at=datetime.now(UTC),
         )
     )
@@ -334,6 +335,7 @@ def test_target_languages_missing_embedded_track_returns_empty_when_all_covered(
             track_index=2,
             codec_name="subrip",
             language="pt",
+            display_language="pt",
             scanned_at=datetime.now(UTC),
         )
     )

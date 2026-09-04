@@ -72,6 +72,8 @@ class EmbeddedTrackRead(BaseModel):
 
     track_index: int
     language: str
+    # See `subtitle_discovery.models.EmbeddedTrack.display_language`.
+    display_language: str
     extracted: bool
     subtitle: SubtitleRead | None = None
 
