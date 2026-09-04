@@ -144,6 +144,7 @@
   "settings.backup.restore_confirm": "¿Restaurar desde este archivo? Esto sobrescribe la configuración actual — deberás reiniciar legendarr después.",
 
   "dashboard.subtitle": "Lo que legendarr está haciendo ahora mismo.",
+  "dashboard.overview_heading": "Resumen",
   "dashboard.stat.profiles": "Perfiles de idioma configurados",
   "dashboard.stat.next_sync": "Hasta la próxima sincronización de biblioteca",
   "dashboard.stat.sync_interval": "Intervalo de sincronización",
