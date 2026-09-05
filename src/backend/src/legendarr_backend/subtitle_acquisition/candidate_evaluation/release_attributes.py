@@ -13,7 +13,9 @@ rather than scored lower, so these two fields are deliberately absent from
 import re
 from dataclasses import dataclass
 
-_SEPARATOR_TRANSLATION = str.maketrans({".": " ", "_": " ", "(": " ", ")": " ", "-": " "})
+_SEPARATOR_TRANSLATION = str.maketrans(
+    {".": " ", "_": " ", "(": " ", ")": " ", "-": " ", "[": " ", "]": " "}
+)
 
 
 @dataclass(frozen=True)
@@ -57,14 +59,16 @@ _VOCABULARY_PATTERNS = {
 _EPISODE_PATTERN = re.compile(r"\bs(\d{1,2})e(\d{1,2})\b", re.IGNORECASE)
 
 # The release group isn't a vocabulary word — it's whatever trails the *last* matched
-# vocabulary token, once that trailing text starts with a dash. Anchoring on the last
-# vocabulary match's end (rather than a naive `rsplit("-", 1)`) is what keeps a source
-# token's own internal dash (`WEB-DL`) from being misread as a group separator.
-_GROUP_PATTERN = re.compile(r"^-([A-Za-z0-9]{2,15})\b")
+# vocabulary token, once that trailing text starts with a dash, tolerating a closing
+# `]`/`)`/whitespace first (a bracket-wrapped tag like `[h265]-GROUP`) before it.
+# Anchoring on the last vocabulary match's end (rather than a naive `rsplit("-", 1)`)
+# is what keeps a source token's own internal dash (`WEB-DL`) from being misread as a
+# group separator.
+_GROUP_PATTERN = re.compile(r"^[\]\)\s]*-([A-Za-z0-9]{2,15})\b")
 
 
 def normalize_release_text(value: str) -> str:
-    """Lowercased, with `.`/`_`/`(`/`)`/`-` collapsed to spaces and whitespace
+    """Lowercased, with `.`/`_`/`(`/`)`/`-`/`[`/`]` collapsed to spaces and whitespace
     collapsed — the shared text-cleanup both this module's vocabulary matching and
     `match_score.py`'s title-similarity step build on.
     """
