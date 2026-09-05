@@ -46,3 +46,4 @@
 - [legendarr conftest missing model import gotcha](legendarr-conftest-missing-model-import-gotcha.md) — subtitle_proxies.models wasn't imported; narrow-scoped test runs failed with NoReferencedTableError
 - [legendarr apply_patch silent function-split gotcha](legendarr-apply-patch-silent-split-gotcha.md) — a Read(offset,limit) stopping before EOF let an apply_patch append land mid-function, undetected until tests ran
 - [legendarr bulk queue worker default mismatch](legendarr-bulk-queue-worker-default-mismatch.md) — fixed in code by PR #120, but existing config.yaml keeps the old value forever (no migration)
+- [legendarr match score normalization fix](legendarr-match-score-normalization-fix.md) — spelling/bracket-group bugs fixed 2026-09-05; audio/Proper title-similarity noise deliberately deferred
