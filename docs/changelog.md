@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.8] - 2026-09-05
+
+### 🐛 Bug Fixes
+
+- Keep embedded tracks region tag for display (#124)
+- Stop spelling and bracket-tag variance from hiding real attribute matches (#125)
+
 ## [0.22.7] - 2026-09-04
 
 ### ✨ Features
@@ -12,6 +19,10 @@ All notable changes to this project are documented here. The format follows
 ### 🐛 Bug Fixes
 
 - Lower bulk queue worker cap to 2, raise flat queues off 1 (#122)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.7 [skip ci]
 
 ## [0.22.6] - 2026-09-03
 

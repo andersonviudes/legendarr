@@ -823,7 +823,7 @@ wheels = [
 
 [[package]]
 name = "legendarr"
-version = "0.22.7"
+version = "0.22.8"
 source = { virtual = "." }
 
 [package.dev-dependencies]
@@ -842,7 +842,7 @@ dev = [
 
 [[package]]
 name = "legendarr-backend"
-version = "0.22.7"
+version = "0.22.8"
 source = { editable = "src/backend" }
 dependencies = [
     { name = "alembic" },
@@ -889,7 +889,7 @@ requires-dist = [
 
 [[package]]
 name = "legendarr-bootstrap"
-version = "0.22.7"
+version = "0.22.8"
 source = { editable = "src/bootstrap" }
 dependencies = [
     { name = "fastapi" },
@@ -908,7 +908,7 @@ requires-dist = [
 
 [[package]]
 name = "legendarr-web"
-version = "0.22.7"
+version = "0.22.8"
 source = { editable = "src/web" }
 dependencies = [
     { name = "fastapi" },
