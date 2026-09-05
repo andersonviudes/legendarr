@@ -82,3 +82,23 @@ def test_extract_release_attributes_is_case_insensitive_for_season_episode():
 
     assert attributes.season == 1
     assert attributes.episode == 2
+
+
+def test_extract_release_attributes_finds_the_group_after_a_bracket_closed_vocabulary_tag():
+    attributes = extract_release_attributes("Movie.Name.2024.[1080p.WEB-DL.h265]-GROUP")
+
+    assert attributes.release_group == "GROUP"
+
+
+def test_extract_release_attributes_finds_the_group_in_a_radarr_style_bracket_filename():
+    # Real Radarr/Sonarr renaming shape: quality tags in brackets, group trailing the
+    # last one's closing `]` rather than directly after a vocabulary token.
+    attributes = extract_release_attributes(
+        "Toy Story 5 (2026) - [WEBDL-2160p Proper][EAC3 Atmos 5.1][h265]-NorTekst"
+    )
+
+    assert attributes.release_group == "NorTekst"
+
+
+def test_normalize_release_text_collapses_brackets():
+    assert normalize_release_text("Movie.Name.[2024]-WEBDL") == "movie name 2024 webdl"

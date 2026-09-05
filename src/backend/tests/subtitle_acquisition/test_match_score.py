@@ -154,3 +154,57 @@ def test_hearing_impaired_weight_still_keeps_attributes_alone_below_default_cuto
     score = score_candidate(candidate, reference, hearing_impaired_preference=True)
 
     assert score < DEFAULT_CUTOFF
+
+
+def test_evaluate_candidate_matches_source_and_codec_spelling_variants():
+    # "WEBDL" (no dash) and "x264"/"h.264" are the same source/codec as "WEB-DL" and
+    # "h264" — a spelling difference must not read as an attribute mismatch.
+    reference = "Movie.Name.2024.WEBDL.x264"
+    candidate = _result("Movie.Name.2024.WEB-DL.h.264")
+
+    evaluation = evaluate_candidate(candidate, reference)
+
+    assert evaluation.attribute_matches["source"] is True
+    assert evaluation.attribute_matches["codec"] is True
+
+
+def test_evaluate_candidate_treats_x264_and_h264_as_the_same_codec():
+    reference = "Movie.Name.2024.1080p.WEB-DL.h264"
+    candidate = _result("Movie.Name.2024.1080p.WEB-DL.x264")
+
+    assert evaluate_candidate(candidate, reference).attribute_matches["codec"] is True
+
+
+def test_evaluate_candidate_treats_x265_hevc_and_h265_as_the_same_codec():
+    reference = "Movie.Name.2024.1080p.WEB-DL.h265"
+    x265 = evaluate_candidate(_result("Movie.Name.2024.1080p.WEB-DL.x265"), reference)
+    hevc = evaluate_candidate(_result("Movie.Name.2024.1080p.WEB-DL.HEVC"), reference)
+
+    assert x265.attribute_matches["codec"] is True
+    assert hevc.attribute_matches["codec"] is True
+
+
+def test_evaluate_candidate_keeps_the_h264_and_h265_codec_families_distinct():
+    reference = "Movie.Name.2024.1080p.WEB-DL.x264"
+    candidate = _result("Movie.Name.2024.1080p.WEB-DL.x265")
+
+    assert evaluate_candidate(candidate, reference).attribute_matches["codec"] is False
+
+
+def test_evaluate_candidate_keeps_avc_distinct_from_the_h264_codec_family():
+    reference = "Movie.Name.2024.1080p.WEB-DL.x264"
+    candidate = _result("Movie.Name.2024.1080p.WEB-DL.AVC")
+
+    assert evaluate_candidate(candidate, reference).attribute_matches["codec"] is False
+
+
+def test_score_candidate_ranks_a_real_same_quality_release_above_a_lower_resolution_one():
+    # Regression test for the reported ranking bug: a Radarr-style bracket-tagged
+    # reference filename used to lose its source/codec/group attribute bonuses
+    # entirely (spelling variants + a release group the old `_GROUP_PATTERN` couldn't
+    # see past the bracket), leaving the ranking to noisy leftover-text similarity.
+    reference = "Toy Story 5 (2026) - [WEBDL-2160p Proper][EAC3 Atmos 5.1][h265]-NorTekst"
+    same_quality = _result("Toy.Story.5.2026.2160p.WEB-DL.h265-NorTekst")
+    lower_resolution = _result("Toy.Story.5.2026.1080p.AMZN.WEB-DL.H.264-Kydi")
+
+    assert score_candidate(same_quality, reference) > score_candidate(lower_resolution, reference)

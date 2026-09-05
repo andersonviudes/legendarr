@@ -13,6 +13,7 @@ identity deliberately isn't here at all — see `episode_identity.py`'s module d
 for why that's a hard gate instead of a weight.
 """
 
+import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 
@@ -47,6 +48,27 @@ ATTRIBUTE_WEIGHTS = {
 # preference, not something `extract_release_attributes` finds in the reference
 # filename — the generic `getattr(reference_attributes, field)` loop below doesn't fit it.
 HEARING_IMPAIRED_WEIGHT = 10
+
+# `release_attributes._VOCABULARY_PATTERNS` deliberately makes some separators
+# optional (a dash in `blu-?ray`/`web-?dl`, a dot in `h\.?264`/`h\.?265`, an
+# apostrophe/dot/space in the edition patterns), so two spellings the same regex
+# alternative matches (`"WEBDL"` vs. `"WEB-DL"`) must count as the same attribute here
+# — but `ReleaseAttributes` itself keeps the literal detected text untouched (used for
+# display, e.g. the manual-search "Resource" preview in `describe_search_resource.py`),
+# so this normalization is applied only at comparison time, not stored.
+_SEPARATOR_CHARS = re.compile(r"[.\-'\s]")
+
+# Scene releases also spell the same codec two ways — the encoder name (`x264`/`x265`)
+# and the standard name (`h264`/`h265`/`hevc`) — used interchangeably, same
+# comparison-only treatment as the separator-stripping above.
+_CODEC_FAMILIES = {"x264": "h264", "hevc": "h265", "x265": "h265"}
+
+
+def _normalized_attribute_value(field: str, value: str) -> str:
+    value = _SEPARATOR_CHARS.sub("", value)
+    if field == "codec":
+        value = _CODEC_FAMILIES.get(value, value)
+    return value
 
 
 @dataclass(frozen=True)
@@ -143,7 +165,11 @@ def evaluate_candidate(
         if reference_value is None:
             continue
         max_score += weight
-        matched = reference_value == getattr(candidate_attributes, field)
+        candidate_value = getattr(candidate_attributes, field)
+        matched = candidate_value is not None and (
+            _normalized_attribute_value(field, reference_value)
+            == _normalized_attribute_value(field, candidate_value)
+        )
         attribute_matches[field] = matched
         if matched:
             raw_score += weight
