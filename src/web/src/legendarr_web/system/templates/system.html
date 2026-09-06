@@ -1,11 +1,13 @@
 {% extends "base.html" %}
-{% block title %}legendarr · {{ t("nav.system") }}{% endblock %}
+{% block title %}legendarr · {{ t("nav.system.logs") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("server") }} {{ t("nav.system") }}</h1>
+<hgroup>
+  <h1>{{ icon("scroll-text") }} {{ t("nav.system.logs") }}</h1>
+  <p>{{ t("system.logs.subtitle") }}</p>
+</hgroup>
 
 <section>
   <div class="log-toolbar">
-    <h2>{{ icon("scroll-text") }} {{ t("nav.system.logs") }}</h2>
     <label for="log-level-filter">
       {{ t("system.logs.min_level_label") }}
       <select id="log-level-filter" name="level">

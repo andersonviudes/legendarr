@@ -2,7 +2,10 @@
 {% from "macros.html" import empty_state, profile_card %}
 {% block title %}legendarr · {{ t("nav.settings.language_profiles") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("languages") }} {{ t("nav.settings.language_profiles") }}</h1>
+<hgroup>
+  <h1>{{ icon("languages") }} {{ t("nav.settings.language_profiles") }}</h1>
+  <p>{{ t("language_profiles.subtitle") }}</p>
+</hgroup>
 
 {% if not profiles %}
 {{ empty_state(t("language_profiles.empty")) }}

@@ -109,12 +109,14 @@
   "providers.tab_subtitle": "Subtítulo",
   "providers.tab_translation": "Traducción",
 
+  "arr_services.subtitle": "Tus conexiones con Radarr y Sonarr.",
   "arr_services.webhook_label": "Webhook:",
   "arr_services.webhook_hint": "configura tu URL de Legendarr en Configuración general para ver el enlace completo.",
   "arr_services.empty_state": "Aún no hay ningún servidor {label} configurado.",
   "arr_services.add_server": "Agregar servidor {label}",
 
   "settings.general.title": "General",
+  "settings.general.subtitle": "Preferencias de la instancia, zona horaria e inicio de sesión.",
   "settings.general.locale_label": "Idioma de visualización",
   "settings.general.locale_hint": "Idioma usado en todo el panel de legendarr — no afecta los idiomas del contenido de los subtítulos, que se configuran por perfil de idioma.",
   "settings.general.timezone_label": "Zona horaria",
@@ -209,6 +211,7 @@
   "media_library.match_edition": "Edición",
 
   "language_profiles.empty": "Aún no hay ningún perfil configurado.",
+  "language_profiles.subtitle": "Idiomas de origen y destino usados para buscar y descargar subtítulos.",
   "language_profiles.add_title": "Agregar perfil de idioma",
   "language_profiles.edit_title": "Editar perfil de idioma",
   "language_profiles.source_languages": "Idiomas de origen",
@@ -232,6 +235,7 @@
   "language_profiles.movie_upgrade_threshold": "Puntaje de actualización de películas",
   "language_profiles.series_upgrade_threshold": "Puntaje de actualización de series",
   "language_profiles.upgrade_threshold_hint": "Puntaje máximo del subtítulo actual (0–100) por debajo del cual el trabajo de actualización buscará una versión mejor. En este valor o por encima, el subtítulo actual se deja como está.",
+  "language_profiles.form_subtitle": "Idiomas, reglas de coincidencia y umbrales de puntaje de este perfil.",
 
   "arr_services.edit_server_title": "Editar servidor {type}",
   "arr_services.add_server_title": "Agregar servidor {type}",
@@ -243,8 +247,10 @@
   "arr_services.path_mapping_hint_suffix": "pero legendarr ve los mismos archivos bajo",
   "arr_services.remote_path_prefix_label": "Prefijo de ruta remota",
   "arr_services.local_path_prefix_label": "Prefijo de ruta local",
+  "arr_services.form_subtitle": "Conexión, webhook y mapeo de rutas de este servidor.",
 
   "subtitle_acquisition.providers_hint": "Habilita los proveedores de subtítulos que quieres que legendarr use, y configura las credenciales donde un proveedor las necesite. Buscar y descargar subtítulos desde estos proveedores todavía no está implementado — esto solo registra cuáles están disponibles y confirma que son alcanzables.",
+  "subtitle_acquisition.form_subtitle": "Credenciales y opciones de búsqueda de este proveedor de subtítulos.",
   "subtitle_acquisition.requires_credentials": "Requiere credenciales",
   "subtitle_acquisition.no_credentials_needed": "No necesita credenciales",
   "subtitle_acquisition.run_test_to_enable": "Ejecuta \"Probar\" para habilitar",
@@ -269,6 +275,7 @@
   "subtitle_acquisition.description.betaseries": "Sitio francés de seguimiento de series con una API de búsqueda de subtítulos.",
 
   "subtitle_translation.providers_hint": "Habilita los motores de traducción que quieres que legendarr use, y configura las credenciales donde un motor las necesite. Los trabajos de traducción prueban primero el proveedor predeterminado, y si falla recurren en orden a cada otro motor habilitado y con credenciales. `echo` (devuelve el texto de origen sin cambios) siempre está disponible también, para desarrollo.",
+  "subtitle_translation.form_subtitle": "Credenciales y configuración de endpoint de este motor de traducción.",
   "subtitle_translation.no_credentials_hint": "{label} no necesita credenciales — \"Probar\" solo verifica que el motor sea alcanzable.",
   "subtitle_translation.endpoint_label": "URL del endpoint",
   "subtitle_translation.model_label": "Modelo",
@@ -285,17 +292,20 @@
   "subtitle_proxies.add": "Agregar proxy",
   "subtitle_proxies.add_title": "Agregar proxy",
   "subtitle_proxies.edit_title": "Editar proxy",
+  "subtitle_proxies.form_subtitle": "Detalles de conexión de este proxy.",
 
   "media_metadata.hint": "Habilita las fuentes de metadatos que legendarr debe usar para obtener información sobre series y películas nuevas, y configura la clave de API que cada una necesita. Se ejecuta automáticamente la próxima vez que una sincronización de biblioteca encuentre una serie o película completamente nueva.",
   "media_metadata.requires_api_key": "Requiere una clave de API",
   "media_metadata.add_api_key_to_enable": "Agrega una clave de API para habilitar",
   "media_metadata.refetch_all": "Volver a buscar todo",
   "media_metadata.refetching": "Volviendo a buscar metadatos…",
+  "media_metadata.form_subtitle": "Clave de API de esta fuente de metadatos.",
 
   "media_servers.hint": "Habilita los servidores multimedia que legendarr debe notificar después de escribir un subtítulo, y configura la dirección y el token que cada uno necesita. Se ejecuta automáticamente después de que una adquisición o traducción escribe un subtítulo, actualizando solo ese elemento donde el servidor lo admita.",
   "media_servers.add_address_token_to_enable": "Agrega una dirección y un token para habilitar",
   "media_servers.token_label": "Token",
   "media_servers.keep_current_token_placeholder": "Dejar en blanco para mantener el token actual",
+  "media_servers.form_subtitle": "Dirección y token de este servidor multimedia.",
 
   "history.subtitle": "Intentos de traducción y adquisición, del más reciente al más antiguo.",
   "history.empty": "Aún no hay actividad de traducción ni adquisición — el historial aparecerá aquí una vez que se traduzca o adquiera un subtítulo.",
@@ -328,6 +338,7 @@
   "settings.auth.api_key_empty": "Se genera automáticamente la primera vez que se habilita y guarda el inicio de sesión.",
 
   "settings.tasks.hint": "Los cambios se aplican al planificador en ejecución de inmediato — no se necesita reiniciar. Guardar reinicia la cuenta regresiva del intervalo de cada tarea.",
+  "settings.tasks.subtitle": "Programación de la sincronización, el escaneo y el sondeo de historial de la biblioteca.",
   "settings.tasks.sync_heading": "Sincronización de biblioteca",
   "settings.tasks.sync_hint": "Obtiene las listas de películas y series de cada conexión Radarr/Sonarr habilitada.",
   "settings.tasks.interval_label": "Intervalo (minutos)",
@@ -341,12 +352,14 @@
   "settings.tasks.history_poll_hint": "Consulta el historial de cada conexión en busca de importaciones recientes y vuelve a escanear solo esos elementos — detecta archivos nuevos rápidamente cuando el webhook de Arr no está configurado.",
 
   "system.logs.min_level_label": "Nivel mínimo",
+  "system.logs.subtitle": "Salida de registro en vivo de la instancia en ejecución.",
   "system.logs.level_debug": "Depuración",
   "system.logs.level_info": "Info",
   "system.logs.level_warning": "Advertencia",
   "system.logs.level_error": "Error",
   "system.logs.empty": "Aún no hay líneas de registro.",
   "system.tasks.empty": "No hay tareas en ejecución en este momento.",
+  "system.tasks.subtitle": "Tareas en ejecución y la cola del planificador detrás de ellas.",
   "system.tasks.queued_badge": "En cola",
   "system.tasks.scheduled_jobs_title": "Trabajos programados",
   "system.tasks.scheduled_jobs_empty": "No hay trabajos programados.",
@@ -361,6 +374,7 @@
   "system.tasks.phase_searching_provider": "Buscando {language} vía {provider} ({current}/{total})",
   "system.dir_browser.no_subdirectories": "Sin subdirectorios.",
   "system.sessions.revoke_others": "Revocar otras sesiones",
+  "system.sessions.subtitle": "Dispositivos actualmente conectados a esta instancia.",
   "system.sessions.empty": "No hay sesiones activas.",
   "system.sessions.device": "Dispositivo",
   "system.sessions.ip_address": "Dirección IP",

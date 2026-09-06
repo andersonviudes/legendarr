@@ -2,8 +2,10 @@
 {% from "macros.html" import empty_state, service_status %}
 {% block title %}legendarr · {{ t("nav.settings.proxies") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("shield") }} {{ t("nav.settings.proxies") }}</h1>
-<p class="field-hint">{{ t("subtitle_proxies.hint") }}</p>
+<hgroup>
+  <h1>{{ icon("shield") }} {{ t("nav.settings.proxies") }}</h1>
+  <p>{{ t("subtitle_proxies.hint") }}</p>
+</hgroup>
 
 {% if not proxies %}
 {{ empty_state(t("subtitle_proxies.empty")) }}

@@ -23,7 +23,10 @@
   </button>
 </div>
 
-<h1>{{ icon("settings") }} {{ t("arr_services.edit_server_title", type=service_type|capitalize) if service else t("arr_services.add_server_title", type=service_type|capitalize) }}</h1>
+<hgroup>
+  <h1>{{ icon("settings") }} {{ t("arr_services.edit_server_title", type=service_type|capitalize) if service else t("arr_services.add_server_title", type=service_type|capitalize) }}</h1>
+  <p>{{ t("arr_services.form_subtitle") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

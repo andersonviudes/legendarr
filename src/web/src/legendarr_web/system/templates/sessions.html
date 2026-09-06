@@ -13,7 +13,10 @@
 </div>
 {% endif %}
 
-<h1>{{ icon("monitor") }} {{ t("nav.system.sessions") }}</h1>
+<hgroup>
+  <h1>{{ icon("monitor") }} {{ t("nav.system.sessions") }}</h1>
+  <p>{{ t("system.sessions.subtitle") }}</p>
+</hgroup>
 
 {% if not sessions %}
 {{ empty_state(t("system.sessions.empty")) }}

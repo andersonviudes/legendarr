@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}legendarr · {{ t("nav.settings.providers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("captions") }} {{ t("nav.settings.providers") }}</h1>
+<hgroup>
+  <h1>{{ icon("captions") }} {{ t("nav.settings.providers") }}</h1>
+  <p>{{ t("subtitle_translation.providers_hint") }}</p>
+</hgroup>
 {% include "_provider_tabs.html" %}
-<p class="field-hint">{{ t("subtitle_translation.providers_hint") }}</p>
 
 {% include "_provider_grid.html" %}
 {% endblock %}

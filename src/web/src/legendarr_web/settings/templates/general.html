@@ -9,7 +9,10 @@
   </button>
 </div>
 
-<h1>{{ icon("globe") }} {{ t("settings.general.title") }}</h1>
+<hgroup>
+  <h1>{{ icon("globe") }} {{ t("settings.general.title") }}</h1>
+  <p>{{ t("settings.general.subtitle") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

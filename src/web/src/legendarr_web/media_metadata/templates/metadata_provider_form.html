@@ -23,7 +23,10 @@
   </button>
 </div>
 
-<h1>{{ icon("database") }} {{ provider.label }}</h1>
+<hgroup>
+  <h1>{{ icon("database") }} {{ provider.label }}</h1>
+  <p>{{ t("media_metadata.form_subtitle") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

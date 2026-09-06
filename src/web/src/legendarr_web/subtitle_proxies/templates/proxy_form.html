@@ -23,7 +23,10 @@
   </button>
 </div>
 
-<h1>{{ icon("shield") }} {{ t("subtitle_proxies.edit_title") if proxy else t("subtitle_proxies.add_title") }}</h1>
+<hgroup>
+  <h1>{{ icon("shield") }} {{ t("subtitle_proxies.edit_title") if proxy else t("subtitle_proxies.add_title") }}</h1>
+  <p>{{ t("subtitle_proxies.form_subtitle") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

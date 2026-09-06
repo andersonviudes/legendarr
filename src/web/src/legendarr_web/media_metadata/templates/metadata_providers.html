@@ -2,8 +2,10 @@
 {% from "macros.html" import service_status %}
 {% block title %}legendarr · {{ t("nav.settings.metadata_source") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("database") }} {{ t("nav.settings.metadata_source") }}</h1>
-<p class="field-hint">{{ t("media_metadata.hint") }}</p>
+<hgroup>
+  <h1>{{ icon("database") }} {{ t("nav.settings.metadata_source") }}</h1>
+  <p>{{ t("media_metadata.hint") }}</p>
+</hgroup>
 
 <div class="page-toolbar">
   <button

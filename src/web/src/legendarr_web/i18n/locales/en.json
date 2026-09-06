@@ -109,12 +109,14 @@
   "providers.tab_subtitle": "Subtitle",
   "providers.tab_translation": "Translation",
 
+  "arr_services.subtitle": "Your Radarr and Sonarr connections.",
   "arr_services.webhook_label": "Webhook:",
   "arr_services.webhook_hint": "set your Legendarr URL in General settings to see the full link.",
   "arr_services.empty_state": "No {label} server configured yet.",
   "arr_services.add_server": "Add {label} Server",
 
   "settings.general.title": "General",
+  "settings.general.subtitle": "Instance-wide preferences, timezone, and login.",
   "settings.general.locale_label": "Display language",
   "settings.general.locale_hint": "Language used across the legendarr dashboard — has no effect on subtitle content languages, which are set per language profile.",
   "settings.general.timezone_label": "Timezone",
@@ -209,6 +211,7 @@
   "media_library.match_edition": "Edition",
 
   "language_profiles.empty": "No profile configured yet.",
+  "language_profiles.subtitle": "Source and target languages used to match and download subtitles.",
   "language_profiles.add_title": "Add Language Profile",
   "language_profiles.edit_title": "Edit Language Profile",
   "language_profiles.source_languages": "Source Languages",
@@ -232,6 +235,7 @@
   "language_profiles.movie_upgrade_threshold": "Movie Upgrade Threshold",
   "language_profiles.series_upgrade_threshold": "Series Upgrade Threshold",
   "language_profiles.upgrade_threshold_hint": "Maximum current subtitle score (0–100) below which the upgrade job will search for a better release. At or above this, the current subtitle is left alone.",
+  "language_profiles.form_subtitle": "Languages, matching rules, and score thresholds for this profile.",
 
   "arr_services.edit_server_title": "Edit {type} Server",
   "arr_services.add_server_title": "Add {type} Server",
@@ -243,8 +247,10 @@
   "arr_services.path_mapping_hint_suffix": "but legendarr sees the same files under",
   "arr_services.remote_path_prefix_label": "Remote Path Prefix",
   "arr_services.local_path_prefix_label": "Local Path Prefix",
+  "arr_services.form_subtitle": "Connection, webhook, and path mapping for this server.",
 
   "subtitle_acquisition.providers_hint": "Enable the subtitle providers you want legendarr to use, and configure credentials where a provider needs them. Searching and downloading subtitles from these providers isn't built yet — this only registers which ones are available and confirms they're reachable.",
+  "subtitle_acquisition.form_subtitle": "Credentials and search options for this subtitle provider.",
   "subtitle_acquisition.requires_credentials": "Requires credentials",
   "subtitle_acquisition.no_credentials_needed": "No credentials needed",
   "subtitle_acquisition.run_test_to_enable": "Run \"Test connection\" to enable",
@@ -269,6 +275,7 @@
   "subtitle_acquisition.description.betaseries": "French TV show tracking site with a subtitle search API.",
 
   "subtitle_translation.providers_hint": "Enable the translation engines you want legendarr to use, and configure credentials where an engine needs them. Translation jobs try the default provider first, falling back through every other enabled, credentialed engine in order if it fails. `echo` (returns the source text unchanged) is always available too, for development.",
+  "subtitle_translation.form_subtitle": "Credentials and endpoint settings for this translation engine.",
   "subtitle_translation.no_credentials_hint": "{label} doesn't need any credentials — \"Test connection\" only checks the engine is reachable.",
   "subtitle_translation.endpoint_label": "Endpoint URL",
   "subtitle_translation.model_label": "Model",
@@ -285,17 +292,20 @@
   "subtitle_proxies.add": "Add Proxy",
   "subtitle_proxies.add_title": "Add Proxy",
   "subtitle_proxies.edit_title": "Edit Proxy",
+  "subtitle_proxies.form_subtitle": "Connection details for this proxy.",
 
   "media_metadata.hint": "Enable the metadata sources legendarr should use to fetch info about new series and movies, and set the API key each one needs. Runs automatically the next time a library sync finds a brand-new series or movie.",
   "media_metadata.requires_api_key": "Requires an API key",
   "media_metadata.add_api_key_to_enable": "Add an API key to enable",
   "media_metadata.refetch_all": "Refetch All",
   "media_metadata.refetching": "Refetching metadata…",
+  "media_metadata.form_subtitle": "API key for this metadata source.",
 
   "media_servers.hint": "Enable the media servers legendarr should notify after a subtitle is written, and set the address and token each one needs. Runs automatically after an acquisition or translation writes a subtitle, refreshing just that item where the server supports it.",
   "media_servers.add_address_token_to_enable": "Add an address and token to enable",
   "media_servers.token_label": "Token",
   "media_servers.keep_current_token_placeholder": "Leave blank to keep the current token",
+  "media_servers.form_subtitle": "Address and token for this media server.",
 
   "history.subtitle": "Translation and acquisition attempts, most recent first.",
   "history.empty": "No translation or acquisition activity yet — history will appear here once a subtitle is translated or acquired.",
@@ -328,6 +338,7 @@
   "settings.auth.api_key_empty": "Generated automatically the first time login is enabled and saved.",
 
   "settings.tasks.hint": "Changes apply to the running scheduler immediately — no restart needed. Saving restarts each task's interval countdown.",
+  "settings.tasks.subtitle": "Scheduling for library sync, scan, and history poll.",
   "settings.tasks.sync_heading": "Library sync",
   "settings.tasks.sync_hint": "Pulls the movie and series lists from every enabled Radarr/Sonarr connection.",
   "settings.tasks.interval_label": "Interval (minutes)",
@@ -341,12 +352,14 @@
   "settings.tasks.history_poll_hint": "Asks each connection's history for recent imports and rescans just those items — catches new files quickly when the Arr webhook isn't configured.",
 
   "system.logs.min_level_label": "Minimum level",
+  "system.logs.subtitle": "Live log output from the running instance.",
   "system.logs.level_debug": "Debug",
   "system.logs.level_info": "Info",
   "system.logs.level_warning": "Warning",
   "system.logs.level_error": "Error",
   "system.logs.empty": "No log lines yet.",
   "system.tasks.empty": "No tasks running right now.",
+  "system.tasks.subtitle": "Running jobs and the scheduler's queue behind them.",
   "system.tasks.queued_badge": "Queued",
   "system.tasks.scheduled_jobs_title": "Scheduled Jobs",
   "system.tasks.scheduled_jobs_empty": "No scheduled jobs.",
@@ -361,6 +374,7 @@
   "system.tasks.phase_searching_provider": "Searching {language} via {provider} ({current}/{total})",
   "system.dir_browser.no_subdirectories": "No subdirectories.",
   "system.sessions.revoke_others": "Revoke Other Sessions",
+  "system.sessions.subtitle": "Devices currently logged in to this instance.",
   "system.sessions.empty": "No active sessions.",
   "system.sessions.device": "Device",
   "system.sessions.ip_address": "IP Address",
