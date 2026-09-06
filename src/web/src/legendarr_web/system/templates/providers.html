@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}legendarr · {{ t("nav.system.providers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("plug-zap") }} {{ t("nav.system.providers") }}</h1>
-<p class="field-hint">{{ t("system.providers.circuit_hint") }}</p>
+<hgroup>
+  <h1>{{ icon("plug-zap") }} {{ t("nav.system.providers") }}</h1>
+  <p>{{ t("system.providers.circuit_hint") }}</p>
+</hgroup>
 
 <section>
   <h2>{{ t("system.providers.translation_heading") }}</h2>

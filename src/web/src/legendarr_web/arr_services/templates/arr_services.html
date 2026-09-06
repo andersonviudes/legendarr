@@ -2,7 +2,10 @@
 {% from "macros.html" import service_section %}
 {% block title %}legendarr · {{ t("nav.settings.arr_services") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("server") }} {{ t("nav.settings.arr_services") }}</h1>
+<hgroup>
+  <h1>{{ icon("server") }} {{ t("nav.settings.arr_services") }}</h1>
+  <p>{{ t("arr_services.subtitle") }}</p>
+</hgroup>
 
 {{ service_section("Radarr", "clapperboard", "radarr", radarr_services, public_url) }}
 {{ service_section("Sonarr", "tv", "sonarr", sonarr_services, public_url) }}

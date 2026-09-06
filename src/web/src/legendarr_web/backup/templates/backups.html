@@ -17,8 +17,10 @@
   </button>
 </div>
 
-<h1>{{ icon("hard-drive") }} {{ t("settings.backup.title") }}</h1>
-<p class="field-hint">{{ t("settings.backup.hint") }}</p>
+<hgroup>
+  <h1>{{ icon("hard-drive") }} {{ t("settings.backup.title") }}</h1>
+  <p>{{ t("settings.backup.hint") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

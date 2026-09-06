@@ -2,8 +2,10 @@
 {% from "macros.html" import service_status %}
 {% block title %}legendarr · {{ t("nav.settings.media_servers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("tv") }} {{ t("nav.settings.media_servers") }}</h1>
-<p class="field-hint">{{ t("media_servers.hint") }}</p>
+<hgroup>
+  <h1>{{ icon("tv") }} {{ t("nav.settings.media_servers") }}</h1>
+  <p>{{ t("media_servers.hint") }}</p>
+</hgroup>
 
 <div class="service-grid">
   {% for server in servers %}

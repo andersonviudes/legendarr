@@ -2,9 +2,11 @@
 {% from "macros.html" import service_status %}
 {% block title %}legendarr · {{ t("nav.settings.providers") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("captions") }} {{ t("nav.settings.providers") }}</h1>
+<hgroup>
+  <h1>{{ icon("captions") }} {{ t("nav.settings.providers") }}</h1>
+  <p>{{ t("subtitle_acquisition.providers_hint") }}</p>
+</hgroup>
 {% include "_provider_tabs.html" %}
-<p class="field-hint">{{ t("subtitle_acquisition.providers_hint") }}</p>
 
 <div class="service-grid">
   {% for provider in providers %}

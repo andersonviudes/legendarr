@@ -9,7 +9,10 @@
   </button>
 </div>
 
-<h1>{{ icon("languages") }} {{ t("language_profiles.edit_title") if profile else t("language_profiles.add_title") }}</h1>
+<hgroup>
+  <h1>{{ icon("languages") }} {{ t("language_profiles.edit_title") if profile else t("language_profiles.add_title") }}</h1>
+  <p>{{ t("language_profiles.form_subtitle") }}</p>
+</hgroup>
 
 {% if error %}
 <div hidden data-toast-message="{{ error }}" data-toast-type="error"></div>

@@ -2,7 +2,10 @@
 {% from "macros.html" import empty_state %}
 {% block title %}legendarr · {{ t("nav.system.tasks") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("activity") }} {{ t("nav.system.tasks") }}</h1>
+<hgroup>
+  <h1>{{ icon("activity") }} {{ t("nav.system.tasks") }}</h1>
+  <p>{{ t("system.tasks.subtitle") }}</p>
+</hgroup>
 
 <section>
   <div

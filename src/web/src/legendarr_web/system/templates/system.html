@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}legendarr · {{ t("nav.system") }}{% endblock %}
 {% block content %}
-<h1>{{ icon("server") }} {{ t("nav.system") }}</h1>
+<hgroup>
+  <h1>{{ icon("server") }} {{ t("nav.system") }}</h1>
+  <p>{{ t("system.logs.subtitle") }}</p>
+</hgroup>
 
 <section>
   <div class="log-toolbar">
