@@ -14,6 +14,7 @@ from legendarr_backend.media_library.scan_media_files import scan_media_item
 from legendarr_backend.media_library.sync_media_library import sync_media_library
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import is_task_active
 from legendarr_backend.scheduling.scheduler import register_job
 
 logger = logging.getLogger(__name__)
@@ -217,8 +218,20 @@ def enqueue_media_scan(
     unlike `on_cascade`, silently skipped rather than warned about when not wired,
     since it's a best-effort follow-up (a subtitle acquired for an episode before it
     was downloaded), not a step the core pipeline depends on.
+
+    Skips entirely when `job_id` is already dispatched to an executor (`is_task_active`)
+    — see `subtitle_acquisition.jobs.enqueue_acquisition`'s docstring for why a running
+    job needs this in addition to `replace_existing`.
     """
     job_id = f"media_scan:{media_kind}:{media_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "media scan skipped for %s %d: job %s already in flight",
+            media_kind,
+            media_id,
+            job_id,
+        )
+        return
     pending = scheduler.get_job(job_id)
     if pending is not None and getattr(pending.func, "cascade", False):
         cascade = True

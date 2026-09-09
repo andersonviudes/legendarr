@@ -8,6 +8,7 @@ from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import is_task_active
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.sync_subtitle_timing import sync_subtitle_timing
 
@@ -33,8 +34,18 @@ def enqueue_timing_sync(
 
     Same `add_job` shape as `subtitle_translation.jobs.enqueue_translation`: a "date"
     trigger with `misfire_grace_time=None` and `replace_existing=True` dedupes a pending
-    re-run of the same subtitle.
+    re-run of the same subtitle. Skips entirely when `job_id` is already dispatched to an
+    executor (`is_task_active`) — see `subtitle_acquisition.jobs.enqueue_acquisition`'s
+    docstring for why a running job needs this in addition to `replace_existing`.
     """
+    job_id = f"subtitle_timing_sync:{subtitle_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "timing sync skipped for subtitle %d: job %s already in flight",
+            subtitle_id,
+            job_id,
+        )
+        return
 
     def run_timing_sync() -> None:
         with get_session() as session:
@@ -75,8 +86,8 @@ def enqueue_timing_sync(
     scheduler.add_job(
         with_retry(run_timing_sync, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
         "date",
-        id=f"subtitle_timing_sync:{subtitle_id}",
-        name=f"subtitle_timing_sync:{subtitle_id}",
+        id=job_id,
+        name=job_id,
         executor=queue.value,
         max_instances=1,
         replace_existing=True,

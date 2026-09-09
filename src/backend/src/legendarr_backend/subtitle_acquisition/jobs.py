@@ -16,7 +16,7 @@ from legendarr_backend.media_servers.notify_media_servers import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
-from legendarr_backend.scheduling.running_tasks import report_progress
+from legendarr_backend.scheduling.running_tasks import is_task_active, report_progress
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
@@ -185,8 +185,22 @@ def enqueue_acquisition(
     automatic translation for this profile shouldn't have it silently re-enabled through
     the acquisition cascade (see `subtitle_translation.jobs.needs_translation`, the
     equivalent gate for the periodic translation fan-out).
+
+    Skips entirely, without touching the jobstore, when `job_id` is already dispatched
+    to an executor (`is_task_active`) — a job already running or queued behind other
+    work has already left the jobstore, so `replace_existing` below would otherwise add
+    a brand-new duplicate rather than actually dedupe it. Note this means a `cascade=True`
+    request racing an already-active, non-cascading run of the same file won't
+    retroactively cascade — it's simply skipped.
     """
     job_id = f"subtitle_acquisition:{media_file_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "acquisition skipped for media file %d: job %s already in flight",
+            media_file_id,
+            job_id,
+        )
+        return
     pending = scheduler.get_job(job_id)
     if pending is not None and getattr(pending.func, "cascade", False):
         cascade = True
@@ -271,9 +285,17 @@ def enqueue_pending_subtitle_reconcile(
 
     Same one-off `"date"` trigger/`replace_existing` shape as `enqueue_acquisition` —
     a second scan of the same series racing a still-pending reconcile collapses into
-    one run rather than stacking up.
+    one run rather than stacking up. Same already-active skip as `enqueue_acquisition`
+    too, for the same reason.
     """
     job_id = f"pending_subtitle_reconcile:{series_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "pending subtitle reconcile skipped for series %d: job %s already in flight",
+            series_id,
+            job_id,
+        )
+        return
 
     def run_reconcile() -> None:
         with get_session() as session:

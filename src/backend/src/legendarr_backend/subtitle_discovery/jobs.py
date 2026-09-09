@@ -11,6 +11,7 @@ from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import is_task_active
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.jobs import enqueue_acquisition
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
@@ -118,8 +119,19 @@ def enqueue_subtitle_scan(
 
     `cascade=True` chains into an acquisition run for the same file once this scan
     commits — opt-in, same reasoning as `enqueue_media_scan`'s `cascade`.
+
+    Skips entirely when `job_id` is already dispatched to an executor (`is_task_active`)
+    — see `subtitle_acquisition.jobs.enqueue_acquisition`'s docstring for why a running
+    job needs this in addition to `replace_existing`.
     """
     job_id = f"subtitle_scan:{media_file_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "subtitle scan skipped for media file %d: job %s already in flight",
+            media_file_id,
+            job_id,
+        )
+        return
     pending = scheduler.get_job(job_id)
     if pending is not None and getattr(pending.func, "cascade", False):
         cascade = True

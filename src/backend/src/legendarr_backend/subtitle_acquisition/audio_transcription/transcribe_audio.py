@@ -8,8 +8,7 @@ local Whisper model (`faster_whisper`), then writes it out through the same
 
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeoutError
+import threading
 from pathlib import Path
 
 from faster_whisper import WhisperModel
@@ -52,26 +51,17 @@ def transcribe_audio_track(
     killed or timed-out run must not leave a partial `.srt` behind. Unlike the
     subprocess-based pipelines elsewhere in this codebase (`ffmpeg`, `ffsubsync`,
     Tesseract), `faster_whisper` runs in-process, so `timeout_seconds` is enforced by
-    running the call on a worker thread and giving up on it — the thread itself can't be
-    force-killed, but the caller moves on instead of blocking the job forever. A
-    cue that transcribes to empty text is dropped, same as OCR; if nothing survives,
-    `output_path` is left unwritten.
+    running the call on a daemon thread and giving up on it — the thread itself can't be
+    force-killed, so a stuck decode keeps running in the background, but a daemon thread
+    doesn't block process shutdown and isn't waited on again, so the caller genuinely
+    moves on instead of blocking the job forever (a plain `ThreadPoolExecutor` doesn't
+    work here: its context manager's `__exit__` calls `shutdown(wait=True)` on any exit
+    path, including this one, which would block until the abandoned call finishes after
+    all). A cue that transcribes to empty text is dropped, same as OCR; if nothing
+    survives, `output_path` is left unwritten.
     """
     model = _get_model(model_size, model_dir)
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_run_transcription, model, audio_path, language)
-        try:
-            lines = future.result(timeout=timeout_seconds)
-        except FutureTimeoutError:
-            logger.warning(
-                "speech-to-text transcription of %s timed out after %.0fs",
-                audio_path,
-                timeout_seconds,
-            )
-            return
-        except Exception:
-            logger.warning("speech-to-text transcription failed for %s", audio_path, exc_info=True)
-            return
+    lines = _transcribe_with_timeout(model, audio_path, language, timeout_seconds)
     if not lines:
         return
 
@@ -100,3 +90,36 @@ def _run_transcription(model: WhisperModel, audio_path: Path, language: str) -> 
             )
         )
     return lines
+
+
+def _transcribe_with_timeout(
+    model: WhisperModel, audio_path: Path, language: str, timeout_seconds: float
+) -> list[SubtitleLine]:
+    """Run `_run_transcription` on a daemon thread and give up waiting after
+    `timeout_seconds`, without joining the thread again — see `transcribe_audio_track`'s
+    docstring for why a plain `Thread` is used instead of a `ThreadPoolExecutor`.
+
+    Returns `[]` for either a timeout or an exception raised by `_run_transcription`
+    (logged from inside the thread, since the main thread has already given up waiting
+    by the time a late exception would surface).
+    """
+    result: list[list[SubtitleLine]] = []
+
+    def _target() -> None:
+        try:
+            result.append(_run_transcription(model, audio_path, language))
+        except Exception:
+            logger.warning("speech-to-text transcription failed for %s", audio_path, exc_info=True)
+
+    thread = threading.Thread(target=_target, daemon=True)
+    thread.start()
+    thread.join(timeout=timeout_seconds)
+    if not result:
+        if thread.is_alive():
+            logger.warning(
+                "speech-to-text transcription of %s timed out after %.0fs",
+                audio_path,
+                timeout_seconds,
+            )
+        return []
+    return result[0]

@@ -170,6 +170,18 @@ class RunningTaskRegistry:
                 result.append(task if ahead < capacity else replace(task, queued=True))
             return result
 
+    def is_active(self, job_id: str) -> bool:
+        """Whether `job_id` is already dispatched to an executor — either genuinely
+        running or still waiting its turn behind other same-queue work (`tasks()`'s
+        `queued`). Doesn't distinguish the two: either way, a caller about to re-enqueue
+        this `job_id` would just be piling up a duplicate rather than making it start any
+        sooner, and (unlike `scheduler.get_job`) this catches a job that's already left
+        the jobstore for an executor, which is exactly the case a plain
+        `replace_existing` dedupe misses.
+        """
+        with self._lock:
+            return any(key[0] == job_id for key in self._tasks)
+
     def clear(self) -> None:
         with self._lock:
             self._tasks.clear()
@@ -210,6 +222,16 @@ def get_running_tasks() -> list[RunningTask]:
     unless a worker thread is genuinely running it right now, see `RunningTaskRegistry.tasks()`.
     """
     return _registry.tasks()
+
+
+def is_task_active(job_id: str) -> bool:
+    """Whether `job_id` is already dispatched to an executor. Every ad-hoc per-item
+    `enqueue_*` job (`subtitle_acquisition.jobs`, `subtitle_translation.jobs`, ...) checks
+    this before scheduling, to skip a redundant re-enqueue instead of silently duplicating
+    it once the original job leaves the jobstore for an executor — see
+    `RunningTaskRegistry.is_active`.
+    """
+    return _registry.is_active(job_id)
 
 
 def report_progress(

@@ -14,6 +14,7 @@ from legendarr_backend.media_metadata.fetch_metadata import (
 from legendarr_backend.media_metadata.poster_cache_cleanup import cleanup_orphaned_posters
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import is_task_active
 from legendarr_backend.scheduling.scheduler import register_job
 
 logger = logging.getLogger(__name__)
@@ -130,9 +131,19 @@ def enqueue_media_metadata_fetch(
     Same `add_job`-direct, stable-job-id, `replace_existing` dedupe shape as
     `media_library.jobs.enqueue_media_scan` — a second "Refetch All" click while the
     first pass is still draining collapses into the still-pending job per item instead
-    of stacking up duplicate work.
+    of stacking up duplicate work. Skips entirely when `job_id` is already dispatched to
+    an executor (`is_task_active`) — see `subtitle_acquisition.jobs.enqueue_acquisition`'s
+    docstring for why a running job needs this in addition to `replace_existing`.
     """
     job_id = f"media_metadata_fetch:{media_kind}:{media_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "metadata refetch skipped for %s %d: job %s already in flight",
+            media_kind,
+            media_id,
+            job_id,
+        )
+        return
 
     def run_fetch() -> None:
         with get_session() as session:

@@ -16,6 +16,7 @@ from legendarr_backend.scheduling.running_tasks import (
     RunningTaskRegistry,
     attach_running_task_registry,
     get_running_tasks,
+    is_task_active,
     report_progress,
     reset_running_tasks,
 )
@@ -148,6 +149,33 @@ def test_two_concurrent_instances_of_the_same_job_dont_collide():
     registry.finish(JobExecutionEvent(EVENT_JOB_EXECUTED, "test_job", "default", first_run))
 
     assert len(registry.tasks()) == 1
+
+
+def test_is_active_true_for_a_submitted_job():
+    scheduler = _scheduler_with_job()
+    registry = RunningTaskRegistry()
+    registry.remember(_added_event("test_job"), scheduler)
+    registry.submit(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, "test_job", "default", [datetime.now(UTC)]),
+        scheduler,
+    )
+
+    assert registry.is_active("test_job") is True
+    assert registry.is_active("other_job") is False
+
+
+def test_is_active_false_once_the_job_finishes():
+    scheduler = _scheduler_with_job()
+    registry = RunningTaskRegistry()
+    run_time = datetime.now(UTC)
+    registry.remember(_added_event("test_job"), scheduler)
+    registry.submit(
+        JobSubmissionEvent(EVENT_JOB_SUBMITTED, "test_job", "default", [run_time]), scheduler
+    )
+
+    registry.finish(JobExecutionEvent(EVENT_JOB_EXECUTED, "test_job", "default", run_time))
+
+    assert registry.is_active("test_job") is False
 
 
 def _register_and_submit(
@@ -396,6 +424,34 @@ def test_module_level_report_progress_updates_the_shared_registry():
         tasks = get_running_tasks()
         assert len(tasks) == 1
         assert tasks[0].phase == "translating"
+    finally:
+        finish.set()
+        scheduler.shutdown(wait=False)
+        reset_running_tasks()
+
+
+def test_module_level_is_task_active_reflects_the_shared_registry():
+    reset_running_tasks()
+    scheduler = build_scheduler()
+    attach_running_task_registry(scheduler)
+    scheduler.start()
+    started = threading.Event()
+    finish = threading.Event()
+
+    def slow_job() -> None:
+        started.set()
+        finish.wait(timeout=5)
+
+    try:
+        scheduler.add_job(slow_job, "date", id="e2e_active", executor=JobQueue.SYNC.value)
+        assert started.wait(timeout=5)
+        for _ in range(50):
+            if is_task_active("e2e_active"):
+                break
+            time.sleep(0.02)
+
+        assert is_task_active("e2e_active")
+        assert not is_task_active("unknown_job")
     finally:
         finish.set()
         scheduler.shutdown(wait=False)
