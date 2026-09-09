@@ -3,12 +3,27 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.9] - 2026-09-09
+
+### ✨ Features
+
+- Standardize settings and system page headers with a dashboard-style subtitle (#126)
+
+### 🐛 Bug Fixes
+
+- Normalize region-tagged language codes when matching existing subtitles (#127)
+- Stop hung jobs from wedging queue workers and duplicating tasks (#128)
+
 ## [0.22.8] - 2026-09-05
 
 ### 🐛 Bug Fixes
 
 - Keep embedded tracks region tag for display (#124)
 - Stop spelling and bracket-tag variance from hiding real attribute matches (#125)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.8 [skip ci]
 
 ## [0.22.7] - 2026-09-04
 
