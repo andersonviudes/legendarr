@@ -10,6 +10,7 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_media_file_profile,
 )
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
 from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle, SubtitleScanState
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
@@ -88,7 +89,9 @@ def scan_subtitles_for_media_file(
     extract_embedded = profile is not None and profile.extract_embedded_subtitles
     ocr_embedded = profile is not None and profile.ocr_embedded_subtitles
     source_languages = (
-        frozenset(profile.source_language_list) if profile is not None else frozenset()
+        frozenset(normalize_language_code(language) for language in profile.source_language_list)
+        if profile is not None
+        else frozenset()
     )
     scan_result = scan_video_subtitles(
         video_path,
