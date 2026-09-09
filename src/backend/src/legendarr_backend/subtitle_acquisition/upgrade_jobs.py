@@ -13,6 +13,7 @@ from legendarr_backend.media_servers.notify_media_servers import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
+from legendarr_backend.scheduling.running_tasks import is_task_active
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_acquisition.jobs import media_file_ids_with_completed_scan
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
@@ -125,8 +126,19 @@ def enqueue_upgrade(
     always check) — the periodic fan-out is the only caller that passes a real recheck
     window, and now pre-filters/sorts by the same check before enqueuing at all; this
     call is a defense-in-depth backstop, not the primary filter.
+
+    Skips entirely when `job_id` is already dispatched to an executor (`is_task_active`)
+    — see `subtitle_acquisition.jobs.enqueue_acquisition`'s docstring for why a running
+    job needs this in addition to `replace_existing`.
     """
     job_id = f"subtitle_upgrade:{media_file_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "upgrade skipped for media file %d: job %s already in flight",
+            media_file_id,
+            job_id,
+        )
+        return
 
     def run_upgrade() -> None:
         with get_session() as session:

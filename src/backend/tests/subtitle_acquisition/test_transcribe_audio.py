@@ -95,13 +95,14 @@ def test_transcribe_leaves_output_unwritten_when_nothing_survives(monkeypatch, t
 def test_transcribe_gives_up_and_leaves_output_unwritten_on_timeout(monkeypatch, tmp_path):
     class _SlowModel:
         def transcribe(self, audio_path, language=None):
-            time.sleep(1)
+            time.sleep(2)
             return iter([]), None
 
     monkeypatch.setattr(transcribe_audio, "_models", {})
     monkeypatch.setattr(transcribe_audio, "_get_model", lambda model_size, model_dir: _SlowModel())
     output_path = tmp_path / "movie.en.srt"
 
+    started = time.monotonic()
     transcribe_audio_track(
         tmp_path / "movie.audio.wav",
         "en",
@@ -110,7 +111,13 @@ def test_transcribe_gives_up_and_leaves_output_unwritten_on_timeout(monkeypatch,
         model_dir=tmp_path / "models",
         timeout_seconds=0.05,
     )
+    elapsed = time.monotonic() - started
 
+    # Regression check for the bug this test is named after: the call must give up and
+    # return right after `timeout_seconds`, not block for the full duration of the
+    # abandoned model call it can't cancel (a `ThreadPoolExecutor`'s `__exit__` used to
+    # do exactly that via `shutdown(wait=True)`).
+    assert elapsed < 1.0
     assert not output_path.exists()
 
 

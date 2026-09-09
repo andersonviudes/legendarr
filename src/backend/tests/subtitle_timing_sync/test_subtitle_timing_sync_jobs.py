@@ -74,6 +74,24 @@ def test_enqueue_timing_sync_dedupes_by_stable_job_id(monkeypatch):
     assert all(kwargs["replace_existing"] for _, kwargs in added)
 
 
+def test_enqueue_timing_sync_skips_when_job_already_active(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+    monkeypatch.setattr(jobs_module, "is_task_active", lambda job_id: True)
+
+    enqueue_timing_sync(
+        scheduler,
+        7,
+        JobQueue.TIMING_SYNC,
+        retry_attempts=2,
+        retry_delay_seconds=1.0,
+        timeout_seconds=30.0,
+    )
+
+    assert added == []
+
+
 def test_enqueued_timing_sync_job_tolerates_deleted_subtitle(in_memory_session, monkeypatch):
     @contextmanager
     def _session():

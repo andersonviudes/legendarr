@@ -13,7 +13,7 @@ from legendarr_backend.media_servers.notify_media_servers import (
 )
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
-from legendarr_backend.scheduling.running_tasks import report_progress
+from legendarr_backend.scheduling.running_tasks import is_task_active, report_progress
 from legendarr_backend.scheduling.scheduler import register_job
 from legendarr_backend.subtitle_discovery.scan_eligibility import has_completed_subtitle_scan
 from legendarr_backend.subtitle_translation.translate_media_file import (
@@ -116,8 +116,19 @@ def enqueue_translation(
     trigger. Not job-id-encoded, same as every other per-file job option here: a later,
     non-overriding enqueue for the same file replaces a still-pending overriding one, and
     vice versa — last enqueue wins, same as everywhere else in this module.
+
+    Skips entirely when `job_id` is already dispatched to an executor (`is_task_active`) —
+    see `subtitle_acquisition.jobs.enqueue_acquisition`'s docstring for why a running job
+    needs this in addition to `replace_existing`.
     """
     job_id = f"subtitle_translation:{media_file_id}"
+    if is_task_active(job_id):
+        logger.info(
+            "translation skipped for media file %d: job %s already in flight",
+            media_file_id,
+            job_id,
+        )
+        return
 
     def run_translation() -> None:
         with get_session() as session:

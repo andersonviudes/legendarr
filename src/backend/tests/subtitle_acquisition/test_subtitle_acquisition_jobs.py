@@ -17,6 +17,7 @@ from legendarr_backend.subtitle_acquisition.jobs import (
     enqueue_acquisition,
     enqueue_full_acquisition_scan,
     enqueue_item_acquisition_scan,
+    enqueue_pending_subtitle_reconcile,
     register_acquisition_job,
 )
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
@@ -127,6 +128,32 @@ def test_enqueue_acquisition_dedupes_by_stable_job_id(monkeypatch):
     ids = [kwargs["id"] for _, kwargs in added]
     assert ids == ["subtitle_acquisition:7", "subtitle_acquisition:7"]
     assert all(kwargs["replace_existing"] for _, kwargs in added)
+
+
+def test_enqueue_acquisition_skips_when_job_already_active(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+    monkeypatch.setattr(jobs_module, "is_task_active", lambda job_id: True)
+
+    enqueue_acquisition(
+        scheduler, 7, JobQueue.ACQUIRE_BULK, retry_attempts=2, retry_delay_seconds=1.0
+    )
+
+    assert added == []
+
+
+def test_enqueue_pending_subtitle_reconcile_skips_when_job_already_active(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+    monkeypatch.setattr(jobs_module, "is_task_active", lambda job_id: True)
+
+    enqueue_pending_subtitle_reconcile(
+        scheduler, 3, JobQueue.SYNC, retry_attempts=1, retry_delay_seconds=0.0
+    )
+
+    assert added == []
 
 
 def test_enqueued_acquisition_job_tolerates_deleted_media_file(in_memory_session, monkeypatch):

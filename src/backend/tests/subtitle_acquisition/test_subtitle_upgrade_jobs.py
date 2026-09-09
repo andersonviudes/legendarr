@@ -185,6 +185,17 @@ def test_register_subtitle_upgrade_job_wires_config_derived_policy():
     assert job.trigger.interval.total_seconds() == 45 * 60
 
 
+def test_enqueue_upgrade_skips_when_job_already_active(monkeypatch):
+    scheduler = build_scheduler()
+    added = []
+    monkeypatch.setattr(scheduler, "add_job", lambda *args, **kwargs: added.append((args, kwargs)))
+    monkeypatch.setattr(upgrade_jobs_module, "is_task_active", lambda job_id: True)
+
+    enqueue_upgrade(scheduler, 7, JobQueue.UPGRADE_BULK, retry_attempts=2, retry_delay_seconds=1.0)
+
+    assert added == []
+
+
 def test_enqueued_upgrade_job_upgrades_an_existing_source_subtitle(
     in_memory_session, tmp_path, monkeypatch
 ):
