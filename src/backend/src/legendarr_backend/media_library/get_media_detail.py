@@ -30,6 +30,10 @@ from legendarr_backend.subtitle_acquisition.models import (
     PendingSubtitle,
 )
 from legendarr_backend.subtitle_discovery.embedded_track_score import score_embedded_subtitle
+from legendarr_backend.subtitle_discovery.language_codes import (
+    normalize_language_code,
+    normalized_language_set,
+)
 from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 from legendarr_backend.subtitle_discovery.scan_video_subtitles import SubtitleOrigin
 
@@ -240,7 +244,7 @@ def _media_file_reads(
                     edition_matched=attempt.edition_matched if attempt else None,
                 )
             )
-        present = {subtitle.language for subtitle in subtitle_reads}
+        present = normalized_language_set(subtitle.language for subtitle in subtitle_reads)
         subtitle_read_by_track_index = {
             subtitle_read.track_index: subtitle_read
             for subtitle_read in subtitle_reads
@@ -257,7 +261,8 @@ def _media_file_reads(
             for track in embedded_tracks_by_file_id.get(media_file.id, [])
         ]
         has_source_subtitle = profile is not None and any(
-            language.lower() in present for language in profile.source_language_list
+            normalize_language_code(language) in present
+            for language in profile.source_language_list
         )
         reads.append(
             MediaFileRead(
@@ -267,7 +272,9 @@ def _media_file_reads(
                 subtitles=subtitle_reads,
                 embedded_tracks=embedded_track_reads,
                 missing_languages=[
-                    language for language in target_languages if language.lower() not in present
+                    language
+                    for language in target_languages
+                    if normalize_language_code(language) not in present
                 ],
                 has_source_subtitle=has_source_subtitle,
             )

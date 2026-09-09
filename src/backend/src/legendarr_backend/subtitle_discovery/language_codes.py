@@ -11,6 +11,8 @@ that case. But a container can also carry an already region-qualified IETF tag (
 subtag instead of collapsing it away, so the UI can still tell two such tracks apart.
 """
 
+from collections.abc import Iterable
+
 # ISO 639-2 (bibliographic and terminological forms) -> ISO 639-1, for the languages a
 # subtitle/translation workflow is realistically going to see. Not exhaustive.
 _ISO_639_2_TO_1 = {
@@ -85,6 +87,15 @@ def normalize_language_code(code: str) -> str:
     if len(primary) == 2:
         return primary
     return _ISO_639_2_TO_1.get(primary, primary)
+
+
+def normalized_language_set(codes: Iterable[str]) -> set[str]:
+    """Normalize every code in `codes`, for a set to test language-code membership
+    against with `normalize_language_code` (e.g. "is this profile language already
+    present among these subtitles' languages") without repeating the comprehension at
+    every call site.
+    """
+    return {normalize_language_code(code) for code in codes}
 
 
 def display_language_code(code: str) -> str:

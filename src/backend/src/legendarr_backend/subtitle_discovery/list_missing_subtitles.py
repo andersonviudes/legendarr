@@ -7,7 +7,10 @@ from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
 )
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
-from legendarr_backend.subtitle_discovery.language_codes import normalize_language_code
+from legendarr_backend.subtitle_discovery.language_codes import (
+    normalize_language_code,
+    normalized_language_set,
+)
 from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
 
 
@@ -57,7 +60,7 @@ def list_missing_target_languages_by_media_file(session: Session) -> dict[int, l
     for subtitle in session.exec(
         select(Subtitle).where(col(Subtitle.media_file_id).in_([file.id for file in media_files]))
     ):
-        languages_by_file_id[subtitle.media_file_id].add(subtitle.language)
+        languages_by_file_id[subtitle.media_file_id].add(normalize_language_code(subtitle.language))
 
     missing_by_file_id: dict[int, list[str]] = {}
     for file in media_files:
@@ -71,7 +74,9 @@ def list_missing_target_languages_by_media_file(session: Session) -> dict[int, l
             continue
         present = languages_by_file_id.get(file.id, set())
         missing = [
-            language for language in profile.target_language_list if language.lower() not in present
+            language
+            for language in profile.target_language_list
+            if normalize_language_code(language) not in present
         ]
         if missing:
             missing_by_file_id[file.id] = missing
@@ -86,14 +91,16 @@ def missing_target_languages_for_media_file(session: Session, media_file_id: int
     profile = _resolve_profile_for_media_file(session, media_file_id)
     if profile is None:
         return []
-    present = {
+    present = normalized_language_set(
         subtitle.language
         for subtitle in session.exec(
             select(Subtitle).where(Subtitle.media_file_id == media_file_id)
         )
-    }
+    )
     return [
-        language for language in profile.target_language_list if language.lower() not in present
+        language
+        for language in profile.target_language_list
+        if normalize_language_code(language) not in present
     ]
 
 
@@ -117,13 +124,15 @@ def has_source_subtitle_for_media_file(session: Session, media_file_id: int) -> 
     profile = _resolve_profile_for_media_file(session, media_file_id)
     if profile is None:
         return False
-    present = {
+    present = normalized_language_set(
         subtitle.language
         for subtitle in session.exec(
             select(Subtitle).where(Subtitle.media_file_id == media_file_id)
         )
-    }
-    return any(language.lower() in present for language in profile.source_language_list)
+    )
+    return any(
+        normalize_language_code(language) in present for language in profile.source_language_list
+    )
 
 
 def target_languages_missing_embedded_track(
