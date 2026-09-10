@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.10] - 2026-09-10
+
+### ✨ Features
+
+- Add search and pagination to the history feed (#129)
+
+### 🐛 Bug Fixes
+
+- Bound opensubtitles hash computation with a timeout
+
+### 📚 Documentation
+
+- Require branch + PR for fix: commits too, not just feat:
+
+### 🔧 Miscellaneous
+
+- Document PR #126-#129 follow-ups
+- Refresh module file counts in search-strategy rule
+
 ## [0.22.9] - 2026-09-09
 
 ### ✨ Features
@@ -13,6 +32,10 @@ All notable changes to this project are documented here. The format follows
 
 - Normalize region-tagged language codes when matching existing subtitles (#127)
 - Stop hung jobs from wedging queue workers and duplicating tasks (#128)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.9 [skip ci]
 
 ## [0.22.8] - 2026-09-05
 
