@@ -4,18 +4,26 @@ description: When to use a feature branch + PR vs. committing/pushing straight t
 type: feedback
 ---
 
-New features go on a feature branch with a PR into `main`; bug fixes (`fix:` commits) can be
-committed and pushed straight to `main`. This is codified in `AGENTS.md`'s Conventions section
-(changed 2026-07-16, previously said *all* work needed a branch+PR, no exception for fixes).
+**Current rule (since 2026-09-10): every change — `feat:` and `fix:` alike — goes on its own
+branch with a PR into `main`; nothing gets pushed directly to `main` anymore.** This is codified
+in `AGENTS.md`'s Conventions section. History of how the rule got here, oldest first: it started
+as "all work needs a branch+PR", was relaxed 2026-07-16 to let `fix:` skip straight to `main`,
+and was tightened back to "everything goes through a branch+PR" on 2026-09-10 — see that dated
+entry at the bottom for why. Everything below this point (including the 2026-07-16 "why"/"how to
+apply") describes the now-superseded relaxed-for-fixes period; kept for the git-workflow lessons
+in the addenda, which mostly still apply to the branch+PR mechanics themselves, but don't take
+their "fix: can go straight to main" premise as current.
 
-**Why:** the user asked to relax the blanket "always branch + PR" rule specifically for bug
-fixes, keeping the heavier feature-branch/PR workflow only for `feat:`-sized work.
+**Why (2026-07-16, superseded):** the user asked to relax the blanket "always branch + PR" rule
+specifically for bug fixes, keeping the heavier feature-branch/PR workflow only for
+`feat:`-sized work.
 
-**How to apply:** before committing, judge whether the change is a `feat:` (new
-capability/refactor of scope) or a `fix:` (bug fix). For `feat:`, create a branch, push it, and
-open a PR — never push a feature branch's work directly to `main`. For `fix:`, it's fine to
-commit and push directly to `main` if the user asks for that. When in doubt about which bucket
-a change falls into, ask rather than assume `fix:` to bypass the PR step.
+**How to apply (2026-07-16, superseded — see the 2026-09-10 addendum for the current rule):**
+before committing, judge whether the change is a `feat:` (new capability/refactor of scope) or a
+`fix:` (bug fix). For `feat:`, create a branch, push it, and open a PR — never push a feature
+branch's work directly to `main`. For `fix:`, it's fine to commit and push directly to `main` if
+the user asks for that. When in doubt about which bucket a change falls into, ask rather than
+assume `fix:` to bypass the PR step.
 
 **2026-07-16 addendum:** `docs:`-only changes (e.g. reordering/editing `ROADMAP.md`, no
 application code touched) were also committed and pushed straight to `main` on explicit user
@@ -167,3 +175,19 @@ main` rejection mid-session isn't necessarily a mistake — `git fetch origin ma
 what landed before assuming anything is wrong. If the new commits touch different files than the
 merged PR (as here — a `ROADMAP.md`/rules-stats chore vs. a feature PR's application code),
 `git rebase origin/main` resolves cleanly with no conflicts; push again after.
+
+**2026-09-10 — the "fix: can skip the PR" exception dropped, `feat:` and `fix:` both require
+branch+PR now:** a `fix(subtitle-acquisition)` (bounding `compute_opensubtitles_hash` with a
+timeout, see [[legendarr-opensubtitles-hash-hang-fix]]) was committed and pushed straight to
+`main`, correctly following the then-current rule. The user then asked to "abre um pr" for it —
+by that point there was nothing to open a PR against (the commits were already the tip of
+`main`, no diff to review), the same dead-end the 2026-08-30 entry above describes. Rather than
+reverting the already-pushed fix to redo it on a branch, the user asked to change the convention
+itself so this doesn't recur: **`fix:` no longer gets the direct-to-`main` exception — every
+change goes on its own branch with a PR, same as `feat:`.** Updated `AGENTS.md`'s Conventions
+section, `.claudin/rules/commit-message-convention.md` (the `(#NN)` PR-suffix note), and
+`.claudin/rules/commit-rules-with-feature.md` (the rule/memory-commit-alongside-the-code rule) to
+match. **How to apply:** for any `fix:` from now on, branch + push + PR, exactly like `feat:` —
+don't fall back to the old "just push it to `main`" habit from the addenda above, and don't
+assume a `docs:`/`chore:`-only commit needs one either (that exception, from the 2026-07-16
+addendum, is untouched by this change).

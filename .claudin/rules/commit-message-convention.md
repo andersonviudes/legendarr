@@ -14,5 +14,7 @@ Conventional Commits (`AGENTS.md`), with the exact shape this repo's history act
   the summary: `feat(media-server-integration): notify Plex/Jellyfin after a subtitle is
   written (ROADMAP 0.18.0)`.
 - Don't hand-type a `(#NN)` PR suffix — GitHub adds it automatically on squash-merge into
-  `main`. A `fix:`/`docs:`/`chore:` commit pushed straight to `main` (see
-  `commit-rules-with-feature.md`) never gets one, since it skips the PR step.
+  `main`. Both `feat:` and `fix:` now go through a branch + PR (see
+  `.claudin/memory/team/legendarr-branch-convention.md`), so both get one. A `docs:`/
+  `chore:` commit pushed straight to `main` (see `commit-rules-with-feature.md`) never
+  gets one, since it skips the PR step.

@@ -67,8 +67,11 @@ slice folder in whichever module owns them, not a new generic layer. Tests mirro
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) — see
   `.claudin/rules/commit-message-convention.md` for the exact shape (scope, optional `ROADMAP`
   suffix, no hand-typed PR numbers) this repo's history actually uses.
-- New features go on a feature branch with a PR into `main` — don't push those directly to
-  `main`. Bug fixes (`fix:` commits) can be committed and pushed straight to `main`.
+- Every change — features and bug fixes alike — goes on its own branch with a PR into
+  `main`; don't push `feat:` or `fix:` commits directly to `main`. (Changed 2026-09-10:
+  `fix:` commits used to be allowed straight to `main`; see
+  `.claudin/memory/team/legendarr-branch-convention.md` for why that exception was
+  dropped.)
 - Python style, Ruff config, and env var conventions: see `.claudin/rules/python-conventions.md`
   (loads automatically when touching `src/**/*.py`).
 - Clean Code / SOLID guidance: see `.claudin/rules/clean-code-solid.md` (same trigger).
