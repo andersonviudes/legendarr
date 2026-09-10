@@ -54,3 +54,12 @@ status code) without touching Statistics' semantics.
 through `translation_history.record_translation_failure`/`audit_trail.record_acquisition_failure`,
 not a raw `session.add(...)`, and should only fire on an actual caught exception, never on a
 "nothing to do" skip reason — same rule this feature followed for what counts as an error.
+
+**Update (2026-09-09 — search + pagination, PR #129, `feat/history-search-pagination`):**
+`list_history.py` and the `GET /history` route (`schemas.py`, `router.py`) gained a `query`
+substring filter (matched against the resolved media title, same title-resolution path
+described above) and page-based pagination, since the feed had no bound beyond the original
+flat `limit=50`. `legendarr_web`'s history router/service and a new
+`_history_results.html` partial handle the HTMX search-as-you-type + page-nav swap, following
+the same partial-template pattern used elsewhere for incremental list updates. `history.html`
+was trimmed down since the results table now lives in the partial.

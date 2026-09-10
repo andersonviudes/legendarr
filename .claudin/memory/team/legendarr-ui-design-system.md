@@ -780,6 +780,18 @@ re-fetching (a real second action, not a relabel), that's new backend surface �
 unlink-and-rescan without `add_blacklist_entry`, most naturally in `subtitle_discovery/` since it
 isn't acquisition-specific — not something the rename above already covers.
 
+**Update (2026-09-06 — dashboard-style `hgroup` subtitle extended to every Settings/System
+page, PR #126, `feat/dashboard-style-page-headers`):** Dashboard/History/Statistics/Library
+pages already wrapped their `<h1>` in an `hgroup` with a muted subtitle line; every Settings and
+System page (both the list view and its add/edit form) was still a bare `<h1>`, standing out as
+unfinished next to the rest of the app. Same `hgroup` pattern applied to all of them: Arr
+Services, Language Profiles, Metadata Providers, Media Servers, Subtitle Providers, Subtitle
+Proxies, Translation Providers, general/tasks Settings, and System's Providers/Sessions/Tasks —
+24 templates total, plus the corresponding subtitle i18n keys added to all three locale
+catalogs. Also fixed the System → Logs page title, which was rendering the generic "System"
+label instead of "Logs". No new CSS/markup pattern introduced — purely applying the existing one
+everywhere it was missing.
+
 **Update (2026-08-31, same round — "Translate now" hidden on a missing pill with no source
 subtitle):** the user screenshotted a gray "missing" pt-BR pill's dropdown and flagged that
 "Translate now" shouldn't be offered there — "essa legenda não existe" (that subtitle doesn't

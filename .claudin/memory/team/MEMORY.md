@@ -26,7 +26,7 @@
 - [legendarr Anime Tosho AniDB key requirement](legendarr-animetosho-anidb-key.md) — confirmed real (matches Bazarr); untaken no-auth q=/aid= search fallback exists
 - [legendarr ffmpeg temp-suffix format gotcha](legendarr-ffmpeg-temp-suffix-format-gotcha.md) — ffmpeg calls writing to a .tmp temp sibling need an explicit -f, or every extraction fails
 - [legendarr statistics slice](legendarr-statistics-slice.md) — TranslationAttempt audit trail (translation had none) + statistics/ slice, zero-filled 30-day trend, test_api.py tag-prefix gotcha
-- [legendarr history slice](legendarr-history-slice.md) — TranslationFailure/AcquisitionFailure tables (neither slice persisted a failure before) + history/ slice merging successes and failures
+- [legendarr history slice](legendarr-history-slice.md) — TranslationFailure/AcquisitionFailure tables + history/ slice merging successes and failures; search/pagination added PR #129
 - [legendarr htmx nested-poller outerHTML-swap gotcha](legendarr-htmx-nested-poller-outerhtml-swap-gotcha.md) — a fast-polling child inside a periodically self-outerHTML-swapping parent goes empty after the first cycle; keep pollers as siblings
 - [legendarr echo translation provider not wired](legendarr-echo-translation-provider-not-wired.md) — echo.py exists but isn't in provider_chain.py's _PROVIDER_CLASSES or the UI; settings copy is stale
 - [legendarr resilience constants hardcoded](legendarr-resilience-constants-hardcoded.md) — circuit breaker + scheduled-retry backoff thresholds are module constants, not Settings fields
@@ -47,3 +47,5 @@
 - [legendarr apply_patch silent function-split gotcha](legendarr-apply-patch-silent-split-gotcha.md) — a Read(offset,limit) stopping before EOF let an apply_patch append land mid-function, undetected until tests ran
 - [legendarr bulk queue worker default mismatch](legendarr-bulk-queue-worker-default-mismatch.md) — fixed in code by PR #120, but existing config.yaml keeps the old value forever (no migration)
 - [legendarr match score normalization fix](legendarr-match-score-normalization-fix.md) — spelling/bracket-group bugs fixed 2026-09-05; audio/Proper title-similarity noise deliberately deferred
+- [legendarr language coverage normalization fix](legendarr-language-coverage-normalization-fix.md) — PR #127: coverage checks used raw .lower() not normalize_language_code, pt-BR looked like missing pt
+- [legendarr hung job dedup fix](legendarr-hung-job-dedup-fix.md) — PR #128: stuck transcription thread wedged acquire_bulk forever; is_task_active() now guards every ad-hoc enqueue_*
