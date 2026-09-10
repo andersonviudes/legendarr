@@ -48,7 +48,7 @@ def resolve_subtitle_search_context(
     # movie search" on its own.
     series_imdb_id = owner.imdb_id if isinstance(owner, Series) else None
     tvdb_id = owner.tvdb_id if isinstance(owner, Series) else None
-    moviehash = compute_opensubtitles_hash(video_path) if video_path.is_file() else None
+    moviehash = compute_opensubtitles_hash(video_path)
     episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
     season_number = episode.season_number if episode is not None else None
     episode_number = episode.episode_number if episode is not None else None
