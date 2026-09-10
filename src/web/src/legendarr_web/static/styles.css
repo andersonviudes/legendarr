@@ -2543,3 +2543,36 @@ button.contrast:is(:hover, :focus),
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--lg-neutral-dim-background-color);
 }
+
+/* === History page search (history/templates/history.html) — same htmx wiring as the
+   topbar global search (.app-search above) but a plain in-page filter with no dropdown
+   results panel, so only the Pico [type=search] override is needed here; see
+   .app-search-input above for why a bare class alone loses that override. === */
+.history-search {
+  margin-bottom: 0.9rem;
+  max-width: 20rem;
+}
+
+.history-search input.history-search-input {
+  width: 100%;
+  margin: 0;
+  height: auto;
+  padding: 0.4rem 0.75rem;
+  background-image: none;
+  font-size: var(--lg-font-xs);
+}
+
+/* === History page pagination (history/templates/_history_results.html) — Prev/Next
+   reuse the .outline button skin defined above; this only adds the row layout and the
+   muted "Page X of Y" label between them. === */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.pagination-info {
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+}

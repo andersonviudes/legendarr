@@ -11,9 +11,16 @@ from legendarr_backend.subtitle_acquisition.models import AcquisitionAttempt, Ac
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_translation.models import TranslationAttempt, TranslationFailure
 
-# Flat, capped, most-recent-first feed — no date-range/filter UI for v1, same
-# "no date-range picker for v1" precedent as `statistics.compute_statistics`.
-DEFAULT_LIMIT = 50
+# Flat, capped, most-recent-first feed merged from the 4 source tables below, then
+# filtered/paginated in Python (see `list_history`) — `search`/`page` only ever reach
+# this many most-recent rows per source table, not the whole history ever recorded.
+# A true whole-database search would need a SQL-level join across all 4 tables to
+# MediaFile/Movie/Series instead of this Python-side merge; not worth it for a
+# self-hosted, single-user tool. Same "no date-range picker for v1" precedent as
+# `statistics.compute_statistics`.
+SCAN_LIMIT = 500
+
+DEFAULT_PAGE_SIZE = 25
 
 # Media title for an entry whose `MediaFile`/`Movie`/`Series` row is gone by the time
 # this runs (deleted since) — same "nothing to show" fallback as
@@ -41,38 +48,59 @@ class _RawEntry:
     previous_score: float | None
 
 
-def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEntryRead]:
+@dataclass(frozen=True)
+class HistoryPage:
+    """One page of `list_history`'s filtered, sorted feed. `total` is the count of
+    entries matching `search` (capped at `SCAN_LIMIT`), used by callers to compute how
+    many pages exist — it is NOT the same as `len(entries)` once a page has more
+    matches than fit in `page_size`.
+    """
+
+    entries: list[HistoryEntryRead]
+    total: int
+
+
+def list_history(
+    session: Session,
+    *,
+    search: str | None = None,
+    page: int = 1,
+    page_size: int = DEFAULT_PAGE_SIZE,
+) -> HistoryPage:
     """Most recent translation/acquisition attempts, successes and failures merged into
     one reverse-chronological feed — ROADMAP.md 0.20.0's History view. Each of the four
-    source tables is fetched newest-first and capped at `limit` before merging, so this
-    stays bounded regardless of how large any one of them has grown.
+    source tables is fetched newest-first and capped at `SCAN_LIMIT` before merging, so
+    this stays bounded regardless of how large any one of them has grown. `search`, if
+    given, is a case-insensitive substring match against every field the table shows
+    (media title, language, provider, category, status, error message) — a hit in any
+    one of them matches the row. `page`/`page_size` slice the filtered, sorted result.
     """
     translation_wins = list(
         session.exec(
             select(TranslationAttempt)
             .order_by(col(TranslationAttempt.translated_at).desc())
-            .limit(limit)
+            .limit(SCAN_LIMIT)
         )
     )
     translation_failures = list(
         session.exec(
             select(TranslationFailure)
             .order_by(col(TranslationFailure.failed_at).desc())
-            .limit(limit)
+            .limit(SCAN_LIMIT)
         )
     )
     acquisition_wins = list(
         session.exec(
             select(AcquisitionAttempt)
             .order_by(col(AcquisitionAttempt.attempted_at).desc())
-            .limit(limit)
+            .limit(SCAN_LIMIT)
         )
     )
     acquisition_failures = list(
         session.exec(
             select(AcquisitionFailure)
             .order_by(col(AcquisitionFailure.failed_at).desc())
-            .limit(limit)
+            .limit(SCAN_LIMIT)
         )
     )
 
@@ -154,12 +182,12 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
         )
 
     raw_entries.sort(key=lambda entry: entry.occurred_at, reverse=True)
-    raw_entries = raw_entries[:limit]
+    raw_entries = raw_entries[:SCAN_LIMIT]
 
     titles_by_media_file_id = _media_titles_by_file_id(
         session, {entry.media_file_id for entry in raw_entries}
     )
-    return [
+    entries = [
         HistoryEntryRead(
             category=entry.category,
             status=entry.status,
@@ -173,6 +201,28 @@ def list_history(session: Session, limit: int = DEFAULT_LIMIT) -> list[HistoryEn
         )
         for entry in raw_entries
     ]
+
+    if search:
+        entries = [entry for entry in entries if _matches(entry, search)]
+
+    total = len(entries)
+    page = max(page, 1)
+    page_size = max(page_size, 1)
+    start = (page - 1) * page_size
+    return HistoryPage(entries=entries[start : start + page_size], total=total)
+
+
+def _matches(entry: HistoryEntryRead, search: str) -> bool:
+    term = search.lower()
+    haystack = (
+        entry.media_title,
+        entry.language,
+        entry.provider,
+        entry.category,
+        entry.status,
+        entry.error_message,
+    )
+    return any(field is not None and term in field.lower() for field in haystack)
 
 
 def _subtitles_by_id(session: Session, subtitle_ids: set[int]) -> dict[int, Subtitle]:

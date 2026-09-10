@@ -14,7 +14,9 @@ def test_get_history_returns_empty_list_with_no_data(isolated_database):
         response = client.get("/history")
 
     assert response.status_code == 200
-    assert response.json() == []
+    body = response.json()
+    assert body["entries"] == []
+    assert body["total"] == 0
 
 
 def test_get_history_reflects_a_recorded_failure(isolated_database, tmp_path):
@@ -62,7 +64,7 @@ def test_get_history_reflects_a_recorded_failure(isolated_database, tmp_path):
         response = client.get("/history")
 
     assert response.status_code == 200
-    body = response.json()
+    body = response.json()["entries"]
     assert len(body) == 1
     assert body[0]["category"] == "translation"
     assert body[0]["status"] == "failure"
@@ -70,7 +72,7 @@ def test_get_history_reflects_a_recorded_failure(isolated_database, tmp_path):
     assert body[0]["error_message"] == "deepl: invalid API key"
 
 
-def test_get_history_respects_the_limit_query_param(isolated_database, tmp_path):
+def test_get_history_respects_the_page_size_query_param(isolated_database, tmp_path):
     with TestClient(create_api_app()) as client:
         with get_session() as session:
             service = create_arr_service(
@@ -113,7 +115,60 @@ def test_get_history_respects_the_limit_query_param(isolated_database, tmp_path)
                 )
             session.commit()
 
-        response = client.get("/history", params={"limit": 1})
+        response = client.get("/history", params={"page_size": 1})
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    body = response.json()
+    assert len(body["entries"]) == 1
+    assert body["total"] == 2
+
+
+def test_get_history_filters_by_the_q_query_param(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        with get_session() as session:
+            service = create_arr_service(
+                session,
+                ArrServiceInput(
+                    name="radarr",
+                    service_type="radarr",
+                    host="radarr",
+                    port=7878,
+                    api_key="api-key",
+                    remote_path_prefix="/remote",
+                    local_path_prefix=str(tmp_path),
+                ),
+            )
+            assert service.id is not None
+            movie = Movie(
+                arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo"
+            )
+            session.add(movie)
+            session.commit()
+            assert movie.id is not None
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo/Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            assert media_file.id is not None
+            for target_language in ["pt-BR", "es"]:
+                session.add(
+                    TranslationFailure(
+                        media_file_id=media_file.id,
+                        source_language="en",
+                        target_language=target_language,
+                        error_message="deepl: invalid API key",
+                        failed_at=datetime.now(UTC),
+                    )
+                )
+            session.commit()
+
+        response = client.get("/history", params={"q": "es"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["entries"][0]["language"] == "es"

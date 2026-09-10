@@ -27,3 +27,15 @@ class HistoryEntryRead(BaseModel):
     # what the new `score` improved from. `None` on every other row, including a
     # first-ever acquisition.
     previous_score: float | None
+
+
+class HistoryPageRead(BaseModel):
+    """One page of the History view's feed (`list_history.HistoryPage`). `total` is the
+    count of entries matching the current `q` search (capped at `list_history.SCAN_LIMIT`),
+    used by the web layer to compute how many pages exist.
+    """
+
+    entries: list[HistoryEntryRead]
+    total: int
+    page: int
+    page_size: int
