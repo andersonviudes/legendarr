@@ -7,50 +7,23 @@
   <p>{{ t("history.subtitle") }}</p>
 </hgroup>
 
-{% if not entries %}
-{{ empty_state(t("history.empty")) }}
-{% else %}
-<table>
-  <thead>
-    <tr>
-      <th scope="col">{{ t("history.table.status") }}</th>
-      <th scope="col">{{ t("history.table.category") }}</th>
-      <th scope="col">{{ t("common.table.title") }}</th>
-      <th scope="col">{{ t("history.table.language_provider") }}</th>
-      <th scope="col">{{ t("history.table.score") }}</th>
-      <th scope="col">{{ t("history.table.date") }}</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for entry in entries %}
-  <tr {% if entry.error_message %}title="{{ entry.error_message }}"{% endif %}>
-    <td>
-      <span class="task-line-status task-line-status--{{ entry.status }}">
-      {{ t("system.tasks.status_" ~ entry.status) }}
-      </span>
-    </td>
-    <td>
-      <span class="task-line-queue">
-      {% if entry.category == "translation" %}{{ icon("languages") }}
-      {% elif entry.category == "upgrade" %}{{ icon("refresh-cw") }}
-      {% else %}{{ icon("captions") }}
-      {% endif %}
-      {{ t("history.category." ~ entry.category) }}
-      </span>
-    </td>
-    <td>{{ entry.media_title }}</td>
-    <td>
-      {{ entry.language }}{% if entry.provider %} · {{ entry.provider }}{% endif %}
-    </td>
-    <td>
-    {% if entry.score is not none %}
-      {% if entry.previous_score is not none %}{{ (entry.previous_score * 100) | round | int }}% → {% endif %}{{ (entry.score * 100) | round | int }}%
-    {% else %}—{% endif %}
-    </td>
-    <td>{{ entry.occurred_at | local_datetime }}</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% endif %}
+<div class="history-search">
+  <input
+    type="search"
+    id="history-search-input"
+    name="q"
+    class="history-search-input"
+    placeholder="{{ t('common.search') }}"
+    value="{{ q }}"
+    autocomplete="off"
+    hx-get="/history/"
+    hx-trigger="input changed delay:300ms, search"
+    hx-target="#history-results"
+    hx-swap="innerHTML"
+  >
+</div>
+
+<div id="history-results">
+  {% include "_history_results.html" %}
+</div>
 {% endblock %}

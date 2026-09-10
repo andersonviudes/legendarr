@@ -81,7 +81,9 @@ def _subtitle(session, media_file: MediaFile, language: str) -> Subtitle:
 
 
 def test_list_history_empty_state(in_memory_session):
-    assert list_history(in_memory_session) == []
+    result = list_history(in_memory_session)
+    assert result.entries == []
+    assert result.total == 0
 
 
 def test_list_history_includes_translation_success_and_failure(in_memory_session, tmp_path):
@@ -111,7 +113,7 @@ def test_list_history_includes_translation_success_and_failure(in_memory_session
     )
     in_memory_session.commit()
 
-    entries = list_history(in_memory_session)
+    entries = list_history(in_memory_session).entries
 
     assert len(entries) == 2
     success = next(entry for entry in entries if entry.status == "success")
@@ -129,6 +131,64 @@ def test_list_history_includes_translation_success_and_failure(in_memory_session
     assert failure.provider is None
     assert failure.error_message == "google: quota exceeded"
     assert failure.score is None
+
+
+def test_list_history_search_matches_across_any_visible_field(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie=movie)
+    subtitle = _subtitle(in_memory_session, media_file, "pt-br")
+    assert subtitle.id is not None
+
+    in_memory_session.add(
+        TranslationAttempt(
+            subtitle_id=subtitle.id,
+            provider="deepl",
+            source_language="en",
+            target_language="pt-BR",
+            translated_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.add(
+        TranslationFailure(
+            media_file_id=media_file.id,
+            source_language="en",
+            target_language="es",
+            error_message="google: quota exceeded",
+            failed_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    by_provider = list_history(in_memory_session, search="deepl").entries
+    assert len(by_provider) == 1
+    assert by_provider[0].provider == "deepl"
+
+    by_error_message = list_history(in_memory_session, search="QUOTA").entries
+    assert len(by_error_message) == 1
+    assert by_error_message[0].error_message == "google: quota exceeded"
+
+    by_title = list_history(in_memory_session, search="foo").entries
+    assert len(by_title) == 2
+
+
+def test_list_history_search_with_no_matches_returns_empty(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie=movie)
+    in_memory_session.add(
+        TranslationFailure(
+            media_file_id=media_file.id,
+            source_language="en",
+            target_language="pt-BR",
+            error_message="deepl: timeout",
+            failed_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    result = list_history(in_memory_session, search="nonexistent")
+
+    assert result.entries == []
+    assert result.total == 0
 
 
 def test_list_history_includes_acquisition_success_and_failure(in_memory_session, tmp_path):
@@ -159,7 +219,7 @@ def test_list_history_includes_acquisition_success_and_failure(in_memory_session
     )
     in_memory_session.commit()
 
-    entries = list_history(in_memory_session)
+    entries = list_history(in_memory_session).entries
 
     assert len(entries) == 2
     success = next(entry for entry in entries if entry.status == "success")
@@ -211,7 +271,7 @@ def test_list_history_marks_a_replacement_attempt_as_upgrade(in_memory_session, 
     )
     in_memory_session.commit()
 
-    entries = list_history(in_memory_session)
+    entries = list_history(in_memory_session).entries
 
     assert len(entries) == 2
     upgrade = next(entry for entry in entries if entry.score == 0.8)
@@ -223,7 +283,7 @@ def test_list_history_marks_a_replacement_attempt_as_upgrade(in_memory_session, 
     assert first.previous_score is None
 
 
-def test_list_history_sorts_newest_first_and_caps_at_limit(in_memory_session, tmp_path):
+def test_list_history_sorts_newest_first_and_paginates(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie=movie)
     assert media_file.id is not None
@@ -241,11 +301,33 @@ def test_list_history_sorts_newest_first_and_caps_at_limit(in_memory_session, tm
         )
     in_memory_session.commit()
 
-    entries = list_history(in_memory_session, limit=2)
+    first_page = list_history(in_memory_session, page=1, page_size=2)
+    assert first_page.total == 3
+    assert [entry.error_message for entry in first_page.entries] == ["attempt 0", "attempt 1"]
 
-    assert len(entries) == 2
-    assert entries[0].error_message == "attempt 0"
-    assert entries[1].error_message == "attempt 1"
+    second_page = list_history(in_memory_session, page=2, page_size=2)
+    assert second_page.total == 3
+    assert [entry.error_message for entry in second_page.entries] == ["attempt 2"]
+
+
+def test_list_history_page_past_the_end_returns_empty_entries(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie=movie)
+    in_memory_session.add(
+        TranslationFailure(
+            media_file_id=media_file.id,
+            source_language="en",
+            target_language="pt-BR",
+            error_message="attempt 0",
+            failed_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    result = list_history(in_memory_session, page=5, page_size=2)
+
+    assert result.entries == []
+    assert result.total == 1
 
 
 def test_list_history_series_entry_title_includes_the_episode_filename(in_memory_session, tmp_path):
@@ -264,7 +346,7 @@ def test_list_history_series_entry_title_includes_the_episode_filename(in_memory
     )
     in_memory_session.commit()
 
-    entries = list_history(in_memory_session)
+    entries = list_history(in_memory_session).entries
 
     assert len(entries) == 1
     assert entries[0].media_title == "Bar — Foo.S01E01.mkv"

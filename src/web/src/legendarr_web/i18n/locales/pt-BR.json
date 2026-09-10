@@ -317,6 +317,10 @@
   "history.table.language_provider": "Idioma / Provedor",
   "history.table.score": "Pontuação",
   "history.table.date": "Data",
+  "history.search_no_results": "Nenhum item do histórico corresponde à sua busca.",
+  "history.pagination.prev": "Anterior",
+  "history.pagination.next": "Próxima",
+  "history.pagination.page_of": "Página {page} de {total_pages}",
 
   "statistics.subtitle": "Atividade de tradução e aquisição, ao longo do tempo.",
   "statistics.translated_heading": "Traduzidas",

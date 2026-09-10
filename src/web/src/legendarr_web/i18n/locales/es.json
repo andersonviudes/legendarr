@@ -317,6 +317,10 @@
   "history.table.language_provider": "Idioma / Proveedor",
   "history.table.score": "Puntuación",
   "history.table.date": "Fecha",
+  "history.search_no_results": "Ningún elemento del historial coincide con tu búsqueda.",
+  "history.pagination.prev": "Anterior",
+  "history.pagination.next": "Siguiente",
+  "history.pagination.page_of": "Página {page} de {total_pages}",
 
   "statistics.subtitle": "Actividad de traducción y adquisición, a lo largo del tiempo.",
   "statistics.translated_heading": "Traducidos",
