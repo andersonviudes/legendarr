@@ -1,0 +1,11 @@
+# Every path, one owner — this is a single-maintainer project, so there is no
+# per-slice split to make here.
+#
+# The immediate reason this file exists is Dependabot: GitHub removed the
+# `reviewers:` key from `dependabot.yml` on 2025-08-08 and made CODEOWNERS the
+# replacement, so without this its pull requests sit with no reviewer assigned.
+#
+# Note GitHub never requests review from a pull request's own author, so this
+# costs nothing on the PRs @andersonviudes opens — it only fills in the ones
+# opened by Dependabot and by anyone else.
+* @andersonviudes

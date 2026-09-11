@@ -48,5 +48,9 @@ titles come out as `chore(deps): bump ...` — a type `.github/workflows/pr-titl
 with a summary that starts lowercase as its `subjectPattern` requires (see
 [[legendarr-pr-title-semantic-lint]]).
 
-**Don't add a `reviewers:` key** — GitHub removed that option on 2025-08-08. A `CODEOWNERS` file
-is the replacement; this repo has none, so Dependabot PRs currently request no reviewer.
+**Don't add a `reviewers:` key** — GitHub removed that option on 2025-08-08. `.github/CODEOWNERS`
+(`* @andersonviudes`) is the replacement and is what gets Dependabot's PRs reviewed. It costs
+nothing on PRs the owner opens themselves, since GitHub never requests review from a PR's own
+author. `main` is unprotected, so nothing here *blocks* a merge — if branch protection with
+"require review from Code Owners" is ever turned on, that rule would make the sole maintainer
+unable to merge their own PRs.
