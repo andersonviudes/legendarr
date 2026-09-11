@@ -40,8 +40,15 @@ own:
 - `pip` at `/docs` — the MkDocs toolchain in `docs/requirements.txt`, which never reaches the
   shipped image.
 - `github-actions` at `/` — covers every file in `.github/workflows`.
-- `docker` at `/` — **only bumps the first `FROM`** (the `ghcr.io/astral-sh/uv` builder stage).
-  The `python:3.12-slim-bookworm` runtime stage in the second `FROM` still needs bumping by hand.
+- `docker` at `/` — the Dockerfile's base images. GitHub's docs claim only the *first* `FROM`
+  gets updated; observed behaviour on 2026-09-11 contradicts that, since the first PR it opened
+  (#133) bumped the **second** `FROM`, the `python:3.12-slim-bookworm` runtime stage, and left
+  the `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` builder alone. Don't rely on the
+  first-`FROM` rule either way. That PR wanted 3.12 → **3.14**, which would have shipped a broken
+  image: the builder compiles the virtualenv against 3.12 and the runtime just copies it in. An
+  `ignore` rule now holds the `python` image to patch releases of its current line — revisit it
+  as part of an actual Python upgrade, together with the builder tag, `requires-python` and
+  Ruff's `target-version`.
 
 `commit-message.prefix` is set per ecosystem (`chore`/`ci`/`build`) with `include: "scope"`, so
 titles come out as `chore(deps): bump ...` — a type `.github/workflows/pr-title.yml` accepts,
