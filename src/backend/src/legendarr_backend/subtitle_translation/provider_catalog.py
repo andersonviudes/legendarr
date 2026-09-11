@@ -12,6 +12,7 @@ from legendarr_backend.subtitle_translation.plugins import (
 
 BUILTIN_PROVIDER_LABELS: dict[str, str] = {
     "deepl": "DeepL",
+    "gemini": "Gemini (Google AI Studio)",
     "google": "Google Translate",
     "libretranslate": "LibreTranslate",
     "llm": "LLM (OpenAI-compatible)",
@@ -19,8 +20,12 @@ BUILTIN_PROVIDER_LABELS: dict[str, str] = {
 
 # Which field(s) each kind's edit form shows — a superset of what `has_credentials`
 # requires (e.g. `llm`'s `endpoint`/`model` are shown but optional, see `models.py`).
+# `google` is the extreme case: its one field is entirely optional, since a blank API Key
+# means "use the free keyless endpoint" rather than "not configured yet". `gemini` has no
+# `endpoint` — it's pinned to Google AI Studio's OpenAI-compatible URL.
 BUILTIN_PROVIDER_CREDENTIAL_FIELDS: dict[str, tuple[str, ...]] = {
     "deepl": ("api_key",),
+    "gemini": ("api_key", "model", "prompt_template"),
     "google": ("api_key",),
     "libretranslate": ("endpoint", "api_key"),
     "llm": ("endpoint", "api_key", "model", "prompt_template"),

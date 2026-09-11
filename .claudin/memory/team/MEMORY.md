@@ -52,3 +52,5 @@
 - [legendarr opensubtitles hash hang fix](legendarr-opensubtitles-hash-hang-fix.md) — PR #130 closed it out: napiprojekt hash guarded, ThreadPoolExecutor fan-out replaced, hash gated, stalled badge
 - [legendarr README HTML sanitizer gotcha](legendarr-readme-html-sanitizer-gotcha.md) — GitHub strips `style` from README HTML, and only align="absmiddle" is real vertical-align:middle
 - [legendarr GitHub security & Dependabot](legendarr-github-security-and-dependabot.md) — what's enabled, what the API silently refuses, and the four dependabot.yml ecosystems
+- [legendarr free translation providers](legendarr-free-translation-providers.md) — PR #143: keyless google + gemini kind, why no deep-translator, per-line fan-out and failure ceiling
+- [Bazarr translation architecture](legendarr-bazarr-translation-architecture.md) — reference: Bazarr's 3 pluggable translate backends, one-request-per-line Google, no DeepL, Whisper is separate

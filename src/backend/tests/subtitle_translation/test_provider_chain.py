@@ -4,7 +4,11 @@ from legendarr_backend.subtitle_translation import plugins
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
 from legendarr_backend.subtitle_translation.provider_chain import resolve_provider_chain
 from legendarr_backend.subtitle_translation.providers.deepl import DeepLTranslationProvider
-from legendarr_backend.subtitle_translation.providers.google import GoogleTranslationProvider
+from legendarr_backend.subtitle_translation.providers.gemini import GeminiTranslationProvider
+from legendarr_backend.subtitle_translation.providers.google import (
+    GoogleCloudTranslationProvider,
+    GoogleFreeTranslationProvider,
+)
 from legendarr_backend.subtitle_translation.providers.libretranslate import (
     LibreTranslateTranslationProvider,
 )
@@ -45,7 +49,7 @@ def test_resolve_provider_chain_orders_enabled_credentialed_providers_by_id(in_m
 
     assert [type(provider) for provider in chain] == [
         DeepLTranslationProvider,
-        GoogleTranslationProvider,
+        GoogleCloudTranslationProvider,
     ]
 
 
@@ -80,7 +84,7 @@ def test_resolve_provider_chain_moves_default_to_front(in_memory_session):
     assert [type(provider) for provider in chain] == [
         LibreTranslateTranslationProvider,
         DeepLTranslationProvider,
-        GoogleTranslationProvider,
+        GoogleCloudTranslationProvider,
     ]
 
 
@@ -135,3 +139,32 @@ def test_resolve_provider_chain_promotes_a_plugin_set_as_default(in_memory_sessi
     chain = resolve_provider_chain(in_memory_session, default_kind="fixture-plugin")
 
     assert [type(provider) for provider in chain] == [_FixturePlugin, DeepLTranslationProvider]
+
+
+def test_resolve_provider_chain_includes_google_without_an_api_key(in_memory_session):
+    """The keyless backend needs no credential, so an enabled `google` row is usable as
+    soon as it's switched on — this is the zero-configuration path."""
+    in_memory_session.add(TranslationProviderConfig(kind="google", enabled=True, api_key=None))
+    in_memory_session.commit()
+
+    chain = resolve_provider_chain(in_memory_session)
+
+    assert [type(provider) for provider in chain] == [GoogleFreeTranslationProvider]
+
+
+def test_resolve_provider_chain_picks_the_google_backend_per_row(in_memory_session):
+    in_memory_session.add(TranslationProviderConfig(kind="google", enabled=True, api_key="a-key"))
+    in_memory_session.commit()
+
+    chain = resolve_provider_chain(in_memory_session)
+
+    assert [type(provider) for provider in chain] == [GoogleCloudTranslationProvider]
+
+
+def test_resolve_provider_chain_includes_gemini_when_configured(in_memory_session):
+    in_memory_session.add(TranslationProviderConfig(kind="gemini", enabled=True, api_key="a-key"))
+    in_memory_session.commit()
+
+    chain = resolve_provider_chain(in_memory_session)
+
+    assert [type(provider) for provider in chain] == [GeminiTranslationProvider]

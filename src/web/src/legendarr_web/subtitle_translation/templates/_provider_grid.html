@@ -17,7 +17,9 @@
     </header>
     <p class="service-card-address">
       {% if provider.credential_fields %}
-      {{ t("subtitle_translation.requires_credentials") }}
+      {# `credentials_optional` is computed backend-side (see models.py) so this stays a
+         plain read, like `label`/`credential_fields` — no per-kind table in the web layer. #}
+      {{ t("subtitle_translation.credentials_optional") if provider.credentials_optional else t("subtitle_translation.requires_credentials") }}
       {% else %}
       {{ t("subtitle_translation.run_test_to_enable") }}
       {% endif %}

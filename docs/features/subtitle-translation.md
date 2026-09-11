@@ -11,9 +11,11 @@ class TranslationProvider(Protocol):
     ) -> list[str]: ...
 ```
 
-Every subtitle is translated in one call — every line goes out together and comes back in
-the same order — instead of one request per line. This keeps the translation step decoupled
-from whichever service does the actual work.
+A whole subtitle goes into a single `translate_batch` call and comes back in the same order,
+so the translation step stays decoupled from whichever service does the actual work. How
+that batch reaches the service is each provider's business: most send it as one or a few
+requests, while `google` without an API Key has to send one request per line, because the
+free endpoint it uses takes a single string at a time.
 
 ## Built-in providers
 
@@ -21,16 +23,37 @@ from whichever service does the actual work.
 | --- | --- |
 | `echo` | Returns the input unchanged. Used for local development and tests. |
 | `deepl` | [DeepL](https://www.deepl.com/) — needs an API Key. Free-tier (`:fx`-suffixed) keys are routed to the free-tier host automatically. |
-| `google` | Google Cloud Translation (v2) — needs an API Key. |
+| `google` | Google Translate. **Works with no credentials at all**: left blank, it uses Google's free public endpoint. Set a Google Cloud Translation (v2) API Key to use the paid API instead. |
+| `gemini` | [Gemini](https://aistudio.google.com/) via Google AI Studio's OpenAI-compatible endpoint — needs an API Key, which is free and doesn't require a credit card. Model defaults to `gemini-2.0-flash`. |
 | `libretranslate` | [LibreTranslate](https://libretranslate.com/) — self-hosted, needs an Endpoint URL; an API Key is only required by instances that opt into one. |
 | `llm` | Any OpenAI-compatible `/chat/completions` API — OpenAI itself, or a self-hosted/third-party endpoint that speaks the same protocol (Ollama, LM Studio, OpenRouter, Groq, ...). Needs an API Key; Endpoint and Model both default (to `https://api.openai.com/v1` and `gpt-4o-mini`) when left blank. |
 
 ![Translation providers settings page](../assets/screenshots/translation-providers.png)
 
-`deepl`, `google`, `libretranslate`, and `llm` are registered and credentialed from
+Every provider above except `echo` is registered and credentialed from
 `/settings/translation-providers/`: enable the ones you want, fill in whichever credential
 fields they need, and use "Test connection" to confirm they're reachable before relying on
 them. `echo` needs no credentials and is always available, for development.
+
+### Translating without paying for anything
+
+Two of the providers work on a free account, or none at all:
+
+- **`google` with a blank API Key** is the zero-setup option — enable it, test the
+  connection, and it works. The trade-offs are real, though: the public endpoint takes one
+  line per request, so a feature-length subtitle is over a thousand requests (overlapped
+  across a few threads and retried with backoff when Google rate-limits them), and it's an
+  undocumented endpoint Google can change without notice. Lines that still fail after
+  retrying keep their original text; if more than 10% of a subtitle fails, the whole
+  translation is treated as failed so the next provider in the chain gets a turn.
+- **`gemini`** needs a free API key from [Google AI Studio](https://aistudio.google.com/),
+  with no credit card. Quality is noticeably better than any of the NMT engines here,
+  particularly for idiom and for keeping a consistent register across a film. The free
+  tier is capped per day, so it suits a normal library rather than a bulk re-translation of
+  everything at once.
+
+Both `gemini` and `llm` send at most 300 subtitle lines per request, so a long subtitle is
+split across several calls rather than asking one response to carry the whole film.
 
 ## Provider selection
 

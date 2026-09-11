@@ -9,9 +9,11 @@ from legendarr_backend.subtitle_translation.connection_tests import (
 from legendarr_backend.subtitle_translation.models import (
     _API_KEY_KINDS,
     _ENDPOINT_KINDS,
+    _NO_CREDENTIAL_KINDS,
     TRANSLATION_PROVIDER_KINDS,
     TranslationProviderConfig,
 )
+from legendarr_backend.subtitle_translation.providers.gemini import GEMINI_ENDPOINT
 
 
 class _PluginWithoutConnectionTest:
@@ -105,11 +107,36 @@ def test_deepl_uses_the_free_host_for_fx_suffixed_keys(monkeypatch):
     assert seen_hosts == ["https://api-free.deepl.com", "https://api.deepl.com"]
 
 
-def test_google_requires_api_key():
+def test_google_without_an_api_key_probes_the_free_endpoint(monkeypatch):
+    seen_paths = []
+
+    def _get_json(self, path):
+        seen_paths.append(path)
+        return [[["Hola", "Hello", None, None, 10]], None, "en"]
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _get_json)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    success, message = check_connection(_config(kind="google", api_key=None))
+
+    assert success is True
+    assert message == "Connection successful"
+    assert seen_paths[0].startswith("/translate_a/single?")
+
+
+def test_google_without_an_api_key_reports_an_unreachable_free_endpoint(monkeypatch):
+    def _raise(self, path):
+        request = httpx.Request("GET", "https://translate.googleapis.com/translate_a/single")
+        cause = httpx.ConnectError("connection refused", request=request)
+        raise ProviderClientError("Google Translate request failed") from cause
+
+    monkeypatch.setattr(ProviderHttpClient, "get_json", _raise)
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
     success, message = check_connection(_config(kind="google", api_key=None))
 
     assert success is False
-    assert "API Key" in message
+    assert "1 of 1 subtitle lines" in message
 
 
 def test_google_succeeds(monkeypatch):
@@ -191,6 +218,29 @@ def test_llm_requires_api_key():
     assert "API Key" in message
 
 
+def test_gemini_requires_api_key():
+    success, message = check_connection(_config(kind="gemini", api_key=None))
+
+    assert success is False
+    assert "API Key" in message
+
+
+def test_gemini_probes_ai_studio_by_default(monkeypatch):
+    seen_hosts = []
+
+    def _record_init(self, provider, base_url, headers=None, timeout=None):
+        seen_hosts.append(base_url)
+
+    monkeypatch.setattr(ProviderHttpClient, "__init__", _record_init)
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+
+    success, message = check_connection(_config(kind="gemini", api_key="a-key"))
+
+    assert success is True
+    assert seen_hosts == [GEMINI_ENDPOINT]
+
+
 def test_llm_succeeds(monkeypatch):
     monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: {"data": []})
 
@@ -236,11 +286,11 @@ def test_plugin_with_a_connection_test_uses_it(monkeypatch):
     assert message == "custom failure"
 
 
-def test_credential_kinds_match_what_connection_tests_actually_requires():
-    """`models._API_KEY_KINDS`/`_ENDPOINT_KINDS` (used for `has_credentials`/`is_configured`
-    gating) and each `_test_*` function's own `_require()` calls encode the same fact in two
-    places — this pins them together so a kind added to one but not the other fails loudly
-    here instead of silently breaking gating."""
+def test_credential_kinds_match_what_connection_tests_actually_requires(monkeypatch):
+    """`models._API_KEY_KINDS`/`_ENDPOINT_KINDS`/`_NO_CREDENTIAL_KINDS` (used for
+    `has_credentials`/`is_configured` gating) and each `_test_*` function's own `_require()`
+    calls encode the same fact in two places — this pins them together so a kind added to one
+    but not the other fails loudly here instead of silently breaking gating."""
     for kind in _API_KEY_KINDS:
         success, message = check_connection(_config(kind=kind, api_key=None))
         assert success is False, f"{kind}: expected a missing-API-Key failure"
@@ -251,4 +301,14 @@ def test_credential_kinds_match_what_connection_tests_actually_requires():
         assert success is False, f"{kind}: expected a missing-endpoint failure"
         assert "Unknown provider kind" not in message, f"{kind}: missing a _TESTERS entry"
 
-    assert set(TRANSLATION_PROVIDER_KINDS) == _API_KEY_KINDS | _ENDPOINT_KINDS
+    # A no-credential kind must not report a *missing credential* — its check has to go
+    # ahead and probe. Stubbed so this never reaches the network.
+    monkeypatch.setattr(ProviderHttpClient, "get_json", lambda self, path: [[["hola", "hello"]]])
+    monkeypatch.setattr(ProviderHttpClient, "close", lambda self: None)
+    for kind in _NO_CREDENTIAL_KINDS:
+        success, message = check_connection(_config(kind=kind))
+        assert success is True, f"{kind}: expected a credential-free check to run, got {message}"
+
+    assert (
+        set(TRANSLATION_PROVIDER_KINDS) == _API_KEY_KINDS | _ENDPOINT_KINDS | _NO_CREDENTIAL_KINDS
+    )

@@ -4,6 +4,10 @@ Mirrors `legendarr_backend.subtitle_acquisition.connection_tests` — this is de
 the `translate()` call itself, each function here only answers "is this reachable/
 authenticated," not "translate this text." Endpoints below were confirmed against each
 provider's official API docs.
+
+`google` in its keyless mode is the one exception: the public `translate_a/single` endpoint
+is the only thing there is to probe — no `/languages`, no credential to validate — so that
+check really does translate one word.
 """
 
 from legendarr_backend.http_client.client import (
@@ -13,6 +17,10 @@ from legendarr_backend.http_client.client import (
 )
 from legendarr_backend.subtitle_translation.models import TranslationProviderConfig
 from legendarr_backend.subtitle_translation.plugins import plugin_provider_classes
+from legendarr_backend.subtitle_translation.providers.gemini import GEMINI_ENDPOINT
+from legendarr_backend.subtitle_translation.providers.google import (
+    GoogleFreeTranslationProvider,
+)
 from legendarr_backend.subtitle_translation.providers.llm import DEFAULT_LLM_ENDPOINT
 
 ConnectionTestResult = tuple[bool, str]
@@ -67,9 +75,9 @@ def _test_deepl(config: TranslationProviderConfig) -> ConnectionTestResult:
 
 
 def _test_google(config: TranslationProviderConfig) -> ConnectionTestResult:
-    if (error := _require(config.api_key, "An API Key")) is not None:
-        return False, error
-    assert config.api_key is not None
+    # No API Key means the keyless public endpoint, which has no credential to check.
+    if not config.api_key:
+        return _test_google_free(config)
     client = ProviderHttpClient("Google Translate", "https://translation.googleapis.com")
     try:
         client.get_json(f"/language/translate/v2/languages?key={config.api_key}")
@@ -80,6 +88,24 @@ def _test_google(config: TranslationProviderConfig) -> ConnectionTestResult:
         return False, describe_error(exc).replace(config.api_key, "***")
     finally:
         client.close()
+    return True, "Connection successful"
+
+
+def _test_google_free(config: TranslationProviderConfig) -> ConnectionTestResult:
+    """Translate one word through the real keyless backend. Going through
+    `GoogleFreeTranslationProvider` rather than hand-rolling the request keeps the probe
+    honest: it exercises the same URL shape, user-agent and response parsing a real
+    translation would, so a "Connection successful" here means the endpoint still answers
+    *us*, not just that the host is up.
+    """
+    try:
+        GoogleFreeTranslationProvider(config).translate_batch(["Hello"], "en", "es")
+    except ProviderClientError as exc:
+        return False, describe_error(exc)
+    except Exception as exc:
+        # An endpoint change that breaks the response parsing should read as a failed
+        # test, not as a 500 on the route.
+        return False, f"Google Translate returned an unexpected response: {exc}"
     return True, "Connection successful"
 
 
@@ -100,12 +126,16 @@ def _test_libretranslate(config: TranslationProviderConfig) -> ConnectionTestRes
     return True, "Connection successful"
 
 
-def _test_llm(config: TranslationProviderConfig) -> ConnectionTestResult:
+def _test_openai_compatible(
+    config: TranslationProviderConfig, label: str, default_endpoint: str
+) -> ConnectionTestResult:
+    """Shared `/models` probe for every kind speaking the OpenAI protocol — `llm` and
+    `gemini` differ only in which endpoint a blank config falls back to."""
     if (error := _require(config.api_key, "An API Key")) is not None:
         return False, error
-    endpoint = config.endpoint or DEFAULT_LLM_ENDPOINT
+    endpoint = config.endpoint or default_endpoint
     client = ProviderHttpClient(
-        "LLM", endpoint, headers={"Authorization": f"Bearer {config.api_key}"}
+        label, endpoint, headers={"Authorization": f"Bearer {config.api_key}"}
     )
     try:
         client.get_json("/models")
@@ -116,8 +146,17 @@ def _test_llm(config: TranslationProviderConfig) -> ConnectionTestResult:
     return True, "Connection successful"
 
 
+def _test_llm(config: TranslationProviderConfig) -> ConnectionTestResult:
+    return _test_openai_compatible(config, "LLM", DEFAULT_LLM_ENDPOINT)
+
+
+def _test_gemini(config: TranslationProviderConfig) -> ConnectionTestResult:
+    return _test_openai_compatible(config, "Gemini", GEMINI_ENDPOINT)
+
+
 _TESTERS = {
     "deepl": _test_deepl,
+    "gemini": _test_gemini,
     "google": _test_google,
     "libretranslate": _test_libretranslate,
     "llm": _test_llm,

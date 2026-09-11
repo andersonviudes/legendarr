@@ -280,10 +280,13 @@
   "subtitle_translation.endpoint_label": "URL del endpoint",
   "subtitle_translation.model_label": "Modelo",
   "subtitle_translation.model_hint": "Deja Endpoint y Modelo en blanco para usar la API de OpenAI con gpt-4o-mini — o configúralos para apuntar a un endpoint autoalojado o de terceros compatible con OpenAI.",
+  "subtitle_translation.google_api_key_hint": "Opcional. Déjalo en blanco para usar el endpoint público gratuito de Google, que no necesita cuenta — traduce una línea por petición, así que es más lento y de vez en cuando sufre límite de tasa. Indica una API Key de Google Cloud Translation para usar la API de pago.",
+  "subtitle_translation.gemini_model_hint": "Deja Modelo en blanco para usar gemini-2.0-flash. Consigue una API key gratuita en Google AI Studio (aistudio.google.com) — sin tarjeta de crédito.",
   "subtitle_translation.prompt_template_label": "Plantilla de prompt",
   "subtitle_translation.prompt_template_placeholder": "Dejar en blanco para usar el prompt predeterminado",
   "subtitle_translation.prompt_template_hint": "Usa {source}, {target} y {count} como marcadores de posición. Escribe una llave literal dos veces seguidas para que no se interprete como una.",
   "subtitle_translation.requires_credentials": "Requiere credenciales",
+  "subtitle_translation.credentials_optional": "Funciona sin credenciales",
   "subtitle_translation.run_test_to_enable": "Ejecuta \"Probar\" para habilitar",
   "subtitle_translation.set_as_default": "Establecer como predeterminado",
 

@@ -7,16 +7,18 @@ from sqlmodel import Field, SQLModel
 from legendarr_backend.security.encrypted_string import EncryptedString
 
 # Single source of truth for every recognized translation provider kind.
-TranslationProviderKind = Literal["deepl", "google", "libretranslate", "llm"]
+TranslationProviderKind = Literal["deepl", "gemini", "google", "libretranslate", "llm"]
 
 # Derived from the Literal above rather than hand-duplicated, so the two can't drift apart.
 TRANSLATION_PROVIDER_KINDS: tuple[TranslationProviderKind, ...] = get_args(TranslationProviderKind)
 
 # Which credential(s) each kind needs to be usable — mirrors the `_require()` checks in
-# `connection_tests.py`. Unlike subtitle sources, every translation provider kind needs at
-# least one of these today, so there's no "no credential concept" branch (yet).
-_API_KEY_KINDS = {"deepl", "google", "llm"}
+# `connection_tests.py`. `google` is in neither set: its keyless public endpoint needs no
+# credential at all, and the API Key it still *accepts* only switches it over to the paid
+# Cloud Translation API (`providers/google.build_google_provider`).
+_API_KEY_KINDS = {"deepl", "gemini", "llm"}
 _ENDPOINT_KINDS = {"libretranslate"}
+_NO_CREDENTIAL_KINDS = {"google"}
 
 
 class TranslationProviderConfig(SQLModel, table=True):
@@ -55,6 +57,8 @@ class TranslationProviderConfig(SQLModel, table=True):
             return bool(self.api_key)
         if self.kind in _ENDPOINT_KINDS:
             return bool(self.endpoint)
+        if self.kind in _NO_CREDENTIAL_KINDS:
+            return True
         # Not a built-in kind — a dynamically-loaded plugin (ROADMAP.md 0.9.0). Deferred
         # import: `plugins.py` imports this module for `TRANSLATION_PROVIDER_KINDS`, so
         # importing it back at module level here would be circular.
@@ -69,9 +73,10 @@ class TranslationProviderConfig(SQLModel, table=True):
 
     @property
     def is_configured(self) -> bool:
-        """Whether the enable toggle should be available at all. Every kind in this catalog
-        needs a credential, so this mirrors `has_credentials` — there's no reachability-only
-        kind yet (unlike `SubtitleProviderConfig`)."""
+        """Whether the enable toggle should be available at all — mirrors
+        `has_credentials`, which already answers "True" for the kinds that need no
+        credential (`google` in its keyless mode), same as `SubtitleProviderConfig`'s
+        reachability-only sources."""
         return self.has_credentials
 
     @property
@@ -91,6 +96,14 @@ class TranslationProviderConfig(SQLModel, table=True):
         )
 
         return provider_credential_fields(self.kind)
+
+    @property
+    def credentials_optional(self) -> bool:
+        """Whether this kind renders credential field(s) that it doesn't actually need —
+        `google`, whose API Key only switches it from the free keyless endpoint to the paid
+        Cloud API. The provider grid needs this to avoid captioning such a card "requires
+        credentials" when the whole point is that it doesn't."""
+        return self.kind in _NO_CREDENTIAL_KINDS and bool(self.credential_fields)
 
 
 class TranslationAttempt(SQLModel, table=True):
