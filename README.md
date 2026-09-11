@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="branding/legendarr-mark-512.png" alt="legendarr" width="32" height="32" style="vertical-align: middle;">
+  <img src="branding/legendarr-mark-512.png" alt="legendarr" width="32" height="32" align="middle">
   legendarr
 </h1>
 
@@ -13,9 +13,7 @@
   <a href="https://hub.docker.com/r/andersonviudes/legendarr">
     <img src="https://img.shields.io/docker/pulls/andersonviudes/legendarr" alt="docker pulls">
   </a>
-  <a href="https://github.com/andersonviudes/legendarr">
-    <img src="https://img.shields.io/github/languages/code-size/andersonviudes/legendarr" alt="code size">
-  </a>
+  <img src="https://img.shields.io/github/languages/code-size/andersonviudes/legendarr" alt="code size">
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/andersonviudes/legendarr" alt="License">
   </a>
