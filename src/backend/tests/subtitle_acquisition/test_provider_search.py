@@ -1,3 +1,6 @@
+import threading
+import time
+
 from legendarr_backend.scheduling.circuit_breaker import (
     FAILURE_THRESHOLD,
     BreakerCategory,
@@ -54,6 +57,35 @@ class _FailingProvider:
     ):
         self.search_calls.append({"title": title, "language": language})
         raise RuntimeError("boom")
+
+    def download(self, result):
+        raise NotImplementedError
+
+
+class _StalledProvider:
+    """Stands in for a provider blocked on something no HTTP timeout covers — the hash
+    read off an unresponsive network mount `providers/napiprojekt_hash.py` does before
+    any request goes out. Never returns until `release` is set."""
+
+    def __init__(self, name: str = "stalled"):
+        self.name = name
+        self.release = threading.Event()
+
+    def search(
+        self,
+        title,
+        language,
+        *,
+        imdb_id=None,
+        moviehash=None,
+        season=None,
+        episode=None,
+        video_path=None,
+        tvdb_id=None,
+        series_imdb_id=None,
+    ):
+        self.release.wait()
+        return []
 
     def download(self, result):
         raise NotImplementedError
@@ -226,3 +258,42 @@ def test_on_dispatch_called_once_per_eligible_provider_in_chain_order_before_res
     _search([open_circuit, provider_a, provider_b], on_dispatch=lambda p: dispatched.append(p.name))
 
     assert dispatched == ["provider-a", "provider-b"]
+
+
+def test_a_stalled_provider_is_abandoned_instead_of_wedging_the_search(
+    isolated_circuit_breakers,
+):
+    """The regression this exists to prevent: the searches used to run in a
+    `with ThreadPoolExecutor(...)` block, whose `__exit__` waits for every submitted
+    search — so one provider that never returned held the acquisition worker forever,
+    showing up as a task stuck for hours in Live Activity.
+    """
+    stalled = _StalledProvider()
+    working = _FakeProvider(
+        "working",
+        results=[SubtitleSearchResult(release_name="Foo", download_id="1", language="en")],
+    )
+
+    try:
+        started = time.monotonic()
+        scored, last_error, last_provider_name = _search([stalled, working], timeout_seconds=0.05)
+        elapsed = time.monotonic() - started
+    finally:
+        stalled.release.set()
+
+    assert elapsed < 5.0
+    assert [sc.candidate.provider for sc in scored] == ["working"]
+    assert isinstance(last_error, TimeoutError)
+    assert last_provider_name == "stalled"
+
+
+def test_a_stalled_provider_counts_as_a_circuit_breaker_failure(isolated_circuit_breakers):
+    stalled = _StalledProvider()
+
+    try:
+        for _ in range(FAILURE_THRESHOLD):
+            _search([stalled], timeout_seconds=0.05)
+    finally:
+        stalled.release.set()
+
+    assert is_open(BreakerCategory.ACQUISITION, "stalled") is True

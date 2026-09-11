@@ -66,10 +66,17 @@ class NapiprojektProvider:
         OpenSubtitles' own algorithm, not Napiprojekt's (see `napiprojekt_hash.py`)."""
         if language.strip().lower() != "pl":
             return []
-        if video_path is None or not video_path.is_file():
+        if video_path is None:
             logger.debug("napiprojekt search skipped for %r: no local video file to hash", title)
             return []
         napiprojekt_hash = compute_napiprojekt_hash(video_path)
+        if napiprojekt_hash is None:
+            logger.debug(
+                "napiprojekt search skipped for %r: %s is missing or unreadable",
+                title,
+                video_path,
+            )
+            return []
         client = ProviderHttpClient("Napiprojekt", NAPIPROJEKT_BASE_URL)
         try:
             response = client.request("GET", _query_path(napiprojekt_hash, "PL"))

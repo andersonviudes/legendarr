@@ -38,3 +38,10 @@ capacity or multiply itself in the Tasks/Live Activity view on every fan-out cyc
 sites this PR touched. Any new job that runs arbitrary-duration external work (subprocess,
 model inference, a network call with no built-in timeout) should bound it with an
 abandoned-daemon-thread timeout like `_transcribe_with_timeout`, not a bare blocking call.
+
+**Extended 2026-09-11:** never fan work out with `with ThreadPoolExecutor(...) as executor:` in
+a job path either — `__exit__` is `shutdown(wait=True)`, so one stuck worker thread wedges the
+job permanently, and the pool's non-daemon threads block interpreter shutdown on top of it. Use
+the `Thread(daemon=True)` + shared-deadline `join()` shape `subtitle_acquisition/
+provider_search.py`'s `_search_all` now uses. See [[legendarr-opensubtitles-hash-hang-fix]] for
+the full chain of call sites this pattern has had to be applied to.

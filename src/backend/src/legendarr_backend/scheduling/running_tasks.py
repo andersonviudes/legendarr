@@ -1,3 +1,4 @@
+import logging
 import threading
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -16,6 +17,19 @@ from apscheduler.events import (
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+
+logger = logging.getLogger(__name__)
+
+# How long a genuinely-running (not queued) task may go without finishing before
+# `RunningTaskRegistry.tasks()` flags it as stalled. Purely a visibility signal: a
+# thread blocked in a syscall — a read off a network mount that stopped answering — is
+# not interruptible from Python, so a wedged job keeps its executor slot until the
+# process restarts, and saying so is the whole remedy available here. The timeouts in
+# `subtitle_acquisition/provider_search.py` and the hash helpers are what keep most
+# jobs from getting there in the first place. Set well above the slowest job that's
+# still working normally (`Settings.speech_to_text_timeout_seconds` alone allows 1800s
+# for a single file) so "slow" is never reported as "stuck".
+STALLED_TASK_THRESHOLD_SECONDS = 7200.0
 
 
 @dataclass(frozen=True)
@@ -41,6 +55,11 @@ class RunningTask:
     total_steps: int | None = None
     language: str | None = None
     provider: str | None = None
+    # Set by `tasks()`, not by `submit()`, same as `queued` — a task that's been
+    # executing longer than `STALLED_TASK_THRESHOLD_SECONDS`. Never set on a queued
+    # task, whose `started_at` is really "submitted at" and so isn't an elapsed-time
+    # anchor at all.
+    stalled: bool = False
 
 
 class RunningTaskRegistry:
@@ -77,6 +96,10 @@ class RunningTaskRegistry:
         self._queue_workers: dict[JobQueue, int] = (
             queue_workers if queue_workers is not None else QUEUE_WORKERS
         )
+        # `tasks()`'s one-warning-per-stalled-task guard — keyed like `_tasks` and
+        # pruned alongside it, so a long-lived process doesn't accumulate keys for
+        # tasks that finished ages ago.
+        self._stall_warned: set[tuple[str, datetime]] = set()
         self._lock = threading.Lock()
 
     def configure(self, queue_workers: dict[JobQueue, int]) -> None:
@@ -117,6 +140,7 @@ class RunningTaskRegistry:
     def finish(self, event: JobExecutionEvent) -> None:
         with self._lock:
             self._tasks.pop((event.job_id, event.scheduled_run_time), None)
+            self._stall_warned.discard((event.job_id, event.scheduled_run_time))
 
     def report_progress(
         self,
@@ -148,7 +172,8 @@ class RunningTaskRegistry:
 
     def tasks(self) -> list[RunningTask]:
         """Every submitted-but-not-finished task, `queued` flagged for the ones that
-        haven't actually started executing yet.
+        haven't actually started executing yet and `stalled` for the ones that have
+        been executing too long to still be working.
 
         `_tasks` preserves submission order (dict insertion order), and so does each
         queue's own `ThreadPoolExecutor` — one shared FIFO work queue per executor,
@@ -156,19 +181,37 @@ class RunningTaskRegistry:
         `QUEUE_WORKERS[queue]` not-yet-finished tasks *for that queue*, in submission
         order, are the ones a worker thread is genuinely running right now; anything past
         that is still waiting in line behind them, no matter how long ago it was submitted.
+
+        A running task past `STALLED_TASK_THRESHOLD_SECONDS` is also warned about, once
+        each — this is the only place that ever looks at a running task again, since a
+        job that never returns never fires the `JobExecutionEvent` `finish()` waits for.
         """
+        newly_stalled: list[RunningTask] = []
         with self._lock:
             in_flight: dict[str, int] = {}
             result = []
-            for task in self._tasks.values():
+            for key, task in self._tasks.items():
                 ahead = in_flight.get(task.queue, 0)
                 in_flight[task.queue] = ahead + 1
                 # `task.queue` is always a `JobQueue.value` set at `add_job` time
                 # (`job.executor`) — round-trip it back to the enum `QUEUE_WORKERS` is
                 # keyed by instead of relying on `StrEnum`'s str-equality for the lookup.
                 capacity = self._queue_workers.get(JobQueue(task.queue), 1)
-                result.append(task if ahead < capacity else replace(task, queued=True))
-            return result
+                queued = ahead >= capacity
+                stalled = not queued and _has_stalled(task)
+                if stalled and key not in self._stall_warned:
+                    self._stall_warned.add(key)
+                    newly_stalled.append(task)
+                result.append(replace(task, queued=queued, stalled=stalled))
+        for task in newly_stalled:
+            logger.warning(
+                "task %r on queue %r has been running since %s without finishing — its "
+                "worker slot stays taken until the process restarts",
+                task.job_id,
+                task.queue,
+                task.started_at.isoformat(timespec="seconds"),
+            )
+        return result
 
     def is_active(self, job_id: str) -> bool:
         """Whether `job_id` is already dispatched to an executor — either genuinely
@@ -186,7 +229,12 @@ class RunningTaskRegistry:
         with self._lock:
             self._tasks.clear()
             self._job_meta.clear()
+            self._stall_warned.clear()
             self._queue_workers = QUEUE_WORKERS
+
+
+def _has_stalled(task: RunningTask) -> bool:
+    return (datetime.now() - task.started_at).total_seconds() >= STALLED_TASK_THRESHOLD_SECONDS
 
 
 _registry = RunningTaskRegistry()

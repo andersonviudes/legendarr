@@ -2423,6 +2423,13 @@ button.contrast:is(:hover, :focus),
   color: var(--pico-muted-color);
 }
 
+/* Running-tasks list only — a task still executing long after it should have finished
+   (`RunningTask.stalled`, `scheduling/running_tasks.py`). Warn-colored rather than
+   failure-colored: nothing has failed yet, but its worker slot is gone until restart. */
+.task-line-status--stalled {
+  color: var(--lg-warn-color);
+}
+
 /* === Login page (authentication/templates/login.html) — the one page that doesn't
    extend base.html, so it needs its own centered layout instead of .app-shell. === */
 .login-page {

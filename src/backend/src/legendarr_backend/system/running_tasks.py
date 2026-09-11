@@ -19,6 +19,7 @@ def list_running_tasks(session: Session) -> list[RunningTaskRead]:
             queue=task.queue,
             started_at=task.started_at,
             queued=task.queued,
+            stalled=task.stalled,
             phase=task.phase,
             current_step=task.current_step,
             total_steps=task.total_steps,

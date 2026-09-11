@@ -11,6 +11,7 @@ from apscheduler.events import (
     JobSubmissionEvent,
 )
 from apscheduler.schedulers.background import BackgroundScheduler
+from legendarr_backend.scheduling import running_tasks as running_tasks_module
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.running_tasks import (
     RunningTaskRegistry,
@@ -285,6 +286,57 @@ def test_tasks_promotes_the_next_queued_job_once_the_running_one_finishes():
     registry.finish(JobExecutionEvent(EVENT_JOB_EXECUTED, "scan_1", "default", first_run))
 
     assert {task.job_id: task.queued for task in registry.tasks()} == {"scan_2": False}
+
+
+def test_tasks_does_not_flag_a_fresh_task_as_stalled():
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+
+    assert registry.tasks()[0].stalled is False
+
+
+def test_tasks_flags_a_task_still_running_past_the_threshold_as_stalled(monkeypatch):
+    """The state this exists to surface: a job blocked in a syscall never fires the
+    `JobExecutionEvent` `finish()` waits for, so it stays "running" and holds its
+    executor slot until the process restarts — with nothing in the UI saying so.
+    """
+    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+
+    assert registry.tasks()[0].stalled is True
+
+
+def test_tasks_never_flags_a_queued_task_as_stalled(monkeypatch):
+    """A queued task's `started_at` is really "submitted at", so elapsed time there says
+    nothing about how long anything has been executing."""
+    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+
+    assert {task.job_id: (task.queued, task.stalled) for task in registry.tasks()} == {
+        "scan_1": (False, True),
+        "scan_2": (True, False),
+    }
+
+
+def test_tasks_warns_about_a_stalled_task_only_once(monkeypatch, caplog):
+    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+
+    with caplog.at_level("WARNING", logger=running_tasks_module.__name__):
+        registry.tasks()
+        registry.tasks()
+
+    warnings = [record for record in caplog.records if record.name == running_tasks_module.__name__]
+    assert len(warnings) == 1
+    assert "scan_1" in warnings[0].getMessage()
 
 
 def test_report_progress_updates_the_matching_task():

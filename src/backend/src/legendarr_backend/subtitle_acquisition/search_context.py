@@ -9,6 +9,7 @@ from legendarr_backend.media_library.locate import (
 )
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_acquisition.opensubtitles_hash import compute_opensubtitles_hash
+from legendarr_backend.subtitle_acquisition.provider_chain import moviehash_search_enabled
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,12 @@ def resolve_subtitle_search_context(
     # movie search" on its own.
     series_imdb_id = owner.imdb_id if isinstance(owner, Series) else None
     tvdb_id = owner.tvdb_id if isinstance(owner, Series) else None
-    moviehash = compute_opensubtitles_hash(video_path)
+    # Only hashed when a provider would actually search by it — the hash is the one
+    # step here that reads the video file, so skipping it keeps a library on an
+    # unresponsive mount from stalling every acquisition (see `moviehash_search_enabled`).
+    moviehash = (
+        compute_opensubtitles_hash(video_path) if moviehash_search_enabled(session) else None
+    )
     episode = resolve_media_file_episode(session, media_file) if isinstance(owner, Series) else None
     season_number = episode.season_number if episode is not None else None
     episode_number = episode.episode_number if episode is not None else None

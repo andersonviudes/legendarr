@@ -77,6 +77,7 @@ def test_napiprojekt_search_returns_a_hash_matched_result(monkeypatch, tmp_path)
     seen = {}
     video_path = _write_video(tmp_path)
     expected_hash = compute_napiprojekt_hash(video_path)
+    assert expected_hash is not None
     expected_subhash = napiprojekt_subhash(expected_hash)
 
     def _request(self, method, path, data=None, json=None, headers=None, follow_redirects=False):

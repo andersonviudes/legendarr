@@ -20,6 +20,7 @@ class RunningTaskRead(BaseModel):
     queue: str
     started_at: datetime
     queued: bool = False
+    stalled: bool = False
     phase: str | None = None
     current_step: int | None = None
     total_steps: int | None = None
