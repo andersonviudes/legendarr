@@ -67,12 +67,19 @@ recompiling or redeploying legendarr itself. A plugin is a Python class implemen
 
 ```python
 class MyTranslationProvider:
-    kind = "my-provider"                      # must not collide with a built-in kind
-    label = "My Provider"                      # display name in the web UI
-    name = "my-provider"                        # TranslationProvider.name
-    credential_fields = ("api_key", "endpoint")  # subset of: api_key, endpoint, model, prompt_template
-    required_credential_fields = ("api_key",)    # subset of credential_fields required for "has credentials"
-    plugin_api_version = 1                       # checked against legendarr's supported version
+    # `kind` must not collide with a built-in kind. `label` is the display name in
+    # the web UI; `name` is what `TranslationProvider.name` returns.
+    kind = "my-provider"
+    label = "My Provider"
+    name = "my-provider"
+
+    # Any subset of: api_key, endpoint, model, prompt_template. The required ones
+    # are what "has credentials" checks for.
+    credential_fields = ("api_key", "endpoint")
+    required_credential_fields = ("api_key",)
+
+    # Checked against the plugin API version legendarr supports.
+    plugin_api_version = 1
 
     def __init__(self, config: TranslationProviderConfig) -> None: ...
     def translate_batch(self, texts, source_language, target_language) -> list[str]: ...
