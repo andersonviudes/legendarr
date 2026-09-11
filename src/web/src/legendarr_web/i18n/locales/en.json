@@ -286,6 +286,7 @@
   "subtitle_translation.prompt_template_placeholder": "Leave blank to use the default prompt",
   "subtitle_translation.prompt_template_hint": "Uses {source}, {target}, and {count} as placeholders. Write a literal curly brace twice in a row so it isn't read as one.",
   "subtitle_translation.requires_credentials": "Requires credentials",
+  "subtitle_translation.credentials_optional": "Works without credentials",
   "subtitle_translation.run_test_to_enable": "Run \"Test connection\" to enable",
   "subtitle_translation.set_as_default": "Set as default",
 

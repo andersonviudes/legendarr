@@ -29,3 +29,4 @@ class TranslationProviderConfigRead(BaseModel):
     # copy of this table to render a plugin-provided kind.
     label: str
     credential_fields: tuple[str, ...]
+    credentials_optional: bool

@@ -97,6 +97,14 @@ class TranslationProviderConfig(SQLModel, table=True):
 
         return provider_credential_fields(self.kind)
 
+    @property
+    def credentials_optional(self) -> bool:
+        """Whether this kind renders credential field(s) that it doesn't actually need —
+        `google`, whose API Key only switches it from the free keyless endpoint to the paid
+        Cloud API. The provider grid needs this to avoid captioning such a card "requires
+        credentials" when the whole point is that it doesn't."""
+        return self.kind in _NO_CREDENTIAL_KINDS and bool(self.credential_fields)
+
 
 class TranslationAttempt(SQLModel, table=True):
     """Append-only record of one successful translation — the Statistics view's data

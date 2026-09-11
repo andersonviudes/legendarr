@@ -115,6 +115,22 @@ def test_gemini_has_no_endpoint_field():
     assert provider.credential_fields == ("api_key", "model", "prompt_template")
 
 
+@pytest.mark.parametrize(
+    "kind,expected",
+    [("google", True), ("deepl", False), ("gemini", False), ("libretranslate", False)],
+)
+def test_credentials_optional(kind, expected):
+    """`google` renders an API Key field it doesn't need — the provider grid captions that
+    card differently so it doesn't claim credentials are required."""
+    assert TranslationProviderConfig(kind=kind).credentials_optional is expected
+
+
+def test_credentials_optional_is_false_for_a_kind_with_no_fields_to_render():
+    """Nothing to caption — a kind with no credential fields at all already gets its own
+    "run test to enable" line, so this must not claim to be the optional-credentials case."""
+    assert TranslationProviderConfig(kind="not-a-real-kind").credentials_optional is False
+
+
 def test_label_and_credential_fields_for_a_loaded_plugin(_loaded_plugin):
     provider = TranslationProviderConfig(kind="fixture-plugin")
 

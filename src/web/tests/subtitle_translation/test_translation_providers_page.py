@@ -38,6 +38,7 @@ def _provider(**overrides) -> dict:
         "is_configured": True,
         "label": _LABELS.get(kind, kind),
         "credential_fields": _CREDENTIAL_FIELDS.get(kind, []),
+        "credentials_optional": kind == "google",
     }
     data.update(overrides)
     return data
@@ -81,6 +82,26 @@ def test_page_renders_provider_cards(stub_backend_client):
     assert 'role="switch"' in body
     assert "Requires credentials" in body
     assert "/settings/translation-providers/1/edit" in body
+
+
+def test_page_labels_a_credential_optional_provider_differently(stub_backend_client):
+    """`google` renders an API Key field it doesn't need, so its card must not claim
+    credentials are required — that's the free, zero-setup path."""
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/settings/translation-defaults":
+            return httpx.Response(200, json={"default_translation_provider": None})
+        return httpx.Response(200, json=[_provider(id=2, kind="google", enabled=True)])
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/settings/translation-providers/")
+
+    assert response.status_code == 200
+    assert "Works without credentials" in response.text
+    assert "Requires credentials" not in response.text
 
 
 def test_page_hides_toggle_for_unconfigured_provider(stub_backend_client):

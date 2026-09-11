@@ -286,6 +286,7 @@
   "subtitle_translation.prompt_template_placeholder": "Dejar en blanco para usar el prompt predeterminado",
   "subtitle_translation.prompt_template_hint": "Usa {source}, {target} y {count} como marcadores de posición. Escribe una llave literal dos veces seguidas para que no se interprete como una.",
   "subtitle_translation.requires_credentials": "Requiere credenciales",
+  "subtitle_translation.credentials_optional": "Funciona sin credenciales",
   "subtitle_translation.run_test_to_enable": "Ejecuta \"Probar\" para habilitar",
   "subtitle_translation.set_as_default": "Establecer como predeterminado",
 
