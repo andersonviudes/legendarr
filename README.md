@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="branding/legendarr-mark-512.png" alt="legendarr" width="32" height="32" align="middle">
+  <img src="branding/legendarr-mark-512.png" alt="legendarr" width="32" height="32" align="absmiddle">
   legendarr
 </h1>
 

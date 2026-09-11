@@ -50,4 +50,4 @@
 - [legendarr language coverage normalization fix](legendarr-language-coverage-normalization-fix.md) — PR #127: coverage checks used raw .lower() not normalize_language_code, pt-BR looked like missing pt
 - [legendarr hung job dedup fix](legendarr-hung-job-dedup-fix.md) — PR #128: stuck transcription thread wedged acquire_bulk forever; is_task_active() now guards every ad-hoc enqueue_*
 - [legendarr opensubtitles hash hang fix](legendarr-opensubtitles-hash-hang-fix.md) — PR #130 closed it out: napiprojekt hash guarded, ThreadPoolExecutor fan-out replaced, hash gated, stalled badge
-- [legendarr README HTML sanitizer gotcha](legendarr-readme-html-sanitizer-gotcha.md) — GitHub strips `style` from README HTML; use `align`, and verify with gh api /markdown
+- [legendarr README HTML sanitizer gotcha](legendarr-readme-html-sanitizer-gotcha.md) — GitHub strips `style` from README HTML, and only align="absmiddle" is real vertical-align:middle
