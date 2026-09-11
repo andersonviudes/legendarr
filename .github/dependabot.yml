@@ -1,0 +1,98 @@
+# Dependabot version updates. Four entries because the repo has four distinct
+# dependency surfaces, each resolved by a different tool — they don't share a
+# lockfile or a release cadence, so they can't share an entry.
+#
+# `commit-message.prefix` + `include: "scope"` produces `chore(deps): ...` /
+# `chore(deps-dev): ...`, which is what `.github/workflows/pr-title.yml` requires
+# of every PR title: a type from its list and a summary starting lowercase.
+#
+# Each ecosystem groups its minor and patch bumps into one PR so a quiet week
+# costs one review instead of a dozen. Majors are deliberately left ungrouped —
+# those are the ones that break a build and deserve to be read on their own.
+version: 2
+
+updates:
+  # Backend, web and bootstrap Python dependencies. One entry at the root, not
+  # one per workspace member: `[tool.uv.workspace]` resolves all three members
+  # through the single root `uv.lock`, so there is one dependency graph to
+  # update, not three. Dependabot's docs don't describe uv workspaces
+  # specifically — if member-only dependencies turn out to be missed, the fix is
+  # `directories: ["/", "/src/*"]` plus `group-by: dependency-name`.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      python-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # The MkDocs toolchain that builds the docs site. Pinned separately in
+  # `docs/requirements.txt` and installed only by `.github/workflows/docs.yml`,
+  # so it never reaches the shipped image and can move on its own schedule.
+  - package-ecosystem: "pip"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      docs-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Actions used across every workflow in `.github/workflows`. One entry at the
+  # root covers all of them; the local `uses: ./.github/workflows/
+  # reusable-test.yml` reference carries no version and is simply skipped.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # The Dockerfile's base images. Note Dependabot only bumps the *first* `FROM`
+  # — here the `ghcr.io/astral-sh/uv` builder stage. The `python:3.12-slim-
+  # bookworm` runtime stage in the second `FROM` still has to be bumped by hand.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "build"
+      include: "scope"

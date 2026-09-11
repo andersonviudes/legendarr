@@ -51,3 +51,4 @@
 - [legendarr hung job dedup fix](legendarr-hung-job-dedup-fix.md) — PR #128: stuck transcription thread wedged acquire_bulk forever; is_task_active() now guards every ad-hoc enqueue_*
 - [legendarr opensubtitles hash hang fix](legendarr-opensubtitles-hash-hang-fix.md) — PR #130 closed it out: napiprojekt hash guarded, ThreadPoolExecutor fan-out replaced, hash gated, stalled badge
 - [legendarr README HTML sanitizer gotcha](legendarr-readme-html-sanitizer-gotcha.md) — GitHub strips `style` from README HTML, and only align="absmiddle" is real vertical-align:middle
+- [legendarr GitHub security & Dependabot](legendarr-github-security-and-dependabot.md) — what's enabled, what the API silently refuses, and the four dependabot.yml ecosystems
