@@ -6,7 +6,8 @@ from legendarr_backend.subtitle_translation.models import TranslationProviderCon
 from legendarr_backend.subtitle_translation.plugins import plugin_provider_classes
 from legendarr_backend.subtitle_translation.providers.base import TranslationProvider
 from legendarr_backend.subtitle_translation.providers.deepl import DeepLTranslationProvider
-from legendarr_backend.subtitle_translation.providers.google import GoogleTranslationProvider
+from legendarr_backend.subtitle_translation.providers.gemini import GeminiTranslationProvider
+from legendarr_backend.subtitle_translation.providers.google import build_google_provider
 from legendarr_backend.subtitle_translation.providers.libretranslate import (
     LibreTranslateTranslationProvider,
 )
@@ -16,7 +17,10 @@ _ProviderFactory = Callable[[TranslationProviderConfig], TranslationProvider]
 
 _PROVIDER_CLASSES: dict[str, _ProviderFactory] = {
     "deepl": DeepLTranslationProvider,
-    "google": GoogleTranslationProvider,
+    "gemini": GeminiTranslationProvider,
+    # A function, not a class: `google` has two backends (paid Cloud API vs. the keyless
+    # public endpoint) chosen by whether the config carries an API Key.
+    "google": build_google_provider,
     "libretranslate": LibreTranslateTranslationProvider,
     "llm": LLMTranslationProvider,
 }
@@ -34,9 +38,11 @@ def resolve_provider_chain(
 ) -> list[TranslationProvider]:
     """Ordered, ready-to-call translation providers: enabled + credentialed
     `TranslationProviderConfig` rows, `id` ascending (the catalog's insertion order —
-    `deepl`, `google`, `libretranslate`). The first is the primary provider, the rest are
-    tried in order if an earlier one raises. An empty list means nothing usable is
-    configured — callers log and skip, this is never treated as an error.
+    `deepl`, `gemini`, `google`, ...). The first is the primary provider, the rest are
+    tried in order if an earlier one raises. "Credentialed" is `has_credentials`, which is
+    always true for `google` — its keyless backend needs nothing — so an enabled `google`
+    row is always in the chain. An empty list means nothing usable is configured — callers
+    log and skip, this is never treated as an error.
 
     `default_kind` (the Settings-configured `default_translation_provider`, when set) is
     moved to the front if it's among the resolved providers — everything else keeps its

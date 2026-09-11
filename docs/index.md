@@ -43,7 +43,8 @@ translate any subtitle track, including ones embedded inside the video container
 
 === "Translation"
 
-    - Pluggable `TranslationProvider` contract — bring your own backend (DeepL, Google, LibreTranslate, ...)
+    - Pluggable `TranslationProvider` contract — bring your own backend (DeepL, Google, Gemini, LibreTranslate, any OpenAI-compatible API, ...)
+    - Translates with no account at all via Google's free endpoint, or on a free Gemini key
     - Ships with an `echo` provider for local development and testing
 
 ---

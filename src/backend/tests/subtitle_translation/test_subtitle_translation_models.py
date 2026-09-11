@@ -42,8 +42,12 @@ def _loaded_plugin(monkeypatch):
     [
         ("deepl", None, None, False),
         ("deepl", "key", None, True),
-        ("google", None, None, False),
+        # `google` needs nothing: a blank key means the keyless public endpoint, not
+        # "not configured yet".
+        ("google", None, None, True),
         ("google", "key", None, True),
+        ("gemini", None, None, False),
+        ("gemini", "key", None, True),
         ("libretranslate", None, None, False),
         ("libretranslate", None, "http://localhost:5000", True),
         ("llm", None, None, False),
@@ -61,6 +65,8 @@ def test_has_credentials(kind, api_key, endpoint, expected):
     [
         ("deepl", "key", None),
         ("google", "key", None),
+        ("google", None, None),
+        ("gemini", "key", None),
         ("libretranslate", None, "http://localhost:5000"),
         ("llm", "key", None),
     ],
@@ -98,6 +104,15 @@ def test_label_and_credential_fields_for_built_in_kinds():
 
     assert provider.label == "LLM (OpenAI-compatible)"
     assert provider.credential_fields == ("endpoint", "api_key", "model", "prompt_template")
+
+
+def test_gemini_has_no_endpoint_field():
+    """Gemini is pinned to Google AI Studio's OpenAI-compatible URL, so the form never
+    offers an Endpoint to override it with."""
+    provider = TranslationProviderConfig(kind="gemini")
+
+    assert provider.label == "Gemini (Google AI Studio)"
+    assert provider.credential_fields == ("api_key", "model", "prompt_template")
 
 
 def test_label_and_credential_fields_for_a_loaded_plugin(_loaded_plugin):
