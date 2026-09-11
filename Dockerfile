@@ -18,7 +18,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-packages --no-dev
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS runtime
 
 ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="legendarr" \
