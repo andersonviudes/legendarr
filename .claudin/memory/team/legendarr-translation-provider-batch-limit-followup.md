@@ -1,6 +1,6 @@
 ---
 name: legendarr-translation-provider-batch-limit-followup
-description: Google Translate hit a real 128-text-segment-per-request API limit on real subtitles; fixed via chunking. DeepL/LibreTranslate/LLM still send the whole subtitle in one call, unchecked for similar limits.
+description: Google Translate hit a real 128-text-segment-per-request API limit on real subtitles; fixed via chunking. LLM/Gemini chunk at 300 since PR #143; DeepL/LibreTranslate still send the whole subtitle in one call, unchecked.
 type: project
 ---
 
@@ -19,9 +19,17 @@ one API call — nothing in `translate_subtitle.py` chunks beforehand. Google's 
 cap was the one instance found so far, purely because it was the provider actually
 exercised end-to-end this session.
 
-**How to apply:** DeepL, LibreTranslate, and the generic LLM provider are NOT yet verified
-against a similarly-capped real request (segment count, character count, or token count) —
-treat them as unverified until one is actually driven against a full-length subtitle. A
+**Update 2026-09-11 (PR #143):** the OpenAI-compatible path (`llm`, and the new `gemini`
+that subclasses it) now chunks at `LLM_BATCH_SIZE = 300` — same value Bazarr's Gemini
+translator uses. The cap there isn't a documented API limit but the model's *output* token
+ceiling: a feature-length subtitle asked for in one response comes back truncated and then
+fails `_translate_chunk`'s count check, losing the whole translation to a limit that has
+nothing to do with the input size. `GoogleFreeTranslationProvider` sidesteps the question
+entirely — one request per line. See [[legendarr-free-translation-providers]].
+
+**How to apply:** DeepL and LibreTranslate are still NOT verified against a similarly-capped
+real request (segment count, character count, or token count) — treat them as unverified
+until one is actually driven against a full-length subtitle. A
 translation job that "succeeds" with an empty/partial `translated_languages` list means
 check `translationfailure` in `dev/legendarr-config/legendarr.db` (see
 [[legendarr-dev-db-direct-inspection]]), not just the toast/HTTP status. See also
