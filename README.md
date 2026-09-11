@@ -4,19 +4,11 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/andersonviudes/legendarr/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/andersonviudes/legendarr/ci.yml?branch=main&label=CI" alt="CI">
-  </a>
-  <a href="https://github.com/andersonviudes/legendarr/releases/latest">
-    <img src="https://img.shields.io/github/v/release/andersonviudes/legendarr?label=release" alt="release">
-  </a>
-  <a href="https://hub.docker.com/r/andersonviudes/legendarr">
-    <img src="https://img.shields.io/docker/pulls/andersonviudes/legendarr" alt="docker pulls">
-  </a>
-  <img src="https://img.shields.io/github/languages/code-size/andersonviudes/legendarr" alt="code size">
-  <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/andersonviudes/legendarr" alt="License">
-  </a>
+  <a href="https://github.com/andersonviudes/legendarr/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/andersonviudes/legendarr/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <a href="https://github.com/andersonviudes/legendarr/releases/latest"><img src="https://img.shields.io/github/v/release/andersonviudes/legendarr?label=release" alt="release"></a>
+  <a href="https://hub.docker.com/r/andersonviudes/legendarr"><img src="https://img.shields.io/docker/pulls/andersonviudes/legendarr" alt="docker pulls"></a>
+  <a href="https://github.com/andersonviudes/legendarr"><img src="https://img.shields.io/github/languages/code-size/andersonviudes/legendarr" alt="code size"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/andersonviudes/legendarr" alt="License"></a>
 </p>
 
 ## About
