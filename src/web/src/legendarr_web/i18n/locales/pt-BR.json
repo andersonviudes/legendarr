@@ -365,6 +365,7 @@
   "system.tasks.empty": "Nenhuma tarefa em execução no momento.",
   "system.tasks.subtitle": "Tarefas em execução e a fila do agendador por trás delas.",
   "system.tasks.queued_badge": "Na fila",
+  "system.tasks.stalled_badge": "Travada",
   "system.tasks.scheduled_jobs_title": "Trabalhos agendados",
   "system.tasks.scheduled_jobs_empty": "Nenhum trabalho agendado.",
   "system.tasks.next_run": "Próxima execução",

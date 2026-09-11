@@ -365,6 +365,7 @@
   "system.tasks.empty": "No tasks running right now.",
   "system.tasks.subtitle": "Running jobs and the scheduler's queue behind them.",
   "system.tasks.queued_badge": "Queued",
+  "system.tasks.stalled_badge": "Stalled",
   "system.tasks.scheduled_jobs_title": "Scheduled Jobs",
   "system.tasks.scheduled_jobs_empty": "No scheduled jobs.",
   "system.tasks.next_run": "Next run",

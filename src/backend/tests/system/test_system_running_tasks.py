@@ -70,6 +70,21 @@ def test_list_running_tasks_carries_the_queued_flag_through(
     assert list_running_tasks(in_memory_session)[0].queued is True
 
 
+def test_list_running_tasks_carries_the_stalled_flag_through(
+    isolated_running_tasks, monkeypatch, in_memory_session
+):
+    task = RunningTask(
+        job_id="acquire_1",
+        name="acquire_1",
+        queue="acquire_bulk",
+        started_at=datetime.now(),
+        stalled=True,
+    )
+    monkeypatch.setattr("legendarr_backend.system.running_tasks.get_running_tasks", lambda: [task])
+
+    assert list_running_tasks(in_memory_session)[0].stalled is True
+
+
 def test_list_running_tasks_carries_progress_fields_through(
     isolated_running_tasks, monkeypatch, in_memory_session
 ):

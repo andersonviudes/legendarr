@@ -8,6 +8,9 @@
     {% if task.queued %}
     <span class="task-line-status task-line-status--queued">{{ t("system.tasks.queued_badge") }}</span>
     {% endif %}
+    {% if task.stalled %}
+    <span class="task-line-status task-line-status--stalled">{{ t("system.tasks.stalled_badge") }}</span>
+    {% endif %}
     <span class="task-line-time">{{ task.started_at | local_datetime }}</span>
     {% if task.phase %}
     <div class="task-line-progress">

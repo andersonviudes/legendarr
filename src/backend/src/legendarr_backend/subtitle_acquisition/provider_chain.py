@@ -38,6 +38,10 @@ _PROVIDER_CLASSES: dict[str, Callable[[SubtitleProviderConfig], SubtitleProvider
     "betaseries": BetaSeriesProvider,
 }
 
+# The one kind whose `search()` reads `moviehash` (`providers/opensubtitles.py`, gated
+# on its own `SubtitleProviderConfig.use_hash`). Every other kind ignores the argument.
+_MOVIEHASH_PROVIDER_KIND = "opensubtitles"
+
 
 def resolve_subtitle_provider_chain(session: Session) -> list[SubtitleProvider]:
     """Ordered, ready-to-call subtitle providers: enabled + credentialed
@@ -61,3 +65,22 @@ def resolve_subtitle_provider_chain(session: Session) -> list[SubtitleProvider]:
     ).all()
     ready = [config for config in configs if config.has_credentials]
     return [_PROVIDER_CLASSES[config.kind](config) for config in ready]
+
+
+def moviehash_search_enabled(session: Session) -> bool:
+    """Whether any usable provider would actually search by `moviehash`.
+
+    Computing the hash means reading the video file itself
+    (`opensubtitles_hash.compute_opensubtitles_hash`), which on a network mount that
+    stopped answering costs a full timeout per media file and abandons a reader thread
+    that never comes back. Nothing else in the search path touches the video, so when
+    the only provider that reads the hash is disabled, uncredentialed or has `use_hash`
+    off, that's pure cost for a value no one looks at — `search_context` asks this first
+    instead of hashing unconditionally.
+    """
+    config = session.exec(
+        select(SubtitleProviderConfig).where(
+            SubtitleProviderConfig.kind == _MOVIEHASH_PROVIDER_KIND
+        )
+    ).first()
+    return config is not None and config.enabled and config.has_credentials and config.use_hash

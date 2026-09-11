@@ -29,6 +29,14 @@ _TASK_WITH_PROGRESS = {
     "provider": None,
 }
 
+_STALLED_TASK = {
+    "job_id": "subtitle_acquisition:3",
+    "name": "subtitle_acquisition:3",
+    "queue": "acquire_bulk",
+    "started_at": "2026-08-24T10:15:30.123456",
+    "stalled": True,
+}
+
 _SCHEDULED_JOB = {
     "job_id": "media_library_sync",
     "name": "media_library_sync",
@@ -63,6 +71,12 @@ def _tasks_with_progress_handler(request: httpx.Request) -> httpx.Response:
 def _queued_task_handler(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/system/tasks/running":
         return httpx.Response(200, json=[_QUEUED_TASK])
+    return httpx.Response(200, json=[])
+
+
+def _stalled_task_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/system/tasks/running":
+        return httpx.Response(200, json=[_STALLED_TASK])
     return httpx.Response(200, json=[])
 
 
@@ -182,6 +196,28 @@ def test_running_tasks_partial_shows_no_queued_badge_for_a_running_task(stub_bac
 
     assert response.status_code == 200
     assert "Queued" not in response.text
+
+
+def test_running_tasks_partial_shows_a_stalled_badge_for_a_stalled_task(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_stalled_task_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "Stalled" in response.text
+
+
+def test_running_tasks_partial_shows_no_stalled_badge_for_a_healthy_task(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_tasks_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/running")
+
+    assert response.status_code == 200
+    assert "Stalled" not in response.text
 
 
 def test_running_tasks_partial_respects_the_limit_query_param(stub_backend_client):

@@ -365,6 +365,7 @@
   "system.tasks.empty": "No hay tareas en ejecución en este momento.",
   "system.tasks.subtitle": "Tareas en ejecución y la cola del planificador detrás de ellas.",
   "system.tasks.queued_badge": "En cola",
+  "system.tasks.stalled_badge": "Atascada",
   "system.tasks.scheduled_jobs_title": "Trabajos programados",
   "system.tasks.scheduled_jobs_empty": "No hay trabajos programados.",
   "system.tasks.next_run": "Próxima ejecución",

@@ -1,6 +1,7 @@
 import logging
+import threading
+import time
 from collections.abc import Callable, Sequence, Set
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,6 +30,15 @@ from legendarr_backend.subtitle_acquisition.providers.base import (
 )
 
 logger = logging.getLogger(__name__)
+
+# How long to wait for one provider's `search()` before giving up on it. Generous
+# against a slow-but-working provider — `http_client.ProviderHttpClient` already bounds
+# every HTTP call at 10s and retries twice — and short enough that a provider blocked on
+# something no HTTP timeout covers (a hash read off a stalled network mount, see
+# `providers/napiprojekt_hash.py`) can't hold an acquisition worker forever.
+DEFAULT_PROVIDER_SEARCH_TIMEOUT_SECONDS = 120.0
+
+type _ProviderSearch = tuple[SubtitleProvider, list[SubtitleSearchResult], Exception | None]
 
 
 @dataclass(frozen=True)
@@ -89,6 +99,7 @@ def search_providers_concurrently(
     must_not_contain: Sequence[str] = (),
     check_episode_identity: bool = True,
     on_dispatch: Callable[[SubtitleProvider], None] | None = None,
+    timeout_seconds: float = DEFAULT_PROVIDER_SEARCH_TIMEOUT_SECONDS,
 ) -> tuple[list[ScoredCandidate], Exception | None, str | None]:
     """Search every provider in `chain` concurrently (skipping one with an open
     circuit, same as a sequential loop would), filter and score everything that comes
@@ -111,6 +122,10 @@ def search_providers_concurrently(
     — the same "last error wins" bookkeeping a sequential loop's `last_error`/
     `last_provider_name` locals would end up with, for a caller that wants to record why
     nothing was found.
+
+    A provider that hasn't answered within `timeout_seconds` is abandoned and reported
+    as a `TimeoutError` of its own — see `_search_all` for why waiting on it instead
+    would wedge the calling worker permanently.
     """
     eligible: list[SubtitleProvider] = []
     for provider in chain:
@@ -126,9 +141,7 @@ def search_providers_concurrently(
         if on_dispatch is not None:
             on_dispatch(provider)
 
-    def _search_one(
-        provider: SubtitleProvider,
-    ) -> tuple[SubtitleProvider, list[SubtitleSearchResult], Exception | None]:
+    def _search_one(provider: SubtitleProvider) -> _ProviderSearch:
         try:
             with limit_concurrency(ConcurrencyCategory.ACQUISITION, provider.name):
                 results = provider.search(
@@ -148,12 +161,7 @@ def search_providers_concurrently(
             record_failure(BreakerCategory.ACQUISITION, provider.name)
             return provider, [], exc
 
-    searched: list[tuple[SubtitleProvider, list[SubtitleSearchResult], Exception | None]]
-    if eligible:
-        with ThreadPoolExecutor(max_workers=len(eligible)) as executor:
-            searched = list(executor.map(_search_one, eligible))
-    else:
-        searched = []
+    searched = _search_all(eligible, _search_one, timeout_seconds)
 
     must_contain_list = list(must_contain)
     must_not_contain_list = list(must_not_contain)
@@ -193,3 +201,61 @@ def search_providers_concurrently(
 
     scored.sort(key=lambda scored_candidate: scored_candidate.candidate.score, reverse=True)
     return scored, last_error, last_provider_name
+
+
+def _search_all(
+    eligible: list[SubtitleProvider],
+    search_one: Callable[[SubtitleProvider], _ProviderSearch],
+    timeout_seconds: float,
+) -> list[_ProviderSearch]:
+    """Run `search_one` for every provider in `eligible`, concurrently, and stop waiting
+    once `timeout_seconds` have passed — returning one entry per provider, in `eligible`
+    order, with whatever hasn't come back by then reported as a timeout.
+
+    A `ThreadPoolExecutor` is the obvious fit and is deliberately not used: its
+    `__exit__` is a `shutdown(wait=True)`, so a single provider blocked on something no
+    HTTP timeout covers would hold this worker forever, and its non-daemon pool threads
+    would block interpreter shutdown on top of that. Same `Thread(daemon=True)` plus one
+    bounded `join()` shape as `opensubtitles_hash.compute_opensubtitles_hash` and
+    `audio_transcription.transcribe_audio` — the stuck thread is abandoned, never waited
+    on a second time.
+
+    A timed-out provider is recorded as a circuit-breaker failure like any other
+    failure, so a provider that keeps not answering opens its circuit and stops being
+    searched at all instead of costing `timeout_seconds` on every media file.
+    """
+    results: dict[int, _ProviderSearch] = {}
+
+    def _target(index: int, provider: SubtitleProvider) -> None:
+        results[index] = search_one(provider)
+
+    threads = [
+        threading.Thread(target=_target, args=(index, provider), daemon=True)
+        for index, provider in enumerate(eligible)
+    ]
+    for thread in threads:
+        thread.start()
+    deadline = time.monotonic() + timeout_seconds
+    for thread in threads:
+        thread.join(timeout=max(0.0, deadline - time.monotonic()))
+
+    searched: list[_ProviderSearch] = []
+    for index, provider in enumerate(eligible):
+        finished = results.get(index)
+        if finished is not None:
+            searched.append(finished)
+            continue
+        logger.warning(
+            "subtitle provider %r did not answer within %.0fs, abandoning its search",
+            provider.name,
+            timeout_seconds,
+        )
+        record_failure(BreakerCategory.ACQUISITION, provider.name)
+        searched.append(
+            (
+                provider,
+                [],
+                TimeoutError(f"{provider.name} search timed out after {timeout_seconds:.0f}s"),
+            )
+        )
+    return searched
