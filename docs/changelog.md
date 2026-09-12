@@ -3,6 +3,37 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.11] - 2026-09-12
+
+### ✨ Features
+
+- Add keyless Google and Gemini translation providers (#143)
+
+### 🐛 Bug Fixes
+
+- Stop an unresponsive library mount from wedging acquisition workers (#130)
+
+### 📚 Documentation
+
+- Align the README header mark with the wordmark and drop a self-referential badge link
+- Center the README header mark on the wordmark with align=absmiddle
+- Keep each README badge on one line so the row spaces evenly
+
+### 🔧 Miscellaneous
+
+- Expand the module map in the search-strategy rule down to the slice level
+- Let Dependabot keep the four dependency surfaces up to date
+- Own every path so Dependabot pull requests get a reviewer
+- Hold the runtime image on its current Python line
+- Bump mkdocs-material from 9.7.6 to 9.7.7 in /docs (#131)
+- Bump cryptography from 49.0.0 to 50.0.0 (#132)
+- Bump actions/setup-python from 5 to 7 (#136)
+- Bump actions/deploy-pages from 4 to 5 (#137)
+- Bump peter-evans/dockerhub-description from 4 to 5 (#138)
+- Update pygments requirement in /docs (#135)
+- Bump the docs-minor-and-patch group across 1 directory with 2 updates (#141)
+- Bump the python-minor-and-patch group across 1 directory with 10 updates (#142)
+
 ## [0.22.10] - 2026-09-10
 
 ### ✨ Features
@@ -21,6 +52,7 @@ All notable changes to this project are documented here. The format follows
 
 - Document PR #126-#129 follow-ups
 - Refresh module file counts in search-strategy rule
+- Bump version to v0.22.10 [skip ci]
 
 ## [0.22.9] - 2026-09-09
 
