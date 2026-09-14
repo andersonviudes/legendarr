@@ -16,20 +16,28 @@ from apscheduler.events import (
 )
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from legendarr_backend.scheduling.job_timeout import job_timeout_seconds
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 
 logger = logging.getLogger(__name__)
 
-# How long a genuinely-running (not queued) task may go without finishing before
-# `RunningTaskRegistry.tasks()` flags it as stalled. Purely a visibility signal: a
-# thread blocked in a syscall — a read off a network mount that stopped answering — is
-# not interruptible from Python, so a wedged job keeps its executor slot until the
-# process restarts, and saying so is the whole remedy available here. The timeouts in
-# `subtitle_acquisition/provider_search.py` and the hash helpers are what keep most
-# jobs from getting there in the first place. Set well above the slowest job that's
-# still working normally (`Settings.speech_to_text_timeout_seconds` alone allows 1800s
-# for a single file) so "slow" is never reported as "stuck".
+# Fallback for how long a genuinely-running (not queued) task may go without finishing
+# before `RunningTaskRegistry.tasks()` flags it as stalled. Normally the threshold is the
+# task's own queue budget (`scheduling/job_timeout.job_timeout_seconds`): a run that
+# outlives its budget and is *still* here means the budget didn't take, which is exactly
+# what's worth flagging. This constant only covers a queue whose budget was turned off
+# (set to `0`), where there's no per-queue number to lean on — set well above the slowest
+# job that's still working normally (`Settings.speech_to_text_timeout_seconds` alone
+# allows 1800s for a single file) so "slow" is never reported as "stuck".
 STALLED_TASK_THRESHOLD_SECONDS = 7200.0
+
+# How far past its stall threshold a still-running task goes before the periodic sweep
+# (`maintenance/reap_stuck_tasks.py`) drops it from this registry altogether. Generous on
+# purpose: the normal path is the execution budget failing the run and `finish()` clearing
+# the entry through the resulting `EVENT_JOB_ERROR`, so anything this sweep catches is a
+# task whose budget never fired at all. The grace period is what keeps a run that was
+# merely slow to emit its completion event from being declared abandoned.
+STUCK_TASK_EVICTION_GRACE_SECONDS = 300.0
 
 
 @dataclass(frozen=True)
@@ -46,6 +54,13 @@ class RunningTask:
     # queue. `queued=True` marks one of those — it hasn't started executing yet, so its
     # `started_at` is really "submitted at", not a real elapsed-time anchor.
     queued: bool = False
+    # When a worker thread was first *observed* to be running this task, as opposed to
+    # `started_at`, which is really "submitted at". Set by `_annotated()` the first time it
+    # sees the task off the queue; `None` while it's still waiting its turn. This — not
+    # `started_at` — is the only sound elapsed-time anchor: on a `_bulk` queue a fan-out
+    # submits thousands of jobs at once, so a job that waits four hours in the FIFO and
+    # then runs normally has a four-hour-old `started_at` the instant it starts.
+    running_since: datetime | None = None
     # Live-progress fields (ROADMAP 0.20.0's "Live progress") — all unset until the
     # running job's own code reports a checkpoint via `report_progress()`. `phase` is a
     # domain-defined string ("translating", "searching", ...) the caller picks; this
@@ -56,9 +71,8 @@ class RunningTask:
     language: str | None = None
     provider: str | None = None
     # Set by `tasks()`, not by `submit()`, same as `queued` — a task that's been
-    # executing longer than `STALLED_TASK_THRESHOLD_SECONDS`. Never set on a queued
-    # task, whose `started_at` is really "submitted at" and so isn't an elapsed-time
-    # anchor at all.
+    # executing longer than its queue's execution budget (see `_stall_threshold_seconds`),
+    # measured from `running_since`. Never set on a queued task, which hasn't started.
     stalled: bool = False
 
 
@@ -170,10 +184,9 @@ class RunningTaskRegistry:
                     provider=provider,
                 )
 
-    def tasks(self) -> list[RunningTask]:
-        """Every submitted-but-not-finished task, `queued` flagged for the ones that
-        haven't actually started executing yet and `stalled` for the ones that have
-        been executing too long to still be working.
+    def _annotated(self) -> list[tuple[tuple[str, datetime], RunningTask]]:
+        """Every tracked task paired with its key, `queued`/`stalled` filled in. The
+        caller holds the lock.
 
         `_tasks` preserves submission order (dict insertion order), and so does each
         queue's own `ThreadPoolExecutor` — one shared FIFO work queue per executor,
@@ -182,34 +195,55 @@ class RunningTaskRegistry:
         order, are the ones a worker thread is genuinely running right now; anything past
         that is still waiting in line behind them, no matter how long ago it was submitted.
 
-        A running task past `STALLED_TASK_THRESHOLD_SECONDS` is also warned about, once
-        each — this is the only place that ever looks at a running task again, since a
-        job that never returns never fires the `JobExecutionEvent` `finish()` waits for.
+        Stamps `running_since` on a task the first time it's seen off the queue, which is
+        why this writes back to `_tasks` rather than only deriving. Nothing else observes
+        the queued-to-running transition: APScheduler emits an event on submission and on
+        completion, never on start. The stamp is therefore "first observed running", up to
+        one poll interval late (3s while any UI is open, 15 minutes from the sweep alone) —
+        always late, never early, so it can only ever delay a stall verdict.
+        """
+        in_flight: dict[str, int] = {}
+        annotated: list[tuple[tuple[str, datetime], RunningTask]] = []
+        now = datetime.now()
+        for key, task in self._tasks.items():
+            ahead = in_flight.get(task.queue, 0)
+            in_flight[task.queue] = ahead + 1
+            # `task.queue` is always a `JobQueue.value` set at `add_job` time
+            # (`job.executor`) — round-trip it back to the enum `QUEUE_WORKERS` is
+            # keyed by instead of relying on `StrEnum`'s str-equality for the lookup.
+            capacity = self._queue_workers.get(JobQueue(task.queue), 1)
+            queued = ahead >= capacity
+            if not queued and task.running_since is None:
+                task = replace(task, running_since=now)
+                self._tasks[key] = task
+            stalled = not queued and _has_stalled(task, now=now)
+            annotated.append((key, replace(task, queued=queued, stalled=stalled)))
+        return annotated
+
+    def tasks(self) -> list[RunningTask]:
+        """Every submitted-but-not-finished task, `queued` flagged for the ones that
+        haven't actually started executing yet and `stalled` for the ones that have
+        been executing too long to still be working.
+
+        See `_annotated` for how the two are told apart. A newly stalled task is also
+        warned about, once each — a job that never returns never fires the
+        `JobExecutionEvent` `finish()` waits for, so nothing else would ever mention it.
         """
         newly_stalled: list[RunningTask] = []
         with self._lock:
-            in_flight: dict[str, int] = {}
-            result = []
-            for key, task in self._tasks.items():
-                ahead = in_flight.get(task.queue, 0)
-                in_flight[task.queue] = ahead + 1
-                # `task.queue` is always a `JobQueue.value` set at `add_job` time
-                # (`job.executor`) — round-trip it back to the enum `QUEUE_WORKERS` is
-                # keyed by instead of relying on `StrEnum`'s str-equality for the lookup.
-                capacity = self._queue_workers.get(JobQueue(task.queue), 1)
-                queued = ahead >= capacity
-                stalled = not queued and _has_stalled(task)
-                if stalled and key not in self._stall_warned:
+            annotated = self._annotated()
+            result = [task for _, task in annotated]
+            for key, task in annotated:
+                if task.stalled and key not in self._stall_warned:
                     self._stall_warned.add(key)
                     newly_stalled.append(task)
-                result.append(replace(task, queued=queued, stalled=stalled))
         for task in newly_stalled:
             logger.warning(
                 "task %r on queue %r has been running since %s without finishing — its "
                 "worker slot stays taken until the process restarts",
                 task.job_id,
                 task.queue,
-                task.started_at.isoformat(timespec="seconds"),
+                (task.running_since or task.started_at).isoformat(timespec="seconds"),
             )
         return result
 
@@ -225,6 +259,70 @@ class RunningTaskRegistry:
         with self._lock:
             return any(key[0] == job_id for key in self._tasks)
 
+    def evict(self, job_id: str) -> list[RunningTask]:
+        """Drop every *running* entry for `job_id` and return what was dropped.
+
+        For a job whose completion event is never coming. Dropping the entry is what makes
+        `is_active()` report it as finished again — so the item it was working on gets
+        picked up by the next fan-out instead of being skipped forever — and what takes the
+        stale row off the Tasks page.
+
+        Entries still queued behind other work are left alone, same as `evict_stuck`: they
+        haven't started, so there is nothing stuck about them, and recording one as an
+        abandoned run would be a plain lie. A job with several submissions in flight
+        (`max_instances > 1`, or a `coalesce=False` job that missed ticks) therefore keeps
+        its queued ones.
+
+        What it does *not* do is stop the job. A thread blocked in a syscall can't be
+        interrupted from Python, so if the execution budget didn't manage to release the
+        worker slot, neither does this: the queue's real capacity stays reduced until the
+        process restarts — and on a queue whose budget is off, APScheduler's own
+        `max_instances` accounting stays pinned too (it's only decremented when a run
+        returns), so a re-enqueue is dropped as `EVENT_JOB_MAX_INSTANCES` until restart.
+        This is bookkeeping, not cancellation.
+        """
+        with self._lock:
+            evicted: list[RunningTask] = []
+            for key, task in self._annotated():
+                if key[0] != job_id or task.queued:
+                    continue
+                self._tasks.pop(key, None)
+                self._stall_warned.discard(key)
+                evicted.append(task)
+            return evicted
+
+    def evict_stuck(
+        self, grace_seconds: float = STUCK_TASK_EVICTION_GRACE_SECONDS
+    ) -> list[RunningTask]:
+        """Drop every genuinely-running task that's `grace_seconds` past its stall
+        threshold and return what was dropped — the sweep behind
+        `maintenance/reap_stuck_tasks.py`.
+
+        Queued tasks are never candidates — they haven't started. Neither is a task on a
+        queue whose budget is off: setting `<queue>_job_timeout_seconds = 0` is documented
+        as removing that queue's time limit, and evicting on the fallback threshold anyway
+        would kill exactly the long-but-healthy runs the escape hatch exists for. Those
+        tasks still get the `stalled` badge, which is visibility only.
+
+        Same bookkeeping-not-cancellation caveat as `evict`.
+        """
+        now = datetime.now()
+        with self._lock:
+            evicted: list[RunningTask] = []
+            for key, task in self._annotated():
+                if not task.stalled:
+                    continue
+                budget = job_timeout_seconds(JobQueue(task.queue))
+                if budget <= 0:
+                    continue
+                anchor = task.running_since or task.started_at
+                if (now - anchor).total_seconds() < budget + grace_seconds:
+                    continue
+                self._tasks.pop(key, None)
+                self._stall_warned.discard(key)
+                evicted.append(task)
+            return evicted
+
     def clear(self) -> None:
         with self._lock:
             self._tasks.clear()
@@ -233,8 +331,20 @@ class RunningTaskRegistry:
             self._queue_workers = QUEUE_WORKERS
 
 
-def _has_stalled(task: RunningTask) -> bool:
-    return (datetime.now() - task.started_at).total_seconds() >= STALLED_TASK_THRESHOLD_SECONDS
+def _stall_threshold_seconds(queue: str) -> float:
+    """How long a running task on `queue` may go without finishing before it counts as
+    stalled: that queue's own execution budget, or `STALLED_TASK_THRESHOLD_SECONDS` when
+    the budget is turned off."""
+    budget = job_timeout_seconds(JobQueue(queue))
+    return budget if budget > 0 else STALLED_TASK_THRESHOLD_SECONDS
+
+
+def _has_stalled(task: RunningTask, *, now: datetime) -> bool:
+    """Whether `task` has been *executing* longer than its queue allows. Measured from
+    `running_since`, never from `started_at` — see that field's comment."""
+    if task.running_since is None:
+        return False
+    return (now - task.running_since).total_seconds() >= _stall_threshold_seconds(task.queue)
 
 
 _registry = RunningTaskRegistry()
@@ -280,6 +390,24 @@ def is_task_active(job_id: str) -> bool:
     `RunningTaskRegistry.is_active`.
     """
     return _registry.is_active(job_id)
+
+
+def evict_task(job_id: str) -> list[RunningTask]:
+    """Drop every running registry entry for `job_id`, returning what was dropped — the manual
+    "dismiss" action on the System → Tasks page (`system/dismiss_running_task.py`). See
+    `RunningTaskRegistry.evict` for what this does and does not accomplish.
+    """
+    return _registry.evict(job_id)
+
+
+def evict_stuck_tasks(
+    grace_seconds: float = STUCK_TASK_EVICTION_GRACE_SECONDS,
+) -> list[RunningTask]:
+    """Drop every running task well past its stall threshold, returning what was dropped —
+    the periodic sweep in `maintenance/reap_stuck_tasks.py`. See
+    `RunningTaskRegistry.evict_stuck`.
+    """
+    return _registry.evict_stuck(grace_seconds)
 
 
 def report_progress(

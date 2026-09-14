@@ -57,6 +57,14 @@ explicit keyword args and has no config-file dependency of its own. Tests mirror
 `tests/scheduling/` covers the generic `register_job`/`with_retry` helpers with dummy
 functions/queues; `tests/media_library/test_jobs.py` covers the slice-specific wiring.
 
+**Update (2026-09-14) — ad-hoc per-item jobs have their own helper now:**
+`scheduling/scheduler.py::register_adhoc_job` is the counterpart to `register_job` for the
+per-item work slices enqueue on demand (`enqueue_translation`, `enqueue_acquisition`,
+`enqueue_media_scan`, ...). Every one of those used to repeat the same eight-line
+`scheduler.add_job(..., "date", misfire_grace_time=None, replace_existing=True)` block by
+hand; all nine now go through the helper, which also applies the per-queue execution budget.
+Never write a raw `add_job` in a slice again. See [[legendarr-job-execution-budget]].
+
 **Update (2026-09-02) — split a combined job into two independent ones (acquisition vs.
 upgrade):** `subtitle_acquisition/jobs.py`'s periodic fan-out used to do two things per
 media file back-to-back: search for a missing subtitle, and — as a fallback when nothing

@@ -13,9 +13,8 @@ from legendarr_backend.media_metadata.fetch_metadata import (
 )
 from legendarr_backend.media_metadata.poster_cache_cleanup import cleanup_orphaned_posters
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 
 logger = logging.getLogger(__name__)
 
@@ -160,13 +159,11 @@ def enqueue_media_metadata_fetch(
                     return
                 fetch_metadata_for_series(session, item)
 
-    scheduler.add_job(
-        with_retry(run_fetch, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=JobQueue.METADATA_BULK.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        run_fetch,
+        queue=JobQueue.METADATA_BULK,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

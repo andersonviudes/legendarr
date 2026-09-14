@@ -26,6 +26,26 @@ All variables are prefixed with `LEGENDARR_` and read via `legendarr_backend.con
     `sqlite:///{LEGENDARR_DATA_DIR}/legendarr.db` and creates `LEGENDARR_DATA_DIR` if it
     doesn't exist.
 
+!!! note "Job execution budgets"
+    Every background job runs under a per-queue time budget, so a job that wedges (a read
+    off a network mount that stopped answering, a provider that never replies) releases
+    its worker slot instead of holding it — and blocking everything queued behind it —
+    until the container restarts. The budget defaults to one hour per queue (two for the
+    subtitle acquisition and upgrade queues, which may run speech-to-text) and is set by
+    `LEGENDARR_<QUEUE>_JOB_TIMEOUT_SECONDS` / the matching `config.yaml` key, where
+    `<QUEUE>` is one of `SYNC`, `SCAN`, `SCAN_BULK`, `TRANSLATE`, `TRANSLATE_BULK`,
+    `ACQUIRE`, `ACQUIRE_BULK`, `TIMING_SYNC`, `METADATA_BULK`, `MAINTENANCE` or
+    `UPGRADE_BULK`. Set one to `0` to remove that queue's budget entirely. Changing any of
+    these needs a restart to take effect.
+
+    A run cut off this way is recorded as a failure in System → Tasks; whatever it had
+    already committed to the database stays committed. Jobs that run on a schedule pick the
+    item up on their next tick; a manual action (timing sync, "Sync Now") has to be
+    triggered again. The cut-off run's thread is abandoned rather than killed — Python
+    can't interrupt a thread blocked in a syscall — so it may still finish and commit
+    later. legendarr allows a limited number of these before it stops cutting runs off and
+    goes back to waiting, which blocks that one queue but keeps the rest of the app healthy.
+
 !!! note
     On first run, legendarr writes `LEGENDARR_DATABASE_URL` (resolved), the Radarr/Sonarr
     connection settings, and the sync interval to `{LEGENDARR_DATA_DIR}/config.yaml`. From

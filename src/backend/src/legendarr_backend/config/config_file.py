@@ -5,7 +5,7 @@ from cryptography.fernet import Fernet
 from pydantic import BaseModel, Field
 
 from legendarr_backend.config.settings import Settings
-from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+from legendarr_backend.scheduling.queues import JOB_TIMEOUT_SECONDS, QUEUE_WORKERS, JobQueue
 from legendarr_backend.security.fernet import resolve_fernet
 from legendarr_backend.security.secrets import decrypt_secret, encrypt_secret, is_encrypted
 
@@ -140,6 +140,41 @@ class AppConfigFile(BaseModel):
     upgrade_bulk_queue_workers: int = Field(
         default_factory=lambda: QUEUE_WORKERS[JobQueue.UPGRADE_BULK], ge=1
     )
+    # Per-queue execution budget — see the same block in `Settings` (`config/settings.py`)
+    # for what it does and why `0` means "no budget".
+    sync_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SYNC], ge=0
+    )
+    scan_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SCAN], ge=0
+    )
+    scan_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SCAN_BULK], ge=0
+    )
+    translate_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TRANSLATE], ge=0
+    )
+    translate_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TRANSLATE_BULK], ge=0
+    )
+    acquire_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.ACQUIRE], ge=0
+    )
+    acquire_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.ACQUIRE_BULK], ge=0
+    )
+    timing_sync_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TIMING_SYNC], ge=0
+    )
+    metadata_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.METADATA_BULK], ge=0
+    )
+    maintenance_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.MAINTENANCE], ge=0
+    )
+    upgrade_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.UPGRADE_BULK], ge=0
+    )
 
 
 def load_or_create_config_file(settings: Settings) -> AppConfigFile:
@@ -236,6 +271,17 @@ def load_or_create_config_file(settings: Settings) -> AppConfigFile:
         "metadata_bulk_queue_workers": settings.metadata_bulk_queue_workers,
         "maintenance_queue_workers": settings.maintenance_queue_workers,
         "upgrade_bulk_queue_workers": settings.upgrade_bulk_queue_workers,
+        "sync_job_timeout_seconds": settings.sync_job_timeout_seconds,
+        "scan_job_timeout_seconds": settings.scan_job_timeout_seconds,
+        "scan_bulk_job_timeout_seconds": settings.scan_bulk_job_timeout_seconds,
+        "translate_job_timeout_seconds": settings.translate_job_timeout_seconds,
+        "translate_bulk_job_timeout_seconds": settings.translate_bulk_job_timeout_seconds,
+        "acquire_job_timeout_seconds": settings.acquire_job_timeout_seconds,
+        "acquire_bulk_job_timeout_seconds": settings.acquire_bulk_job_timeout_seconds,
+        "timing_sync_job_timeout_seconds": settings.timing_sync_job_timeout_seconds,
+        "metadata_bulk_job_timeout_seconds": settings.metadata_bulk_job_timeout_seconds,
+        "maintenance_job_timeout_seconds": settings.maintenance_job_timeout_seconds,
+        "upgrade_bulk_job_timeout_seconds": settings.upgrade_bulk_job_timeout_seconds,
     }
     merged = {**defaults, **data}
     config = AppConfigFile.model_validate(merged)

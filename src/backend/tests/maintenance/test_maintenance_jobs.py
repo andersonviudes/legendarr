@@ -2,7 +2,11 @@ from contextlib import contextmanager
 
 from legendarr_backend.config.config_file import AppConfigFile
 from legendarr_backend.maintenance import jobs as jobs_module
-from legendarr_backend.maintenance.jobs import register_temp_file_cleanup_job
+from legendarr_backend.maintenance.jobs import (
+    STUCK_TASK_SWEEP_INTERVAL_MINUTES,
+    register_stuck_task_cleanup_job,
+    register_temp_file_cleanup_job,
+)
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.scheduler import build_scheduler
 
@@ -51,3 +55,27 @@ def test_temp_file_cleanup_job_sweep_calls_cleanup_orphaned_temp_files(monkeypat
     assert calls == [("the-session", {"min_age_minutes": 45})]
 
     job.func()  # must not raise
+
+
+def test_register_stuck_task_cleanup_job_wires_the_maintenance_queue():
+    scheduler = build_scheduler()
+
+    register_stuck_task_cleanup_job(scheduler)
+
+    job = scheduler.get_job("maintenance_stuck_task_sweep")
+    assert job is not None
+    assert job.executor == JobQueue.MAINTENANCE.value
+    assert job.trigger.interval.total_seconds() == STUCK_TASK_SWEEP_INTERVAL_MINUTES * 60
+
+
+def test_stuck_task_cleanup_job_sweep_calls_reap_stuck_tasks(monkeypatch):
+    calls: list[int] = []
+    monkeypatch.setattr(jobs_module, "reap_stuck_tasks", lambda: calls.append(1) or 2)
+    scheduler = build_scheduler()
+
+    register_stuck_task_cleanup_job(scheduler)
+    job = scheduler.get_job("maintenance_stuck_task_sweep")
+    assert job is not None
+    job.func()
+
+    assert calls == [1]

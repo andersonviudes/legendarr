@@ -12,9 +12,8 @@ from legendarr_backend.media_servers.notify_media_servers import (
     notify_media_servers_of_subtitle_write,
 )
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active, report_progress
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 from legendarr_backend.subtitle_discovery.scan_eligibility import has_completed_subtitle_scan
 from legendarr_backend.subtitle_translation.translate_media_file import (
     needs_translation,
@@ -172,13 +171,11 @@ def enqueue_translation(
                     cascade=True,
                 )
 
-    scheduler.add_job(
-        with_retry(run_translation, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        run_translation,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )
