@@ -1,7 +1,7 @@
 import yaml
 from legendarr_backend.config.config_file import load_or_create_config_file, update_config_file
 from legendarr_backend.config.settings import Settings
-from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+from legendarr_backend.scheduling.queues import JOB_TIMEOUT_SECONDS, QUEUE_WORKERS, JobQueue
 from legendarr_backend.security.secrets import ENCRYPTED_PREFIX
 
 
@@ -198,6 +198,28 @@ def test_bulk_queue_worker_defaults_track_queue_workers(tmp_path):
     assert config.timing_sync_queue_workers == QUEUE_WORKERS[JobQueue.TIMING_SYNC]
     assert config.metadata_bulk_queue_workers == QUEUE_WORKERS[JobQueue.METADATA_BULK]
     assert config.upgrade_bulk_queue_workers == QUEUE_WORKERS[JobQueue.UPGRADE_BULK]
+
+
+def test_job_timeout_settings_round_trip_through_config_file(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path,
+        database_url="",
+        acquire_bulk_job_timeout_seconds=900,
+        # `0` is the documented escape hatch for a queue whose work legitimately outlives
+        # any default budget — it has to survive the round-trip rather than being read
+        # back as "unset" and silently backfilled with the default.
+        translate_job_timeout_seconds=0,
+    )
+
+    config = load_or_create_config_file(settings)
+
+    assert config.acquire_bulk_job_timeout_seconds == 900
+    assert config.translate_job_timeout_seconds == 0
+    assert config.sync_job_timeout_seconds == JOB_TIMEOUT_SECONDS[JobQueue.SYNC]
+
+    stored = yaml.safe_load((tmp_path / "config.yaml").read_text())
+    assert stored["acquire_bulk_job_timeout_seconds"] == 900
+    assert stored["translate_job_timeout_seconds"] == 0
 
 
 def test_update_config_file_applies_updates_and_keeps_secrets_encrypted(tmp_path):

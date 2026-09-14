@@ -17,6 +17,7 @@ from legendarr_backend.logging.setup import reset_log_records
 from legendarr_backend.media_library import models as _media_library_models  # noqa: F401
 from legendarr_backend.media_metadata import models as _media_metadata_models  # noqa: F401
 from legendarr_backend.scheduling.circuit_breaker import reset_circuit_breakers
+from legendarr_backend.scheduling.job_timeout import reset_job_timeouts
 from legendarr_backend.scheduling.provider_concurrency import reset_provider_concurrency
 from legendarr_backend.scheduling.running_tasks import reset_running_tasks
 from legendarr_backend.scheduling.scheduled_retry import reset_scheduled_retries
@@ -29,6 +30,7 @@ from legendarr_backend.subtitle_translation import (
     models as _subtitle_translation_models,  # noqa: F401
 )
 from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 
@@ -112,14 +114,32 @@ def isolated_scheduled_retries():
 
 
 @pytest.fixture
+def isolated_job_timeouts():
+    """Reset the per-queue execution budgets so a budget configured by one test doesn't
+    leak into another running in the same process."""
+    reset_job_timeouts()
+    yield
+    reset_job_timeouts()
+
+
+@pytest.fixture
 def in_memory_session():
     """A `Session` bound to a fresh in-memory SQLite DB with all tables created.
 
     Bypasses Alembic entirely (schema is created straight from `SQLModel.metadata`) — for
     tests of slice service functions that only need a working `Session`, not the real
     migration path.
+
+    `StaticPool` + `check_same_thread=False` because a job body now runs on its own thread
+    (`scheduling/job_timeout.with_timeout`), and tests that hand this session to a job
+    would otherwise hit SQLite's per-thread connection rules — or, worse, silently get a
+    second, empty in-memory database, since the default `SingletonThreadPool` opens one
+    connection per thread. In production nothing is shared this way: `get_session()` opens
+    its own `Session` inside whichever thread is running, against a file database.
     """
-    engine = create_engine("sqlite://")
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     event.listen(engine, "connect", enable_sqlite_foreign_keys)
     SQLModel.metadata.create_all(engine)
 

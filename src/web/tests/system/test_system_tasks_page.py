@@ -220,6 +220,62 @@ def test_running_tasks_partial_shows_no_stalled_badge_for_a_healthy_task(stub_ba
     assert "Stalled" not in response.text
 
 
+def test_running_tasks_partial_offers_dismiss_only_on_a_stalled_task(stub_backend_client):
+    """On a healthy task the button would read as "cancel", which is the one thing it
+    can't do — it only clears bookkeeping."""
+    app = create_app()
+    stub_backend_client(app, handler=_stalled_task_handler)
+
+    with TestClient(app) as client:
+        stalled = client.get("/system/tasks/running")
+
+    assert "/system/tasks/running/subtitle_acquisition:3/dismiss" in stalled.text
+
+    app = create_app()
+    stub_backend_client(app, handler=_tasks_handler)
+
+    with TestClient(app) as client:
+        healthy = client.get("/system/tasks/running")
+
+    assert "/dismiss" not in healthy.text
+
+
+def test_dismissing_a_task_re_renders_the_list_from_the_same_response(stub_backend_client):
+    posted: list[str] = []
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            posted.append(request.url.path)
+            return httpx.Response(200, json=[_TASK])
+        return httpx.Response(200, json=[])
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.post("/system/tasks/running/subtitle_acquisition:3/dismiss")
+
+    assert response.status_code == 200
+    assert posted == ["/system/tasks/running/subtitle_acquisition:3/dismiss"]
+    assert "media_library_scan_fanout" in response.text
+
+
+def test_tasks_page_labels_an_abandoned_job_run(stub_backend_client):
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/system/jobs/history":
+            return httpx.Response(200, json=[{**_JOB_RUN, "status": "abandoned"}])
+        return httpx.Response(200, json=[])
+
+    app = create_app()
+    stub_backend_client(app, handler=_handler)
+
+    with TestClient(app) as client:
+        response = client.get("/system/tasks/")
+
+    assert response.status_code == 200
+    assert "Abandoned" in response.text
+
+
 def test_running_tasks_partial_respects_the_limit_query_param(stub_backend_client):
     def _handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/system/tasks/running":

@@ -10,6 +10,7 @@ from apscheduler.events import (
     JobExecutionEvent,
 )
 from apscheduler.schedulers.background import BackgroundScheduler
+from legendarr_backend.scheduling.job_timeout import JobTimeoutError
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.scheduled_retry import (
@@ -41,6 +42,16 @@ def _error_event(job_id: str) -> JobExecutionEvent:
         "default",
         scheduled_run_time=datetime.now(UTC),
         exception=ValueError("boom"),
+    )
+
+
+def _timeout_event(job_id: str) -> JobExecutionEvent:
+    return JobExecutionEvent(
+        EVENT_JOB_ERROR,
+        job_id,
+        "default",
+        scheduled_run_time=datetime.now(UTC),
+        exception=JobTimeoutError("budget exhausted"),
     )
 
 
@@ -116,6 +127,25 @@ def test_a_one_off_jobs_failure_gets_rescheduled_with_backoff():
         job = scheduler.get_job("job1")
         assert job is not None
         assert job.next_run_time - before - BACKOFF_SCHEDULE[0] < timedelta(seconds=5)
+    finally:
+        scheduler.shutdown(wait=False)
+
+
+def test_a_run_cut_off_by_its_execution_budget_is_not_rescheduled():
+    """Backing a timed-out run off by a couple of minutes just spends the whole budget —
+    and a queue worker — again, which is the pile-up the budget exists to prevent. Its
+    slice's next periodic fan-out picks the item up instead."""
+    scheduler = build_scheduler()
+    scheduler.start(paused=True)
+    try:
+        registry = ScheduledRetryRegistry()
+        _add_one_off(scheduler, "job1")
+        registry.remember(_added_event("job1"), scheduler)
+        scheduler.remove_job("job1")
+
+        registry.handle_error(_timeout_event("job1"), scheduler)
+
+        assert scheduler.get_job("job1") is None
     finally:
         scheduler.shutdown(wait=False)
 

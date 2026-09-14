@@ -13,9 +13,8 @@ from legendarr_backend.media_library.poll_arr_history import poll_arr_history
 from legendarr_backend.media_library.scan_media_files import scan_media_item
 from legendarr_backend.media_library.sync_media_library import sync_media_library
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 
 logger = logging.getLogger(__name__)
 
@@ -61,20 +60,18 @@ def enqueue_media_sync(
     """Enqueue an ad-hoc library sync for immediate execution.
 
     Shared by the manual "Sync Now" trigger and the arr-service-created hook. Uses
-    `add_job` directly instead of `register_job` — same one-off `"date"` trigger
+    `register_adhoc_job` rather than `register_job` — same one-off `"date"` trigger
     reasoning as `enqueue_media_scan` — and a fixed job id so repeated triggers (a
     second "Sync Now" click, several connections added in a row) collapse into a
     single pending run instead of stacking up.
     """
-    scheduler.add_job(
-        with_retry(_run_sync, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
-        "date",
-        id="media_library_sync_manual",
-        name="media_library_sync_manual",
-        executor=JobQueue.SYNC.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        _run_sync,
+        queue=JobQueue.SYNC,
+        job_id="media_library_sync_manual",
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )
 
 
@@ -197,15 +194,17 @@ def enqueue_media_scan(
     Shared by every scan trigger (interval fan-out, Arr webhook, history poll) so the
     enqueue policy lives in one place. `replace_existing` dedupes a pending rescan of
     the same item; an already-running scan is left alone — both runs diff against the
-    database and the retry policy resolves a commit conflict. Uses `add_job` directly
-    instead of `register_job` because of the date trigger with `misfire_grace_time=None`
-    — the 1s default could silently drop event-triggered scans under load.
+    database and the retry policy resolves a commit conflict. Goes through
+    `register_adhoc_job` rather than `register_job` because of the date trigger with
+    `misfire_grace_time=None` — the 1s default could silently drop event-triggered scans
+    under load.
 
     The job id above doesn't encode `cascade`, so on its own `replace_existing` would let
     a later, non-cascading enqueue (periodic fan-out, history poll) silently swap out a
-    still-pending cascade=True job (an Arr webhook) racing the same item — the wrapped job
-    function stashes its own `cascade` as a plain attribute, read back via `scheduler.get_job`
-    before scheduling, so a pending cascade is OR'd in rather than overwritten.
+    still-pending cascade=True job (an Arr webhook) racing the same item — the job function
+    stashes its own `cascade` as a plain attribute (forwarded by `register_adhoc_job`'s
+    wrappers), read back via `scheduler.get_job` before scheduling, so a pending cascade is
+    OR'd in rather than overwritten.
 
     `cascade=True` chains into a subtitle scan for every `MediaFile` the item now has —
     queried fresh after this scan's own commit, so a file the scan just discovered on
@@ -273,15 +272,12 @@ def enqueue_media_scan(
                     assert media_file_id is not None
                     on_cascade(media_file_id)
 
-    wrapped = with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds)
-    setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
-    scheduler.add_job(
-        wrapped,
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    setattr(run_scan, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
+    register_adhoc_job(
+        scheduler,
+        run_scan,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

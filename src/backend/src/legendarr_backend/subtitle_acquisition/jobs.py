@@ -15,9 +15,8 @@ from legendarr_backend.media_servers.notify_media_servers import (
     notify_media_servers_of_subtitle_write,
 )
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active, report_progress
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 from legendarr_backend.subtitle_acquisition.acquire_media_file_subtitle import (
     acquire_subtitle_for_media_file,
 )
@@ -255,19 +254,14 @@ def enqueue_acquisition(
                         default_translation_provider=config.default_translation_provider,
                     )
 
-    wrapped = with_retry(
-        run_acquisition, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds
-    )
-    setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
-    scheduler.add_job(
-        wrapped,
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    setattr(run_acquisition, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
+    register_adhoc_job(
+        scheduler,
+        run_acquisition,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )
 
 
@@ -306,16 +300,11 @@ def enqueue_pending_subtitle_reconcile(
                     "materialized %d pending subtitle(s) for series %d", materialized, series_id
                 )
 
-    wrapped = with_retry(
-        run_reconcile, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds
-    )
-    scheduler.add_job(
-        wrapped,
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        run_reconcile,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

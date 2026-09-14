@@ -13,6 +13,8 @@ from apscheduler.events import (
 )
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from legendarr_backend.scheduling.job_timeout import JobTimeoutError
+
 logger = logging.getLogger(__name__)
 
 # How many backed-off re-enqueues a one-off job gets after its own in-process
@@ -51,6 +53,9 @@ class ScheduledRetryRegistry:
     action (e.g. clicking "Translate" again) while a backed-off retry is still pending
     — so that starts its own budget instead of inheriting a stale one. Submission and
     completion can arrive from different threads, so access is locked.
+
+    A run cut off by its execution budget (`JobTimeoutError`) is the one failure this
+    deliberately doesn't retry — see `handle_error`.
     """
 
     def __init__(self) -> None:
@@ -71,6 +76,22 @@ class ScheduledRetryRegistry:
     def handle_error(self, event: JobExecutionEvent, scheduler: BackgroundScheduler) -> None:
         if scheduler.get_job(event.job_id) is not None:
             # Still in the jobstore — a periodic job, whose next tick is already a retry.
+            return
+        if isinstance(event.exception, JobTimeoutError):
+            # A run that exhausted its whole execution budget isn't a transient failure a
+            # few minutes of backoff would fix, and retrying it would spend that budget —
+            # and a queue worker's time — all over again, up to `MAX_SCHEDULE_RETRIES`
+            # more times, which is the pile-up this budget exists to prevent — and each
+            # attempt would abandon another thread against whatever is actually wedged.
+            # The failure still lands in the Tasks page's history. Anything with a
+            # periodic fan-out (scan, acquisition, translation, upgrade, metadata) retries
+            # on its next tick; the manual-only ones (timing sync, "Sync Now", pending
+            # reconcile) need the user to trigger them again, which is the right outcome
+            # for work that just burned an hour of a worker going nowhere.
+            logger.warning("%s exceeded its execution budget, not scheduling a retry", event.job_id)
+            with self._lock:
+                self._jobs.pop(event.job_id, None)
+                self._attempts.pop(event.job_id, None)
             return
         with self._lock:
             cached = self._jobs.get(event.job_id)

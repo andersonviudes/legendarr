@@ -18,7 +18,11 @@ class JobRun(SQLModel, table=True):
     job_id: str = Field(index=True)
     name: str
     queue: str
-    status: str  # "success" | "failure" | "missed"
+    # "success" | "failure" | "missed" — all three recorded from APScheduler's own events
+    # — plus "abandoned", recorded by `system/job_history.record_abandoned_run` for a run
+    # that never reported an outcome at all and had to be swept out of the running-task
+    # registry (`maintenance/reap_stuck_tasks.py`).
+    status: str
     started_at: datetime
     finished_at: datetime = Field(index=True)
     error_message: str | None = Field(default=None)

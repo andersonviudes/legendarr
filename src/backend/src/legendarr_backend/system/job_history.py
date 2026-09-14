@@ -1,4 +1,5 @@
 import threading
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -15,6 +16,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import col, select
 
 from legendarr_backend.database.engine import get_session
+from legendarr_backend.scheduling.running_tasks import RunningTask
 from legendarr_backend.system.models import JobRun
 
 
@@ -102,3 +104,42 @@ def list_job_runs(limit: int = 20) -> list[JobRun]:
         return list(
             session.exec(select(JobRun).order_by(col(JobRun.finished_at).desc()).limit(limit))
         )
+
+
+def record_abandoned_runs(tasks: Iterable[RunningTask], *, reason: str) -> int:
+    """Persist one `JobRun` per task dropped from the running-task registry without ever
+    reporting an outcome, and return how many. `reason` becomes the row's `error_message`,
+    since the two callers drop tasks for different reasons — the periodic sweep in
+    `maintenance/reap_stuck_tasks.py` and a user's dismiss in
+    `system/dismiss_running_task.py`.
+
+    `JobHistoryRecorder` above can't cover this case by construction: it records off
+    APScheduler's completion events, and the whole definition of an abandoned run is that
+    no such event ever arrives. Without this the run would simply vanish from the Tasks
+    page when it was dropped, leaving no trace that anything went wrong.
+
+    One session for the whole batch, not one per task: the sweep runs precisely when jobs
+    are wedged, which is when connections are scarcest.
+    """
+    recorded = 0
+    with get_session() as session:
+        for task in tasks:
+            session.add(
+                JobRun(
+                    job_id=task.job_id,
+                    name=task.name,
+                    queue=task.queue,
+                    status="abandoned",
+                    # `RunningTask`'s timestamps are naive *local* `datetime.now()`s,
+                    # unlike the tz-aware `scheduled_run_time` every other row here comes
+                    # from. Convert rather than store as-is: the display filter reads a
+                    # naive value as UTC, so on a host that isn't UTC an untouched value
+                    # would be off by the offset, and only for these rows.
+                    started_at=(task.running_since or task.started_at).astimezone(UTC),
+                    finished_at=datetime.now(UTC),
+                    error_message=reason,
+                )
+            )
+            recorded += 1
+        session.commit()
+    return recorded

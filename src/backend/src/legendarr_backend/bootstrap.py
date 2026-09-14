@@ -3,7 +3,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from legendarr_backend.config.config_file import load_or_create_config_file
 from legendarr_backend.config.settings import get_settings
 from legendarr_backend.database.engine import init_db
-from legendarr_backend.maintenance.jobs import register_temp_file_cleanup_job
+from legendarr_backend.maintenance.jobs import (
+    register_stuck_task_cleanup_job,
+    register_temp_file_cleanup_job,
+)
 from legendarr_backend.media_library.jobs import (
     register_history_poll_job,
     register_scan_job,
@@ -13,6 +16,7 @@ from legendarr_backend.media_metadata.jobs import (
     register_metadata_refresh_job,
     register_poster_cache_cleanup_job,
 )
+from legendarr_backend.scheduling.job_timeout import configure_job_timeouts
 from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.running_tasks import attach_running_task_registry
 from legendarr_backend.scheduling.scheduled_retry import attach_scheduled_retry
@@ -42,6 +46,25 @@ def build_scheduler() -> BackgroundScheduler:
         JobQueue.MAINTENANCE: config.maintenance_queue_workers,
         JobQueue.UPGRADE_BULK: config.upgrade_bulk_queue_workers,
     }
+    # Per-queue execution budgets, read by `scheduling/scheduler.py` every time a job is
+    # registered. This is the only call to `configure_job_timeouts`, and each job's budget
+    # is captured when it's registered, so — exactly like `queue_workers` sizing the
+    # executor pools right below — editing these in `config.yaml` needs a full restart.
+    configure_job_timeouts(
+        {
+            JobQueue.SYNC: config.sync_job_timeout_seconds,
+            JobQueue.SCAN: config.scan_job_timeout_seconds,
+            JobQueue.SCAN_BULK: config.scan_bulk_job_timeout_seconds,
+            JobQueue.TRANSLATE: config.translate_job_timeout_seconds,
+            JobQueue.TRANSLATE_BULK: config.translate_bulk_job_timeout_seconds,
+            JobQueue.ACQUIRE: config.acquire_job_timeout_seconds,
+            JobQueue.ACQUIRE_BULK: config.acquire_bulk_job_timeout_seconds,
+            JobQueue.TIMING_SYNC: config.timing_sync_job_timeout_seconds,
+            JobQueue.METADATA_BULK: config.metadata_bulk_job_timeout_seconds,
+            JobQueue.MAINTENANCE: config.maintenance_job_timeout_seconds,
+            JobQueue.UPGRADE_BULK: config.upgrade_bulk_job_timeout_seconds,
+        }
+    )
     scheduler = build_bare_scheduler(queue_workers)
     attach_running_task_registry(scheduler, queue_workers)
     attach_job_history_recorder(scheduler)
@@ -56,4 +79,5 @@ def build_scheduler() -> BackgroundScheduler:
     register_metadata_refresh_job(scheduler, config)
     register_poster_cache_cleanup_job(scheduler, config)
     register_temp_file_cleanup_job(scheduler, config)
+    register_stuck_task_cleanup_job(scheduler)
     return scheduler

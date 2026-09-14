@@ -67,6 +67,21 @@ async def get_running_tasks_count(
     )
 
 
+@router.post("/tasks/running/{job_id}/dismiss")
+async def dismiss_running_task(
+    request: Request, job_id: str, client: httpx.AsyncClient = Depends(get_backend_client)
+):
+    """Clear a stalled task and re-render the running list from the same response.
+
+    Rendered back into whichever container the button was in — the Tasks page, the
+    dashboard panel or the topbar panel all include `_running_tasks_list.html`. The
+    dashboard's own `limit` isn't reapplied here; its 3s poller restores it on the next
+    tick, which isn't worth a second round trip to avoid.
+    """
+    tasks = await service.dismiss_running_task(client, job_id)
+    return templates.TemplateResponse(request, "_running_tasks_list.html", {"tasks": tasks})
+
+
 @router.get("/sessions/")
 async def show_sessions(request: Request, client: httpx.AsyncClient = Depends(get_backend_client)):
     sessions = await service.get_sessions(client)

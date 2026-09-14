@@ -2415,6 +2415,13 @@ button.contrast:is(:hover, :focus),
   color: var(--lg-warn-color);
 }
 
+/* Job history status pill — a run swept out of the running-task registry without ever
+   reporting an outcome (`system/job_history.record_abandoned_run`). Muted rather than
+   failure-colored: nobody knows how it ended, which is the point. */
+.task-line-status--abandoned {
+  color: var(--pico-muted-color);
+}
+
 /* Running-tasks list only (System → Tasks "Live Activity") — a task submitted to a
    queue whose worker(s) are all busy hasn't actually started yet (`RunningTask.queued`,
    `scheduling/running_tasks.py`); muted instead of a success/failure/missed color since
@@ -2428,6 +2435,25 @@ button.contrast:is(:hover, :focus),
    failure-colored: nothing has failed yet, but its worker slot is gone until restart. */
 .task-line-status--stalled {
   color: var(--lg-warn-color);
+}
+
+/* Running-tasks list only — the "Dismiss" action on a stalled task. A quiet link-like
+   button, not a Pico button: it sits inline in a dense list row and is deliberately
+   understated, since it only clears bookkeeping and can't stop the job itself. */
+.task-line-dismiss {
+  padding: 0;
+  border: none;
+  background: none;
+  width: auto;
+  color: var(--pico-muted-color);
+  font-size: var(--lg-font-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.task-line-dismiss:hover {
+  color: var(--pico-color);
+  background: none;
 }
 
 /* === Login page (authentication/templates/login.html) — the one page that doesn't

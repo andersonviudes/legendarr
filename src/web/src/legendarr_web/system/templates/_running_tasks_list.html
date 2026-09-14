@@ -12,6 +12,20 @@
     <span class="task-line-status task-line-status--stalled">{{ t("system.tasks.stalled_badge") }}</span>
     {% endif %}
     <span class="task-line-time">{{ task.started_at | local_datetime }}</span>
+    {% if task.stalled %}
+    {# Only offered for a stalled task: on a healthy one the button would read as "cancel",
+       which is the one thing it cannot do. `closest div` is whichever container included
+       this partial — the Tasks page list, the dashboard panel, or the topbar panel. #}
+    <button
+      type="button"
+      class="task-line-dismiss"
+      title="{{ t('system.tasks.dismiss_hint') }}"
+      hx-post="/system/tasks/running/{{ task.job_id }}/dismiss"
+      hx-target="closest div"
+      hx-swap="innerHTML"
+      hx-confirm="{{ t('system.tasks.dismiss_confirm') }}"
+    >{{ t("system.tasks.dismiss") }}</button>
+    {% endif %}
     {% if task.phase %}
     <div class="task-line-progress">
       <progress value="{{ task.current_step }}" max="{{ task.total_steps }}"></progress>

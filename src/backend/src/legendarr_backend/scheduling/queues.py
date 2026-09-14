@@ -47,6 +47,38 @@ class JobQueue(StrEnum):
     UPGRADE_BULK = "upgrade_bulk"
 
 
+# How long one execution of a job on a given queue may run before
+# `scheduling/job_timeout.with_timeout` gives up waiting on it, abandons its thread and
+# fails the run — the thing that keeps a wedged job from holding an executor slot (and
+# therefore its whole queue) until the process restarts.
+#
+# The budget covers the whole run including `scheduling/retry.with_retry`'s attempts, so
+# size it against the slowest *legitimate* run, retries included, not against one attempt.
+# That's why acquisition gets double: `speech_to_text_timeout_seconds` alone allows 1800s
+# per file and `acquisition_retry_attempts` defaults to 3, so a run that legitimately
+# transcribes twice would trip a 3600s budget mid-work. A budget that kills healthy jobs
+# is worse than the wedge it prevents.
+#
+# Every queue is overridable through `AppConfigFile`'s `<queue>_job_timeout_seconds`,
+# where `<= 0` turns the budget off entirely for that queue.
+DEFAULT_JOB_TIMEOUT_SECONDS = 3600.0
+
+JOB_TIMEOUT_SECONDS: dict[JobQueue, float] = {
+    JobQueue.SYNC: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.SCAN: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.SCAN_BULK: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.TRANSLATE: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.TRANSLATE_BULK: DEFAULT_JOB_TIMEOUT_SECONDS,
+    # Speech-to-text fallback: up to `speech_to_text_timeout_seconds` (1800s) per attempt.
+    JobQueue.ACQUIRE: 7200.0,
+    JobQueue.ACQUIRE_BULK: 7200.0,
+    JobQueue.TIMING_SYNC: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.METADATA_BULK: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.MAINTENANCE: DEFAULT_JOB_TIMEOUT_SECONDS,
+    JobQueue.UPGRADE_BULK: 7200.0,
+}
+
+
 def cpu_scaled_workers(minimum: int = 1, maximum: int = 2) -> int:
     """The host's CPU count, capped at `maximum` (never below `minimum`) — the default
     sizing for a bulk queue's worker pool instead of a hardcoded constant, so a modest

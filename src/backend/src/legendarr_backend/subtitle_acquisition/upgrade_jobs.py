@@ -12,9 +12,8 @@ from legendarr_backend.media_servers.notify_media_servers import (
     notify_media_servers_of_subtitle_write,
 )
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 from legendarr_backend.subtitle_acquisition.jobs import media_file_ids_with_completed_scan
 from legendarr_backend.subtitle_acquisition.upgrade_media_file_subtitle import (
     upgrade_search_priority,
@@ -160,16 +159,11 @@ def enqueue_upgrade(
             if result.upgraded_language is not None:
                 notify_media_servers_of_subtitle_write(session, video_path)
 
-    wrapped = with_retry(
-        run_upgrade, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds
-    )
-    scheduler.add_job(
-        wrapped,
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        run_upgrade,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

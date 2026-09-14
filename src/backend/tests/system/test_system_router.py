@@ -10,6 +10,7 @@ from legendarr_backend.scheduling.queues import JobQueue
 from legendarr_backend.scheduling.running_tasks import attach_running_task_registry
 from legendarr_backend.scheduling.scheduler import build_scheduler, register_job
 from legendarr_backend.system.models import JobRun
+from sqlmodel import select
 
 
 def test_get_directories_returns_immediate_subdirectories(isolated_database, tmp_path):
@@ -109,6 +110,50 @@ def test_get_running_tasks_returns_currently_running_tasks(
     assert response.status_code == 200
     tasks = response.json()
     assert any(task["job_id"] == "router_test_job" for task in tasks)
+
+
+def test_dismiss_running_task_clears_it_and_returns_the_remaining_tasks(
+    isolated_database, isolated_running_tasks
+):
+    scheduler = build_scheduler()
+    attach_running_task_registry(scheduler)
+    for job_id in ("router_stuck_job", "router_other_job"):
+        register_job(
+            scheduler,
+            _noop,
+            queue=JobQueue.SYNC,
+            job_id=job_id,
+            trigger="interval",
+            minutes=1,
+            retry_attempts=1,
+            retry_delay_seconds=0,
+            max_instances=1,
+            coalesce=False,
+        )
+        scheduler._dispatch_event(
+            JobSubmissionEvent(EVENT_JOB_SUBMITTED, job_id, "default", [datetime.now(UTC)])
+        )
+
+    with TestClient(create_api_app()) as client:
+        response = client.post("/system/tasks/running/router_stuck_job/dismiss")
+
+    assert response.status_code == 200
+    assert [task["job_id"] for task in response.json()] == ["router_other_job"]
+    with get_session() as session:
+        runs = list(session.exec(select(JobRun)))
+    assert [(run.job_id, run.status) for run in runs] == [("router_stuck_job", "abandoned")]
+
+
+def test_dismiss_running_task_for_a_job_that_isnt_running_is_a_noop(
+    isolated_database, isolated_running_tasks
+):
+    """By the time someone clicks the button the task may have finished on its own — the
+    outcome they wanted is the same either way, so this is a 200, not a 404."""
+    with TestClient(create_api_app()) as client:
+        response = client.post("/system/tasks/running/never_ran/dismiss")
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_get_scheduled_jobs_returns_registered_jobs(isolated_database):

@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.system.browse_directory import list_subdirectories
+from legendarr_backend.system.dismiss_running_task import dismiss_running_task
 from legendarr_backend.system.job_history import list_job_runs
 from legendarr_backend.system.provider_status import list_provider_health
 from legendarr_backend.system.read_logs import list_recent_logs
@@ -68,6 +69,21 @@ def get_logs(level: str | None = None, limit: int = 200) -> list[LogLineRead]:
 
 @router.get("/tasks/running", response_model=list[RunningTaskRead])
 def get_running_tasks(session: Session = Depends(_get_session)) -> list[RunningTaskRead]:
+    return list_running_tasks(session)
+
+
+@router.post("/tasks/running/{job_id}/dismiss", response_model=list[RunningTaskRead])
+def dismiss_task(job_id: str, session: Session = Depends(_get_session)) -> list[RunningTaskRead]:
+    """Clear a stuck task's bookkeeping and return the running list as it now stands.
+
+    Returns the list rather than a bare acknowledgement so the web UI can swap the Tasks
+    page's list straight from this response instead of following up with a `GET`.
+    Dismissing a `job_id` that isn't running is a no-op, not a 404 — by the time someone
+    clicks the button the task may well have finished on its own, and the outcome they
+    wanted (it's gone) is the same either way. See `dismiss_running_task` for what this
+    does and does not stop.
+    """
+    dismiss_running_task(job_id)
     return list_running_tasks(session)
 
 

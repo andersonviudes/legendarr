@@ -1,3 +1,4 @@
+import functools
 import logging
 import time
 from collections.abc import Callable
@@ -12,8 +13,16 @@ def with_retry[T](
 
     Re-raises the last exception once `max_attempts` is exhausted, so the caller (e.g.
     APScheduler) still observes the run as failed.
+
+    `functools.wraps` also copies `func.__dict__` onto the wrapper, which is what keeps
+    the `cascade` flag `enqueue_*` sets on the job function visible as
+    `scheduler.get_job(job_id).func.cascade` — the sticky-cascade merge in
+    `media_library/jobs.py`, `subtitle_acquisition/jobs.py` and
+    `subtitle_discovery/jobs.py` reads it off whatever callable actually reached the
+    jobstore, which is this wrapper (and then `with_timeout`'s on top of it).
     """
 
+    @functools.wraps(func)
     def wrapped() -> T:
         for attempt in range(1, max_attempts + 1):
             try:

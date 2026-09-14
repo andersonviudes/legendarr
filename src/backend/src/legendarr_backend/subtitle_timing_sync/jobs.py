@@ -7,8 +7,8 @@ from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active
+from legendarr_backend.scheduling.scheduler import register_adhoc_job
 from legendarr_backend.subtitle_discovery.models import Subtitle
 from legendarr_backend.subtitle_timing_sync.sync_subtitle_timing import sync_subtitle_timing
 
@@ -83,13 +83,11 @@ def enqueue_timing_sync(
             )
             logger.info("timing sync finished for subtitle %d: synced=%s", subtitle_id, synced)
 
-    scheduler.add_job(
-        with_retry(run_timing_sync, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    register_adhoc_job(
+        scheduler,
+        run_timing_sync,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

@@ -45,3 +45,10 @@ job permanently, and the pool's non-daemon threads block interpreter shutdown on
 the `Thread(daemon=True)` + shared-deadline `join()` shape `subtitle_acquisition/
 provider_search.py`'s `_search_all` now uses. See [[legendarr-opensubtitles-hash-hang-fix]] for
 the full chain of call sites this pattern has had to be applied to.
+
+**Superseded in part 2026-09-14:** the `Thread(daemon=True)` + bounded `join()` shape is no
+longer something to remember to apply per call site — it now wraps *every* job, via
+`scheduling/job_timeout.with_timeout` and a per-queue budget. `is_task_active()` dedup is still
+required on every ad-hoc `enqueue_*`, but its failure mode (an entry that never clears, so the
+item is skipped forever) is now bounded by that budget and swept by
+`maintenance/reap_stuck_tasks.py`. See [[legendarr-job-execution-budget]].

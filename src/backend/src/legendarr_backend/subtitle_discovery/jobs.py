@@ -10,9 +10,8 @@ from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.scheduling.retry import with_retry
 from legendarr_backend.scheduling.running_tasks import is_task_active
-from legendarr_backend.scheduling.scheduler import register_job
+from legendarr_backend.scheduling.scheduler import register_adhoc_job, register_job
 from legendarr_backend.subtitle_acquisition.jobs import enqueue_acquisition
 from legendarr_backend.subtitle_discovery.probe_embedded_subtitles import (
     DEFAULT_PROBE_TIMEOUT_SECONDS,
@@ -169,15 +168,12 @@ def enqueue_subtitle_scan(
                     cascade=True,
                 )
 
-    wrapped = with_retry(run_scan, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds)
-    setattr(wrapped, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
-    scheduler.add_job(
-        wrapped,
-        "date",
-        id=job_id,
-        name=job_id,
-        executor=queue.value,
-        max_instances=1,
-        replace_existing=True,
-        misfire_grace_time=None,
+    setattr(run_scan, "cascade", cascade)  # noqa: B010 — direct assignment fails pyright
+    register_adhoc_job(
+        scheduler,
+        run_scan,
+        queue=queue,
+        job_id=job_id,
+        retry_attempts=retry_attempts,
+        retry_delay_seconds=retry_delay_seconds,
     )

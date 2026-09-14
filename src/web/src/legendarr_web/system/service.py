@@ -20,6 +20,14 @@ async def get_running_tasks(client: httpx.AsyncClient) -> list[dict]:
     return response.json()
 
 
+async def dismiss_running_task(client: httpx.AsyncClient, job_id: str) -> list[dict]:
+    """Clear a stalled task's bookkeeping; returns the running list as it now stands, so
+    the caller can re-render without a follow-up `GET`."""
+    response = await client.post(f"/system/tasks/running/{job_id}/dismiss")
+    response.raise_for_status()
+    return response.json()
+
+
 async def get_scheduled_jobs(client: httpx.AsyncClient) -> list[dict]:
     response = await client.get("/system/jobs/scheduled")
     response.raise_for_status()

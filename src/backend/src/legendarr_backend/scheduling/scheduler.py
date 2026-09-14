@@ -4,6 +4,7 @@ from typing import Any
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from legendarr_backend.scheduling.job_timeout import job_timeout_seconds, with_timeout
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.retry import with_retry
 
@@ -39,6 +40,27 @@ def build_scheduler(queue_workers: dict[JobQueue, int] | None = None) -> Backgro
     return BackgroundScheduler(executors=executors, timezone="UTC")
 
 
+def _with_run_policies(
+    func: Callable[[], None],
+    *,
+    queue: JobQueue,
+    retry_attempts: int,
+    retry_delay_seconds: float,
+) -> Callable[[], None]:
+    """Apply the two policies every job on this scheduler runs under: retry-on-exception,
+    and an execution budget that releases the queue's worker slot if the run wedges.
+
+    Order matters. The budget wraps the retry loop rather than each attempt, so a single
+    run gets one budget in total — nested the other way, a run that timed out would be
+    retried, and each attempt would spend the whole budget again and abandon another
+    thread, which is the opposite of the point.
+    """
+    return with_timeout(
+        with_retry(func, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
+        seconds=job_timeout_seconds(queue),
+    )
+
+
 def register_job(
     scheduler: BackgroundScheduler,
     func: Callable[[], None],
@@ -64,7 +86,12 @@ def register_job(
     """
     trigger_args.setdefault("jitter", JOB_JITTER_SECONDS)
     scheduler.add_job(
-        with_retry(func, max_attempts=retry_attempts, delay_seconds=retry_delay_seconds),
+        _with_run_policies(
+            func,
+            queue=queue,
+            retry_attempts=retry_attempts,
+            retry_delay_seconds=retry_delay_seconds,
+        ),
         trigger,
         id=job_id,
         name=job_id,
@@ -73,4 +100,47 @@ def register_job(
         coalesce=coalesce,
         replace_existing=True,
         **trigger_args,
+    )
+
+
+def register_adhoc_job(
+    scheduler: BackgroundScheduler,
+    func: Callable[[], None],
+    *,
+    queue: JobQueue,
+    job_id: str,
+    retry_attempts: int,
+    retry_delay_seconds: float,
+) -> None:
+    """Register `func` as a one-off job that runs as soon as a worker on `queue` is free.
+
+    The `register_job` counterpart for the per-item work every slice enqueues on demand
+    (`enqueue_translation`, `enqueue_acquisition`, `enqueue_media_scan`, ...) rather than
+    on a schedule: same retry and execution-budget policies, but a `"date"` trigger
+    instead of an interval, and no jitter (a `DateTrigger` doesn't take one).
+
+    `misfire_grace_time=None` means the run still happens however long it waited behind
+    other work on the queue, instead of being dropped as a misfire, and
+    `replace_existing=True` collapses a second enqueue of the same `job_id` into the
+    pending one. Neither catches a job that has already left the jobstore for an executor
+    — callers guard that case with `running_tasks.is_task_active(job_id)` before calling.
+
+    Attributes callers set on `func` (the `cascade` flag) stay readable as
+    `scheduler.get_job(job_id).func.cascade`, since both wrappers apply `functools.wraps`.
+    Set them before calling this, not on the value it registers.
+    """
+    scheduler.add_job(
+        _with_run_policies(
+            func,
+            queue=queue,
+            retry_attempts=retry_attempts,
+            retry_delay_seconds=retry_delay_seconds,
+        ),
+        "date",
+        id=job_id,
+        name=job_id,
+        executor=queue.value,
+        max_instances=1,
+        replace_existing=True,
+        misfire_grace_time=None,
     )

@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
+from legendarr_backend.scheduling.queues import JOB_TIMEOUT_SECONDS, QUEUE_WORKERS, JobQueue
 
 
 class Settings(BaseSettings):
@@ -211,6 +211,52 @@ class Settings(BaseSettings):
     )
     upgrade_bulk_queue_workers: int = Field(
         default_factory=lambda: QUEUE_WORKERS[JobQueue.UPGRADE_BULK], ge=1
+    )
+    # How long one execution of a job on each queue may run before
+    # `scheduling/job_timeout.with_timeout` abandons its thread and fails the run, so a
+    # wedged job releases the queue's slot instead of holding it until the process
+    # restarts. `0` disables the budget for that queue entirely — the escape hatch for a
+    # job that legitimately runs longer than any default could anticipate. Defaults come
+    # from `scheduling.queues.JOB_TIMEOUT_SECONDS` via `default_factory`, same reasoning
+    # as the `*_queue_workers` block above — and, like those, a change needs a full
+    # restart: `legendarr_backend.bootstrap.build_scheduler()` is the only caller of
+    # `scheduling.job_timeout.configure_job_timeouts`, and each job's budget is baked in
+    # when the job is registered. Note `timing_sync_job_timeout_seconds` is the budget for
+    # the whole job, distinct from `timing_sync_timeout_seconds`, which is `ffsubsync`'s
+    # own subprocess timeout. The budget covers `with_retry`'s attempts too, so a queue
+    # whose work legitimately retries needs headroom for all of them.
+    sync_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SYNC], ge=0
+    )
+    scan_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SCAN], ge=0
+    )
+    scan_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.SCAN_BULK], ge=0
+    )
+    translate_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TRANSLATE], ge=0
+    )
+    translate_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TRANSLATE_BULK], ge=0
+    )
+    acquire_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.ACQUIRE], ge=0
+    )
+    acquire_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.ACQUIRE_BULK], ge=0
+    )
+    timing_sync_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.TIMING_SYNC], ge=0
+    )
+    metadata_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.METADATA_BULK], ge=0
+    )
+    maintenance_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.MAINTENANCE], ge=0
+    )
+    upgrade_bulk_job_timeout_seconds: float = Field(
+        default_factory=lambda: JOB_TIMEOUT_SECONDS[JobQueue.UPGRADE_BULK], ge=0
     )
 
     @property

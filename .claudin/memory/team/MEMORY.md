@@ -50,6 +50,7 @@
 - [legendarr language coverage normalization fix](legendarr-language-coverage-normalization-fix.md) — PR #127: coverage checks used raw .lower() not normalize_language_code, pt-BR looked like missing pt
 - [legendarr hung job dedup fix](legendarr-hung-job-dedup-fix.md) — PR #128: stuck transcription thread wedged acquire_bulk forever; is_task_active() now guards every ad-hoc enqueue_*
 - [legendarr opensubtitles hash hang fix](legendarr-opensubtitles-hash-hang-fix.md) — PR #130 closed it out: napiprojekt hash guarded, ThreadPoolExecutor fan-out replaced, hash gated, stalled badge
+- [legendarr job execution budget](legendarr-job-execution-budget.md) — per-queue job timeout that frees the slot, capped abandonment, running_since anchor, register_adhoc_job, stuck-task sweep
 - [legendarr README HTML sanitizer gotcha](legendarr-readme-html-sanitizer-gotcha.md) — GitHub strips `style` from README HTML, and only align="absmiddle" is real vertical-align:middle
 - [legendarr GitHub security & Dependabot](legendarr-github-security-and-dependabot.md) — what's enabled, what the API silently refuses, and the four dependabot.yml ecosystems
 - [legendarr free translation providers](legendarr-free-translation-providers.md) — PR #143: keyless google + gemini kind, why no deep-translator, per-line fan-out and failure ceiling

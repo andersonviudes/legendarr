@@ -12,10 +12,13 @@ from apscheduler.events import (
 )
 from apscheduler.schedulers.background import BackgroundScheduler
 from legendarr_backend.scheduling import running_tasks as running_tasks_module
+from legendarr_backend.scheduling.job_timeout import configure_job_timeouts
 from legendarr_backend.scheduling.queues import QUEUE_WORKERS, JobQueue
 from legendarr_backend.scheduling.running_tasks import (
     RunningTaskRegistry,
     attach_running_task_registry,
+    evict_stuck_tasks,
+    evict_task,
     get_running_tasks,
     is_task_active,
     report_progress,
@@ -288,6 +291,15 @@ def test_tasks_promotes_the_next_queued_job_once_the_running_one_finishes():
     assert {task.job_id: task.queued for task in registry.tasks()} == {"scan_2": False}
 
 
+def _observe_running(registry: RunningTaskRegistry) -> None:
+    """Let the registry see the task off the queue once, which is what stamps
+    `running_since`. Nothing signals the queued-to-running transition — APScheduler emits
+    an event on submission and on completion, never on start — so elapsed execution time
+    only starts counting from the first observation. In production the UI polls every 3s
+    and the stuck-task sweep every 15 minutes; in a test it has to be explicit."""
+    registry.tasks()
+
+
 def test_tasks_does_not_flag_a_fresh_task_as_stalled():
     scheduler = build_scheduler()
     registry = RunningTaskRegistry()
@@ -296,27 +308,86 @@ def test_tasks_does_not_flag_a_fresh_task_as_stalled():
     assert registry.tasks()[0].stalled is False
 
 
-def test_tasks_flags_a_task_still_running_past_the_threshold_as_stalled(monkeypatch):
+def test_tasks_measures_execution_time_from_when_a_task_left_the_queue(isolated_job_timeouts):
+    """The regression this exists to prevent: a bulk fan-out submits thousands of jobs at
+    once, so by the time one reaches a worker its `started_at` — really "submitted at" —
+    can be hours old. Measuring from that would flag a job as stalled the instant it
+    started, evict it, and let the next fan-out enqueue a duplicate of live work."""
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
+    first_run = _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+    # `scan_2` waits behind `scan_1` for far longer than the queue's budget...
+    _observe_running(registry)
+    time.sleep(0.01)
+    registry.finish(JobExecutionEvent(EVENT_JOB_EXECUTED, "scan_1", "default", first_run))
+
+    # ...and is not stalled the moment it starts, however old its `started_at` is.
+    started = {task.job_id: (task.queued, task.stalled) for task in registry.tasks()}
+
+    assert started == {"scan_2": (False, False)}
+    assert registry.evict_stuck(grace_seconds=0) == []
+
+
+def test_tasks_flags_a_task_still_running_past_its_queues_budget_as_stalled(
+    isolated_job_timeouts,
+):
     """The state this exists to surface: a job blocked in a syscall never fires the
     `JobExecutionEvent` `finish()` waits for, so it stays "running" and holds its
-    executor slot until the process restarts — with nothing in the UI saying so.
+    executor slot until the process restarts. Past its own queue's execution budget it is
+    by definition a job whose budget didn't take, which is exactly what's worth flagging.
     """
-    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
     scheduler = build_scheduler()
     registry = RunningTaskRegistry()
     _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
 
     assert registry.tasks()[0].stalled is True
 
 
-def test_tasks_never_flags_a_queued_task_as_stalled(monkeypatch):
+def test_tasks_falls_back_to_the_constant_threshold_when_the_queues_budget_is_off(
+    isolated_job_timeouts, monkeypatch
+):
+    """A queue whose budget was turned off has no per-queue number to lean on, so the flat
+    constant is what decides — the badge shouldn't silently stop working there."""
+    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+
+    assert registry.tasks()[0].stalled is True
+
+
+def test_evict_stuck_leaves_a_queue_whose_budget_is_off_alone(isolated_job_timeouts, monkeypatch):
+    """Setting a queue's budget to `0` is documented as removing its time limit — evicting
+    on the fallback threshold anyway would kill exactly the long-but-healthy runs the
+    escape hatch exists for. The badge still shows; only the eviction is withheld."""
+    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+
+    assert registry.tasks()[0].stalled is True
+    assert registry.evict_stuck(grace_seconds=0) == []
+
+
+def test_tasks_never_flags_a_queued_task_as_stalled(isolated_job_timeouts):
     """A queued task's `started_at` is really "submitted at", so elapsed time there says
     nothing about how long anything has been executing."""
-    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
     scheduler = build_scheduler()
     registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
     _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
     _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
 
     assert {task.job_id: (task.queued, task.stalled) for task in registry.tasks()} == {
         "scan_1": (False, True),
@@ -324,11 +395,13 @@ def test_tasks_never_flags_a_queued_task_as_stalled(monkeypatch):
     }
 
 
-def test_tasks_warns_about_a_stalled_task_only_once(monkeypatch, caplog):
-    monkeypatch.setattr(running_tasks_module, "STALLED_TASK_THRESHOLD_SECONDS", 0.0)
+def test_tasks_warns_about_a_stalled_task_only_once(isolated_job_timeouts, caplog):
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
     scheduler = build_scheduler()
     registry = RunningTaskRegistry()
     _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
 
     with caplog.at_level("WARNING", logger=running_tasks_module.__name__):
         registry.tasks()
@@ -337,6 +410,121 @@ def test_tasks_warns_about_a_stalled_task_only_once(monkeypatch, caplog):
     warnings = [record for record in caplog.records if record.name == running_tasks_module.__name__]
     assert len(warnings) == 1
     assert "scan_1" in warnings[0].getMessage()
+
+
+def test_evict_drops_every_entry_for_a_job_and_lets_it_be_enqueued_again():
+    """The limbo this fixes: while the entry lives, `is_active` keeps every `enqueue_*`
+    skipping that item, so a job whose completion event never arrives blocks its media
+    file from ever being retried."""
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+
+    evicted = registry.evict("scan_1")
+
+    assert [task.job_id for task in evicted] == ["scan_1"]
+    assert registry.is_active("scan_1") is False
+    assert registry.is_active("scan_2") is True
+
+
+def test_evict_leaves_a_queued_entry_alone():
+    """A queued entry hasn't started, so there's nothing stuck about it — recording one as
+    an abandoned run would be a plain lie."""
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+
+    evicted = registry.evict("scan_1")
+
+    assert len(evicted) == 1
+    assert [task.queued for task in registry.tasks()] == [False]
+
+
+def test_evict_for_a_job_that_isnt_running_returns_nothing():
+    registry = RunningTaskRegistry()
+
+    assert registry.evict("never_seen") == []
+
+
+def test_evict_stuck_drops_a_running_task_past_its_grace_period(isolated_job_timeouts):
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
+
+    evicted = registry.evict_stuck(grace_seconds=0)
+
+    assert [task.job_id for task in evicted] == ["scan_1"]
+    assert registry.tasks() == []
+
+
+def test_evict_stuck_leaves_a_task_still_inside_its_grace_period_alone(isolated_job_timeouts):
+    """A run merely slow to emit its completion event must not be declared abandoned."""
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry()
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
+
+    assert registry.evict_stuck(grace_seconds=300) == []
+    assert len(registry.tasks()) == 1
+
+
+def test_evict_stuck_leaves_a_queued_task_alone(isolated_job_timeouts):
+    """A queued task can legitimately sit there for as long as the work ahead of it takes
+    — its `started_at` is "submitted at", not an elapsed-time anchor."""
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
+    scheduler = build_scheduler()
+    registry = RunningTaskRegistry(queue_workers={JobQueue.SCAN_BULK: 1})
+    _register_and_submit(scheduler, registry, "scan_1", JobQueue.SCAN_BULK)
+    _register_and_submit(scheduler, registry, "scan_2", JobQueue.SCAN_BULK)
+    _observe_running(registry)
+    time.sleep(0.01)
+
+    evicted = registry.evict_stuck(grace_seconds=0)
+
+    assert [task.job_id for task in evicted] == ["scan_1"]
+    assert [task.job_id for task in registry.tasks()] == ["scan_2"]
+
+
+def test_module_level_eviction_helpers_hit_the_shared_registry(
+    isolated_running_tasks, isolated_job_timeouts
+):
+    configure_job_timeouts({JobQueue.SCAN_BULK: 0.001})
+    scheduler = build_scheduler()
+    attach_running_task_registry(scheduler)
+    scheduler.start(paused=True)
+    try:
+        register_job(
+            scheduler,
+            _noop,
+            queue=JobQueue.SCAN_BULK,
+            job_id="scan_1",
+            trigger="interval",
+            minutes=1,
+            retry_attempts=1,
+            retry_delay_seconds=0,
+            max_instances=1,
+            coalesce=False,
+        )
+        running_tasks_module._registry.submit(
+            JobSubmissionEvent(EVENT_JOB_SUBMITTED, "scan_1", "default", [datetime.now(UTC)]),
+            scheduler,
+        )
+        assert is_task_active("scan_1") is True
+        get_running_tasks()  # stamps `running_since` — see `_observe_running`
+        time.sleep(0.01)
+
+        assert [task.job_id for task in evict_stuck_tasks(grace_seconds=0)] == ["scan_1"]
+        assert is_task_active("scan_1") is False
+        assert evict_task("scan_1") == []
+    finally:
+        scheduler.shutdown(wait=False)
 
 
 def test_report_progress_updates_the_matching_task():
