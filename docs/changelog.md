@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.12] - 2026-09-14
+
+### 🐛 Bug Fixes
+
+- Stop a wedged job from blocking its queue forever (#148)
+
+### 🔧 Miscellaneous
+
+- Bump ruff in the python-minor-and-patch group (#147)
+- Bump docker/setup-buildx-action from 3 to 4 (#146)
+- Bump astral-sh/setup-uv from 3 to 7 (#145)
+- Bump docker/build-push-action from 6 to 7 (#144)
+
 ## [0.22.11] - 2026-09-12
 
 ### ✨ Features
@@ -33,6 +46,7 @@ All notable changes to this project are documented here. The format follows
 - Update pygments requirement in /docs (#135)
 - Bump the docs-minor-and-patch group across 1 directory with 2 updates (#141)
 - Bump the python-minor-and-patch group across 1 directory with 10 updates (#142)
+- Bump version to v0.22.11 [skip ci]
 
 ## [0.22.10] - 2026-09-10
 
