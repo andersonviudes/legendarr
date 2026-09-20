@@ -24,3 +24,9 @@ instead (still exercises the real code path via a real, failing HTTPS call).
 it can be enabled from the UI, or fix the settings page copy to stop claiming it's
 available. Neither was done as part of the live-progress work — out of scope, flagged
 here instead. Not on `ROADMAP.md` as its own item.
+
+**Re-verified 2026-09-20** during a full convention audit: still not in
+`provider_chain.py`'s `_PROVIDER_CLASSES` (which had just gained `gemini` for PR #143),
+and the stale "echo is always available too, for development" copy is still present in
+all three locales (`subtitle_translation.providers_hint` in en/es/pt-BR.json). The file
+itself still exists at the same path — don't re-derive this.
