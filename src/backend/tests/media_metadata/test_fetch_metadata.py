@@ -1,7 +1,7 @@
-import httpx
 import pytest
 from legendarr_backend.arr_services.models import ArrService
 from legendarr_backend.config.settings import Settings
+from legendarr_backend.http_client.client import ProviderClientError
 from legendarr_backend.media_library.models import Movie
 from legendarr_backend.media_metadata import fetch_metadata
 from legendarr_backend.media_metadata.manage_metadata_provider import (
@@ -242,13 +242,7 @@ def _stub_get_settings(monkeypatch, tmp_path):
 
 
 def test_cache_poster_downloads_and_writes_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        fetch_metadata.httpx,
-        "get",
-        lambda *args, **kwargs: httpx.Response(
-            200, content=b"jpeg-bytes", request=httpx.Request("GET", "https://cdn/poster.jpg")
-        ),
-    )
+    monkeypatch.setattr(fetch_metadata, "download", lambda *args, **kwargs: b"jpeg-bytes")
     _stub_get_settings(monkeypatch, tmp_path)
 
     cached_at = _real_cache_poster("movie", 42, "https://cdn/poster.jpg")
@@ -259,9 +253,9 @@ def test_cache_poster_downloads_and_writes_file(tmp_path, monkeypatch):
 
 def test_cache_poster_returns_none_and_writes_nothing_on_failure(tmp_path, monkeypatch):
     def _raise(*args, **kwargs):
-        raise httpx.ConnectError("boom")
+        raise ProviderClientError("boom")
 
-    monkeypatch.setattr(fetch_metadata.httpx, "get", _raise)
+    monkeypatch.setattr(fetch_metadata, "download", _raise)
     _stub_get_settings(monkeypatch, tmp_path)
 
     cached_at = _real_cache_poster("movie", 42, "https://cdn/poster.jpg")
@@ -365,12 +359,10 @@ def test_fetch_metadata_for_movie_refetch_overwrites_the_same_poster_file(
     _stub_get_settings(monkeypatch, tmp_path)
     monkeypatch.setattr(fetch_metadata, "_cache_poster", _real_cache_poster)
 
-    def _get_returning(content: bytes):
-        return lambda *args, **kwargs: httpx.Response(
-            200, content=content, request=httpx.Request("GET", "https://cdn/poster.jpg")
-        )
+    def _download_returning(content: bytes):
+        return lambda *args, **kwargs: content
 
-    monkeypatch.setattr(fetch_metadata.httpx, "get", _get_returning(b"first-poster"))
+    monkeypatch.setattr(fetch_metadata, "download", _download_returning(b"first-poster"))
     monkeypatch.setattr(
         fetch_metadata,
         "build_metadata_provider",
@@ -378,7 +370,7 @@ def test_fetch_metadata_for_movie_refetch_overwrites_the_same_poster_file(
     )
     fetch_metadata.fetch_metadata_for_new_items(session, movies=[movie], series=[])
 
-    monkeypatch.setattr(fetch_metadata.httpx, "get", _get_returning(b"second-poster"))
+    monkeypatch.setattr(fetch_metadata, "download", _download_returning(b"second-poster"))
     fetch_metadata.fetch_metadata_for_movie(session, movie)
 
     posters_dir = tmp_path / "posters"

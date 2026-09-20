@@ -114,3 +114,21 @@ def describe_error(exc: ProviderClientError) -> str:
     if isinstance(cause, httpx.HTTPStatusError) and cause.response.status_code in (401, 403):
         return "The server rejected the API Key — check that it's correct"
     return str(exc)
+
+
+def download(url: str, *, timeout: float = DEFAULT_TIMEOUT) -> bytes:
+    """One-shot binary download of an absolute URL — for CDN artifacts, not provider
+    API integrations (`ProviderHttpClient` is a `base_url`-scoped JSON client, which a
+    media_metadata poster download's cross-host image URLs don't fit). Follows
+    redirects — CDNs 301 their bare domains onto canonical hosts — and applies this
+    module's shared error wrapping (`ProviderClientError`) and retry count, so callers
+    don't configure httpx from scratch either."""
+    try:
+        with httpx.Client(
+            timeout=timeout, transport=httpx.HTTPTransport(retries=DEFAULT_RETRIES)
+        ) as client:
+            response = client.get(url, follow_redirects=True)
+            response.raise_for_status()
+            return response.content
+    except httpx.HTTPError as exc:
+        raise ProviderClientError(f"download of {url} failed: {exc}") from exc

@@ -1,4 +1,5 @@
 - [legendarr project architecture](legendarr-architecture.md) — monorepo layout, Screaming+VSA slices, uv/Docker/CI setup and gotchas
+- [legendarr convention audit 2026-09-20](legendarr-convention-audit-2026-09-20.md) — full audit clean (lint/1729 tests/commits); open gaps: web config+backend_client test dirs only
 - [legendarr roadmap competitive basis](legendarr-roadmap-basis.md) — why roadmap phases are ordered this way: confirmed gaps found in Bazarr/Lingarr source
 - [legendarr Alembic migrations and config.yaml](legendarr-db-migrations.md) — DB migration setup; env.py caching + SQLite FK batch_alter_table gotchas
 - [legendarr web UI design system](legendarr-ui-design-system.md) — dark theme, sidebar nav shell, poster-grid component: what exists and why
@@ -28,7 +29,7 @@
 - [legendarr statistics slice](legendarr-statistics-slice.md) — TranslationAttempt audit trail (translation had none) + statistics/ slice, zero-filled 30-day trend, test_api.py tag-prefix gotcha
 - [legendarr history slice](legendarr-history-slice.md) — TranslationFailure/AcquisitionFailure tables + history/ slice merging successes and failures; search/pagination added PR #129
 - [legendarr htmx nested-poller outerHTML-swap gotcha](legendarr-htmx-nested-poller-outerhtml-swap-gotcha.md) — a fast-polling child inside a periodically self-outerHTML-swapping parent goes empty after the first cycle; keep pollers as siblings
-- [legendarr echo translation provider not wired](legendarr-echo-translation-provider-not-wired.md) — echo.py exists but isn't in provider_chain.py's _PROVIDER_CLASSES or the UI; settings copy is stale
+- [legendarr echo translation provider not wired](legendarr-echo-translation-provider-not-wired.md) — re-verified 2026-09-20, still true: echo.py unwired, stale settings copy in all 3 locales
 - [legendarr resilience constants hardcoded](legendarr-resilience-constants-hardcoded.md) — circuit breaker + scheduled-retry backoff thresholds are module constants, not Settings fields
 - [legendarr match score configurable](legendarr-match-score-configurable.md) — LanguageProfile.movie_match_score/series_match_score (0-100) replace the hardcoded DEFAULT_CUTOFF, PR #83
 - [legendarr dev DB direct inspection](legendarr-dev-db-direct-inspection.md) — dev/legendarr-config/legendarr.db is bind-mounted, query it with host sqlite3 instead of exec'ing in
