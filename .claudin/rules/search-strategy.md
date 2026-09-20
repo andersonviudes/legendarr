@@ -12,32 +12,33 @@ annotations are not — replace each `TODO` with what the directory is for,
 and that text will survive every later refresh.
 
 ```
-└── src/ (571)                              ← TODO
-    ├── backend/ (401)                      ← TODO
-    │   ├── db/ (41)                        ← TODO
-    │   │   └── migrations/ (41)            ← TODO
-    │   ├── src/ (216)                      ← TODO
-    │   │   └── legendarr_backend/ (216)    ← TODO
-    │   └── tests/ (145)                    ← TODO
-    │       ├── arr_services/ (3)           ← TODO
-    │       ├── authentication/ (4)         ← TODO
-    │       ├── backup/ (3)                 ← TODO
-    │       ├── language_profiles/ (4)      ← TODO
-    │       ├── media_library/ (11)         ← TODO
-    │       ├── media_metadata/ (8)         ← TODO
-    │       ├── media_servers/ (8)          ← TODO
-    │       ├── scheduling/ (7)             ← TODO
-    │       ├── subtitle_acquisition/ (44)  ← TODO
-    │       ├── subtitle_discovery/ (12)    ← TODO
-    │       ├── subtitle_translation/ (11)  ← TODO
-    │       └── system/ (8)                 ← TODO
-    ├── bootstrap/ (5)                      ← TODO
-    │   └── src/ (3)                        ← TODO
-    │       └── legendarr_bootstrap/ (3)    ← TODO
-    └── web/ (158)                          ← TODO
-        ├── src/ (126)                      ← TODO
-        │   └── legendarr_web/ (126)        ← TODO
-        └── tests/ (39)                     ← TODO
-            ├── media_library/ (15)         ← TODO
-            └── system/ (5)                 ← TODO
+└── src/ (571)                              ← uv workspace root: one lockfile, three packages
+    ├── backend/ (401)                      ← domain logic: Arr clients, subtitle pipeline, internal API
+    │   ├── db/ (41)                        ← SQLModel tables + shared database setup
+    │   │   └── migrations/ (41)            ← Alembic revisions (`make db-revision`)
+    │   ├── src/ (216)                      ← installable `legendarr_backend` package source
+    │   │   └── legendarr_backend/ (216)    ← vertical slices per capability + shared top-level modules
+    │   └── tests/ (145)                    ← mirrors each backend slice, same folder names
+    │       ├── arr_services/ (3)           ← Radarr/Sonarr service CRUD + connection tests
+    │       ├── authentication/ (4)         ← login/session guard tests
+    │       ├── backup/ (3)                 ← config backup/restore tests
+    │       ├── language_profiles/ (4)      ← profile CRUD + match-score tests
+    │       ├── maintenance/ (3)            ← scheduled maintenance/backup job tests
+    │       ├── media_library/ (11)         ← sync/scan/poster-cache test coverage
+    │       ├── media_metadata/ (8)         ← metadata providers + poster caching tests
+    │       ├── media_servers/ (8)          ← webhook notify (Plex/Jellyfin) provider tests
+    │       ├── scheduling/ (7)             ← shared scheduler/retry/job-budget tests
+    │       ├── subtitle_acquisition/ (44)  ← provider clients + download tests (largest slice)
+    │       ├── subtitle_discovery/ (12)    ← embedded/external subtitle discovery tests
+    │       ├── subtitle_translation/ (11)  ← translation backends + per-line fan-out tests
+    │       └── system/ (8)                 ← tasks/logs/settings API tests
+    ├── bootstrap/ (5)                      ← single-process entrypoint (`make run` / Docker CMD)
+    │   └── src/ (3)                        ← installable `legendarr_bootstrap` package source
+    │       └── legendarr_bootstrap/ (3)    ← app.py mounts backend API + web UI, owns scheduler lifespan
+    └── web/ (158)                          ← FastAPI+Jinja2/HTMX UI; talks to backend over loopback HTTP only
+        ├── src/ (126)                      ← installable `legendarr_web` package source
+        │   └── legendarr_web/ (126)        ← UI slices mirroring backend capabilities + templates/static
+        └── tests/ (39)                     ← mirrors each web slice, same folder names
+            ├── media_library/ (15)         ← library table/detail/poller UI tests
+            └── system/ (5)                 ← system pages + web app shell tests
 ```
