@@ -65,6 +65,12 @@ docker compose up -d
 
 The dashboard is then available at `http://localhost:8000`.
 
+For working on legendarr itself, the repo also ships a
+[`docker-compose.dev.yml`](docker-compose.dev.yml) development stack — a sandbox pairing
+legendarr with a real Sonarr instance (and optionally Plex/Jellyfin) for manually
+exercising sync, webhooks, and path mapping. Not part of the shipped product; end users
+only need the compose file above.
+
 ## Features
 
 - [Language Profiles](https://andersonviudes.github.io/legendarr/features/language-profiles/) —
