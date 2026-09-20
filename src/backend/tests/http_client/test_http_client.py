@@ -4,7 +4,23 @@ from legendarr_backend.http_client.client import (
     ProviderClientError,
     ProviderHttpClient,
     describe_error,
+    download,
 )
+
+
+def _patch_download_transport(handler, monkeypatch) -> None:
+    """Route `download()`'s one-shot client through a MockTransport.
+
+    `download()` builds its own `httpx.Client` with a retrying `HTTPTransport`, so swap
+    that transport out for the mock rather than intercepting the constructor itself.
+    """
+    real_client = httpx.Client
+
+    def factory(**kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        return real_client(**kwargs)
+
+    monkeypatch.setattr(httpx, "Client", factory)
 
 
 def _client_with_transport(handler) -> ProviderHttpClient:
@@ -154,3 +170,43 @@ def test_describe_error_falls_back_to_str_for_other_errors():
     exc = ProviderClientError("unreachable")
 
     assert describe_error(exc) == "unreachable"
+
+
+def test_download_returns_body_bytes_on_success(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"jpeg-bytes")
+
+    _patch_download_transport(handler, monkeypatch)
+
+    assert download("http://cdn.local/poster.jpg") == b"jpeg-bytes"
+
+
+def test_download_follows_redirects(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/poster.jpg":
+            return httpx.Response(301, headers={"location": "http://cdn.local/canonical.jpg"})
+        return httpx.Response(200, content=b"jpeg-bytes")
+
+    _patch_download_transport(handler, monkeypatch)
+
+    assert download("http://cdn.local/poster.jpg") == b"jpeg-bytes"
+
+
+def test_download_wraps_http_status_errors(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, text="not found")
+
+    _patch_download_transport(handler, monkeypatch)
+
+    with pytest.raises(ProviderClientError, match="download of http://cdn.local/poster.jpg"):
+        download("http://cdn.local/poster.jpg")
+
+
+def test_download_wraps_request_errors(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    _patch_download_transport(handler, monkeypatch)
+
+    with pytest.raises(ProviderClientError, match="cdn.local"):
+        download("http://cdn.local/poster.jpg")

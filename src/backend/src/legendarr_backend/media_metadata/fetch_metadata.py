@@ -1,10 +1,10 @@
 import logging
 from datetime import UTC, datetime
 
-import httpx
 from sqlmodel import Session, select
 
 from legendarr_backend.config.settings import get_settings
+from legendarr_backend.http_client.client import ProviderClientError, download
 from legendarr_backend.media_library.models import Movie, Series
 from legendarr_backend.media_metadata.client_factory import build_metadata_provider
 from legendarr_backend.media_metadata.manage_metadata_provider import list_metadata_providers
@@ -221,18 +221,15 @@ def _cache_poster(media_type: MediaType, media_id: int, poster_url: str) -> date
     """
     settings = get_settings()
     try:
-        response = httpx.get(
-            poster_url, timeout=_POSTER_DOWNLOAD_TIMEOUT_SECONDS, follow_redirects=True
-        )
-        response.raise_for_status()
-    except httpx.HTTPError:
+        content = download(poster_url, timeout=_POSTER_DOWNLOAD_TIMEOUT_SECONDS)
+    except ProviderClientError:
         logger.exception(
             "poster download failed for %s %d from %r", media_type, media_id, poster_url
         )
         return None
     settings.poster_cache_dir.mkdir(parents=True, exist_ok=True)
     path = settings.poster_cache_dir / f"{media_type}_{media_id}.jpg"
-    path.write_bytes(response.content)
+    path.write_bytes(content)
     return datetime.now(UTC)
 
 
