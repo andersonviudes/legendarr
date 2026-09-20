@@ -12,6 +12,7 @@ from legendarr_backend.database.engine import get_session
 from legendarr_backend.language_profiles.resolve_effective_profile import (
     resolve_effective_profile,
 )
+from legendarr_backend.media_library.build_acquisition_result import build_acquisition_result
 from legendarr_backend.media_library.get_media_detail import get_movie_detail, get_series_detail
 from legendarr_backend.media_library.jobs import (
     enqueue_full_scan,
@@ -23,7 +24,6 @@ from legendarr_backend.media_library.list_wanted_media import list_wanted_media
 from legendarr_backend.media_library.locate import resolve_media_file_path
 from legendarr_backend.media_library.models import MediaFile, MediaKind, Series
 from legendarr_backend.media_library.schemas import (
-    EmbeddedTrackRead,
     MovieDetailRead,
     MovieRead,
     PendingSubtitleAcquisitionResult,
@@ -33,14 +33,12 @@ from legendarr_backend.media_library.schemas import (
     SubtitleBlacklistResult,
     SubtitleCandidateDownloadInput,
     SubtitleCandidateRead,
-    SubtitleRead,
     SubtitleSearchResourceRead,
     SubtitleSummaryRead,
     WantedRead,
 )
 from legendarr_backend.media_metadata.fetch_metadata import cache_poster_now
 from legendarr_backend.scheduling.queues import JobQueue
-from legendarr_backend.subtitle_acquisition.audit_trail import get_latest_attempt
 from legendarr_backend.subtitle_acquisition.blacklist.blacklist_subtitle import blacklist_subtitle
 from legendarr_backend.subtitle_acquisition.describe_search_resource import (
     describe_subtitle_search_resource,
@@ -52,7 +50,6 @@ from legendarr_backend.subtitle_acquisition.download_pending_subtitle import (
     download_pending_subtitle_candidate,
 )
 from legendarr_backend.subtitle_acquisition.jobs import enqueue_item_acquisition_scan
-from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import get_acquired_subtitle
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import (
     SubtitleCandidate,
     search_media_file_subtitle_candidates,
@@ -65,8 +62,6 @@ from legendarr_backend.subtitle_acquisition.upload_media_file_subtitle import (
 )
 from legendarr_backend.subtitle_acquisition.upload_pending_subtitle import upload_pending_subtitle
 from legendarr_backend.subtitle_discovery.list_missing_subtitles import (
-    has_source_subtitle_for_media_file,
-    missing_target_languages_for_media_file,
     target_languages_for_media_file,
 )
 from legendarr_backend.subtitle_discovery.models import EmbeddedTrack, Subtitle
@@ -340,7 +335,7 @@ def blacklist_subtitle_route(
     media_file, video_path = _get_media_file_and_video_path(session, subtitle.media_file_id)
     success, message = blacklist_subtitle(session, media_file, video_path, subtitle)
     session.commit()
-    result = _acquisition_result(session, subtitle.media_file_id, success, message)
+    result = build_acquisition_result(session, subtitle.media_file_id, success, message)
     return SubtitleBlacklistResult(media_file_id=subtitle.media_file_id, **result.model_dump())
 
 
@@ -401,7 +396,7 @@ def extract_embedded_track_route(
     ).first()
     success = track is not None and track.extracted
     message = "Track extracted." if success else "Couldn't extract this track."
-    return _acquisition_result(session, media_file_id, success, message)
+    return build_acquisition_result(session, media_file_id, success, message)
 
 
 def _get_media_file_and_video_path(session: Session, media_file_id: int) -> tuple[MediaFile, Path]:
@@ -419,59 +414,6 @@ def _get_series(session: Session, series_id: int) -> Series:
     if series is None:
         raise HTTPException(status_code=404, detail="Series not found")
     return series
-
-
-def _acquisition_result(
-    session: Session, media_file_id: int, success: bool, message: str
-) -> SubtitleAcquisitionResult:
-    rows = session.exec(select(Subtitle).where(Subtitle.media_file_id == media_file_id)).all()
-    subtitle_reads = []
-    for row in rows:
-        assert row.id is not None
-        acquired = get_acquired_subtitle(session, row.id)
-        attempt = get_latest_attempt(session, row.id)
-        subtitle_reads.append(
-            SubtitleRead(
-                id=row.id,
-                language=row.language,
-                origin=row.origin.value,
-                size_bytes=row.size_bytes,
-                track_index=row.track_index,
-                provider=acquired.provider if acquired else None,
-                release_name=acquired.release_name if acquired else None,
-                score=acquired.score if acquired else None,
-                resolution_matched=attempt.resolution_matched if attempt else None,
-                source_matched=attempt.source_matched if attempt else None,
-                codec_matched=attempt.codec_matched if attempt else None,
-                release_group_matched=attempt.release_group_matched if attempt else None,
-                edition_matched=attempt.edition_matched if attempt else None,
-            )
-        )
-    subtitle_read_by_track_index = {
-        subtitle_read.track_index: subtitle_read
-        for subtitle_read in subtitle_reads
-        if subtitle_read.origin == "embedded"
-    }
-    embedded_track_reads = [
-        EmbeddedTrackRead(
-            track_index=track.track_index,
-            language=track.language,
-            display_language=track.display_language,
-            extracted=track.extracted,
-            subtitle=subtitle_read_by_track_index.get(track.track_index),
-        )
-        for track in session.exec(
-            select(EmbeddedTrack).where(EmbeddedTrack.media_file_id == media_file_id)
-        ).all()
-    ]
-    return SubtitleAcquisitionResult(
-        success=success,
-        message=message,
-        subtitles=subtitle_reads,
-        embedded_tracks=embedded_track_reads,
-        missing_languages=missing_target_languages_for_media_file(session, media_file_id),
-        has_source_subtitle=has_source_subtitle_for_media_file(session, media_file_id),
-    )
 
 
 @router.get("/files/{media_file_id}/target-languages", response_model=list[str])
@@ -537,7 +479,7 @@ def download_subtitle_candidate_route(
         session, media_file, video_path, candidate, data.target_language
     )
     session.commit()
-    return _acquisition_result(session, media_file_id, success, message)
+    return build_acquisition_result(session, media_file_id, success, message)
 
 
 @router.post("/files/{media_file_id}/subtitle-upload", response_model=SubtitleAcquisitionResult)
@@ -553,7 +495,7 @@ async def upload_subtitle(
         session, media_file, video_path, language, file.filename or "", content
     )
     session.commit()
-    return _acquisition_result(session, media_file_id, success, message)
+    return build_acquisition_result(session, media_file_id, success, message)
 
 
 # === Series episodes with no `MediaFile` yet (Sonarr hasn't downloaded them) ===
