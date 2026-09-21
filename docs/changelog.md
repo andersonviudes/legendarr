@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.13] - 2026-09-21
+
+### ♻️ Refactor
+
+- Extract acquisition result dto assembly from router (#149)
+- Convention cleanup from the 2026-09-20 audit (#150)
+
 ## [0.22.12] - 2026-09-14
 
 ### 🐛 Bug Fixes
@@ -15,6 +22,7 @@ All notable changes to this project are documented here. The format follows
 - Bump docker/setup-buildx-action from 3 to 4 (#146)
 - Bump astral-sh/setup-uv from 3 to 7 (#145)
 - Bump docker/build-push-action from 6 to 7 (#144)
+- Bump version to v0.22.12 [skip ci]
 
 ## [0.22.11] - 2026-09-12
 
