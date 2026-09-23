@@ -3,12 +3,28 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.14] - 2026-09-23
+
+### 🔧 Miscellaneous
+
+- Bump pymdown-extensions from 11.0.2 to 12.0.1 (#157)
+- Bump the python-minor-and-patch group with 4 updates (#156)
+- Bump docker/login-action from 3 to 4 (#155)
+- Bump actions/upload-pages-artifact from 3 to 5 (#154)
+- Bump actions/checkout from 4 to 7 (#153)
+- Bump pymdown-extensions from 11.0.2 to 12.0.1 in /docs (#152)
+- Bump mkdocs-git-revision-date-localized-plugin (#151)
+
 ## [0.22.13] - 2026-09-21
 
 ### ♻️ Refactor
 
 - Extract acquisition result dto assembly from router (#149)
 - Convention cleanup from the 2026-09-20 audit (#150)
+
+### 🔧 Miscellaneous
+
+- Bump version to v0.22.13 [skip ci]
 
 ## [0.22.12] - 2026-09-14
 
