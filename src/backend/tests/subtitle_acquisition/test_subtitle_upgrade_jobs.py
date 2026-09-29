@@ -437,7 +437,7 @@ def test_enqueue_full_upgrade_scan_skips_media_file_checked_within_recheck_windo
     assert subtitle.id is not None
     metadata = get_acquired_subtitle(in_memory_session, subtitle.id)
     assert metadata is not None
-    metadata.last_upgrade_checked_at = datetime.now(UTC).replace(tzinfo=None)
+    metadata.last_upgrade_checked_at = datetime.now(UTC)
     in_memory_session.add(metadata)
     in_memory_session.commit()
 

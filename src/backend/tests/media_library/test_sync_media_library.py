@@ -233,8 +233,7 @@ def test_sync_persists_arr_status_and_episode_fields_for_series(in_memory_sessio
     assert series.episode_count == 8
     assert series.episode_file_count == 8
     assert series.genre_list == ["Anime"]
-    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
-    assert series.last_aired == last_aired.replace(tzinfo=None)
+    assert series.last_aired == last_aired
 
 
 def test_sync_updates_arr_status_fields_on_existing_rows(in_memory_session, fake_clients):

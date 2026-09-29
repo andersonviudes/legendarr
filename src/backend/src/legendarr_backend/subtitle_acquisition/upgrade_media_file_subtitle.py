@@ -260,10 +260,7 @@ def upgrade_search_priority(
     if metadata.score >= _upgrade_threshold_for_media_file(profile, media_file):
         return None
     if metadata.last_upgrade_checked_at is not None:
-        # SQLite drops tzinfo on round trip, so a value read back from `AcquiredSubtitle`
-        # is always naive — compare against a naive `now` too, same convention as
-        # `authentication.manage_authentication._utcnow`.
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now(UTC)
         if now - metadata.last_upgrade_checked_at < recheck_after:
             return None
     return metadata.score

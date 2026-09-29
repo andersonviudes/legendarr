@@ -24,10 +24,9 @@ def _hash_token(token: str) -> str:
 
 
 def _utcnow() -> datetime:
-    """Naive UTC `now` — SQLite drops tzinfo on round trip, so a value read back from
-    `AuthSession` is always naive; comparing/storing naive-but-UTC throughout avoids ever
-    mixing aware and naive datetimes."""
-    return datetime.now(UTC).replace(tzinfo=None)
+    """Aware UTC `now` — sqlmodel's `UTCDateTime` columns reject naive values and return
+    aware ones, so `AuthSession` timestamps are stored and compared aware throughout."""
+    return datetime.now(UTC)
 
 
 def verify_login(settings: Settings, username: str, password: str) -> bool:
