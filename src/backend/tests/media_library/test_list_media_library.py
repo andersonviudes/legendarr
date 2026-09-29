@@ -109,5 +109,4 @@ def test_list_series_includes_episode_counts(in_memory_session):
     assert series[0].episode_file_count == 8
     assert series[0].poster_url is None
     assert series[0].genres == ["Anime"]
-    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
-    assert series[0].last_aired == last_aired.replace(tzinfo=None)
+    assert series[0].last_aired == last_aired

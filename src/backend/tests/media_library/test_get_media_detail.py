@@ -305,8 +305,7 @@ def test_get_series_detail_matches_episodes_to_media_files(in_memory_session, mo
     assert detail.missing_subtitles_count == 0
     assert detail.episodes_unavailable is False
     assert detail.genres == ["Anime", "Adventure"]
-    # SQLite drops tzinfo on a plain `DateTime` column round-trip.
-    assert detail.last_aired == last_aired.replace(tzinfo=None)
+    assert detail.last_aired == last_aired
 
 
 def test_get_series_detail_includes_pending_subtitle_languages_for_episode_without_file(

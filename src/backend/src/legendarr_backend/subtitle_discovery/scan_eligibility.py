@@ -7,11 +7,10 @@ from legendarr_backend.subtitle_discovery.models import SubtitleScanState
 
 
 def _utcnow() -> datetime:
-    """Naive UTC `now` — SQLite drops tzinfo on round trip, so `SubtitleScanState.probed_at`
-    read back from the database is always naive; comparing naive-to-naive avoids ever
-    mixing aware and naive datetimes (same convention as
+    """Aware UTC `now` — `SubtitleScanState.probed_at` is read back as an aware UTC value
+    (sqlmodel's `UTCDateTime`), so compare against an aware `now` (same convention as
     `authentication.manage_authentication._utcnow`)."""
-    return datetime.now(UTC).replace(tzinfo=None)
+    return datetime.now(UTC)
 
 
 def needs_subtitle_scan(session: Session, media_file: MediaFile, recheck_after: timedelta) -> bool:

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from zoneinfo import ZoneInfo, available_timezones
 
 # Sibling setting to `translator.py`'s locale — instance-wide timezone used to display
-# timestamps across legendarr_web. Doesn't affect what's persisted (always naive-but-UTC,
+# timestamps across legendarr_web. Doesn't affect what's persisted (always UTC,
 # see `authentication/manage_authentication.py`'s `_utcnow()` comment on the backend) or
 # when scheduled jobs run (`legendarr_backend/scheduling/scheduler.py` pins APScheduler to
 # UTC too) — this only ever changes how an already-UTC value already fetched from the
@@ -25,8 +25,7 @@ def to_local(value: str) -> str:
     """Convert a backend-supplied ISO datetime string to the active request's timezone,
     keeping the same "YYYY-MM-DD HH:MM:SS" shape every template already showed via its
     own `value[:19].replace("T", " ")` — a pure display change, nothing else. A naive
-    value (every persisted timestamp is naive-but-UTC) is treated as UTC before
-    converting."""
+    value (every persisted timestamp is UTC) is treated as UTC before converting."""
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
