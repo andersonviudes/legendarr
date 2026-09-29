@@ -6,6 +6,12 @@ from legendarr_backend.system.schemas import DirectoryListingRead
 logger = logging.getLogger(__name__)
 
 
+def _single_line(value: object) -> str:
+    """`str(value)` with line breaks removed — `path` is caller-supplied, and it (or the
+    `OSError` message quoting it) must not be able to forge extra log lines."""
+    return str(value).replace("\r\n", "").replace("\n", "").replace("\r", "")
+
+
 def list_subdirectories(path: str) -> DirectoryListingRead:
     """List the immediate, non-hidden subdirectories of `path`, sorted by name.
 
@@ -28,7 +34,12 @@ def list_subdirectories(path: str) -> DirectoryListingRead:
             if entry.is_dir():
                 directories.append(entry.name)
         except OSError as exc:
-            logger.warning("skipped %r while listing %r: %s", entry.name, str(resolved), exc)
+            logger.warning(
+                "skipped %s while listing %s: %s",
+                _single_line(entry.name),
+                _single_line(resolved),
+                _single_line(exc),
+            )
             continue
     directories.sort()
 
