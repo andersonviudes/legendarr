@@ -124,6 +124,20 @@ def test_download_event_for_unknown_item_is_acknowledged_without_enqueue(app_wit
     assert app_with_scheduler.state.scheduler.get_jobs() == []
 
 
+def test_download_event_with_a_non_integer_item_id_is_acknowledged_without_enqueue(
+    app_with_scheduler,
+):
+    with TestClient(app_with_scheduler) as client:
+        service_id, _ = _seed()
+        response = client.post(
+            f"/webhooks/arr/{service_id}",
+            json={"eventType": "Download", "movie": {"id": "42\nforged log line"}},
+        )
+
+    assert response.status_code == 204
+    assert app_with_scheduler.state.scheduler.get_jobs() == []
+
+
 def test_rename_event_updates_remote_path_and_enqueues(app_with_scheduler):
     with TestClient(app_with_scheduler) as client:
         service_id, movie_id = _seed()

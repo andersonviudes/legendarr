@@ -3,6 +3,7 @@ from pathlib import Path
 from sqlmodel import Session
 
 from legendarr_backend.media_library.models import MediaFile
+from legendarr_backend.subtitle_discovery.language_codes import is_valid_language_tag
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
 # Same set `subtitle_discovery.scan_video_subtitles` already recognizes as an external
@@ -22,10 +23,13 @@ def upload_subtitle_for_media_file(
     """Save a user-uploaded subtitle file next to `video_path`, as an external sidecar
     in `language`, then rescan so it shows up as a normal `Subtitle` row.
 
-    Rejects a file whose extension isn't in `ALLOWED_UPLOAD_SUFFIXES` without writing
+    Rejects a file whose extension isn't in `ALLOWED_UPLOAD_SUFFIXES`, or a `language`
+    that isn't a plain language tag (it becomes part of the filename), without writing
     anything — same tolerant `(False, message)` shape `download_subtitle_candidate`
     uses, so the web layer can show it inline instead of a 500.
     """
+    if not is_valid_language_tag(language):
+        return False, "Invalid language code"
     suffix = Path(filename).suffix.lower()
     if suffix not in ALLOWED_UPLOAD_SUFFIXES:
         return False, f"Unsupported file type '{suffix or filename}'"

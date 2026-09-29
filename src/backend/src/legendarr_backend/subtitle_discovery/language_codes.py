@@ -11,7 +11,12 @@ that case. But a container can also carry an already region-qualified IETF tag (
 subtag instead of collapsing it away, so the UI can still tell two such tracks apart.
 """
 
+import re
 from collections.abc import Iterable
+
+# A language tag safe to embed in a filename (`Foo.pt-BR.srt`): alphanumeric subtags
+# joined by `-`/`_`, so no path separator, `..` or whitespace can ride along.
+_LANGUAGE_TAG_RE = re.compile(r"[A-Za-z0-9]{1,8}(?:[-_][A-Za-z0-9]{1,8})*")
 
 # ISO 639-2 (bibliographic and terminological forms) -> ISO 639-1, for the languages a
 # subtitle/translation workflow is realistically going to see. Not exhaustive.
@@ -74,6 +79,12 @@ _ISO_639_2_TO_1 = {
     "eus": "eu",
     "glg": "gl",
 }
+
+
+def is_valid_language_tag(code: str) -> bool:
+    """Whether `code` is shaped like a language tag ("en", "por", "pt-BR", "zh_Hans") —
+    checked before a caller-supplied language is used to build a subtitle filename."""
+    return _LANGUAGE_TAG_RE.fullmatch(code) is not None
 
 
 def normalize_language_code(code: str) -> str:

@@ -74,6 +74,23 @@ def test_post_login_rejects_an_unsafe_next_parameter(stub_backend_client):
     assert response.headers["location"] == "/"
 
 
+def test_post_login_rejects_backslash_and_control_char_next_parameters(stub_backend_client):
+    app = create_app()
+    stub_backend_client(app, handler=_login_handler)
+
+    with TestClient(app) as client:
+        locations = [
+            client.post(
+                "/login",
+                data={"username": "admin", "password": "hunter2", "next": unsafe},
+                follow_redirects=False,
+            ).headers["location"]
+            for unsafe in ("/\\evil.example.com", "/\t/evil.example.com", "///evil.example.com")
+        ]
+
+    assert locations == ["/", "/", "/"]
+
+
 def test_post_login_with_wrong_password_rerenders_with_error(stub_backend_client):
     app = create_app()
     stub_backend_client(app, handler=_login_handler)

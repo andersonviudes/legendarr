@@ -28,7 +28,7 @@ def list_subdirectories(path: str) -> DirectoryListingRead:
             if entry.is_dir():
                 directories.append(entry.name)
         except OSError as exc:
-            logger.warning("skipped %r while listing %s: %s", entry.name, resolved, exc)
+            logger.warning("skipped %r while listing %r: %s", entry.name, str(resolved), exc)
             continue
     directories.sort()
 

@@ -131,7 +131,7 @@ def search_providers_concurrently(
     for provider in chain:
         if is_open(BreakerCategory.ACQUISITION, provider.name):
             logger.info(
-                "subtitle provider %r circuit open, skipping search for %r (%s)",
+                "subtitle provider %r circuit open, skipping search for %r (%r)",
                 provider.name,
                 title,
                 language,
@@ -173,7 +173,7 @@ def search_providers_concurrently(
             last_error = exc
             last_provider_name = provider.name
             logger.warning(
-                "subtitle provider %r failed searching %r (%s), trying next",
+                "subtitle provider %r failed searching %r (%r), trying next",
                 provider.name,
                 title,
                 language,
