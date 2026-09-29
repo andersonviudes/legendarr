@@ -65,9 +65,11 @@ def receive_arr_webhook(
 
     item_payload = payload.get(_ITEM_KEY_BY_TYPE[arr_service.service_type]) or {}
     arr_id = item_payload.get("id")
-    if arr_id is None:
+    # Unauthenticated payload: anything but a real integer id can't match a synced item,
+    # and must not reach the logs below verbatim.
+    if not isinstance(arr_id, int):
         logger.warning(
-            "arr webhook %r without item id for connection %r",
+            "arr webhook %r without a valid item id for connection %r",
             event_type,
             arr_service.name,
         )

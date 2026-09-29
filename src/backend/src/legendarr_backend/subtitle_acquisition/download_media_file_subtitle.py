@@ -20,6 +20,7 @@ from legendarr_backend.subtitle_acquisition.manage_acquired_subtitle import (
 from legendarr_backend.subtitle_acquisition.provider_chain import resolve_subtitle_provider_chain
 from legendarr_backend.subtitle_acquisition.providers.base import SubtitleSearchResult
 from legendarr_backend.subtitle_acquisition.search_media_file_subtitle import SubtitleCandidate
+from legendarr_backend.subtitle_discovery.language_codes import is_valid_language_tag
 from legendarr_backend.subtitle_discovery.scan_media_subtitles import scan_subtitles_for_media_file
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,8 @@ def download_subtitle_candidate(
     caller (the web UI) shows it inline instead of a 500.
     """
     assert media_file.id is not None
+    if not is_valid_language_tag(language):
+        return False, "Invalid language code"
     chain = resolve_subtitle_provider_chain(session)
     try:
         provider = next((item for item in chain if item.name == candidate.provider), None)

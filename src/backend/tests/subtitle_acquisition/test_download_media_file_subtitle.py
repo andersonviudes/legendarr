@@ -135,6 +135,23 @@ def test_download_returns_false_when_the_provider_is_no_longer_in_the_chain(
     assert not (tmp_path / "Foo" / "Foo.en.srt").exists()
 
 
+def test_download_rejects_a_target_language_that_would_escape_the_video_folder(
+    in_memory_session, tmp_path, monkeypatch
+):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+    _use_chain(monkeypatch, _FakeProvider("provider"))
+
+    success, message = download_subtitle_candidate(
+        in_memory_session, media_file, video, _candidate(), "../../evil"
+    )
+
+    assert success is False
+    assert message == "Invalid language code"
+    assert list(tmp_path.rglob("*.srt")) == []
+
+
 def test_download_returns_false_on_a_provider_exception(in_memory_session, tmp_path, monkeypatch):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie)

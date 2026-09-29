@@ -129,7 +129,10 @@ document.addEventListener("click", function (event) {
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
   var rawHref = link.getAttribute("href");
-  if (!rawHref || rawHref.charAt(0) === "#" || rawHref.indexOf("javascript:") === 0) return;
+  if (!rawHref || rawHref.charAt(0) === "#") return;
+  // Only real page navigations get the unsaved-changes prompt — javascript:, data:,
+  // mailto: and the like don't leave the page, so an allowlist beats blocklisting schemes.
+  if (link.protocol !== "http:" && link.protocol !== "https:") return;
 
   event.preventDefault();
   pendingHref = link.href;

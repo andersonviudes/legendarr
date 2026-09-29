@@ -95,3 +95,17 @@ def test_upload_rejects_a_disallowed_extension_without_writing_anything(
         select(Subtitle).where(Subtitle.media_file_id == media_file.id)
     ).all()
     assert rows == []
+
+
+def test_upload_rejects_a_language_that_would_escape_the_video_folder(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie)
+    video = _write_video(tmp_path)
+
+    success, message = upload_subtitle_for_media_file(
+        in_memory_session, media_file, video, "../../evil", "uploaded.srt", b"content"
+    )
+
+    assert success is False
+    assert message == "Invalid language code"
+    assert list(tmp_path.rglob("*.srt")) == []

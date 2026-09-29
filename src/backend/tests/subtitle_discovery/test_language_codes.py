@@ -1,7 +1,18 @@
 from legendarr_backend.subtitle_discovery.language_codes import (
     display_language_code,
+    is_valid_language_tag,
     normalize_language_code,
 )
+
+
+def test_valid_language_tag_accepts_common_shapes():
+    assert all(is_valid_language_tag(tag) for tag in ("en", "por", "pt-BR", "zh_Hans", "und"))
+
+
+def test_valid_language_tag_rejects_anything_that_could_escape_a_filename():
+    assert not any(
+        is_valid_language_tag(tag) for tag in ("", "../x", "a/b", "a\\b", "en srt", "en.", "-en")
+    )
 
 
 def test_normalize_leaves_iso_639_1_code_unchanged():

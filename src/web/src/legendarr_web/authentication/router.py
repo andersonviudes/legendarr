@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 import httpx
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -20,10 +22,15 @@ _COOKIE_MAX_AGE_SECONDS = 31 * 24 * 60 * 60
 
 def _safe_next(next_path: str) -> str:
     """Only ever redirect somewhere inside this app — `next_path` comes from a query
-    string / hidden form field, so a `//evil.example.com` value must never be honored."""
-    if next_path.startswith("/") and not next_path.startswith("//"):
-        return next_path
-    return "/"
+    string / hidden form field, so a `//evil.example.com` value must never be honored.
+    Browsers also read a backslash as a slash and drop tabs/newlines inside a URL, so
+    `/\\evil.example.com` and `/<TAB>/evil.example.com` are protocol-relative too."""
+    if "\\" in next_path or not next_path.isprintable():
+        return "/"
+    if not next_path.startswith("/") or next_path.startswith("//"):
+        return "/"
+    parsed = urlparse(next_path)
+    return "/" if parsed.scheme or parsed.netloc else next_path
 
 
 @router.get("/login")
