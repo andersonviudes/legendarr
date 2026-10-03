@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.15] - 2026-10-03
+
+### 🐛 Bug Fixes
+
+- Address CodeQL code-scanning alerts (#163)
+
+### 🔧 Miscellaneous
+
+- Bump pymdown-extensions (#158)
+- Bump docker/setup-qemu-action from 3 to 4 (#159)
+- Bump amannn/action-semantic-pull-request from 5 to 6 (#160)
+- Bump the python-minor-and-patch group across 1 directory with 2 updates (#162)
+
 ## [0.22.14] - 2026-09-23
 
 ### 🔧 Miscellaneous
@@ -14,6 +27,7 @@ All notable changes to this project are documented here. The format follows
 - Bump actions/checkout from 4 to 7 (#153)
 - Bump pymdown-extensions from 11.0.2 to 12.0.1 in /docs (#152)
 - Bump mkdocs-git-revision-date-localized-plugin (#151)
+- Bump version to v0.22.14 [skip ci]
 
 ## [0.22.13] - 2026-09-21
 
