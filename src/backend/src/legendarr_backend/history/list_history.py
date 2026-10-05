@@ -5,7 +5,7 @@ from typing import Literal
 
 from sqlmodel import Session, col, select
 
-from legendarr_backend.history.schemas import HistoryEntryRead
+from legendarr_backend.history.schemas import HistoryCategory, HistoryEntryRead
 from legendarr_backend.media_library.models import MediaFile, Movie, Series
 from legendarr_backend.subtitle_acquisition.models import AcquisitionAttempt, AcquisitionFailure
 from legendarr_backend.subtitle_discovery.models import Subtitle
@@ -64,6 +64,7 @@ def list_history(
     session: Session,
     *,
     search: str | None = None,
+    category: HistoryCategory | None = None,
     page: int = 1,
     page_size: int = DEFAULT_PAGE_SIZE,
 ) -> HistoryPage:
@@ -73,7 +74,9 @@ def list_history(
     this stays bounded regardless of how large any one of them has grown. `search`, if
     given, is a case-insensitive substring match against every field the table shows
     (media title, language, provider, category, status, error message) — a hit in any
-    one of them matches the row. `page`/`page_size` slice the filtered, sorted result.
+    one of them matches the row. `category`, if given, keeps only rows of that category
+    ("translation", "acquisition" or "upgrade"). `page`/`page_size` slice the filtered,
+    sorted result.
     """
     translation_wins = list(
         session.exec(
@@ -204,6 +207,9 @@ def list_history(
 
     if search:
         entries = [entry for entry in entries if _matches(entry, search)]
+
+    if category:
+        entries = [entry for entry in entries if entry.category == category]
 
     total = len(entries)
     page = max(page, 1)

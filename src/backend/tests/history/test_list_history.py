@@ -89,6 +89,7 @@ def test_list_history_empty_state(in_memory_session):
 def test_list_history_includes_translation_success_and_failure(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie=movie)
+    assert media_file.id is not None
     subtitle = _subtitle(in_memory_session, media_file, "pt-br")
     assert subtitle.id is not None
     assert media_file.id is not None
@@ -136,6 +137,7 @@ def test_list_history_includes_translation_success_and_failure(in_memory_session
 def test_list_history_search_matches_across_any_visible_field(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie=movie)
+    assert media_file.id is not None
     subtitle = _subtitle(in_memory_session, media_file, "pt-br")
     assert subtitle.id is not None
 
@@ -174,6 +176,7 @@ def test_list_history_search_matches_across_any_visible_field(in_memory_session,
 def test_list_history_search_with_no_matches_returns_empty(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie=movie)
+    assert media_file.id is not None
     in_memory_session.add(
         TranslationFailure(
             media_file_id=media_file.id,
@@ -313,6 +316,7 @@ def test_list_history_sorts_newest_first_and_paginates(in_memory_session, tmp_pa
 def test_list_history_page_past_the_end_returns_empty_entries(in_memory_session, tmp_path):
     movie = _movie(in_memory_session, tmp_path)
     media_file = _media_file(in_memory_session, movie=movie)
+    assert media_file.id is not None
     in_memory_session.add(
         TranslationFailure(
             media_file_id=media_file.id,
@@ -350,3 +354,39 @@ def test_list_history_series_entry_title_includes_the_episode_filename(in_memory
 
     assert len(entries) == 1
     assert entries[0].media_title == "Bar — Foo.S01E01.mkv"
+
+
+def test_list_history_filters_by_category(in_memory_session, tmp_path):
+    movie = _movie(in_memory_session, tmp_path)
+    media_file = _media_file(in_memory_session, movie=movie)
+    assert media_file.id is not None
+    in_memory_session.add(
+        TranslationFailure(
+            media_file_id=media_file.id,
+            source_language="en",
+            target_language="pt-BR",
+            error_message="deepl: timeout",
+            failed_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.add(
+        AcquisitionFailure(
+            media_file_id=media_file.id,
+            language="en",
+            error_message="opensubtitles: 401 Unauthorized",
+            failed_at=datetime.now(UTC),
+        )
+    )
+    in_memory_session.commit()
+
+    by_translation = list_history(in_memory_session, category="translation")
+    assert by_translation.total == 1
+    assert [entry.category for entry in by_translation.entries] == ["translation"]
+
+    by_acquisition = list_history(in_memory_session, category="acquisition")
+    assert by_acquisition.total == 1
+    assert [entry.category for entry in by_acquisition.entries] == ["acquisition"]
+
+    by_upgrade = list_history(in_memory_session, category="upgrade")
+    assert by_upgrade.entries == []
+    assert by_upgrade.total == 0

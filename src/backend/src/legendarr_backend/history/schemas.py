@@ -3,6 +3,11 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+# The four source tables merge into three visible categories: an acquisition attempt
+# that replaced an existing subtitle shows as "upgrade", everything else keeps its
+# table's own translation/acquisition label.
+HistoryCategory = Literal["translation", "acquisition", "upgrade"]
+
 
 class HistoryEntryRead(BaseModel):
     """One row of the History view — either a successful `TranslationAttempt`/
@@ -11,7 +16,7 @@ class HistoryEntryRead(BaseModel):
     doesn't apply: a success has no error, a failure has no single winning provider.
     """
 
-    category: Literal["translation", "acquisition", "upgrade"]
+    category: HistoryCategory
     status: Literal["success", "failure"]
     media_title: str
     language: str
