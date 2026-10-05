@@ -2582,8 +2582,11 @@ button.contrast:is(:hover, :focus),
    results panel, so only the Pico [type=search] override is needed here; see
    .app-search-input above for why a bare class alone loses that override. === */
 .history-search {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
   margin-bottom: 0.9rem;
-  max-width: 20rem;
+  max-width: 28rem;
 }
 
 .history-search input.history-search-input {
@@ -2592,6 +2595,22 @@ button.contrast:is(:hover, :focus),
   height: auto;
   padding: 0.4rem 0.75rem;
   background-image: none;
+  font-size: var(--lg-font-xs);
+}
+
+.history-search label.history-category-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  font-size: var(--lg-font-xs);
+}
+
+.history-search select#history-category-filter {
+  width: auto;
+  margin: 0;
+  height: auto;
+  padding: 0.4rem 0.75rem;
   font-size: var(--lg-font-xs);
 }
 

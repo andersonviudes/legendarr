@@ -6,6 +6,7 @@ from legendarr_backend.arr_services.manage_arr_service import create_arr_service
 from legendarr_backend.arr_services.schemas import ArrServiceInput
 from legendarr_backend.database.engine import get_session
 from legendarr_backend.media_library.models import MediaFile, Movie
+from legendarr_backend.subtitle_acquisition.models import AcquisitionFailure
 from legendarr_backend.subtitle_translation.models import TranslationFailure
 
 
@@ -172,3 +173,61 @@ def test_get_history_filters_by_the_q_query_param(isolated_database, tmp_path):
     body = response.json()
     assert body["total"] == 1
     assert body["entries"][0]["language"] == "es"
+
+
+def test_get_history_filters_by_the_category_query_param(isolated_database, tmp_path):
+    with TestClient(create_api_app()) as client:
+        with get_session() as session:
+            service = create_arr_service(
+                session,
+                ArrServiceInput(
+                    name="radarr",
+                    service_type="radarr",
+                    host="radarr",
+                    port=7878,
+                    api_key="api-key",
+                    remote_path_prefix="/remote",
+                    local_path_prefix=str(tmp_path),
+                ),
+            )
+            assert service.id is not None
+            movie = Movie(
+                arr_service_id=service.id, arr_id=1, title="Foo", remote_path="/remote/Foo"
+            )
+            session.add(movie)
+            session.commit()
+            assert movie.id is not None
+            media_file = MediaFile(
+                movie_id=movie.id,
+                relative_path="Foo/Foo.mkv",
+                size_bytes=1,
+                scanned_at=datetime.now(UTC),
+            )
+            session.add(media_file)
+            session.commit()
+            assert media_file.id is not None
+            session.add(
+                TranslationFailure(
+                    media_file_id=media_file.id,
+                    source_language="en",
+                    target_language="pt-BR",
+                    error_message="deepl: invalid API key",
+                    failed_at=datetime.now(UTC),
+                )
+            )
+            session.add(
+                AcquisitionFailure(
+                    media_file_id=media_file.id,
+                    language="en",
+                    error_message="opensubtitles: 401",  # noqa: E501
+                    failed_at=datetime.now(UTC),
+                )
+            )
+            session.commit()
+
+        response = client.get("/history", params={"category": "acquisition"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["entries"][0]["category"] == "acquisition"

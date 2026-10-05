@@ -20,14 +20,18 @@ PAGE_SIZE = 25
 async def show_history(
     request: Request,
     q: str = "",
+    category: str = "",
     page: int = 1,
     client: httpx.AsyncClient = Depends(get_backend_client),
 ):
-    page_result = await service.get_history(client, q=q, page=page, page_size=PAGE_SIZE)
+    page_result = await service.get_history(
+        client, q=q, category=category, page=page, page_size=PAGE_SIZE
+    )
     total_pages = max(1, math.ceil(page_result["total"] / PAGE_SIZE))
     context = {
         "entries": page_result["entries"],
         "q": q,
+        "category": category,
         "page": page_result["page"],
         "total_pages": total_pages,
     }

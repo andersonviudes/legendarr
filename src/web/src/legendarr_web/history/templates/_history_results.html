@@ -50,7 +50,7 @@
     type="button"
     class="outline"
     {% if page <= 1 %}disabled{% endif %}
-    hx-get="/history/?q={{ q | urlencode }}&page={{ page - 1 }}"
+    hx-get="/history/?q={{ q | urlencode }}&category={{ category | urlencode }}&page={{ page - 1 }}"
     hx-target="#history-results"
     hx-swap="innerHTML"
   >{{ t("history.pagination.prev") }}</button>
@@ -59,7 +59,7 @@
     type="button"
     class="outline"
     {% if page >= total_pages %}disabled{% endif %}
-    hx-get="/history/?q={{ q | urlencode }}&page={{ page + 1 }}"
+    hx-get="/history/?q={{ q | urlencode }}&category={{ category | urlencode }}&page={{ page + 1 }}"
     hx-target="#history-results"
     hx-swap="innerHTML"
   >{{ t("history.pagination.next") }}</button>

@@ -18,9 +18,33 @@
     autocomplete="off"
     hx-get="/history/"
     hx-trigger="input changed delay:300ms, search"
+    hx-include="#history-category-filter"
     hx-target="#history-results"
     hx-swap="innerHTML"
   >
+  <label for="history-category-filter" class="history-category-filter-label">
+    {{ t("history.table.category") }}
+    <select
+      id="history-category-filter"
+      name="category"
+      hx-get="/history/"
+      hx-trigger="change"
+      hx-include="#history-search-input"
+      hx-target="#history-results"
+      hx-swap="innerHTML"
+    >
+      <option value="" {% if not category %}selected{% endif %}>{{ t("common.all") }}</option>
+      <option value="translation" {% if category == "translation" %}selected{% endif %}>
+        {{ t("history.category.translation") }}
+      </option>
+      <option value="acquisition" {% if category == "acquisition" %}selected{% endif %}>
+        {{ t("history.category.acquisition") }}
+      </option>
+      <option value="upgrade" {% if category == "upgrade" %}selected{% endif %}>
+        {{ t("history.category.upgrade") }}
+      </option>
+    </select>
+  </label>
 </div>
 
 <div id="history-results">

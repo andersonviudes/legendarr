@@ -157,3 +157,37 @@ def test_history_page_htmx_request_returns_only_the_results_fragment(stub_backen
     assert response.status_code == 200
     assert "<hgroup" not in response.text
     assert "Foo" in response.text
+
+
+def test_history_page_echoes_the_category_filter(stub_backend_client):
+    app = create_app()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_history_page([]))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        response = client.get("/history/", params={"category": "acquisition"})
+
+    assert response.status_code == 200
+    assert '<option value="acquisition" selected>' in response.text
+    assert '<option value="translation" selected>' not in response.text
+
+
+def test_history_page_passes_the_category_to_the_backend(stub_backend_client):
+    app = create_app()
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=_history_page([]))
+
+    stub_backend_client(app, handler=handler)
+
+    with TestClient(app) as client:
+        client.get("/history/", params={"category": "acquisition"})
+        client.get("/history/")
+
+    assert requests[0].url.params["category"] == "acquisition"
+    assert "category" not in requests[1].url.params
