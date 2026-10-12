@@ -44,7 +44,11 @@ WORKDIR /app
 COPY --from=builder /app /app
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+# MALLOC_ARENA_MAX: glibc hands each thread its own malloc arena (up to 8 per core), and
+# legendarr runs dozens of scheduler/job threads — so memory freed after a big OCR/Whisper
+# job stays resident, scattered across arenas. Two arenas is plenty for a mostly I/O-bound app.
 ENV PATH="/app/.venv/bin:$PATH" \
+    MALLOC_ARENA_MAX=2 \
     LEGENDARR_DATA_DIR=/config \
     PUID=1000 \
     PGID=1000

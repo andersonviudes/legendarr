@@ -233,3 +233,55 @@ def test_ocr_pgs_track_skips_a_cue_whose_ocr_call_raises(monkeypatch, tmp_path):
 
     content = output_path.read_text()
     assert "Second cue text" in content
+
+
+def test_ocr_pgs_track_decodes_one_cue_at_a_time_instead_of_the_whole_track(monkeypatch, tmp_path):
+    """Regression: `parse_pgs` used to return every cue's RGBA bitmap at once — hundreds of
+    MB for a feature-length track. Cue N+1 must not exist until cue N has been OCR'd."""
+    monkeypatch.setattr(ocr_module, "extract_pgs_subtitle_stream", _fake_extract_writes_sup)
+    monkeypatch.setattr(ocr_module.pytesseract, "get_languages", lambda config="": ["eng"])
+    events = []
+
+    def _lazy_cues(data):
+        for start_ms in (0, 1000, 2000):
+            events.append(f"decoded {start_ms}")
+            yield _cue(start_ms, start_ms + 1000)
+
+    def _image_to_string(image, lang, timeout):
+        events.append("ocr")
+        return "text"
+
+    monkeypatch.setattr(ocr_module, "parse_pgs", _lazy_cues)
+    monkeypatch.setattr(ocr_module.pytesseract, "image_to_string", _image_to_string)
+
+    ocr_pgs_track(
+        tmp_path / "movie.mkv",
+        _track(),
+        tmp_path / "movie.embedded.4.eng.srt",
+        timeout_seconds=30.0,
+        ocr_cue_timeout_seconds=10.0,
+    )
+
+    assert events == ["decoded 0", "ocr", "decoded 1000", "ocr", "decoded 2000", "ocr"]
+
+
+def test_ocr_pgs_track_skips_an_empty_sup_file_without_parsing(monkeypatch, tmp_path):
+    def _extract_writes_empty_sup(video_path, track, output_path, *, timeout_seconds):
+        output_path.write_bytes(b"")
+
+    monkeypatch.setattr(ocr_module, "extract_pgs_subtitle_stream", _extract_writes_empty_sup)
+    called = []
+    monkeypatch.setattr(ocr_module, "parse_pgs", lambda data: called.append(data) or [])
+
+    output_path = tmp_path / "movie.embedded.4.eng.srt"
+    ocr_pgs_track(
+        tmp_path / "movie.mkv",
+        _track(),
+        output_path,
+        timeout_seconds=30.0,
+        ocr_cue_timeout_seconds=10.0,
+    )
+
+    assert not output_path.exists()
+    assert called == []
+    assert not output_path.with_name(output_path.name + ".sup.tmp").exists()

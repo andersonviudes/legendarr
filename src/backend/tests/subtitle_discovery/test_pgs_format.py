@@ -1,3 +1,5 @@
+import mmap
+
 from legendarr_backend.subtitle_discovery.pgs_format import parse_pgs
 
 # PGS segment types (BD-spec) — used to hand-build minimal valid `.sup` byte sequences.
@@ -81,7 +83,7 @@ def test_parse_pgs_decodes_a_single_cue_start_and_end():
         + _segment(90_000, _END, b"")
     )
 
-    cues = parse_pgs(data)
+    cues = list(parse_pgs(data))
 
     assert len(cues) == 1
     cue = cues[0]
@@ -108,7 +110,7 @@ def test_parse_pgs_closes_previous_cue_when_next_display_set_is_also_visible():
         + _segment(180_000, _END, b"")
     )
 
-    cues = parse_pgs(data)
+    cues = list(parse_pgs(data))
 
     assert [(c.start_ms, c.end_ms) for c in cues] == [(0, 1000), (1000, 2000)]
     assert cues[0].image.getpixel((0, 0)) == (0, 0, 0, 255)
@@ -132,7 +134,7 @@ def test_parse_pgs_decodes_colored_and_colorless_long_runs():
         + _segment(90_000, _END, b"")
     )
 
-    cues = parse_pgs(data)
+    cues = list(parse_pgs(data))
 
     assert len(cues) == 1
     image = cues[0].image
@@ -154,7 +156,7 @@ def test_parse_pgs_drops_a_cue_left_open_at_end_of_stream():
         + _segment(0, _END, b"")
     )
 
-    cues = parse_pgs(data)
+    cues = list(parse_pgs(data))
 
     assert cues == []
 
@@ -172,14 +174,52 @@ def test_parse_pgs_stops_gracefully_on_truncated_segment():
     truncated = good + b"PG" + (200_000).to_bytes(4, "big") + (0).to_bytes(4, "big") + bytes([_PCS])
     truncated += (50).to_bytes(2, "big")  # claims a 50-byte payload that was never written
 
-    cues = parse_pgs(truncated)
+    cues = list(parse_pgs(truncated))
 
     assert [(c.start_ms, c.end_ms) for c in cues] == [(0, 1000)]
 
 
 def test_parse_pgs_returns_empty_list_for_data_with_bad_magic():
-    assert parse_pgs(b"not a pgs stream at all") == []
+    assert list(parse_pgs(b"not a pgs stream at all")) == []
 
 
 def test_parse_pgs_returns_empty_list_for_empty_input():
-    assert parse_pgs(b"") == []
+    assert list(parse_pgs(b"")) == []
+
+
+def _two_cue_stream() -> bytes:
+    palette = _pds({1: _BLACK_OPAQUE})
+    return (
+        _segment(0, _PCS, _pcs(object_count=1))
+        + _segment(0, _PDS, palette)
+        + _segment(0, _ODS, _ods(2, 1, _two_pixel_row(1)))
+        + _segment(0, _END, b"")
+        + _segment(90_000, _PCS, _pcs(object_count=1))
+        + _segment(90_000, _PDS, palette)
+        + _segment(90_000, _ODS, _ods(2, 1, _two_pixel_row(1)))
+        + _segment(90_000, _END, b"")
+        + _segment(180_000, _PCS, _pcs(object_count=0, composition_state=0x00))
+        + _segment(180_000, _END, b"")
+    )
+
+
+def test_parse_pgs_is_lazy_and_yields_the_first_cue_before_reading_the_rest():
+    """A caller that OCRs and drops each cue as it goes must never need them all decoded at
+    once — decoding the whole track up front is what held hundreds of MB of bitmaps."""
+    cues = parse_pgs(_two_cue_stream())
+
+    first = next(cues)
+
+    assert (first.start_ms, first.end_ms) == (0, 1000)
+    assert [(c.start_ms, c.end_ms) for c in cues] == [(1000, 2000)]
+
+
+def test_parse_pgs_reads_a_memory_mapped_file(tmp_path):
+    sup_path = tmp_path / "track.sup"
+    sup_path.write_bytes(_two_cue_stream())
+
+    with sup_path.open("rb") as sup_file:
+        with mmap.mmap(sup_file.fileno(), 0, access=mmap.ACCESS_READ) as data:
+            cues = list(parse_pgs(data))
+
+    assert [(c.start_ms, c.end_ms) for c in cues] == [(0, 1000), (1000, 2000)]

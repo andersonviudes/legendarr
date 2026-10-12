@@ -5,8 +5,10 @@ pipeline as an external file or a text-based embedded track.
 """
 
 import logging
+import mmap
 import os
 import time
+from collections.abc import Iterable
 from pathlib import Path
 
 import pytesseract
@@ -64,8 +66,7 @@ def ocr_pgs_track(
         if not sup_path.exists():
             # Missing ffmpeg binary — extract_pgs_subtitle_stream already logged a warning.
             return
-        cues = parse_pgs(sup_path.read_bytes())
-        lines = _ocr_cues(cues, track.language, ocr_cue_timeout_seconds)
+        lines = _ocr_sup_file(sup_path, track.language, ocr_cue_timeout_seconds)
         if not lines:
             return
         temp_srt_path = output_path.with_name(f"{output_path.name}.tmp")
@@ -79,8 +80,19 @@ def ocr_pgs_track(
         sup_path.unlink(missing_ok=True)
 
 
+def _ocr_sup_file(sup_path: Path, language: str, cue_timeout_seconds: float) -> list[SubtitleLine]:
+    """Stream `sup_path` through the parser and OCR one cue at a time: the file is
+    memory-mapped instead of read whole and `parse_pgs` is lazy, so only the cue being
+    OCR'd is decoded at any moment — the peak stays flat however long the track is."""
+    if sup_path.stat().st_size == 0:
+        return []  # mmap refuses an empty file; there is nothing to parse in it anyway
+    with sup_path.open("rb") as sup_file:
+        with mmap.mmap(sup_file.fileno(), 0, access=mmap.ACCESS_READ) as data:
+            return _ocr_cues(parse_pgs(data), language, cue_timeout_seconds)
+
+
 def _ocr_cues(
-    cues: list[PgsSubtitleCue], language: str, timeout_seconds: float
+    cues: Iterable[PgsSubtitleCue], language: str, timeout_seconds: float
 ) -> list[SubtitleLine]:
     tesseract_language = _resolve_tesseract_language(language)
     lines = []
@@ -88,10 +100,9 @@ def _ocr_cues(
     for index, cue in enumerate(cues, start=1):
         if time.monotonic() > deadline:
             logger.warning(
-                "OCR track budget (%.0fs) exhausted after %d/%d cues; skipping the rest",
+                "OCR track budget (%.0fs) exhausted after %d cues; skipping the rest",
                 MAX_OCR_TRACK_SECONDS,
                 index - 1,
-                len(cues),
             )
             break
         text = _ocr_cue_image(cue.image, tesseract_language, timeout_seconds)

@@ -12,11 +12,17 @@ in `ocr_embedded_subtitles.py`.
 """
 
 import logging
+import mmap
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+# `parse_pgs` only slices and measures its input, so a read-only `mmap` of the `.sup` file
+# works just as well as `bytes` without ever holding the whole stream in memory.
+SupData = bytes | mmap.mmap
 
 _MAGIC = b"PG"
 _SEGMENT_HEADER_SIZE = 13  # 2 (magic) + 4 (PTS) + 4 (DTS) + 1 (type) + 2 (size)
@@ -52,14 +58,16 @@ class _DisplaySet:
     ods_payloads: list[bytes] = field(default_factory=list)
 
 
-def parse_pgs(data: bytes) -> list[PgsSubtitleCue]:
-    """Decode a `.sup` byte stream into subtitle cues, in presentation order.
+def parse_pgs(data: SupData) -> Iterator[PgsSubtitleCue]:
+    """Decode a `.sup` byte stream into subtitle cues, in presentation order — lazily, one
+    cue at a time, so a caller that OCRs and drops each bitmap as it goes never holds more
+    than a couple of them at once (a feature-length track decodes to hundreds of MB of RGBA
+    bitmaps if they're all kept).
 
     A truncated or malformed stream degrades gracefully: segment iteration stops at the
     first bad/incomplete segment header instead of raising, and a cue left open at end of
     stream (no closing empty Display Set ever arrived) is dropped rather than guessed at.
     """
-    cues: list[PgsSubtitleCue] = []
     open_start_ms: int | None = None
     open_image: Image.Image | None = None
 
@@ -72,7 +80,7 @@ def parse_pgs(data: bytes) -> list[PgsSubtitleCue]:
         if open_start_ms is not None:
             # open_image is always set alongside open_start_ms, just below.
             assert open_image is not None
-            cues.append(PgsSubtitleCue(open_start_ms, display_set.pts_ms, open_image))
+            yield PgsSubtitleCue(open_start_ms, display_set.pts_ms, open_image)
             open_start_ms = None
             open_image = None
 
@@ -80,10 +88,8 @@ def parse_pgs(data: bytes) -> list[PgsSubtitleCue]:
             open_start_ms = display_set.pts_ms
             open_image = image
 
-    return cues
 
-
-def _iter_segments(data: bytes):
+def _iter_segments(data: SupData):
     offset = 0
     length = len(data)
     while offset + _SEGMENT_HEADER_SIZE <= length:
