@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/).
+## [0.22.16] - 2026-10-12
+
+### ✨ Features
+
+- Add a category filter to the History view (#166)
+
+### 🐛 Bug Fixes
+
+- Reduce peak memory of PGS OCR and Whisper transcription (#167)
+
 ## [0.22.15] - 2026-10-03
 
 ### 🐛 Bug Fixes
@@ -15,6 +25,7 @@ All notable changes to this project are documented here. The format follows
 - Bump docker/setup-qemu-action from 3 to 4 (#159)
 - Bump amannn/action-semantic-pull-request from 5 to 6 (#160)
 - Bump the python-minor-and-patch group across 1 directory with 2 updates (#162)
+- Bump version to v0.22.15 [skip ci]
 
 ## [0.22.14] - 2026-09-23
 
